@@ -25,13 +25,13 @@ interface Conversation {
     title: string;
     seller_price: number;
     images: { image_url: string }[];
-  };
+  } | null;
   buyer: {
     full_name: string;
-  };
+  } | null;
   seller: {
     full_name: string;
-  };
+  } | null;
 }
 
 interface Message {
@@ -66,43 +66,43 @@ const Messages = () => {
     queryKey: ["conversations", user?.id],
     queryFn: async () => {
       if (!user) return [];
+      
       const { data, error } = await supabase
         .from("conversations")
         .select(`
           *,
-          listing:listings(title, seller_price, images:listing_images(image_url))
+          listing:listings!inner(title, seller_price, images:listing_images(image_url))
         `)
         .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
         .order("updated_at", { ascending: false });
 
       if (error) throw error;
 
-      // Fetch buyer and seller profiles separately
-      const conversationsWithProfiles = await Promise.all(
-        data.map(async (conv) => {
-          const { data: buyer } = await supabase
-            .from("profiles")
-            .select("full_name")
-            .eq("id", conv.buyer_id)
-            .single();
+      // Fetch profiles separately but efficiently
+      const buyerIds = [...new Set(data.map(c => c.buyer_id))];
+      const sellerIds = [...new Set(data.map(c => c.seller_id))];
+      
+      const { data: buyers } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", buyerIds);
+      
+      const { data: sellers } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", sellerIds);
 
-          const { data: seller } = await supabase
-            .from("profiles")
-            .select("full_name")
-            .eq("id", conv.seller_id)
-            .single();
+      const buyerMap = new Map(buyers?.map(b => [b.id, b]) || []);
+      const sellerMap = new Map(sellers?.map(s => [s.id, s]) || []);
 
-          return {
-            ...conv,
-            buyer: buyer || { full_name: "Unknown" },
-            seller: seller || { full_name: "Unknown" },
-          };
-        })
-      );
-
-      return conversationsWithProfiles as Conversation[];
+      return data.map(conv => ({
+        ...conv,
+        buyer: buyerMap.get(conv.buyer_id) || { full_name: "Unknown" },
+        seller: sellerMap.get(conv.seller_id) || { full_name: "Unknown" },
+      })) as Conversation[];
     },
     enabled: !!user,
+    staleTime: 1000 * 30, // 30 seconds
   });
 
   const { data: messages, refetch: refetchMessages } = useQuery({
@@ -119,30 +119,40 @@ const Messages = () => {
       return data as Message[];
     },
     enabled: !!selectedConversation,
+    staleTime: 1000 * 10, // 10 seconds
   });
 
   const { data: offers, refetch: refetchOffers } = useQuery({
     queryKey: ["offers", selectedConversation],
     queryFn: async () => {
       if (!selectedConversation) return [];
+      
+      const selectedConv = conversations?.find(c => c.id === selectedConversation);
+      if (!selectedConv) return [];
+
       const { data, error } = await supabase
         .from("offers")
         .select("*")
-        .eq("conversation_id", selectedConversation)
+        .eq("listing_id", selectedConv.listing_id)
         .order("created_at", { ascending: true });
 
       if (error) throw error;
       return data as Offer[];
     },
-    enabled: !!selectedConversation,
+    enabled: !!selectedConversation && !!conversations,
+    staleTime: 1000 * 15, // 15 seconds
   });
 
   // Real-time subscription for messages and offers
   useEffect(() => {
-    if (!selectedConversation) return;
+    if (!selectedConversation || !user) return;
 
     const channel = supabase
-      .channel(`conversation:${selectedConversation}`)
+      .channel(`conversation:${selectedConversation}`, {
+        config: {
+          broadcast: { self: true },
+        },
+      })
       .on(
         "postgres_changes",
         {
@@ -153,8 +163,6 @@ const Messages = () => {
         },
         () => {
           refetchMessages();
-          refetchConversations();
-          refetchOffers();
         }
       )
       .on(
@@ -163,11 +171,9 @@ const Messages = () => {
           event: "UPDATE",
           schema: "public",
           table: "offers",
-          filter: `conversation_id=eq.${selectedConversation}`,
         },
         () => {
           refetchOffers();
-          refetchMessages();
         }
       )
       .subscribe();
@@ -175,7 +181,7 @@ const Messages = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [selectedConversation]);
+  }, [selectedConversation, user, refetchMessages, refetchOffers]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -247,7 +253,7 @@ const Messages = () => {
               <div className="space-y-2">
                 {conversations.map((conv) => {
                   const otherUser = conv.buyer_id === user.id ? conv.seller : conv.buyer;
-                  const firstImage = conv.listing.images?.[0];
+                  const firstImage = conv.listing?.images?.[0];
                   
                   return (
                     <button
@@ -263,14 +269,14 @@ const Messages = () => {
                         {firstImage && (
                           <img
                             src={firstImage.image_url}
-                            alt={conv.listing.title}
+                            alt={conv.listing?.title || "Item"}
                             className="w-12 h-12 object-cover rounded"
                           />
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{conv.listing.title}</p>
+                          <p className="font-medium text-sm truncate">{conv.listing?.title || "Untitled"}</p>
                           <p className="text-xs text-muted-foreground truncate">
-                            {otherUser.full_name}
+                            {otherUser?.full_name || "Unknown"}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {format(new Date(conv.updated_at), "MMM d, h:mm a")}
@@ -296,22 +302,22 @@ const Messages = () => {
                 {/* Header */}
                 <div className="p-4 border-b space-y-3">
                   <div className="flex items-center gap-3">
-                    {selectedConv.listing.images?.[0] && (
+                    {selectedConv.listing?.images?.[0] && (
                       <img
                         src={selectedConv.listing.images[0].image_url}
-                        alt={selectedConv.listing.title}
+                        alt={selectedConv.listing?.title || "Item"}
                         className="w-12 h-12 object-cover rounded"
                       />
                     )}
                     <div className="flex-1">
-                      <h3 className="font-semibold">{selectedConv.listing.title}</h3>
+                      <h3 className="font-semibold">{selectedConv.listing?.title || "Untitled"}</h3>
                       <p className="text-sm text-muted-foreground">
                         {selectedConv.buyer_id === user.id
-                          ? selectedConv.seller.full_name
-                          : selectedConv.buyer.full_name}
+                          ? selectedConv.seller?.full_name || "Unknown"
+                          : selectedConv.buyer?.full_name || "Unknown"}
                       </p>
                     </div>
-                    <Badge>£{selectedConv.listing.seller_price}</Badge>
+                    <Badge>£{selectedConv.listing?.seller_price || 0}</Badge>
                   </div>
                   
                   {messages && messages.length > 0 && (

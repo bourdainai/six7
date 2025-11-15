@@ -39,11 +39,12 @@ const Browse = () => {
         `)
         .eq("status", "active")
         .order("created_at", { ascending: false })
-        .limit(200);
+        .limit(100);
 
       if (error) throw error;
       return data;
     },
+    staleTime: 1000 * 60, // 1 minute
   });
 
   // Client-side filtering - only apply when in browse mode
