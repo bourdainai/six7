@@ -5,13 +5,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertTriangle, CheckCircle, Clock, Shield, FileText, Scale } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { AlertTriangle, CheckCircle, Clock, Shield, FileText, Scale, CheckSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 export const ModerationQueue = () => {
   const navigate = useNavigate();
   const [selectedPriority, setSelectedPriority] = useState<string>("all");
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
 
   const { data: queueItems, isLoading, refetch } = useQuery({
     queryKey: ["moderation-queue", selectedPriority],
@@ -70,6 +72,73 @@ export const ModerationQueue = () => {
     refetch();
   };
 
+  const handleBulkAssign = async () => {
+    if (selectedItems.length === 0) {
+      toast.error("No items selected");
+      return;
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase
+      .from("moderation_queue")
+      .update({
+        assigned_to: user.id,
+        status: "in_progress"
+      })
+      .in("id", selectedItems);
+
+    if (error) {
+      toast.error("Failed to bulk assign items");
+      return;
+    }
+
+    toast.success(`${selectedItems.length} items assigned to you`);
+    setSelectedItems([]);
+    refetch();
+  };
+
+  const handleBulkResolve = async () => {
+    if (selectedItems.length === 0) {
+      toast.error("No items selected");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("moderation_queue")
+      .update({
+        status: "resolved",
+        updated_at: new Date().toISOString()
+      })
+      .in("id", selectedItems);
+
+    if (error) {
+      toast.error("Failed to bulk resolve items");
+      return;
+    }
+
+    toast.success(`${selectedItems.length} items marked as resolved`);
+    setSelectedItems([]);
+    refetch();
+  };
+
+  const toggleItemSelection = (itemId: string) => {
+    setSelectedItems(prev =>
+      prev.includes(itemId)
+        ? prev.filter(id => id !== itemId)
+        : [...prev, itemId]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedItems.length === queueItems?.length) {
+      setSelectedItems([]);
+    } else {
+      setSelectedItems(queueItems?.map(item => item.id) || []);
+    }
+  };
+
   const getPriorityColor = (classification: string) => {
     switch (classification) {
       case "critical": return "destructive";
@@ -99,6 +168,8 @@ export const ModerationQueue = () => {
 
   const criticalCount = queueItems?.filter(i => i.ai_classification === "critical" && i.status === "pending").length || 0;
   const highCount = queueItems?.filter(i => i.ai_classification === "high_priority" && i.status === "pending").length || 0;
+  const inProgressCount = queueItems?.filter(i => i.status === "in_progress").length || 0;
+  const resolvedCount = queueItems?.filter(i => i.status === "resolved").length || 0;
 
   return (
     <div>
@@ -116,6 +187,24 @@ export const ModerationQueue = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">High Priority</CardTitle>
+            <Shield className="h-4 w-4 text-orange-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">{highCount}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+            <Clock className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">{inProgressCount}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Resolved</CardTitle>
             <AlertTriangle className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
@@ -159,20 +248,26 @@ export const ModerationQueue = () => {
         <TabsContent value={selectedPriority} className="mt-6">
           <div className="space-y-4">
             {queueItems?.map((item) => (
-              <Card key={item.id}>
+              <Card key={item.id} className={selectedItems.includes(item.id) ? "border-primary" : ""}>
                 <CardHeader>
                   <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        {getTypeIcon(item.item_type)}
-                        {item.item_type.charAt(0).toUpperCase() + item.item_type.slice(1)}
-                        <Badge variant={getPriorityColor(item.ai_classification)}>
-                          {item.ai_classification?.replace('_', ' ')}
-                        </Badge>
-                      </CardTitle>
-                      <CardDescription>
-                        {item.ai_reason}
-                      </CardDescription>
+                    <div className="flex items-center gap-3">
+                      <Checkbox
+                        checked={selectedItems.includes(item.id)}
+                        onCheckedChange={() => toggleItemSelection(item.id)}
+                      />
+                      <div className="space-y-1">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          {getTypeIcon(item.item_type)}
+                          {item.item_type.charAt(0).toUpperCase() + item.item_type.slice(1)}
+                          <Badge variant={getPriorityColor(item.ai_classification)}>
+                            {item.ai_classification?.replace('_', ' ')}
+                          </Badge>
+                        </CardTitle>
+                        <CardDescription>
+                          {item.ai_reason}
+                        </CardDescription>
+                      </div>
                     </div>
                     <Badge variant={
                       item.status === "resolved" ? "default" :
