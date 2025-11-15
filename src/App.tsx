@@ -15,6 +15,7 @@ import Messages from "./pages/Messages";
 import SellerDashboard from "./pages/SellerDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import ModerationDashboard from "./pages/ModerationDashboard";
+import Bundles from "./pages/Bundles";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/checkout/:id" element={<Checkout />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/messages" element={<Messages />} />
+            <Route path="/bundles" element={<Bundles />} />
             <Route path="/dashboard/seller" element={<SellerDashboard />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/moderation" element={<ModerationDashboard />} />

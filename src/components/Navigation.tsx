@@ -45,6 +45,12 @@ export const Navigation = () => {
               Browse
             </Link>
             <Link 
+              to="/bundles" 
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors font-light"
+            >
+              Bundles
+            </Link>
+            <Link 
               to="/sell-enhanced" 
               className="text-sm text-muted-foreground hover:text-foreground transition-colors font-light"
             >

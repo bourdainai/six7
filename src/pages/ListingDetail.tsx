@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Navigation } from "@/components/Navigation";
 import { OfferDialog } from "@/components/OfferDialog";
-import { ArrowLeft, ShoppingBag } from "lucide-react";
+import { CreateBundleDialog } from "@/components/bundles/CreateBundleDialog";
+import { ReportDialog } from "@/components/moderation/ReportDialog";
+import { ArrowLeft, ShoppingBag, Package, Flag } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +18,8 @@ const ListingDetail = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [selectedImage, setSelectedImage] = useState(0);
+  const [bundleDialogOpen, setBundleDialogOpen] = useState(false);
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
 
   const { data: listing, isLoading } = useQuery({
     queryKey: ["listing", id],
@@ -204,27 +208,63 @@ const ListingDetail = () => {
             </div>
 
             <div className="space-y-3">
-              {user && user.id !== listing.seller_id && (
-                <OfferDialog
-                  listingId={listing.id}
-                  listingPrice={listing.seller_price}
-                  sellerId={listing.seller_id}
-                  buyerId={user.id}
-                />
+              {user && user.id === listing.seller_id && (
+                <Button
+                  onClick={() => setBundleDialogOpen(true)}
+                  variant="outline"
+                  className="w-full h-12"
+                  size="lg"
+                >
+                  <Package className="mr-2 h-5 w-5" />
+                  Create Bundle with This Item
+                </Button>
               )}
-              
-              <Button
-                onClick={handleBuyNow}
-                className="w-full h-12"
-                size="lg"
-                disabled={listing.status !== "active"}
-              >
-                <ShoppingBag className="mr-2 h-5 w-5" />
-                {listing.status === "active" ? "Buy Now" : "Sold"}
-              </Button>
-            </div>
-          </div>
+
+              {user && user.id !== listing.seller_id && (
+                <>
+                  <OfferDialog
+                    listingId={listing.id}
+                    listingPrice={listing.seller_price}
+                    sellerId={listing.seller_id}
+                    buyerId={user.id}
+                  />
+                  
+                  <Button
+                    onClick={handleBuyNow}
+                    className="w-full h-12"
+                    size="lg"
+                    disabled={listing.status !== "active"}
+                  >
+                    <ShoppingBag className="mr-2 h-5 w-5" />
+                    {listing.status === "active" ? "Buy Now" : "Sold"}
+                  </Button>
+
+                  <Button
+                    onClick={() => setReportDialogOpen(true)}
+                    variant="ghost"
+                    size="sm"
+                    className="w-full"
+                  >
+                    <Flag className="mr-2 h-4 w-4" />
+                    Report Listing
+                  </Button>
+                </>
+              )}
         </div>
+      </div>
+
+      <CreateBundleDialog
+        open={bundleDialogOpen}
+        onOpenChange={setBundleDialogOpen}
+        preselectedListings={[id!]}
+      />
+
+      <ReportDialog
+        open={reportDialogOpen}
+        onOpenChange={setReportDialogOpen}
+        reportedListingId={id}
+      />
+    </div>
       </div>
     </div>
   );

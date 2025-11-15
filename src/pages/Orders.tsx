@@ -2,12 +2,20 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Navigation } from "@/components/Navigation";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { DisputeDialog } from "@/components/disputes/DisputeDialog";
+import { RatingDialog } from "@/components/ratings/RatingDialog";
+import { AlertCircle, Star } from "lucide-react";
+import { useState } from "react";
 import { format } from "date-fns";
 
 const Orders = () => {
   const { user } = useAuth();
+  const [disputeOpen, setDisputeOpen] = useState(false);
+  const [ratingOpen, setRatingOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
   const { data: buyerOrders, isLoading: isLoadingBuyer } = useQuery({
     queryKey: ["orders", "buyer", user?.id],
@@ -120,12 +128,44 @@ const Orders = () => {
                   ))}
 
                   <div className="border-t border-border pt-4 mt-4">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Total</span>
-                      <span className="font-medium text-foreground">
-                        £{Number(order.total_amount).toFixed(2)}
-                      </span>
+                    <div className="flex justify-between items-center">
+                      <div className="flex-1">
+                        <div className="flex justify-between text-sm mb-2">
+                          <span className="text-muted-foreground">Total</span>
+                          <span className="font-medium text-foreground">
+                            £{Number(order.total_amount).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
                     </div>
+                    {order.status === "paid" && (
+                      <div className="flex gap-2 mt-4">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedOrder(order);
+                            setDisputeOpen(true);
+                          }}
+                          className="flex items-center gap-2"
+                        >
+                          <AlertCircle className="h-4 w-4" />
+                          Open Dispute
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={() => {
+                            setSelectedOrder(order);
+                            setRatingOpen(true);
+                          }}
+                          className="flex items-center gap-2"
+                        >
+                          <Star className="h-4 w-4" />
+                          Rate Seller
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))
@@ -200,6 +240,27 @@ const Orders = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {selectedOrder && (
+        <>
+          <DisputeDialog
+            open={disputeOpen}
+            onOpenChange={setDisputeOpen}
+            orderId={selectedOrder.id}
+            listingId={selectedOrder.order_items[0]?.listing_id}
+            sellerId={selectedOrder.seller_id}
+          />
+          <RatingDialog
+            open={ratingOpen}
+            onOpenChange={setRatingOpen}
+            orderId={selectedOrder.id}
+            listingId={selectedOrder.order_items[0]?.listing_id}
+            revieweeId={selectedOrder.seller_id}
+            reviewType="buyer_to_seller"
+            revieweeName={selectedOrder.seller?.full_name || "Seller"}
+          />
+        </>
+      )}
     </div>
   );
 };
