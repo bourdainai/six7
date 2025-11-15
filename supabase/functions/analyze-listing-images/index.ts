@@ -121,6 +121,10 @@ serve(async (req) => {
                     overall_quality: {
                       type: "integer",
                       description: "Overall image quality score (0-100). Consider clarity, focus, resolution."
+                    },
+                    clarity: {
+                      type: "integer",
+                      description: "Image clarity/focus 0-100"
                     }
                   }
                 },
@@ -129,10 +133,11 @@ serve(async (req) => {
                   items: {
                     type: "object",
                     properties: {
-                      type: { type: "string", description: "Type of damage (stain, tear, wear, scratch, dent, discoloration)" },
+                      type: { type: "string", enum: ["stain", "tear", "wear", "discoloration", "missing_button", "pilling", "scratch", "dent"] },
                       severity: { type: "string", enum: ["minor", "moderate", "severe"] },
                       location: { type: "string", description: "Where on the item" },
-                      description: { type: "string", description: "Brief description of the damage" }
+                      description: { type: "string", description: "Brief description of the damage" },
+                      confidence: { type: "number" }
                     }
                   },
                   description: "Array of any visible damage or wear"
@@ -144,10 +149,11 @@ serve(async (req) => {
                     properties: {
                       brand: { type: "string" },
                       location: { type: "string", description: "Where logo appears" },
-                      confidence: { type: "integer", description: "Confidence level 0-100" }
+                      confidence: { type: "integer", description: "Confidence level 0-100" },
+                      authentic_appearance: { type: "boolean" }
                     }
                   },
-                  description: "Detected brand logos for verification"
+                  description: "Detected brand logos for verification and authenticity"
                 },
                 counterfeit_risk_score: {
                   type: "integer",
@@ -175,57 +181,6 @@ serve(async (req) => {
                     condition: { type: "number" },
                     color: { type: "number" }
                   }
-                },
-                quality_analysis: {
-                  type: "object",
-                  description: "Image quality assessment",
-                  properties: {
-                    overall_quality: { type: "number", description: "Overall quality score 0-100" },
-                    lighting: { type: "number", description: "Lighting quality 0-100" },
-                    angle: { type: "number", description: "Camera angle quality 0-100" },
-                    background: { type: "number", description: "Background cleanliness 0-100" },
-                    clarity: { type: "number", description: "Image clarity/focus 0-100" }
-                  }
-                },
-                damage_detected: {
-                  type: "array",
-                  description: "List of detected damage or wear",
-                  items: {
-                    type: "object",
-                    properties: {
-                      type: { type: "string", enum: ["stain", "tear", "wear", "discoloration", "missing_button", "pilling"] },
-                      severity: { type: "string", enum: ["minor", "moderate", "significant"] },
-                      confidence: { type: "number" },
-                      location: { type: "string" }
-                    }
-                  }
-                },
-                logo_analysis: {
-                  type: "object",
-                  description: "Brand logo detection and authenticity",
-                  properties: {
-                    logos_detected: {
-                      type: "array",
-                      items: {
-                        type: "object",
-                        properties: {
-                          brand: { type: "string" },
-                          confidence: { type: "number" },
-                          authentic_appearance: { type: "boolean" }
-                        }
-                      }
-                    },
-                    counterfeit_risk: { type: "number", description: "Risk score 0-100" }
-                  }
-                },
-                stock_photo_detected: {
-                  type: "boolean",
-                  description: "Whether image appears to be a stock/catalog photo"
-                },
-                photo_advice: {
-                  type: "array",
-                  description: "Suggestions to improve photos",
-                  items: { type: "string" }
                 }
               },
               required: ["category", "color", "condition", "title", "description", "confidence"],
