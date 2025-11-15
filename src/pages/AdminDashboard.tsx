@@ -9,7 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Shield, Users, Package, DollarSign, TrendingUp, AlertTriangle, ShoppingCart, Star, Flag } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, Area, AreaChart } from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
 const AdminDashboard = () => {
   const { data: isAdmin, isLoading: adminLoading } = useAdminCheck();
@@ -215,7 +216,7 @@ const AdminDashboard = () => {
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
                         </Pie>
-                        <Tooltip />
+                        <RechartsTooltip />
                       </PieChart>
                     </ResponsiveContainer>
                   ) : (
@@ -242,7 +243,7 @@ const AdminDashboard = () => {
                       <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
                       <YAxis yAxisId="left" stroke="hsl(var(--muted-foreground))" />
                       <YAxis yAxisId="right" orientation="right" stroke="hsl(var(--muted-foreground))" />
-                      <Tooltip
+                      <RechartsTooltip
                         contentStyle={{
                           backgroundColor: "hsl(var(--popover))",
                           border: "1px solid hsl(var(--border))",
@@ -304,7 +305,7 @@ const AdminDashboard = () => {
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="category" stroke="hsl(var(--muted-foreground))" />
                       <YAxis stroke="hsl(var(--muted-foreground))" />
-                      <Tooltip
+                      <RechartsTooltip
                         contentStyle={{
                           backgroundColor: "hsl(var(--popover))",
                           border: "1px solid hsl(var(--border))",
@@ -336,7 +337,7 @@ const AdminDashboard = () => {
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
                       <YAxis stroke="hsl(var(--muted-foreground))" />
-                      <Tooltip
+                      <RechartsTooltip
                         contentStyle={{
                           backgroundColor: "hsl(var(--popover))",
                           border: "1px solid hsl(var(--border))",
