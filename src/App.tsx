@@ -15,6 +15,7 @@ import Messages from "./pages/Messages";
 import SellerDashboard from "./pages/SellerDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import ModerationDashboard from "./pages/ModerationDashboard";
+import FraudDashboard from "./pages/FraudDashboard";
 import Bundles from "./pages/Bundles";
 import BundleDetail from "./pages/BundleDetail";
 import NotFound from "./pages/NotFound";
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/dashboard/seller" element={<SellerDashboard />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/moderation" element={<ModerationDashboard />} />
+            <Route path="/fraud" element={<FraudDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
