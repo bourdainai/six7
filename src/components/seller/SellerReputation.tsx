@@ -11,21 +11,22 @@ interface SellerReputationProps {
 }
 
 export const SellerReputation = ({ sellerId, compact = false }: SellerReputationProps) => {
-  const { data: reputation } = useQuery({
+  const { data: reputation, isLoading: reputationLoading } = useQuery({
     queryKey: ["seller-reputation", sellerId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("seller_reputation")
         .select("*")
         .eq("seller_id", sellerId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data;
     },
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  const { data: badges } = useQuery({
+  const { data: badges, isLoading: badgesLoading } = useQuery({
     queryKey: ["seller-badges", sellerId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -35,9 +36,21 @@ export const SellerReputation = ({ sellerId, compact = false }: SellerReputation
         .order("earned_at", { ascending: false });
 
       if (error) throw error;
-      return data;
+      return data || [];
     },
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
+
+  if (reputationLoading || badgesLoading) {
+    return compact ? (
+      <div className="h-6 w-48 bg-muted animate-pulse rounded" />
+    ) : (
+      <div className="space-y-4">
+        <div className="h-32 bg-muted animate-pulse rounded-lg" />
+        <div className="h-48 bg-muted animate-pulse rounded-lg" />
+      </div>
+    );
+  }
 
   if (!reputation) {
     return null;
