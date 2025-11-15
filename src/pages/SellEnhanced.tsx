@@ -311,6 +311,7 @@ const SellEnhanced = () => {
       // Reset form
       setImages([]);
       setImageFiles([]);
+      setImageAnalysis(null);
       setListingData({
         title: "",
         description: "",
@@ -325,6 +326,16 @@ const SellEnhanced = () => {
       });
       setPricing(null);
       setAnalyzed(false);
+
+      // Trigger embedding generation for the new listing
+      try {
+        await supabase.functions.invoke('generate-listing-embedding', {
+          body: { listingId: listing.id }
+        });
+        console.log("Embedding generation triggered");
+      } catch (embError) {
+        console.error("Failed to generate embedding:", embError);
+      }
 
     } catch (error: any) {
       console.error("Publish error:", error);

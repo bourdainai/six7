@@ -17,3 +17,12 @@ verify_jwt = false
 
 [functions.buyer-agent-recommendations]
 verify_jwt = true
+
+[functions.generate-listing-embedding]
+verify_jwt = false
+
+[functions.semantic-search]
+verify_jwt = false
+
+[functions.vibe-search]
+verify_jwt = false
