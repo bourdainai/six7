@@ -93,5 +93,14 @@ verify_jwt = false
 [functions.price-drop-notifier]
 verify_jwt = false
 
+[functions.buyer-agent-recommendations]
+verify_jwt = true
+
+[functions.buyer-agent-learn]
+verify_jwt = true
+
+[functions.seller-copilot]
+verify_jwt = true
+
 [functions.fraud-scan-scheduler]
 verify_jwt = false
