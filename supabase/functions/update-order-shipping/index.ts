@@ -65,6 +65,42 @@ serve(async (req) => {
 
     console.log(`Order ${orderId} marked as shipped with tracking ${trackingNumber}`);
 
+    // Fetch order items and buyer info for email notification
+    const { data: orderItems, error: itemsError } = await supabaseClient
+      .from('order_items')
+      .select('listing_id, price, listings(title)')
+      .eq('order_id', orderId);
+
+    if (!itemsError && orderItems) {
+      const { data: buyerProfile } = await supabaseClient
+        .from('profiles')
+        .select('email, full_name')
+        .eq('id', order.buyer_id)
+        .single();
+
+      if (buyerProfile?.email) {
+        // Send email notification in background (don't wait for it)
+        const items = orderItems.map((item: any) => ({
+          title: item.listings?.title || 'Item',
+          price: item.price,
+        }));
+
+        // Fire and forget - send notification without blocking the response
+        supabaseClient.functions.invoke('send-shipping-notification', {
+          body: {
+            buyerEmail: buyerProfile.email,
+            buyerName: buyerProfile.full_name,
+            orderId: orderId,
+            trackingNumber: trackingNumber,
+            carrier: carrier,
+            items: items,
+          },
+        }).catch((error) => {
+          console.error('Failed to send shipping notification:', error);
+        });
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
