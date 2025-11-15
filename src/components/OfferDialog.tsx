@@ -87,11 +87,11 @@ export const OfferDialog = ({
 
       if (offerError) throw offerError;
 
-      // Send system message
+      // Send notification message
       await supabase.from("messages").insert({
         conversation_id: conversationId,
         sender_id: buyerId,
-        content: `Made an offer of £${offerAmount}${offerMessage ? `: ${offerMessage}` : ""}`,
+        content: `📦 Made an offer of £${offerAmount}${offerMessage ? `\n\n"${offerMessage}"` : ""}`,
       });
 
       toast({

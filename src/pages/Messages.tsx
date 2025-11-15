@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { MessageReplySuggestions } from "@/components/MessageReplySuggestions";
 import { MessageSafetyIndicator } from "@/components/MessageSafetyIndicator";
 import { ConversationSentiment } from "@/components/ConversationSentiment";
+import { OfferCard } from "@/components/OfferCard";
 
 interface Conversation {
   id: string;
@@ -40,6 +41,17 @@ interface Message {
   content: string;
   created_at: string;
   read: boolean;
+}
+
+interface Offer {
+  id: string;
+  amount: number;
+  message: string | null;
+  status: string;
+  buyer_id: string;
+  seller_id: string;
+  listing_id: string;
+  created_at: string;
 }
 
 const Messages = () => {
@@ -109,12 +121,28 @@ const Messages = () => {
     enabled: !!selectedConversation,
   });
 
-  // Real-time subscription for messages
+  const { data: offers, refetch: refetchOffers } = useQuery({
+    queryKey: ["offers", selectedConversation],
+    queryFn: async () => {
+      if (!selectedConversation) return [];
+      const { data, error } = await supabase
+        .from("offers")
+        .select("*")
+        .eq("conversation_id", selectedConversation)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+      return data as Offer[];
+    },
+    enabled: !!selectedConversation,
+  });
+
+  // Real-time subscription for messages and offers
   useEffect(() => {
     if (!selectedConversation) return;
 
     const channel = supabase
-      .channel(`messages:${selectedConversation}`)
+      .channel(`conversation:${selectedConversation}`)
       .on(
         "postgres_changes",
         {
@@ -126,6 +154,20 @@ const Messages = () => {
         () => {
           refetchMessages();
           refetchConversations();
+          refetchOffers();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "offers",
+          filter: `conversation_id=eq.${selectedConversation}`,
+        },
+        () => {
+          refetchOffers();
+          refetchMessages();
         }
       )
       .subscribe();
@@ -285,36 +327,59 @@ const Messages = () => {
 
                 {/* Messages */}
                 <div className="flex-1 p-4 overflow-y-auto">
-                  {messages && messages.length > 0 ? (
+                  {(messages && messages.length > 0) || (offers && offers.length > 0) ? (
                     <div className="space-y-4">
-                      {messages.map((msg) => {
-                        const isOwnMessage = msg.sender_id === user.id;
-                        return (
-                          <div
-                            key={msg.id}
-                            className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}
-                          >
-                            <div
-                              className={`max-w-[70%] rounded-lg p-3 ${
-                                isOwnMessage
-                                  ? "bg-primary text-primary-foreground"
-                                  : "bg-muted"
-                              }`}
-                            >
-                              <p className="text-sm">{msg.content}</p>
-                              <p
-                                className={`text-xs mt-1 ${
-                                  isOwnMessage
-                                    ? "text-primary-foreground/70"
-                                    : "text-muted-foreground"
-                                }`}
+                      {/* Merge and sort messages and offers by timestamp */}
+                      {[
+                        ...(messages?.map(msg => ({ type: 'message' as const, data: msg, timestamp: new Date(msg.created_at).getTime() })) || []),
+                        ...(offers?.map(offer => ({ type: 'offer' as const, data: offer, timestamp: new Date(offer.created_at).getTime() })) || [])
+                      ]
+                        .sort((a, b) => a.timestamp - b.timestamp)
+                        .map((item, index) => {
+                          if (item.type === 'message') {
+                            const msg = item.data;
+                            const isOwnMessage = msg.sender_id === user.id;
+                            return (
+                              <div
+                                key={`msg-${msg.id}`}
+                                className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}
                               >
-                                {format(new Date(msg.created_at), "h:mm a")}
-                              </p>
-                            </div>
-                          </div>
-                        );
-                      })}
+                                <div
+                                  className={`max-w-[70%] rounded-lg p-3 ${
+                                    isOwnMessage
+                                      ? "bg-primary text-primary-foreground"
+                                      : "bg-muted"
+                                  }`}
+                                >
+                                  <p className="text-sm">{msg.content}</p>
+                                  <p
+                                    className={`text-xs mt-1 ${
+                                      isOwnMessage
+                                        ? "text-primary-foreground/70"
+                                        : "text-muted-foreground"
+                                    }`}
+                                  >
+                                    {format(new Date(msg.created_at), "h:mm a")}
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          } else {
+                            const offer = item.data;
+                            return (
+                              <OfferCard
+                                key={`offer-${offer.id}`}
+                                offer={offer}
+                                userRole={getUserRole()}
+                                userId={user.id}
+                                onOfferUpdate={() => {
+                                  refetchOffers();
+                                  refetchMessages();
+                                }}
+                              />
+                            );
+                          }
+                        })}
                       <div ref={messagesEndRef} />
                     </div>
                   ) : (
