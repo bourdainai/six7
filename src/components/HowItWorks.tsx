@@ -3,64 +3,68 @@ import { Upload, Sparkles, TrendingUp, Package } from "lucide-react";
 const steps = [
   {
     icon: Upload,
-    title: "Upload Photos",
-    description: "Take or upload 1-5 photos of your item from different angles.",
+    title: "Upload",
+    description: "Take 1-5 photos of your item from different angles.",
     step: "01",
   },
   {
     icon: Sparkles,
-    title: "AI Analyzes",
-    description: "Our AI instantly identifies the item, extracts details, and writes a compelling description.",
+    title: "Analyze",
+    description: "AI identifies, extracts details, and writes descriptions.",
     step: "02",
   },
   {
     icon: TrendingUp,
-    title: "Smart Pricing",
-    description: "Get AI-suggested prices with sell probability and time estimates for each price point.",
+    title: "Price",
+    description: "Get AI suggestions with sell probability estimates.",
     step: "03",
   },
   {
     icon: Package,
-    title: "Publish & Sell",
-    description: "Review, adjust if needed, and publish. Buyers get matched instantly through their agents.",
+    title: "Sell",
+    description: "Review, adjust, publish. Buyers matched instantly.",
     step: "04",
   },
 ];
 
 export const HowItWorks = () => {
   return (
-    <section className="py-24 px-6">
+    <section className="py-32 px-6 bg-background">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold mb-6 text-foreground">
-            How It Works
+        <div className="max-w-2xl mb-20">
+          <h2 className="text-5xl md:text-6xl font-light mb-6 text-foreground leading-tight">
+            Four Steps.
+            <br />
+            <span className="font-medium">Zero Friction.</span>
           </h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            From photo to sale in four simple steps. No tedious forms, no pricing guesswork.
+          <p className="text-lg text-muted-foreground font-light">
+            From photo to sale. No tedious forms, no pricing guesswork.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 relative">
-          {/* Connection line */}
-          <div className="hidden lg:block absolute top-20 left-0 right-0 h-0.5 bg-gradient-to-r from-primary/20 via-primary to-primary/20 -z-10" />
-
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           {steps.map((step, index) => (
-            <div key={index} className="relative">
-              <div className="flex flex-col items-center text-center">
+            <div key={index} className="relative group">
+              <div className="flex flex-col">
                 {/* Step number */}
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
+                <div className="text-7xl font-extralight text-foreground/10 mb-6 group-hover:text-foreground/20 transition-colors">
                   {step.step}
                 </div>
 
-                {/* Icon container */}
-                <div className="w-20 h-20 rounded-2xl bg-gradient-hero shadow-medium flex items-center justify-center mb-6 mt-4">
-                  <step.icon className="w-10 h-10 text-white" />
+                {/* Icon */}
+                <div className="w-12 h-12 rounded-full border border-border flex items-center justify-center mb-6 group-hover:border-foreground transition-colors">
+                  <step.icon className="w-5 h-5 text-foreground" />
                 </div>
 
                 {/* Content */}
-                <h3 className="text-xl font-bold mb-3 text-foreground">{step.title}</h3>
-                <p className="text-muted-foreground leading-relaxed">{step.description}</p>
+                <h3 className="text-lg font-medium mb-2 text-foreground">{step.title}</h3>
+                <p className="text-sm text-muted-foreground font-light leading-relaxed">{step.description}</p>
               </div>
+
+              {/* Connector line */}
+              {index < steps.length - 1 && (
+                <div className="hidden lg:block absolute top-24 left-full w-full h-px bg-border/50 -z-10" />
+              )}
             </div>
           ))}
         </div>
