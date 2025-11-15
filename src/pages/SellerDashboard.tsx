@@ -4,18 +4,21 @@ import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle2, ExternalLink, TrendingUp, Package, DollarSign } from "lucide-react";
+import { CheckCircle2, ExternalLink, TrendingUp, Package, DollarSign, Eye, Heart, ShoppingCart, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { SellerCopilot } from "@/components/SellerCopilot";
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
 const SellerDashboard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [selectedListingForCopilot, setSelectedListingForCopilot] = useState<string | null>(null);
+  const [analyticsPeriod, setAnalyticsPeriod] = useState("30d");
 
   const { data: profile, refetch: refetchProfile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -56,6 +59,19 @@ const SellerDashboard = () => {
         .select("*")
         .eq("seller_id", user!.id)
         .eq("status", "paid");
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: analytics, isLoading: analyticsLoading } = useQuery({
+    queryKey: ["seller-analytics", user?.id, analyticsPeriod],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("seller-analytics", {
+        body: { period: analyticsPeriod },
+      });
 
       if (error) throw error;
       return data;
@@ -116,6 +132,8 @@ const SellerDashboard = () => {
     );
   }
 
+  const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))'];
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -123,8 +141,17 @@ const SellerDashboard = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-24">
         <div className="mb-8">
           <h1 className="text-3xl font-light text-foreground mb-2">Seller Dashboard</h1>
-          <p className="text-muted-foreground">Manage your listings and track your sales</p>
+          <p className="text-muted-foreground">Analytics and performance insights</p>
         </div>
+
+        <Tabs defaultValue="overview" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="listings">Listings</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-6">
 
         {/* Onboarding Status */}
         <Card className="mb-8">
