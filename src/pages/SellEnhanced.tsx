@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, Sparkles, Check, Loader2, DollarSign, Clock } from "lucide-react";
+import { Upload, Sparkles, Check, Loader2, DollarSign, Clock, Package } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,6 +22,14 @@ interface ListingData {
   material: string;
   condition: string;
   style_tags: string[];
+}
+
+interface ShippingData {
+  shipping_cost_uk: number;
+  shipping_cost_europe: number;
+  shipping_cost_international: number;
+  free_shipping: boolean;
+  estimated_delivery_days: number;
 }
 
 interface PricingData {
@@ -56,6 +64,13 @@ const SellEnhanced = () => {
   const [pricing, setPricing] = useState<PricingData | null>(null);
   const [selectedPrice, setSelectedPrice] = useState<number>(0);
   const [publishing, setPublishing] = useState(false);
+  const [shipping, setShipping] = useState<ShippingData>({
+    shipping_cost_uk: 5.99,
+    shipping_cost_europe: 12.99,
+    shipping_cost_international: 19.99,
+    free_shipping: false,
+    estimated_delivery_days: 3,
+  });
   
   const { toast } = useToast();
   const { user } = useAuth();
@@ -184,7 +199,12 @@ const SellEnhanced = () => {
           ambitious_price: pricing?.ambitious_price || null,
           style_tags: listingData.style_tags as any,
           status: 'active' as any,
-          published_at: new Date().toISOString()
+          published_at: new Date().toISOString(),
+          shipping_cost_uk: shipping.shipping_cost_uk,
+          shipping_cost_europe: shipping.shipping_cost_europe,
+          shipping_cost_international: shipping.shipping_cost_international,
+          free_shipping: shipping.free_shipping,
+          estimated_delivery_days: shipping.estimated_delivery_days,
         } as any)
         .select()
         .single();
@@ -502,6 +522,78 @@ const SellEnhanced = () => {
                     <p className="text-xs text-muted-foreground mt-3">{pricing.reasoning}</p>
                   </div>
                 )}
+
+                {/* Shipping Section */}
+                <div className="p-4 rounded-lg bg-muted border border-border">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Package className="w-5 h-5 text-primary" />
+                    <span className="font-semibold text-foreground">Shipping Options</span>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="free-shipping"
+                        checked={shipping.free_shipping}
+                        onChange={(e) => setShipping({ ...shipping, free_shipping: e.target.checked })}
+                        className="rounded border-gray-300"
+                      />
+                      <Label htmlFor="free-shipping" className="cursor-pointer">
+                        Offer free shipping
+                      </Label>
+                    </div>
+
+                    {!shipping.free_shipping && (
+                      <div className="grid grid-cols-3 gap-3">
+                        <div>
+                          <Label htmlFor="ship-uk" className="text-xs">UK (£)</Label>
+                          <Input
+                            id="ship-uk"
+                            type="number"
+                            step="0.01"
+                            value={shipping.shipping_cost_uk}
+                            onChange={(e) => setShipping({ ...shipping, shipping_cost_uk: parseFloat(e.target.value) || 0 })}
+                            disabled={!analyzed}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="ship-eu" className="text-xs">Europe (£)</Label>
+                          <Input
+                            id="ship-eu"
+                            type="number"
+                            step="0.01"
+                            value={shipping.shipping_cost_europe}
+                            onChange={(e) => setShipping({ ...shipping, shipping_cost_europe: parseFloat(e.target.value) || 0 })}
+                            disabled={!analyzed}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="ship-intl" className="text-xs">International (£)</Label>
+                          <Input
+                            id="ship-intl"
+                            type="number"
+                            step="0.01"
+                            value={shipping.shipping_cost_international}
+                            onChange={(e) => setShipping({ ...shipping, shipping_cost_international: parseFloat(e.target.value) || 0 })}
+                            disabled={!analyzed}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <div>
+                      <Label htmlFor="delivery-days" className="text-xs">Estimated Delivery (days)</Label>
+                      <Input
+                        id="delivery-days"
+                        type="number"
+                        value={shipping.estimated_delivery_days}
+                        onChange={(e) => setShipping({ ...shipping, estimated_delivery_days: parseInt(e.target.value) || 3 })}
+                        disabled={!analyzed}
+                      />
+                    </div>
+                  </div>
+                </div>
 
                 <Button 
                   className="w-full" 

@@ -273,14 +273,21 @@ export type Database = {
           currency: string | null
           description: string | null
           embedding_id: string | null
+          estimated_delivery_days: number | null
+          free_shipping: boolean | null
           id: string
           material: string | null
           original_rrp: number | null
+          package_dimensions: Json | null
+          package_weight: number | null
           published_at: string | null
           quick_sale_price: number | null
           saves: number | null
           seller_id: string
           seller_price: number
+          shipping_cost_europe: number | null
+          shipping_cost_international: number | null
+          shipping_cost_uk: number | null
           size: string | null
           status: Database["public"]["Enums"]["listing_status"] | null
           style_tags: Json | null
@@ -302,14 +309,21 @@ export type Database = {
           currency?: string | null
           description?: string | null
           embedding_id?: string | null
+          estimated_delivery_days?: number | null
+          free_shipping?: boolean | null
           id?: string
           material?: string | null
           original_rrp?: number | null
+          package_dimensions?: Json | null
+          package_weight?: number | null
           published_at?: string | null
           quick_sale_price?: number | null
           saves?: number | null
           seller_id: string
           seller_price: number
+          shipping_cost_europe?: number | null
+          shipping_cost_international?: number | null
+          shipping_cost_uk?: number | null
           size?: string | null
           status?: Database["public"]["Enums"]["listing_status"] | null
           style_tags?: Json | null
@@ -331,14 +345,21 @@ export type Database = {
           currency?: string | null
           description?: string | null
           embedding_id?: string | null
+          estimated_delivery_days?: number | null
+          free_shipping?: boolean | null
           id?: string
           material?: string | null
           original_rrp?: number | null
+          package_dimensions?: Json | null
+          package_weight?: number | null
           published_at?: string | null
           quick_sale_price?: number | null
           saves?: number | null
           seller_id?: string
           seller_price?: number
+          shipping_cost_europe?: number | null
+          shipping_cost_international?: number | null
+          shipping_cost_uk?: number | null
           size?: string | null
           status?: Database["public"]["Enums"]["listing_status"] | null
           style_tags?: Json | null
@@ -492,41 +513,59 @@ export type Database = {
       orders: {
         Row: {
           buyer_id: string
+          carrier: string | null
           created_at: string
           currency: string
+          delivered_at: string | null
           id: string
           platform_fee: number
           seller_amount: number
           seller_id: string
+          shipped_at: string | null
           shipping_address: Json
+          shipping_cost: number | null
+          shipping_status: string | null
           status: string
           total_amount: number
+          tracking_number: string | null
           updated_at: string
         }
         Insert: {
           buyer_id: string
+          carrier?: string | null
           created_at?: string
           currency?: string
+          delivered_at?: string | null
           id?: string
           platform_fee: number
           seller_amount: number
           seller_id: string
+          shipped_at?: string | null
           shipping_address: Json
+          shipping_cost?: number | null
+          shipping_status?: string | null
           status?: string
           total_amount: number
+          tracking_number?: string | null
           updated_at?: string
         }
         Update: {
           buyer_id?: string
+          carrier?: string | null
           created_at?: string
           currency?: string
+          delivered_at?: string | null
           id?: string
           platform_fee?: number
           seller_amount?: number
           seller_id?: string
+          shipped_at?: string | null
           shipping_address?: Json
+          shipping_cost?: number | null
+          shipping_status?: string | null
           status?: string
           total_amount?: number
+          tracking_number?: string | null
           updated_at?: string
         }
         Relationships: [

@@ -106,6 +106,23 @@ const Checkout = () => {
     },
   });
 
+  // Calculate shipping cost based on country
+  const calculateShippingCost = () => {
+    if (!listing) return 0;
+    if (listing.free_shipping) return 0;
+
+    const country = shippingAddress.country?.toUpperCase();
+    if (country === 'GB') return Number(listing.shipping_cost_uk || 0);
+    if (['FR', 'DE', 'IT', 'ES', 'NL', 'BE', 'IE', 'AT', 'PT', 'DK', 'SE', 'FI', 'NO'].includes(country)) {
+      return Number(listing.shipping_cost_europe || 0);
+    }
+    return Number(listing.shipping_cost_international || 0);
+  };
+
+  const shippingCost = calculateShippingCost();
+  const itemPrice = Number(listing?.seller_price || 0);
+  const totalPrice = itemPrice + shippingCost;
+
   const createCheckoutMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("create-checkout", {
@@ -179,9 +196,26 @@ const Checkout = () => {
           <form onSubmit={handleCreateCheckout} className="space-y-6">
             <div className="bg-muted/30 rounded-lg p-6 mb-8">
               <h2 className="text-lg font-light text-foreground mb-4">{listing.title}</h2>
-              <p className="text-2xl font-light text-foreground">
-                £{Number(listing.seller_price).toFixed(2)}
-              </p>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Item Price</span>
+                  <span className="text-foreground">£{itemPrice.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Shipping</span>
+                  <span className="text-foreground">
+                    {listing.free_shipping ? 'FREE' : `£${shippingCost.toFixed(2)}`}
+                  </span>
+                </div>
+                <div className="border-t border-border pt-2 mt-2">
+                  <div className="flex justify-between">
+                    <span className="font-medium text-foreground">Total</span>
+                    <span className="text-2xl font-light text-foreground">
+                      £{totalPrice.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="space-y-4">
