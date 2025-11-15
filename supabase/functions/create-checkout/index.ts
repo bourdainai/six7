@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { listingId, shippingAddress } = await req.json();
+    const { listingId, shippingAddress, offerId } = await req.json();
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -41,6 +41,21 @@ serve(async (req) => {
       throw new Error('Listing not found');
     }
 
+    // Check if there's an accepted offer
+    let offerAmount = null;
+    if (offerId) {
+      const { data: offer, error: offerError } = await supabaseClient
+        .from('offers')
+        .select('amount, status')
+        .eq('id', offerId)
+        .eq('status', 'accepted')
+        .single();
+
+      if (!offerError && offer) {
+        offerAmount = Number(offer.amount);
+      }
+    }
+
     if (!listing.seller.stripe_connect_account_id || !listing.seller.stripe_onboarding_complete) {
       throw new Error('Seller has not completed Stripe onboarding');
     }
@@ -60,7 +75,8 @@ serve(async (req) => {
     }
 
     // Calculate fees (10% platform fee on item price only)
-    const listingPrice = Number(listing.seller_price);
+    // Use offer amount if available, otherwise use listing price
+    const listingPrice = offerAmount !== null ? offerAmount : Number(listing.seller_price);
     const totalAmount = listingPrice + shippingCost;
     const platformFee = Math.round(listingPrice * 0.10 * 100); // in pence
     const sellerAmount = Math.round(listingPrice * 100) - platformFee;
@@ -82,6 +98,7 @@ serve(async (req) => {
         buyerId: user.id,
         sellerId: listing.seller_id,
         shippingCost: shippingCost.toString(),
+        offerId: offerId || '',
       },
     });
 

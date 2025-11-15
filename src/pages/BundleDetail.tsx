@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { ShoppingBag, Package, User, Shield } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { toast } from "sonner";
+import { SellerReputation } from "@/components/seller/SellerReputation";
 
 export default function BundleDetail() {
   const { id } = useParams();
@@ -197,29 +198,33 @@ export default function BundleDetail() {
             <Separator />
 
             {/* Seller Info */}
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-                {bundle.seller.avatar_url ? (
-                  <img
-                    src={bundle.seller.avatar_url}
-                    alt={bundle.seller.full_name || "Seller"}
-                    className="h-full w-full rounded-full object-cover"
-                  />
-                ) : (
-                  <User className="h-6 w-6 text-muted-foreground" />
-                )}
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-foreground">
-                  {bundle.seller.full_name || "Seller"}
-                </p>
-                <div className="flex items-center gap-2">
-                  <Shield className="h-3 w-3 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">
-                    Trust Score: {bundle.seller.trust_score || 50}/100
-                  </span>
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium text-foreground">Seller Profile</h3>
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                  {bundle.seller.avatar_url ? (
+                    <img
+                      src={bundle.seller.avatar_url}
+                      alt={bundle.seller.full_name || "Seller"}
+                      className="h-full w-full rounded-full object-cover"
+                    />
+                  ) : (
+                    <User className="h-6 w-6 text-muted-foreground" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground">
+                    {bundle.seller.full_name || "Seller"}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">
+                      Trust Score: {bundle.seller.trust_score || 50}/100
+                    </span>
+                  </div>
                 </div>
               </div>
+              <SellerReputation sellerId={bundle.seller_id} compact />
             </div>
 
             <Button

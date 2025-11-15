@@ -92,6 +92,10 @@ const Checkout = () => {
     country: "GB",
   });
 
+  // Check for offer in URL params
+  const searchParams = new URLSearchParams(window.location.search);
+  const offerId = searchParams.get('offer');
+
   const { data: listing, isLoading: isLoadingListing } = useQuery({
     queryKey: ["listing", id],
     queryFn: async () => {
@@ -104,6 +108,24 @@ const Checkout = () => {
       if (error) throw error;
       return data;
     },
+  });
+
+  // Fetch offer if present
+  const { data: offer } = useQuery({
+    queryKey: ["offer", offerId],
+    queryFn: async () => {
+      if (!offerId) return null;
+      const { data, error } = await supabase
+        .from("offers")
+        .select("*")
+        .eq("id", offerId)
+        .eq("status", "accepted")
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!offerId,
   });
 
   // Calculate shipping cost based on country
@@ -120,7 +142,8 @@ const Checkout = () => {
   };
 
   const shippingCost = calculateShippingCost();
-  const itemPrice = Number(listing?.seller_price || 0);
+  // Use offer amount if available, otherwise use listing price
+  const itemPrice = offer ? Number(offer.amount) : Number(listing?.seller_price || 0);
   const totalPrice = itemPrice + shippingCost;
 
   const createCheckoutMutation = useMutation({
@@ -196,9 +219,21 @@ const Checkout = () => {
           <form onSubmit={handleCreateCheckout} className="space-y-6">
             <div className="bg-muted/30 rounded-lg p-6 mb-8">
               <h2 className="text-lg font-light text-foreground mb-4">{listing.title}</h2>
+              {offer && (
+                <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                  <p className="text-sm font-medium text-green-600 dark:text-green-400">
+                    ✅ Accepted Offer Price
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Original price: £{Number(listing?.seller_price || 0).toFixed(2)}
+                  </p>
+                </div>
+              )}
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Item Price</span>
+                  <span className="text-muted-foreground">
+                    {offer ? 'Agreed Price' : 'Item Price'}
+                  </span>
                   <span className="text-foreground">£{itemPrice.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
