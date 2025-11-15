@@ -7,6 +7,7 @@ import { Navigation } from "@/components/Navigation";
 import { OfferDialog } from "@/components/OfferDialog";
 import { CreateBundleDialog } from "@/components/bundles/CreateBundleDialog";
 import { ReportDialog } from "@/components/moderation/ReportDialog";
+import { BundleRecommendation } from "@/components/BundleRecommendation";
 import { ArrowLeft, ShoppingBag, Package, Flag } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -208,6 +209,10 @@ const ListingDetail = () => {
             </div>
 
             <div className="space-y-3">
+              {user && user.id !== listing.seller_id && (
+                <BundleRecommendation listingId={listing.id} />
+              )}
+
               {user && user.id === listing.seller_id && (
                 <Button
                   onClick={() => setBundleDialogOpen(true)}

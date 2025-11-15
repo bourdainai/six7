@@ -26,3 +26,12 @@ verify_jwt = false
 
 [functions.vibe-search]
 verify_jwt = false
+
+[functions.buyer-agent-price-drop-detector]
+verify_jwt = true
+
+[functions.buyer-agent-bundle-suggester]
+verify_jwt = true
+
+[functions.buyer-agent-learn]
+verify_jwt = true

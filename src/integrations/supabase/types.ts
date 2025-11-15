@@ -94,6 +94,92 @@ export type Database = {
           },
         ]
       }
+      buyer_agent_activities: {
+        Row: {
+          actioned_at: string | null
+          activity_type: string
+          created_at: string | null
+          fit_score: number | null
+          id: string
+          listing_ids: Json
+          notified_at: string | null
+          reasoning: string | null
+          user_id: string
+          viewed_at: string | null
+        }
+        Insert: {
+          actioned_at?: string | null
+          activity_type: string
+          created_at?: string | null
+          fit_score?: number | null
+          id?: string
+          listing_ids: Json
+          notified_at?: string | null
+          reasoning?: string | null
+          user_id: string
+          viewed_at?: string | null
+        }
+        Update: {
+          actioned_at?: string | null
+          activity_type?: string
+          created_at?: string | null
+          fit_score?: number | null
+          id?: string
+          listing_ids?: Json
+          notified_at?: string | null
+          reasoning?: string | null
+          user_id?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buyer_agent_activities_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      buyer_agent_feedback: {
+        Row: {
+          created_at: string | null
+          feedback_type: string
+          id: string
+          listing_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          feedback_type: string
+          id?: string
+          listing_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          feedback_type?: string
+          id?: string
+          listing_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buyer_agent_feedback_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buyer_agent_feedback_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           buyer_id: string

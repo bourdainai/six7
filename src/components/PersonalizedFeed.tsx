@@ -4,8 +4,11 @@ import { useAuth } from "./auth/AuthProvider";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { useNavigate } from "react-router-dom";
-import { Sparkles, Heart, TrendingUp } from "lucide-react";
+import { Sparkles, Heart } from "lucide-react";
 import { useState } from "react";
+import { AgentInsightsPanel } from "./AgentInsightsPanel";
+import { PriceDropAlerts } from "./PriceDropAlerts";
+import { AgentFeedbackButtons } from "./AgentFeedbackButtons";
 
 interface RecommendedListing {
   id: string;
@@ -119,14 +122,15 @@ export const PersonalizedFeed = () => {
             <Sparkles className="w-6 h-6 text-primary" />
             <h2 className="text-2xl font-light text-foreground">Your AI-Curated Feed</h2>
           </div>
-          <Badge variant="secondary" className="flex items-center gap-1">
-            <TrendingUp className="w-3 h-3" />
+          <Badge variant="outline" className="text-sm">
             {recommendations.length} matches
           </Badge>
         </div>
-        <p className="text-sm text-muted-foreground">
-          Personalized recommendations based on your style, size, and preferences
+        <p className="text-muted-foreground text-sm mb-6">
+          Personalized recommendations based on your preferences and style
         </p>
+        
+        <PriceDropAlerts />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -189,39 +193,31 @@ export const PersonalizedFeed = () => {
                     )}
                   </div>
 
-                  {/* AI Reasoning */}
-                  {listing.reasoning && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowReasoningFor(
-                          showReasoningFor === listing.id ? null : listing.id
-                        );
-                      }}
-                      className="text-xs text-primary hover:underline mt-2 flex items-center gap-1"
-                    >
-                      <Sparkles className="w-3 h-3" />
-                      Why this matches
-                    </button>
-                  )}
-                  
-                  {showReasoningFor === listing.id && (
-                    <div className="mt-2 p-2 bg-primary/5 rounded text-xs text-muted-foreground border border-primary/10">
-                      {listing.reasoning}
-                    </div>
-                  )}
+                  {/* AI Insights */}
+                  <div className="mt-3">
+                    <AgentInsightsPanel 
+                      fitScore={listing.fit_score}
+                      reasoning={listing.reasoning}
+                      compact={true}
+                    />
+                  </div>
                 </div>
               </button>
 
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // TODO: Implement save functionality
-                }}
-                className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity p-2 bg-background/90 backdrop-blur-sm rounded-full hover:bg-background"
-              >
-                <Heart className="w-4 h-4 text-foreground" />
-              </button>
+              {/* Feedback and Save Actions */}
+              <div className="mt-3 flex items-center justify-between gap-2 px-2">
+                <AgentFeedbackButtons listingId={listing.id} compact={true} />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // TODO: Implement save functionality
+                  }}
+                >
+                  <Heart className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           );
         })}
