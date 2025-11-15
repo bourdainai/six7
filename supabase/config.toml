@@ -44,3 +44,12 @@ verify_jwt = true
 
 [functions.seller-copilot-tag-optimizer]
 verify_jwt = true
+
+[functions.fraud-image-forensics]
+verify_jwt = false
+
+[functions.fraud-duplicate-detector]
+verify_jwt = false
+
+[functions.calculate-trust-score]
+verify_jwt = false

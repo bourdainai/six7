@@ -311,6 +311,77 @@ export type Database = {
           },
         ]
       }
+      fraud_flags: {
+        Row: {
+          created_at: string | null
+          details: Json | null
+          flag_type: string
+          id: string
+          listing_id: string | null
+          order_id: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          risk_score: number
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          details?: Json | null
+          flag_type: string
+          id?: string
+          listing_id?: string | null
+          order_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          risk_score: number
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          details?: Json | null
+          flag_type?: string
+          id?: string
+          listing_id?: string | null
+          order_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          risk_score?: number
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fraud_flags_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fraud_flags_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fraud_flags_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fraud_flags_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listing_embeddings: {
         Row: {
           created_at: string | null
@@ -1193,6 +1264,41 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trust_score_events: {
+        Row: {
+          created_at: string | null
+          event_type: string
+          id: string
+          impact_score: number
+          reasoning: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_type: string
+          id?: string
+          impact_score: number
+          reasoning?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          impact_score?: number
+          reasoning?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trust_score_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
