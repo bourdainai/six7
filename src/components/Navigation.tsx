@@ -49,12 +49,20 @@ export const Navigation = () => {
               Sell
             </Link>
             {user && (
-              <Link 
-                to="/orders" 
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors font-light"
-              >
-                Orders
-              </Link>
+              <>
+                <Link 
+                  to="/messages" 
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors font-light"
+                >
+                  Messages
+                </Link>
+                <Link 
+                  to="/orders" 
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors font-light"
+                >
+                  Orders
+                </Link>
+              </>
             )}
 
             {user ? (
@@ -69,6 +77,11 @@ export const Navigation = () => {
                   <DropdownMenuItem asChild>
                     <Link to="/dashboard/seller" className="cursor-pointer">
                       Seller Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/messages" className="cursor-pointer">
+                      Messages
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>

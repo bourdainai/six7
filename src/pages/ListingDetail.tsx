@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Navigation } from "@/components/Navigation";
+import { OfferDialog } from "@/components/OfferDialog";
 import { ArrowLeft, ShoppingBag } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -202,15 +203,26 @@ const ListingDetail = () => {
               </div>
             </div>
 
-            <Button
-              onClick={handleBuyNow}
-              className="w-full h-12"
-              size="lg"
-              disabled={listing.status !== "active"}
-            >
-              <ShoppingBag className="mr-2 h-5 w-5" />
-              {listing.status === "active" ? "Buy Now" : "Sold"}
-            </Button>
+            <div className="space-y-3">
+              {user && user.id !== listing.seller_id && (
+                <OfferDialog
+                  listingId={listing.id}
+                  listingPrice={listing.seller_price}
+                  sellerId={listing.seller_id}
+                  buyerId={user.id}
+                />
+              )}
+              
+              <Button
+                onClick={handleBuyNow}
+                className="w-full h-12"
+                size="lg"
+                disabled={listing.status !== "active"}
+              >
+                <ShoppingBag className="mr-2 h-5 w-5" />
+                {listing.status === "active" ? "Buy Now" : "Sold"}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
