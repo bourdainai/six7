@@ -30,7 +30,7 @@ serve(async (req) => {
       throw new Error('Not authenticated');
     }
 
-    // Get listing details
+    // Get listing details with shipping info
     const { data: listing, error: listingError } = await supabaseClient
       .from('listings')
       .select('*, seller:profiles!seller_id(id, stripe_connect_account_id, stripe_onboarding_complete)')
@@ -45,8 +45,23 @@ serve(async (req) => {
       throw new Error('Seller has not completed Stripe onboarding');
     }
 
-    // Calculate fees (10% platform fee)
+    // Calculate shipping cost based on country
+    let shippingCost = 0;
+    const country = shippingAddress.country?.toUpperCase() || 'GB';
+    
+    if (!listing.free_shipping) {
+      if (country === 'GB') {
+        shippingCost = Number(listing.shipping_cost_uk || 0);
+      } else if (['FR', 'DE', 'IT', 'ES', 'NL', 'BE', 'IE', 'AT', 'PT', 'DK', 'SE', 'FI', 'NO'].includes(country)) {
+        shippingCost = Number(listing.shipping_cost_europe || 0);
+      } else {
+        shippingCost = Number(listing.shipping_cost_international || 0);
+      }
+    }
+
+    // Calculate fees (10% platform fee on item price only)
     const listingPrice = Number(listing.seller_price);
+    const totalAmount = listingPrice + shippingCost;
     const platformFee = Math.round(listingPrice * 0.10 * 100); // in pence
     const sellerAmount = Math.round(listingPrice * 100) - platformFee;
 
@@ -54,9 +69,9 @@ serve(async (req) => {
       apiVersion: '2023-10-16',
     });
 
-    // Create payment intent with application fee
+    // Create payment intent with application fee (total includes shipping)
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(listingPrice * 100), // in pence
+      amount: Math.round(totalAmount * 100), // in pence (item + shipping)
       currency: listing.currency.toLowerCase(),
       application_fee_amount: platformFee,
       transfer_data: {
@@ -66,21 +81,24 @@ serve(async (req) => {
         listingId: listing.id,
         buyerId: user.id,
         sellerId: listing.seller_id,
+        shippingCost: shippingCost.toString(),
       },
     });
 
-    // Create order record
+    // Create order record with shipping info
     const { data: order, error: orderError } = await supabaseClient
       .from('orders')
       .insert({
         buyer_id: user.id,
         seller_id: listing.seller_id,
-        total_amount: listingPrice,
+        total_amount: totalAmount,
         platform_fee: platformFee / 100,
         seller_amount: sellerAmount / 100,
         currency: listing.currency,
         status: 'pending',
         shipping_address: shippingAddress,
+        shipping_cost: shippingCost,
+        shipping_status: 'awaiting_shipment',
       })
       .select()
       .single();

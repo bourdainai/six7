@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { DisputeDialog } from "@/components/disputes/DisputeDialog";
 import { RatingDialog } from "@/components/ratings/RatingDialog";
+import { ShipOrderDialog } from "@/components/ShipOrderDialog";
 import { AlertCircle, Star, Truck, Package } from "lucide-react";
 import { useState } from "react";
 import { format } from "date-fns";
@@ -15,6 +16,7 @@ const Orders = () => {
   const { user } = useAuth();
   const [disputeOpen, setDisputeOpen] = useState(false);
   const [ratingOpen, setRatingOpen] = useState(false);
+  const [shipOrderOpen, setShipOrderOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
   const { data: buyerOrders, isLoading: isLoadingBuyer } = useQuery({
@@ -237,20 +239,40 @@ const Orders = () => {
                   ))}
 
                   <div className="border-t border-border pt-4 mt-4 space-y-2">
-                    {order.shipping_details && order.shipping_details.length > 0 && (
-                      <div className="mb-4 p-3 bg-accent/10 rounded-lg">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Package className="h-4 w-4" />
+                    {/* Shipping Management for Seller */}
+                    <div className="mb-4 p-3 bg-accent/10 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Truck className="h-4 w-4" />
                           <span className="font-medium text-sm">Shipping</span>
                         </div>
-                        <div className="text-sm space-y-1">
-                          <p className="capitalize">Status: {order.shipping_details[0].status}</p>
-                          {order.shipping_details[0].tracking_number && (
-                            <p>Tracking: {order.shipping_details[0].tracking_number}</p>
-                          )}
-                        </div>
+                        {order.status === 'paid' && order.shipping_status === 'awaiting_shipment' && (
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              setSelectedOrder(order);
+                              setShipOrderOpen(true);
+                            }}
+                          >
+                            Ship Order
+                          </Button>
+                        )}
                       </div>
-                    )}
+                      <div className="text-sm space-y-1">
+                        <p className="capitalize">
+                          Status: <Badge variant="outline" className="ml-2">{order.shipping_status || 'pending'}</Badge>
+                        </p>
+                        {order.tracking_number && (
+                          <>
+                            <p>Carrier: {order.carrier}</p>
+                            <p>Tracking: <span className="font-mono">{order.tracking_number}</span></p>
+                          </>
+                        )}
+                        {order.shipped_at && (
+                          <p>Shipped: {format(new Date(order.shipped_at), "PPP")}</p>
+                        )}
+                      </div>
+                    </div>
                     
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Sale Amount</span>
@@ -288,11 +310,16 @@ const Orders = () => {
           <RatingDialog
             open={ratingOpen}
             onOpenChange={setRatingOpen}
+            revieweeId={selectedOrder.seller_id}
             orderId={selectedOrder.id}
             listingId={selectedOrder.order_items[0]?.listing_id}
-            revieweeId={selectedOrder.seller_id}
             reviewType="buyer_to_seller"
             revieweeName={selectedOrder.seller?.full_name || "Seller"}
+          />
+          <ShipOrderDialog
+            open={shipOrderOpen}
+            onOpenChange={setShipOrderOpen}
+            orderId={selectedOrder.id}
           />
         </>
       )}
