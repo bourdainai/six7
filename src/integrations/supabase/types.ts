@@ -225,6 +225,41 @@ export type Database = {
           },
         ]
       }
+      listing_embeddings: {
+        Row: {
+          created_at: string | null
+          embedding: string | null
+          id: string
+          listing_id: string | null
+          model_used: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          embedding?: string | null
+          id?: string
+          listing_id?: string | null
+          model_used?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          embedding?: string | null
+          id?: string
+          listing_id?: string | null
+          model_used?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_embeddings_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listing_images: {
         Row: {
           ai_analysis: Json | null
@@ -894,6 +929,47 @@ export type Database = {
           {
             foreignKeyName: "reports_resolved_by_fkey"
             columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      search_history: {
+        Row: {
+          clicked_listings: Json | null
+          created_at: string | null
+          filters_applied: Json | null
+          id: string
+          results_count: number | null
+          search_query: string
+          search_type: string
+          user_id: string | null
+        }
+        Insert: {
+          clicked_listings?: Json | null
+          created_at?: string | null
+          filters_applied?: Json | null
+          id?: string
+          results_count?: number | null
+          search_query: string
+          search_type: string
+          user_id?: string | null
+        }
+        Update: {
+          clicked_listings?: Json | null
+          created_at?: string | null
+          filters_applied?: Json | null
+          id?: string
+          results_count?: number | null
+          search_query?: string
+          search_type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "search_history_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

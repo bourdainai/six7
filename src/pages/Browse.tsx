@@ -2,9 +2,13 @@ import { Navigation } from "@/components/Navigation";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { SearchFilters, FilterState } from "@/components/SearchFilters";
+import { SemanticSearchBar } from "@/components/SemanticSearchBar";
+import { VibeSearchDialog } from "@/components/VibeSearchDialog";
 import { useState, useMemo } from "react";
+import { Image, Sparkles } from "lucide-react";
 
 const Browse = () => {
   const navigate = useNavigate();
@@ -17,6 +21,10 @@ const Browse = () => {
     brand: "",
     size: "",
   });
+  const [vibeSearchOpen, setVibeSearchOpen] = useState(false);
+  const [semanticResults, setSemanticResults] = useState<any[] | null>(null);
+  const [searchMode, setSearchMode] = useState<'browse' | 'semantic' | 'vibe'>('browse');
+  const [vibeDescription, setVibeDescription] = useState<string>("");
 
   const { data: listings, isLoading } = useQuery({
     queryKey: ["active-listings"],
@@ -37,8 +45,13 @@ const Browse = () => {
     },
   });
 
-  // Client-side filtering
+  // Client-side filtering - only apply when in browse mode
   const filteredListings = useMemo(() => {
+    // If we have semantic/vibe search results, use those
+    if (searchMode !== 'browse' && semanticResults) {
+      return semanticResults;
+    }
+
     if (!listings) return [];
 
     return listings.filter((listing) => {
@@ -85,24 +98,86 @@ const Browse = () => {
 
       return true;
     });
-  }, [listings, filters]);
+  }, [listings, filters, semanticResults, searchMode]);
+
+  const handleSemanticResults = (results: any[]) => {
+    setSemanticResults(results);
+    setSearchMode('semantic');
+  };
+
+  const handleVibeResults = (results: any[], description: string) => {
+    setSemanticResults(results);
+    setVibeDescription(description);
+    setSearchMode('vibe');
+  };
+
+  const resetToBrowse = () => {
+    setSemanticResults(null);
+    setSearchMode('browse');
+    setVibeDescription("");
+  };
 
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-24">
-        <div className="mb-8">
-          <h1 className="text-3xl font-light text-foreground mb-6">Browse</h1>
+        <div className="mb-8 space-y-6">
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-light text-foreground">
+              {searchMode === 'semantic' && 'AI Search Results'}
+              {searchMode === 'vibe' && 'Vibe Search Results'}
+              {searchMode === 'browse' && 'Browse'}
+            </h1>
+            {searchMode !== 'browse' && (
+              <Button variant="outline" onClick={resetToBrowse}>
+                Back to Browse
+              </Button>
+            )}
+          </div>
+
+          {searchMode === 'vibe' && vibeDescription && (
+            <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
+              <p className="text-sm">
+                <span className="font-medium">AI detected style:</span> {vibeDescription}
+              </p>
+            </div>
+          )}
+
+          {/* Semantic Search Bar */}
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <SemanticSearchBar 
+                onResults={handleSemanticResults}
+                onSearchTypeChange={(type) => setSearchMode(type === 'semantic' ? 'semantic' : 'browse')}
+              />
+            </div>
+            <Button
+              onClick={() => setVibeSearchOpen(true)}
+              variant="outline"
+              className="gap-2"
+            >
+              <Image className="h-4 w-4" />
+              Vibe Search
+            </Button>
+          </div>
           
-          <SearchFilters
-            onFilterChange={setFilters}
-            activeFilters={filters}
-          />
+          {searchMode === 'browse' && (
+            <SearchFilters
+              onFilterChange={setFilters}
+              activeFilters={filters}
+            />
+          )}
         </div>
 
         <div className="mb-4">
           <p className="text-sm text-muted-foreground">
-            {filteredListings?.length || 0} items {filters.search || Object.values(filters).some(v => v) ? 'found' : 'available'}
+            {filteredListings?.length || 0} items {searchMode !== 'browse' ? 'found' : filters.search || Object.values(filters).some(v => v) ? 'found' : 'available'}
+            {searchMode === 'semantic' && (
+              <Badge variant="secondary" className="ml-2">
+                <Sparkles className="h-3 w-3 mr-1" />
+                AI Ranked
+              </Badge>
+            )}
           </p>
         </div>
 
@@ -188,6 +263,12 @@ const Browse = () => {
           </div>
         )}
       </div>
+
+      <VibeSearchDialog
+        open={vibeSearchOpen}
+        onOpenChange={setVibeSearchOpen}
+        onResults={handleVibeResults}
+      />
     </div>
   );
 };
