@@ -228,27 +228,54 @@ export type Database = {
       listing_images: {
         Row: {
           ai_analysis: Json | null
+          angle_score: number | null
+          background_score: number | null
+          counterfeit_risk_score: number | null
           created_at: string | null
+          damage_detected: Json | null
           display_order: number | null
           id: string
           image_url: string
+          is_stock_photo: boolean | null
+          item_segmented: boolean | null
+          lighting_score: number | null
           listing_id: string
+          logo_detected: Json | null
+          quality_score: number | null
         }
         Insert: {
           ai_analysis?: Json | null
+          angle_score?: number | null
+          background_score?: number | null
+          counterfeit_risk_score?: number | null
           created_at?: string | null
+          damage_detected?: Json | null
           display_order?: number | null
           id?: string
           image_url: string
+          is_stock_photo?: boolean | null
+          item_segmented?: boolean | null
+          lighting_score?: number | null
           listing_id: string
+          logo_detected?: Json | null
+          quality_score?: number | null
         }
         Update: {
           ai_analysis?: Json | null
+          angle_score?: number | null
+          background_score?: number | null
+          counterfeit_risk_score?: number | null
           created_at?: string | null
+          damage_detected?: Json | null
           display_order?: number | null
           id?: string
           image_url?: string
+          is_stock_photo?: boolean | null
+          item_segmented?: boolean | null
+          lighting_score?: number | null
           listing_id?: string
+          logo_detected?: Json | null
+          quality_score?: number | null
         }
         Relationships: [
           {
