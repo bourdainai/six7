@@ -70,8 +70,12 @@ export default function Bundles() {
               const savings = originalPrice - Number(bundle.total_price);
 
               return (
-                <Card key={bundle.id} className="overflow-hidden group cursor-pointer hover:shadow-lg transition-shadow">
-                  <div className="aspect-square bg-muted overflow-hidden">
+                <Card
+                  key={bundle.id}
+                  className="overflow-hidden group cursor-pointer hover:shadow-lg transition-shadow"
+                  onClick={() => navigate(`/bundle/${bundle.id}`)}
+                >
+                  <div className="aspect-square bg-muted overflow-hidden relative">
                     {firstImage ? (
                       <img
                         src={firstImage}
