@@ -62,3 +62,12 @@ verify_jwt = false
 
 [functions.dispute-auto-summarizer]
 verify_jwt = false
+
+[functions.message-reply-helper]
+verify_jwt = false
+
+[functions.message-safety-scanner]
+verify_jwt = false
+
+[functions.message-sentiment-analyzer]
+verify_jwt = false

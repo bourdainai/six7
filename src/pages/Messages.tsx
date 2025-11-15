@@ -10,6 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { Send, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { MessageReplySuggestions } from "@/components/MessageReplySuggestions";
+import { MessageSafetyIndicator } from "@/components/MessageSafetyIndicator";
+import { ConversationSentiment } from "@/components/ConversationSentiment";
 
 interface Conversation {
   id: string;
@@ -44,6 +47,7 @@ const Messages = () => {
   const { toast } = useToast();
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState("");
+  const [shouldBlockMessage, setShouldBlockMessage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { data: conversations, refetch: refetchConversations } = useQuery({
@@ -137,7 +141,7 @@ const Messages = () => {
   }, [messages]);
 
   const handleSendMessage = async () => {
-    if (!messageInput.trim() || !selectedConversation || !user) return;
+    if (!messageInput.trim() || !selectedConversation || !user || shouldBlockMessage) return;
 
     try {
       const { error } = await supabase.from("messages").insert({
@@ -155,6 +159,7 @@ const Messages = () => {
         .eq("id", selectedConversation);
 
       setMessageInput("");
+      setShouldBlockMessage(false);
       refetchMessages();
       refetchConversations();
     } catch (error) {
@@ -165,6 +170,11 @@ const Messages = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const getUserRole = (): 'buyer' | 'seller' => {
+    if (!selectedConv || !user) return 'buyer';
+    return selectedConv.seller_id === user.id ? 'seller' : 'buyer';
   };
 
   const selectedConv = conversations?.find((c) => c.id === selectedConversation);
@@ -242,7 +252,7 @@ const Messages = () => {
             {selectedConv ? (
               <>
                 {/* Header */}
-                <div className="p-4 border-b">
+                <div className="p-4 border-b space-y-3">
                   <div className="flex items-center gap-3">
                     {selectedConv.listing.images?.[0] && (
                       <img
@@ -261,6 +271,16 @@ const Messages = () => {
                     </div>
                     <Badge>£{selectedConv.listing.seller_price}</Badge>
                   </div>
+                  
+                  {messages && messages.length > 0 && (
+                    <ConversationSentiment 
+                      conversationId={selectedConversation!}
+                      messages={messages.map(m => ({
+                        role: m.sender_id === selectedConv.seller_id ? 'seller' : 'buyer',
+                        content: m.content
+                      }))}
+                    />
+                  )}
                 </div>
 
                 {/* Messages */}
@@ -305,16 +325,36 @@ const Messages = () => {
                 </div>
 
                 {/* Input */}
-                <div className="p-4 border-t">
+                <div className="p-4 border-t space-y-3">
+                  <MessageSafetyIndicator 
+                    message={messageInput}
+                    onBlock={() => setShouldBlockMessage(true)}
+                  />
+                  
+                  <MessageReplySuggestions
+                    conversationId={selectedConversation!}
+                    userRole={getUserRole()}
+                    onSelectSuggestion={(text) => {
+                      setMessageInput(text);
+                      setShouldBlockMessage(false);
+                    }}
+                  />
+                  
                   <div className="flex gap-2">
                     <Input
                       value={messageInput}
-                      onChange={(e) => setMessageInput(e.target.value)}
+                      onChange={(e) => {
+                        setMessageInput(e.target.value);
+                        setShouldBlockMessage(false);
+                      }}
                       onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
                       placeholder="Type a message..."
                       className="flex-1"
                     />
-                    <Button onClick={handleSendMessage} disabled={!messageInput.trim()}>
+                    <Button 
+                      onClick={handleSendMessage} 
+                      disabled={!messageInput.trim() || shouldBlockMessage}
+                    >
                       <Send className="h-4 w-4" />
                     </Button>
                   </div>
