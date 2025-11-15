@@ -56,17 +56,17 @@ serve(async (req) => {
           type: "function",
           function: {
             name: "extract_item_details",
-            description: "Extract structured details about a fashion item from images",
+            description: "Extract comprehensive analysis of item images including quality metrics, damage detection, and structured details",
             parameters: {
               type: "object",
               properties: {
                 category: {
                   type: "string",
-                  description: "Main category (e.g., Outerwear, Tops, Bottoms, Dresses, Accessories, Shoes)"
+                  description: "Main category (e.g., Outerwear, Tops, Bottoms, Dresses, Accessories, Shoes, Trading Cards, Electronics, Books, Music)"
                 },
                 subcategory: {
                   type: "string",
-                  description: "Specific subcategory (e.g., Leather Jacket, T-Shirt, Jeans, Sneakers)"
+                  description: "Specific subcategory"
                 },
                 brand: {
                   type: "string",
@@ -78,7 +78,7 @@ serve(async (req) => {
                 },
                 material: {
                   type: "string",
-                  description: "Primary material (e.g., Cotton, Leather, Denim, Polyester)"
+                  description: "Primary material"
                 },
                 condition: {
                   type: "string",
@@ -87,12 +87,12 @@ serve(async (req) => {
                 },
                 size_hints: {
                   type: "string",
-                  description: "Size if visible (S, M, L, XL, or specific measurements)"
+                  description: "Size if visible"
                 },
                 style_tags: {
                   type: "array",
                   items: { type: "string" },
-                  description: "Style descriptors (e.g., vintage, streetwear, minimalist, casual)"
+                  description: "Style descriptors"
                 },
                 title: {
                   type: "string",
@@ -101,6 +101,70 @@ serve(async (req) => {
                 description: {
                   type: "string",
                   description: "Detailed, appealing description (2-3 sentences)"
+                },
+                quality_metrics: {
+                  type: "object",
+                  description: "Image quality scores (0-100 for each)",
+                  properties: {
+                    lighting_score: {
+                      type: "integer",
+                      description: "Quality of lighting (0-100). Higher is better. Consider brightness, shadows, and even lighting."
+                    },
+                    angle_score: {
+                      type: "integer",
+                      description: "Quality of photo angles (0-100). Are multiple useful angles shown?"
+                    },
+                    background_score: {
+                      type: "integer",
+                      description: "Background quality (0-100). Clean, uncluttered backgrounds score higher."
+                    },
+                    overall_quality: {
+                      type: "integer",
+                      description: "Overall image quality score (0-100). Consider clarity, focus, resolution."
+                    }
+                  }
+                },
+                damage_detected: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      type: { type: "string", description: "Type of damage (stain, tear, wear, scratch, dent, discoloration)" },
+                      severity: { type: "string", enum: ["minor", "moderate", "severe"] },
+                      location: { type: "string", description: "Where on the item" },
+                      description: { type: "string", description: "Brief description of the damage" }
+                    }
+                  },
+                  description: "Array of any visible damage or wear"
+                },
+                logo_detected: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      brand: { type: "string" },
+                      location: { type: "string", description: "Where logo appears" },
+                      confidence: { type: "integer", description: "Confidence level 0-100" }
+                    }
+                  },
+                  description: "Detected brand logos for verification"
+                },
+                counterfeit_risk_score: {
+                  type: "integer",
+                  description: "Risk assessment for counterfeit (0-100). 0=authentic, 100=high risk. Based on logo quality, stitching, materials, packaging."
+                },
+                item_segmented: {
+                  type: "boolean",
+                  description: "Is the item cleanly isolated from background?"
+                },
+                is_stock_photo: {
+                  type: "boolean",
+                  description: "Does this appear to be a stock/professional photo rather than user-taken?"
+                },
+                photo_suggestions: {
+                  type: "array",
+                  items: { type: "string" },
+                  description: "Specific suggestions for missing angles or better photos (e.g., 'Add close-up of label', 'Show back view', 'Better lighting needed')"
                 },
                 confidence: {
                   type: "object",
