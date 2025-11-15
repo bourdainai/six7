@@ -9,6 +9,7 @@ import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useNavigate } from "react-router-dom";
 import { Flag, AlertTriangle, Shield } from "lucide-react";
 import { format } from "date-fns";
+import { ModerationQueue } from "@/components/ModerationQueue";
 
 export default function ModerationDashboard() {
   const { data: isAdmin, isLoading: adminLoading } = useAdminCheck();
@@ -125,8 +126,12 @@ export default function ModerationDashboard() {
           </Card>
         </div>
 
-        <Tabs defaultValue="reports" className="space-y-4">
+        <Tabs defaultValue="queue" className="space-y-4">
           <TabsList>
+            <TabsTrigger value="queue" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              AI Queue
+            </TabsTrigger>
             <TabsTrigger value="reports" className="flex items-center gap-2">
               <Flag className="h-4 w-4" />
               Reports
@@ -136,6 +141,10 @@ export default function ModerationDashboard() {
               Disputes
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="queue">
+            <ModerationQueue />
+          </TabsContent>
 
           <TabsContent value="reports" className="space-y-4">
             {pendingReports.length === 0 ? (
