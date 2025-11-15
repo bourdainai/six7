@@ -109,8 +109,59 @@ serve(async (req) => {
                     category: { type: "number" },
                     brand: { type: "number" },
                     condition: { type: "number" },
-                    overall: { type: "number" }
+                    color: { type: "number" }
                   }
+                },
+                quality_analysis: {
+                  type: "object",
+                  description: "Image quality assessment",
+                  properties: {
+                    overall_quality: { type: "number", description: "Overall quality score 0-100" },
+                    lighting: { type: "number", description: "Lighting quality 0-100" },
+                    angle: { type: "number", description: "Camera angle quality 0-100" },
+                    background: { type: "number", description: "Background cleanliness 0-100" },
+                    clarity: { type: "number", description: "Image clarity/focus 0-100" }
+                  }
+                },
+                damage_detected: {
+                  type: "array",
+                  description: "List of detected damage or wear",
+                  items: {
+                    type: "object",
+                    properties: {
+                      type: { type: "string", enum: ["stain", "tear", "wear", "discoloration", "missing_button", "pilling"] },
+                      severity: { type: "string", enum: ["minor", "moderate", "significant"] },
+                      confidence: { type: "number" },
+                      location: { type: "string" }
+                    }
+                  }
+                },
+                logo_analysis: {
+                  type: "object",
+                  description: "Brand logo detection and authenticity",
+                  properties: {
+                    logos_detected: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          brand: { type: "string" },
+                          confidence: { type: "number" },
+                          authentic_appearance: { type: "boolean" }
+                        }
+                      }
+                    },
+                    counterfeit_risk: { type: "number", description: "Risk score 0-100" }
+                  }
+                },
+                stock_photo_detected: {
+                  type: "boolean",
+                  description: "Whether image appears to be a stock/catalog photo"
+                },
+                photo_advice: {
+                  type: "array",
+                  description: "Suggestions to improve photos",
+                  items: { type: "string" }
                 }
               },
               required: ["category", "color", "condition", "title", "description", "confidence"],

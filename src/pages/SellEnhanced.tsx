@@ -10,6 +10,8 @@ import { Upload, Sparkles, Check, Loader2, DollarSign, Clock, Package } from "lu
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
+import { PhotoQualityFeedback } from "@/components/PhotoQualityFeedback";
+import { ImageAnalysisPanel } from "@/components/ImageAnalysisPanel";
 
 interface ListingData {
   title: string;
@@ -44,11 +46,44 @@ interface PricingData {
   };
 }
 
+interface QualityAnalysis {
+  overall_quality: number;
+  lighting: number;
+  angle: number;
+  background: number;
+  clarity: number;
+}
+
+interface DamageDetected {
+  type: string;
+  severity: "minor" | "moderate" | "significant";
+  confidence: number;
+  location: string;
+}
+
+interface LogoDetected {
+  brand: string;
+  confidence: number;
+  authentic_appearance: boolean;
+}
+
+interface ImageAnalysisData {
+  quality_analysis?: QualityAnalysis;
+  damage_detected?: DamageDetected[];
+  logo_analysis?: {
+    logos_detected: LogoDetected[];
+    counterfeit_risk: number;
+  };
+  stock_photo_detected?: boolean;
+  photo_advice?: string[];
+}
+
 const SellEnhanced = () => {
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzed, setAnalyzed] = useState(false);
   const [images, setImages] = useState<string[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imageAnalysis, setImageAnalysis] = useState<ImageAnalysisData | null>(null);
   const [listingData, setListingData] = useState<ListingData>({
     title: "",
     description: "",
@@ -126,6 +161,15 @@ const SellEnhanced = () => {
         material: extracted.material || "",
         condition: extracted.condition || "",
         style_tags: extracted.style_tags || []
+      });
+
+      // Capture image analysis data
+      setImageAnalysis({
+        quality_analysis: extracted.quality_analysis,
+        damage_detected: extracted.damage_detected,
+        logo_analysis: extracted.logo_analysis,
+        stock_photo_detected: extracted.stock_photo_detected,
+        photo_advice: extracted.photo_advice
       });
 
       // Get pricing suggestions
@@ -229,11 +273,34 @@ const SellEnhanced = () => {
           .from('listing-images')
           .getPublicUrl(fileName);
 
-        await supabase.from('listing_images').insert({
+        // Prepare image analysis data
+        const imageData: any = {
           listing_id: listing.id,
           image_url: publicUrl,
           display_order: i
-        });
+        };
+
+        // Add quality and analysis data if available
+        if (imageAnalysis) {
+          if (imageAnalysis.quality_analysis) {
+            imageData.quality_score = imageAnalysis.quality_analysis.overall_quality;
+            imageData.lighting_score = imageAnalysis.quality_analysis.lighting;
+            imageData.angle_score = imageAnalysis.quality_analysis.angle;
+            imageData.background_score = imageAnalysis.quality_analysis.background;
+          }
+          if (imageAnalysis.damage_detected) {
+            imageData.damage_detected = imageAnalysis.damage_detected;
+          }
+          if (imageAnalysis.logo_analysis) {
+            imageData.logo_detected = imageAnalysis.logo_analysis.logos_detected;
+            imageData.counterfeit_risk_score = imageAnalysis.logo_analysis.counterfeit_risk;
+          }
+          if (imageAnalysis.stock_photo_detected !== undefined) {
+            imageData.is_stock_photo = imageAnalysis.stock_photo_detected;
+          }
+        }
+
+        await supabase.from('listing_images').insert(imageData);
       }
 
       toast({
@@ -334,6 +401,28 @@ const SellEnhanced = () => {
                 <div className="mt-4 p-4 rounded-lg bg-primary/10 border border-primary/20 flex items-center gap-3">
                   <Check className="w-5 h-5 text-primary" />
                   <span className="text-sm font-medium text-foreground">Analysis complete!</span>
+                </div>
+              )}
+
+              {/* Image Quality Feedback */}
+              {analyzed && imageAnalysis?.quality_analysis && (
+                <div className="mt-4">
+                  <PhotoQualityFeedback
+                    quality={imageAnalysis.quality_analysis}
+                    stockPhoto={imageAnalysis.stock_photo_detected}
+                    advice={imageAnalysis.photo_advice}
+                  />
+                </div>
+              )}
+
+              {/* Damage & Logo Analysis */}
+              {analyzed && (imageAnalysis?.damage_detected || imageAnalysis?.logo_analysis) && (
+                <div className="mt-4">
+                  <ImageAnalysisPanel
+                    damageDetected={imageAnalysis.damage_detected}
+                    logoAnalysis={imageAnalysis.logo_analysis}
+                    condition={listingData.condition}
+                  />
                 </div>
               )}
             </Card>
