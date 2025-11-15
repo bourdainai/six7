@@ -37,19 +37,18 @@ const Sell = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       
-      <main className="pt-24 pb-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-0">
-          <div className="mb-8 space-y-2">
-            <h1 className="text-3xl font-light text-foreground">
-              List Your Item
-            </h1>
-            <p className="text-base text-muted-foreground font-light">
-              Upload photos and let AI handle the rest
-            </p>
-          </div>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-24">
+        <div className="mb-8 space-y-2">
+          <h1 className="text-3xl font-light text-foreground">
+            List Your Item
+          </h1>
+          <p className="text-base text-muted-foreground font-light">
+            Upload photos and let AI handle the rest
+          </p>
+        </div>
 
-          <div className="max-w-4xl">
-            <div className="grid md:grid-cols-2 gap-8">
+        <div className="max-w-4xl">
+          <div className="grid md:grid-cols-2 gap-8">
             {/* Upload Section */}
             <Card className="p-6">
               <h2 className="text-xl font-bold mb-4 text-foreground">Photos</h2>
@@ -209,8 +208,7 @@ const Sell = () => {
             </Card>
           </div>
         </div>
-      </div>
-    </main>
+      </main>
     </div>
   );
 };
