@@ -27,7 +27,7 @@ export const Hero = () => {
         <p className="text-lg md:text-xl text-muted-foreground mb-12 max-w-2xl mx-auto font-light leading-relaxed">
           List from photos. AI does the rest. No tedious forms, no pricing guesswork.
           <br className="hidden md:block" />
-          Fashion resale that actually works.
+          C2C marketplace that actually works.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-20">

@@ -59,8 +59,8 @@ export const AuthModal = ({ open, onOpenChange, defaultMode = "signin" }: AuthMo
           </DialogTitle>
           <DialogDescription>
             {mode === "signin"
-              ? "Welcome back to FCVD"
-              : "Join FCVD and start selling in seconds"}
+              ? "Welcome back to 6Seven"
+              : "Join 6Seven and start selling in seconds"}
           </DialogDescription>
         </DialogHeader>
 

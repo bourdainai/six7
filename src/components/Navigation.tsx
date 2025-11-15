@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { AuthModal } from "@/components/auth/AuthModal";
+import logo from "@/assets/logo.png";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,9 +33,8 @@ export const Navigation = () => {
     <>
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-8 h-8 rounded-full bg-foreground group-hover:scale-105 transition-transform" />
-            <span className="text-xl font-light tracking-tight text-foreground">6Seven</span>
+          <Link to="/" className="flex items-center gap-2 group">
+            <img src={logo} alt="6Seven" className="h-7 w-auto group-hover:scale-105 transition-transform" />
           </Link>
 
           <div className="flex items-center gap-8">
