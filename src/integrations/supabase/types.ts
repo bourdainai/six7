@@ -1160,6 +1160,44 @@ export type Database = {
           },
         ]
       }
+      reputation_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          impact_score: number
+          metadata: Json | null
+          reasoning: string | null
+          seller_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          impact_score: number
+          metadata?: Json | null
+          reasoning?: string | null
+          seller_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          impact_score?: number
+          metadata?: Json | null
+          reasoning?: string | null
+          seller_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reputation_events_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       search_history: {
         Row: {
           clicked_listings: Json | null
@@ -1242,6 +1280,44 @@ export type Database = {
           },
         ]
       }
+      seller_badges: {
+        Row: {
+          badge_name: string
+          badge_type: string
+          created_at: string
+          description: string | null
+          earned_at: string
+          id: string
+          seller_id: string
+        }
+        Insert: {
+          badge_name: string
+          badge_type: string
+          created_at?: string
+          description?: string | null
+          earned_at?: string
+          id?: string
+          seller_id: string
+        }
+        Update: {
+          badge_name?: string
+          badge_type?: string
+          created_at?: string
+          description?: string | null
+          earned_at?: string
+          id?: string
+          seller_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_badges_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       seller_balances: {
         Row: {
           available_balance: number
@@ -1270,6 +1346,80 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "seller_balances_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seller_reputation: {
+        Row: {
+          active_since: string
+          average_rating: number
+          avg_response_time_hours: number
+          cancellation_rate: number
+          created_at: string
+          disputes_lost: number
+          disputes_won: number
+          id: string
+          last_calculated_at: string
+          late_shipments: number
+          on_time_shipments: number
+          reputation_score: number
+          response_rate: number
+          seller_id: string
+          total_revenue: number
+          total_reviews: number
+          total_sales: number
+          updated_at: string
+          verification_level: string
+        }
+        Insert: {
+          active_since?: string
+          average_rating?: number
+          avg_response_time_hours?: number
+          cancellation_rate?: number
+          created_at?: string
+          disputes_lost?: number
+          disputes_won?: number
+          id?: string
+          last_calculated_at?: string
+          late_shipments?: number
+          on_time_shipments?: number
+          reputation_score?: number
+          response_rate?: number
+          seller_id: string
+          total_revenue?: number
+          total_reviews?: number
+          total_sales?: number
+          updated_at?: string
+          verification_level?: string
+        }
+        Update: {
+          active_since?: string
+          average_rating?: number
+          avg_response_time_hours?: number
+          cancellation_rate?: number
+          created_at?: string
+          disputes_lost?: number
+          disputes_won?: number
+          id?: string
+          last_calculated_at?: string
+          late_shipments?: number
+          on_time_shipments?: number
+          reputation_score?: number
+          response_rate?: number
+          seller_id?: string
+          total_revenue?: number
+          total_reviews?: number
+          total_sales?: number
+          updated_at?: string
+          verification_level?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_reputation_seller_id_fkey"
             columns: ["seller_id"]
             isOneToOne: true
             referencedRelation: "profiles"
