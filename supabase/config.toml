@@ -53,3 +53,12 @@ verify_jwt = false
 
 [functions.calculate-trust-score]
 verify_jwt = false
+
+[functions.moderation-auto-classifier]
+verify_jwt = false
+
+[functions.moderation-content-safety]
+verify_jwt = false
+
+[functions.dispute-auto-summarizer]
+verify_jwt = false

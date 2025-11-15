@@ -218,6 +218,9 @@ export type Database = {
       disputes: {
         Row: {
           admin_notes: string | null
+          ai_confidence_score: number | null
+          ai_recommended_outcome: string | null
+          ai_summary: string | null
           buyer_evidence: Json | null
           buyer_id: string
           created_at: string | null
@@ -237,6 +240,9 @@ export type Database = {
         }
         Insert: {
           admin_notes?: string | null
+          ai_confidence_score?: number | null
+          ai_recommended_outcome?: string | null
+          ai_summary?: string | null
           buyer_evidence?: Json | null
           buyer_id: string
           created_at?: string | null
@@ -256,6 +262,9 @@ export type Database = {
         }
         Update: {
           admin_notes?: string | null
+          ai_confidence_score?: number | null
+          ai_recommended_outcome?: string | null
+          ai_summary?: string | null
           buyer_evidence?: Json | null
           buyer_id?: string
           created_at?: string | null
@@ -635,6 +644,50 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      moderation_queue: {
+        Row: {
+          ai_classification: string | null
+          ai_reason: string | null
+          assigned_to: string | null
+          created_at: string | null
+          id: string
+          item_id: string
+          item_type: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_classification?: string | null
+          ai_reason?: string | null
+          assigned_to?: string | null
+          created_at?: string | null
+          id?: string
+          item_id: string
+          item_type: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_classification?: string | null
+          ai_reason?: string | null
+          assigned_to?: string | null
+          created_at?: string | null
+          id?: string
+          item_id?: string
+          item_type?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "moderation_queue_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1024,6 +1077,9 @@ export type Database = {
       reports: {
         Row: {
           admin_notes: string | null
+          ai_recommended_action: string | null
+          ai_risk_score: number | null
+          ai_summary: string | null
           created_at: string | null
           evidence: Json | null
           id: string
@@ -1039,6 +1095,9 @@ export type Database = {
         }
         Insert: {
           admin_notes?: string | null
+          ai_recommended_action?: string | null
+          ai_risk_score?: number | null
+          ai_summary?: string | null
           created_at?: string | null
           evidence?: Json | null
           id?: string
@@ -1054,6 +1113,9 @@ export type Database = {
         }
         Update: {
           admin_notes?: string | null
+          ai_recommended_action?: string | null
+          ai_risk_score?: number | null
+          ai_summary?: string | null
           created_at?: string | null
           evidence?: Json | null
           id?: string
