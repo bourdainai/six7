@@ -11,6 +11,8 @@ import { CheckCircle2, ExternalLink, TrendingUp, Package, DollarSign, Eye, Heart
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { SellerCopilot } from "@/components/SellerCopilot";
+import { StaleInventoryAlert } from "@/components/StaleInventoryAlert";
+import { AutomationRulesPanel } from "@/components/AutomationRulesPanel";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
 const SellerDashboard = () => {
@@ -169,6 +171,9 @@ const SellerDashboard = () => {
               </Card>
             )}
 
+            {/* AI Alerts */}
+            <StaleInventoryAlert />
+
             <div className="grid gap-6 md:grid-cols-4">
               <Card>
                 <CardHeader className="pb-3">
@@ -288,6 +293,9 @@ const SellerDashboard = () => {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Automation Panel */}
+            <AutomationRulesPanel />
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">

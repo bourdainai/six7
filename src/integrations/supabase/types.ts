@@ -424,6 +424,7 @@ export type Database = {
           estimated_delivery_days: number | null
           free_shipping: boolean | null
           id: string
+          last_view_at: string | null
           material: string | null
           original_rrp: number | null
           package_dimensions: Json | null
@@ -437,6 +438,7 @@ export type Database = {
           shipping_cost_international: number | null
           shipping_cost_uk: number | null
           size: string | null
+          stale_risk_score: number | null
           status: Database["public"]["Enums"]["listing_status"] | null
           style_tags: Json | null
           subcategory: string | null
@@ -460,6 +462,7 @@ export type Database = {
           estimated_delivery_days?: number | null
           free_shipping?: boolean | null
           id?: string
+          last_view_at?: string | null
           material?: string | null
           original_rrp?: number | null
           package_dimensions?: Json | null
@@ -473,6 +476,7 @@ export type Database = {
           shipping_cost_international?: number | null
           shipping_cost_uk?: number | null
           size?: string | null
+          stale_risk_score?: number | null
           status?: Database["public"]["Enums"]["listing_status"] | null
           style_tags?: Json | null
           subcategory?: string | null
@@ -496,6 +500,7 @@ export type Database = {
           estimated_delivery_days?: number | null
           free_shipping?: boolean | null
           id?: string
+          last_view_at?: string | null
           material?: string | null
           original_rrp?: number | null
           package_dimensions?: Json | null
@@ -509,6 +514,7 @@ export type Database = {
           shipping_cost_international?: number | null
           shipping_cost_uk?: number | null
           size?: string | null
+          stale_risk_score?: number | null
           status?: Database["public"]["Enums"]["listing_status"] | null
           style_tags?: Json | null
           subcategory?: string | null
@@ -1056,6 +1062,47 @@ export type Database = {
           {
             foreignKeyName: "search_history_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seller_automation_rules: {
+        Row: {
+          actions: Json
+          conditions: Json
+          created_at: string | null
+          enabled: boolean | null
+          id: string
+          rule_type: string
+          seller_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          actions?: Json
+          conditions?: Json
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          rule_type: string
+          seller_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          actions?: Json
+          conditions?: Json
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          rule_type?: string
+          seller_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_automation_rules_seller_id_fkey"
+            columns: ["seller_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
