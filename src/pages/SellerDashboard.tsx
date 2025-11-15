@@ -87,16 +87,22 @@ const SellerDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      <div className="max-w-7xl mx-auto px-4 py-12 pt-24">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-light mb-2">Seller Dashboard</h1>
-            <p className="text-muted-foreground">Analytics and performance</p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-24">
+        <div className="mb-8 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <h1 className="text-3xl font-light text-foreground">
+                Seller Dashboard
+              </h1>
+              <p className="text-base text-muted-foreground font-light">
+                Manage your listings and track your performance
+              </p>
+            </div>
+            <Button onClick={() => navigate("/seller/reputation")} variant="outline" className="gap-2">
+              <Award className="h-4 w-4" />
+              View Reputation
+            </Button>
           </div>
-          <Button onClick={() => navigate("/seller/reputation")} variant="outline">
-            <Award className="h-4 w-4 mr-2" />
-            Reputation
-          </Button>
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">

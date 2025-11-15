@@ -242,8 +242,15 @@ const Messages = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       
-      <div className="container mx-auto px-4 py-8 pt-24">
-        <h1 className="text-4xl font-bold mb-8">Messages</h1>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-24">
+        <div className="mb-8 space-y-2">
+          <h1 className="text-3xl font-light text-foreground">
+            Messages
+          </h1>
+          <p className="text-base text-muted-foreground font-light">
+            Connect with buyers and sellers
+          </p>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
           {/* Conversations List */}

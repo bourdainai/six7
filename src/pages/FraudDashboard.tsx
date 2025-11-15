@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -84,13 +85,17 @@ export default function FraudDashboard() {
   const confirmedCount = flags?.filter(f => f.status === "confirmed").length || 0;
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Fraud Detection Dashboard</h1>
-        <p className="text-muted-foreground">
-          Monitor and manage fraud detection alerts across the platform
-        </p>
-      </div>
+    <div className="min-h-screen bg-background">
+      <Navigation />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-24">
+        <div className="mb-8 space-y-2">
+          <h1 className="text-3xl font-light text-foreground">
+            Fraud Detection Dashboard
+          </h1>
+          <p className="text-base text-muted-foreground font-light">
+            Monitor and manage fraud detection alerts across the platform
+          </p>
+        </div>
 
       {/* Stats Overview */}
       <div className="grid gap-4 md:grid-cols-4 mb-6">
@@ -258,6 +263,7 @@ export default function FraudDashboard() {
           </div>
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   );
 }

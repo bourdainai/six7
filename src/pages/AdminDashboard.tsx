@@ -62,16 +62,22 @@ const AdminDashboard = () => {
       <Navigation />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-24">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <Shield className="w-8 h-8 text-primary" />
-              <h1 className="text-3xl font-light text-foreground">Admin Dashboard</h1>
-              <Badge variant="default">Super Admin</Badge>
+        <div className="mb-8 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <Shield className="w-8 h-8 text-primary" />
+                <h1 className="text-3xl font-light text-foreground">Admin Dashboard</h1>
+                <Badge variant="default">Super Admin</Badge>
+              </div>
+              <p className="text-base text-muted-foreground font-light">
+                Platform management and analytics
+              </p>
             </div>
-            <p className="text-muted-foreground">Platform management and analytics</p>
+            <Button onClick={() => navigate("/moderation")} variant="outline">
+              Moderation Queue
+            </Button>
           </div>
-          <Button onClick={() => navigate("/moderation")}>Moderation Queue</Button>
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
