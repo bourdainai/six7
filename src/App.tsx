@@ -13,6 +13,7 @@ import Checkout from "./pages/Checkout";
 import Orders from "./pages/Orders";
 import Messages from "./pages/Messages";
 import SellerDashboard from "./pages/SellerDashboard";
+import SellerAnalytics from "./pages/SellerAnalytics";
 import SellerReputation from "./pages/SellerReputation";
 import AdminDashboard from "./pages/AdminDashboard";
 import ModerationDashboard from "./pages/ModerationDashboard";
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/bundles" element={<Bundles />} />
             <Route path="/bundle/:id" element={<BundleDetail />} />
             <Route path="/dashboard/seller" element={<SellerDashboard />} />
+            <Route path="/seller/analytics" element={<SellerAnalytics />} />
             <Route path="/seller/reputation" element={<SellerReputation />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/moderation" element={<ModerationDashboard />} />

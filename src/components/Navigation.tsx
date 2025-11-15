@@ -99,6 +99,11 @@ export const Navigation = () => {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
+                    <Link to="/seller/analytics" className="cursor-pointer">
+                      Analytics
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
                     <Link to="/messages" className="cursor-pointer">
                       Messages
                     </Link>
