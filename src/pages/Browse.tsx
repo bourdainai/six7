@@ -27,19 +27,25 @@ const Browse = () => {
   const [searchMode, setSearchMode] = useState<'browse' | 'semantic' | 'vibe'>('browse');
   const [vibeDescription, setVibeDescription] = useState<string>("");
 
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 24;
+
   const { data: listings, isLoading } = useQuery({
-    queryKey: ["active-listings"],
+    queryKey: ["active-listings", page],
     queryFn: async () => {
+      const from = (page - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
+
       const { data, error } = await supabase
         .from("listings")
         .select(`
           *,
           images:listing_images(image_url, display_order),
           seller:profiles!seller_id(id, full_name, trust_score)
-        `)
+        `, { count: 'exact' })
         .eq("status", "active")
         .order("created_at", { ascending: false })
-        .limit(100);
+        .range(from, to);
 
       if (error) throw error;
       return data;
@@ -219,6 +225,7 @@ const Browse = () => {
                         src={firstImage.image_url}
                         alt={listing.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-muted-foreground">
@@ -275,6 +282,29 @@ const Browse = () => {
                 ? "No items match your filters. Try adjusting your search."
                 : "No items available yet"}
             </p>
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {searchMode === 'browse' && !isLoading && filteredListings.length > 0 && (
+          <div className="mt-12 flex justify-center items-center gap-4">
+            <Button
+              variant="outline"
+              disabled={page === 1}
+              onClick={() => setPage(p => p - 1)}
+            >
+              Previous
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              Page {page}
+            </span>
+            <Button
+              variant="outline"
+              disabled={!listings || listings.length < itemsPerPage}
+              onClick={() => setPage(p => p + 1)}
+            >
+              Next
+            </Button>
           </div>
         )}
       </div>
