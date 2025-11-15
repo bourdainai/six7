@@ -1,0 +1,7 @@
+project_id = "ouvrgsvrkjxltbcwvuyz"
+
+[functions.analyze-listing-images]
+verify_jwt = true
+
+[functions.suggest-listing-price]
+verify_jwt = true
