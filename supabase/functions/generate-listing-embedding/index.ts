@@ -18,9 +18,9 @@ serve(async (req) => {
       throw new Error("listingId is required");
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (!OPENAI_API_KEY) {
+      throw new Error("OPENAI_API_KEY is not configured");
     }
 
     // Initialize Supabase client
@@ -56,11 +56,11 @@ serve(async (req) => {
 
     console.log(`Embedding text: ${embeddingText.substring(0, 200)}...`);
 
-    // Generate embedding using Lovable AI
-    const embeddingResponse = await fetch("https://ai.gateway.lovable.dev/v1/embeddings", {
+    // Generate embedding using OpenAI
+    const embeddingResponse = await fetch("https://api.openai.com/v1/embeddings", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
