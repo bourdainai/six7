@@ -124,12 +124,19 @@ const Browse = () => {
       <Navigation />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-24">
         <div className="mb-8 space-y-6">
-          <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-light text-foreground">
-              {searchMode === 'semantic' && 'AI Search Results'}
-              {searchMode === 'vibe' && 'Vibe Search Results'}
-              {searchMode === 'browse' && 'Browse'}
-            </h1>
+          <div className="flex items-center justify-between mb-2">
+            <div className="space-y-2">
+              <h1 className="text-3xl font-light text-foreground">
+                {searchMode === 'semantic' && 'AI Search Results'}
+                {searchMode === 'vibe' && 'Vibe Search Results'}
+                {searchMode === 'browse' && 'Browse'}
+              </h1>
+              {searchMode === 'browse' && (
+                <p className="text-base text-muted-foreground font-light">
+                  Discover unique items from verified sellers
+                </p>
+              )}
+            </div>
             {searchMode !== 'browse' && (
               <Button variant="outline" onClick={resetToBrowse}>
                 Back to Browse

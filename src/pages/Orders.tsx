@@ -83,7 +83,14 @@ const Orders = () => {
       <Navigation />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-24">
-        <h1 className="text-3xl font-light text-foreground mb-8">Orders</h1>
+        <div className="mb-8 space-y-2">
+          <h1 className="text-3xl font-light text-foreground">
+            Orders
+          </h1>
+          <p className="text-base text-muted-foreground font-light">
+            Track and manage your purchases and sales
+          </p>
+        </div>
 
         <Tabs defaultValue="purchases" className="w-full">
           <TabsList className="mb-8">
