@@ -55,6 +55,7 @@ export type Database = {
           ambitious_price: number | null
           brand: string | null
           category: string | null
+          category_attributes: Json | null
           color: string | null
           condition: Database["public"]["Enums"]["condition_type"] | null
           created_at: string | null
@@ -83,6 +84,7 @@ export type Database = {
           ambitious_price?: number | null
           brand?: string | null
           category?: string | null
+          category_attributes?: Json | null
           color?: string | null
           condition?: Database["public"]["Enums"]["condition_type"] | null
           created_at?: string | null
@@ -111,6 +113,7 @@ export type Database = {
           ambitious_price?: number | null
           brand?: string | null
           category?: string | null
+          category_attributes?: Json | null
           color?: string | null
           condition?: Database["public"]["Enums"]["condition_type"] | null
           created_at?: string | null
