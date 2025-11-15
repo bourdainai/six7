@@ -31,7 +31,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="py-12 px-6 border-t border-border/50">
         <div className="max-w-7xl mx-auto text-center text-xs text-muted-foreground font-light tracking-wide">
-          <p>© 2025 FCVD — Fashion resale, reimagined.</p>
+          <p>© 2025 6Seven — Fashion resale, reimagined.</p>
         </div>
       </footer>
     </div>
