@@ -692,11 +692,53 @@ export type Database = {
           },
         ]
       }
+      offer_history: {
+        Row: {
+          action: string
+          actor_id: string
+          created_at: string | null
+          id: string
+          new_amount: number | null
+          notes: string | null
+          offer_id: string
+          previous_amount: number | null
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          created_at?: string | null
+          id?: string
+          new_amount?: number | null
+          notes?: string | null
+          offer_id: string
+          previous_amount?: number | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          created_at?: string | null
+          id?: string
+          new_amount?: number | null
+          notes?: string | null
+          offer_id?: string
+          previous_amount?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_history_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "offers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       offers: {
         Row: {
           amount: number
           buyer_id: string
           conversation_id: string
+          counter_offer_to: string | null
           created_at: string | null
           expires_at: string | null
           id: string
@@ -710,6 +752,7 @@ export type Database = {
           amount: number
           buyer_id: string
           conversation_id: string
+          counter_offer_to?: string | null
           created_at?: string | null
           expires_at?: string | null
           id?: string
@@ -723,6 +766,7 @@ export type Database = {
           amount?: number
           buyer_id?: string
           conversation_id?: string
+          counter_offer_to?: string | null
           created_at?: string | null
           expires_at?: string | null
           id?: string
@@ -738,6 +782,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offers_counter_offer_to_fkey"
+            columns: ["counter_offer_to"]
+            isOneToOne: false
+            referencedRelation: "offers"
             referencedColumns: ["id"]
           },
           {
@@ -790,6 +841,8 @@ export type Database = {
       }
       orders: {
         Row: {
+          address_validated: boolean | null
+          address_validation_details: Json | null
           buyer_id: string
           carrier: string | null
           created_at: string
@@ -809,6 +862,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          address_validated?: boolean | null
+          address_validation_details?: Json | null
           buyer_id: string
           carrier?: string | null
           created_at?: string
@@ -828,6 +883,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          address_validated?: boolean | null
+          address_validation_details?: Json | null
           buyer_id?: string
           carrier?: string | null
           created_at?: string
@@ -1233,6 +1290,59 @@ export type Database = {
           {
             foreignKeyName: "search_history_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seller_analytics: {
+        Row: {
+          avg_sale_price: number | null
+          conversion_rate: number | null
+          created_at: string | null
+          date: string
+          id: string
+          seller_id: string
+          total_messages: number | null
+          total_revenue: number | null
+          total_sales: number | null
+          total_saves: number | null
+          total_views: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          avg_sale_price?: number | null
+          conversion_rate?: number | null
+          created_at?: string | null
+          date: string
+          id?: string
+          seller_id: string
+          total_messages?: number | null
+          total_revenue?: number | null
+          total_sales?: number | null
+          total_saves?: number | null
+          total_views?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          avg_sale_price?: number | null
+          conversion_rate?: number | null
+          created_at?: string | null
+          date?: string
+          id?: string
+          seller_id?: string
+          total_messages?: number | null
+          total_revenue?: number | null
+          total_sales?: number | null
+          total_saves?: number | null
+          total_views?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_analytics_seller_id_fkey"
+            columns: ["seller_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
