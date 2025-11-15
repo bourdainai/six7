@@ -11,6 +11,7 @@ import Browse from "./pages/Browse";
 import ListingDetail from "./pages/ListingDetail";
 import Checkout from "./pages/Checkout";
 import Orders from "./pages/Orders";
+import Messages from "./pages/Messages";
 import SellerDashboard from "./pages/SellerDashboard";
 import NotFound from "./pages/NotFound";
 
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/listing/:id" element={<ListingDetail />} />
             <Route path="/checkout/:id" element={<Checkout />} />
             <Route path="/orders" element={<Orders />} />
+            <Route path="/messages" element={<Messages />} />
             <Route path="/dashboard/seller" element={<SellerDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
