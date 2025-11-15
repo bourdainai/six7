@@ -9,6 +9,7 @@ import { SemanticSearchBar } from "@/components/SemanticSearchBar";
 import { VibeSearchDialog } from "@/components/VibeSearchDialog";
 import { useState, useMemo } from "react";
 import { Image, Sparkles } from "lucide-react";
+import { SellerReputation } from "@/components/seller/SellerReputation";
 
 const Browse = () => {
   const navigate = useNavigate();
@@ -34,7 +35,7 @@ const Browse = () => {
         .select(`
           *,
           images:listing_images(image_url, display_order),
-          seller:profiles!seller_id(full_name, trust_score)
+          seller:profiles!seller_id(id, full_name, trust_score)
         `)
         .eq("status", "active")
         .order("created_at", { ascending: false })
@@ -247,6 +248,12 @@ const Browse = () => {
 
                     {listing.size && (
                       <p className="text-xs text-muted-foreground">Size: {listing.size}</p>
+                    )}
+
+                    {listing.seller?.id && (
+                      <div className="pt-1">
+                        <SellerReputation sellerId={listing.seller.id} compact />
+                      </div>
                     )}
                   </div>
                 </button>
