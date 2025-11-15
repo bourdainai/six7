@@ -3,9 +3,20 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
+import { SearchFilters, FilterState } from "@/components/SearchFilters";
+import { useState, useMemo } from "react";
 
 const Browse = () => {
   const navigate = useNavigate();
+  const [filters, setFilters] = useState<FilterState>({
+    search: "",
+    category: "",
+    condition: "",
+    minPrice: "",
+    maxPrice: "",
+    brand: "",
+    size: "",
+  });
 
   const { data: listings, isLoading } = useQuery({
     queryKey: ["active-listings"],
@@ -19,21 +30,79 @@ const Browse = () => {
         `)
         .eq("status", "active")
         .order("created_at", { ascending: false })
-        .limit(50);
+        .limit(200);
 
       if (error) throw error;
       return data;
     },
   });
 
+  // Client-side filtering
+  const filteredListings = useMemo(() => {
+    if (!listings) return [];
+
+    return listings.filter((listing) => {
+      // Search filter
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        const matchesSearch =
+          listing.title?.toLowerCase().includes(searchLower) ||
+          listing.description?.toLowerCase().includes(searchLower) ||
+          listing.brand?.toLowerCase().includes(searchLower);
+        if (!matchesSearch) return false;
+      }
+
+      // Category filter
+      if (filters.category && listing.category !== filters.category) {
+        return false;
+      }
+
+      // Condition filter
+      if (filters.condition && listing.condition !== filters.condition) {
+        return false;
+      }
+
+      // Price filters
+      if (filters.minPrice && listing.seller_price < Number(filters.minPrice)) {
+        return false;
+      }
+      if (filters.maxPrice && listing.seller_price > Number(filters.maxPrice)) {
+        return false;
+      }
+
+      // Brand filter
+      if (filters.brand) {
+        const brandLower = filters.brand.toLowerCase();
+        if (!listing.brand?.toLowerCase().includes(brandLower)) {
+          return false;
+        }
+      }
+
+      // Size filter
+      if (filters.size && listing.size !== filters.size) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [listings, filters]);
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-24">
         <div className="mb-8">
-          <h1 className="text-3xl font-light text-foreground mb-2">Browse</h1>
-          <p className="text-muted-foreground">
-            {listings?.length || 0} items available
+          <h1 className="text-3xl font-light text-foreground mb-6">Browse</h1>
+          
+          <SearchFilters
+            onFilterChange={setFilters}
+            activeFilters={filters}
+          />
+        </div>
+
+        <div className="mb-4">
+          <p className="text-sm text-muted-foreground">
+            {filteredListings?.length || 0} items {filters.search || Object.values(filters).some(v => v) ? 'found' : 'available'}
           </p>
         </div>
 
@@ -47,9 +116,9 @@ const Browse = () => {
               </div>
             ))}
           </div>
-        ) : listings && listings.length > 0 ? (
+        ) : filteredListings && filteredListings.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {listings.map((listing) => {
+            {filteredListings.map((listing) => {
               const firstImage = listing.images?.sort(
                 (a, b) => a.display_order - b.display_order
               )[0];
@@ -111,7 +180,11 @@ const Browse = () => {
           </div>
         ) : (
           <div className="text-center py-12">
-            <p className="text-muted-foreground">No items available yet</p>
+            <p className="text-muted-foreground mb-4">
+              {Object.values(filters).some(v => v) 
+                ? "No items match your filters. Try adjusting your search."
+                : "No items available yet"}
+            </p>
           </div>
         )}
       </div>
