@@ -9,6 +9,7 @@ import { PersonalizedFeed } from "@/components/PersonalizedFeed";
 import { BuyerOnboarding } from "@/components/BuyerOnboarding";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import logo from "@/assets/logo.png";
 
 const Index = () => {
   const { user } = useAuth();
@@ -57,8 +58,9 @@ const Index = () => {
 
         {/* Footer */}
         <footer className="py-12 px-6 border-t border-border/50">
-          <div className="max-w-7xl mx-auto text-center text-xs text-muted-foreground font-light tracking-wide">
-            <p>© 2025 FCVD — AI-native fashion marketplace</p>
+          <div className="max-w-7xl mx-auto flex flex-col items-center gap-4">
+            <img src={logo} alt="6Seven" className="h-6 w-auto opacity-60" />
+            <p className="text-xs text-muted-foreground font-light tracking-wide">© 2025 6Seven — AI-native marketplace</p>
           </div>
         </footer>
       </div>
@@ -90,8 +92,9 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="py-12 px-6 border-t border-border/50">
-        <div className="max-w-7xl mx-auto text-center text-xs text-muted-foreground font-light tracking-wide">
-          <p>© 2025 FCVD — AI-native fashion marketplace</p>
+        <div className="max-w-7xl mx-auto flex flex-col items-center gap-4">
+          <img src={logo} alt="6Seven" className="h-6 w-auto opacity-60" />
+          <p className="text-xs text-muted-foreground font-light tracking-wide">© 2025 6Seven — AI-native marketplace</p>
         </div>
       </footer>
     </div>

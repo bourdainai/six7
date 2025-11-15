@@ -46,7 +46,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     
     toast({
       title: "Account created!",
-      description: "Welcome to FCVD. Start listing your items.",
+      description: "Welcome to 6Seven. Start listing your items.",
     });
   };
 
