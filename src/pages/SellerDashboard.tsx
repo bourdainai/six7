@@ -8,12 +8,14 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle2, ExternalLink, TrendingUp, Package, DollarSign } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { SellerCopilot } from "@/components/SellerCopilot";
 
 const SellerDashboard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [selectedListingForCopilot, setSelectedListingForCopilot] = useState<string | null>(null);
 
   const { data: profile, refetch: refetchProfile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -212,6 +214,13 @@ const SellerDashboard = () => {
           </Card>
         </div>
 
+        {/* AI Copilot Section */}
+        {selectedListingForCopilot && (
+          <div className="mb-8">
+            <SellerCopilot listingId={selectedListingForCopilot} />
+          </div>
+        )}
+
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
@@ -223,7 +232,7 @@ const SellerDashboard = () => {
               <Button
                 variant="outline"
                 className="w-full justify-start"
-                onClick={() => navigate("/sell")}
+                onClick={() => navigate("/sell-enhanced")}
               >
                 Create New Listing
               </Button>
@@ -260,6 +269,64 @@ const SellerDashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Listings Section */}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle>Your Listings</CardTitle>
+            <CardDescription>Manage and optimize your active listings</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {!listings || listings.length === 0 ? (
+              <div className="text-center py-12">
+                <Package className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground mb-4">No listings yet</p>
+                <Button onClick={() => navigate("/sell-enhanced")}>Create Your First Listing</Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {listings.map((listing: any) => (
+                  <div key={listing.id} className="flex items-start gap-4 p-4 border border-border rounded-lg hover:border-primary/50 transition-colors">
+                    <div className="flex-1">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <h3 className="font-medium">{listing.title}</h3>
+                          <p className="text-sm text-muted-foreground">{listing.category}</p>
+                        </div>
+                        <Badge variant={listing.status === "active" ? "default" : "secondary"}>
+                          {listing.status}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <span className="font-semibold text-foreground">${listing.seller_price}</span>
+                        <span>Views: {listing.views || 0}</span>
+                        <span>Saves: {listing.saves || 0}</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => navigate(`/listing/${listing.id}`)}
+                      >
+                        View
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setSelectedListingForCopilot(
+                          selectedListingForCopilot === listing.id ? null : listing.id
+                        )}
+                      >
+                        {selectedListingForCopilot === listing.id ? "Hide AI" : "AI Optimize"}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
