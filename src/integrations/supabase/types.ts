@@ -635,7 +635,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      ensure_admin_role: { Args: never; Returns: undefined }
     }
     Enums: {
       condition_type:
