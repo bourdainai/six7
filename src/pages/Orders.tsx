@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { DisputeDialog } from "@/components/disputes/DisputeDialog";
 import { RatingDialog } from "@/components/ratings/RatingDialog";
-import { AlertCircle, Star } from "lucide-react";
+import { AlertCircle, Star, Truck, Package } from "lucide-react";
 import { useState } from "react";
 import { format } from "date-fns";
 
@@ -29,7 +29,8 @@ const Orders = () => {
             *,
             listing:listings(title, brand)
           ),
-          seller:profiles!seller_id(full_name, avatar_url)
+          seller:profiles!seller_id(full_name, avatar_url),
+          shipping_details(*)
         `)
         .eq("buyer_id", user!.id)
         .order("created_at", { ascending: false });
@@ -51,7 +52,8 @@ const Orders = () => {
             *,
             listing:listings(title, brand)
           ),
-          buyer:profiles!buyer_id(full_name, avatar_url)
+          buyer:profiles!buyer_id(full_name, avatar_url),
+          shipping_details(*)
         `)
         .eq("seller_id", user!.id)
         .order("created_at", { ascending: false });
@@ -128,6 +130,24 @@ const Orders = () => {
                   ))}
 
                   <div className="border-t border-border pt-4 mt-4">
+                    {order.shipping_details && order.shipping_details.length > 0 && (
+                      <div className="mb-4 p-3 bg-accent/10 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Truck className="h-4 w-4" />
+                          <span className="font-medium text-sm">Shipping Status</span>
+                        </div>
+                        <div className="text-sm space-y-1">
+                          <p className="capitalize">Status: {order.shipping_details[0].status}</p>
+                          {order.shipping_details[0].tracking_number && (
+                            <p>Tracking: {order.shipping_details[0].tracking_number}</p>
+                          )}
+                          {order.shipping_details[0].carrier && (
+                            <p>Carrier: {order.shipping_details[0].carrier}</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
                     <div className="flex justify-between items-center">
                       <div className="flex-1">
                         <div className="flex justify-between text-sm mb-2">
@@ -217,6 +237,21 @@ const Orders = () => {
                   ))}
 
                   <div className="border-t border-border pt-4 mt-4 space-y-2">
+                    {order.shipping_details && order.shipping_details.length > 0 && (
+                      <div className="mb-4 p-3 bg-accent/10 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Package className="h-4 w-4" />
+                          <span className="font-medium text-sm">Shipping</span>
+                        </div>
+                        <div className="text-sm space-y-1">
+                          <p className="capitalize">Status: {order.shipping_details[0].status}</p>
+                          {order.shipping_details[0].tracking_number && (
+                            <p>Tracking: {order.shipping_details[0].tracking_number}</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Sale Amount</span>
                       <span className="font-medium text-foreground">
