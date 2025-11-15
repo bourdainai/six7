@@ -13,7 +13,8 @@ import { useEffect, useState } from "react";
 import { SellerCopilot } from "@/components/SellerCopilot";
 import { StaleInventoryAlert } from "@/components/StaleInventoryAlert";
 import { AutomationRulesPanel } from "@/components/AutomationRulesPanel";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, Legend } from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
 const SellerDashboard = () => {
   const { user } = useAuth();
@@ -282,7 +283,7 @@ const SellerDashboard = () => {
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
                         </Pie>
-                        <Tooltip />
+                        <RechartsTooltip />
                       </PieChart>
                     </ResponsiveContainer>
                   ) : (
@@ -324,7 +325,7 @@ const SellerDashboard = () => {
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
                       <YAxis stroke="hsl(var(--muted-foreground))" />
-                      <Tooltip
+                      <RechartsTooltip
                         contentStyle={{
                           backgroundColor: "hsl(var(--popover))",
                           border: "1px solid hsl(var(--border))",
