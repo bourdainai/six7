@@ -8,6 +8,7 @@ import { OfferDialog } from "@/components/OfferDialog";
 import { CreateBundleDialog } from "@/components/bundles/CreateBundleDialog";
 import { ReportDialog } from "@/components/moderation/ReportDialog";
 import { BundleRecommendation } from "@/components/BundleRecommendation";
+import { AgentFeedbackButtons } from "@/components/AgentFeedbackButtons";
 import { ArrowLeft, ShoppingBag, Package, Flag } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -258,6 +259,11 @@ const ListingDetail = () => {
                     <Flag className="mr-2 h-4 w-4" />
                     Report Listing
                   </Button>
+
+                  <div className="mt-6 pt-6 border-t">
+                    <p className="text-sm font-medium mb-3">Help us personalize your feed:</p>
+                    <AgentFeedbackButtons listingId={listing.id} />
+                  </div>
                 </>
               )}
         </div>
