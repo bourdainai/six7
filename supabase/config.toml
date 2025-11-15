@@ -35,3 +35,12 @@ verify_jwt = true
 
 [functions.buyer-agent-learn]
 verify_jwt = true
+
+[functions.seller-copilot-stale-detector]
+verify_jwt = true
+
+[functions.seller-copilot-photo-advisor]
+verify_jwt = true
+
+[functions.seller-copilot-tag-optimizer]
+verify_jwt = true
