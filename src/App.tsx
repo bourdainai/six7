@@ -13,6 +13,7 @@ import Checkout from "./pages/Checkout";
 import Orders from "./pages/Orders";
 import Messages from "./pages/Messages";
 import SellerDashboard from "./pages/SellerDashboard";
+import SellerReputation from "./pages/SellerReputation";
 import AdminDashboard from "./pages/AdminDashboard";
 import ModerationDashboard from "./pages/ModerationDashboard";
 import FraudDashboard from "./pages/FraudDashboard";
@@ -38,9 +39,10 @@ const App = () => (
             <Route path="/checkout/:id" element={<Checkout />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/messages" element={<Messages />} />
-          <Route path="/bundles" element={<Bundles />} />
-          <Route path="/bundle/:id" element={<BundleDetail />} />
+            <Route path="/bundles" element={<Bundles />} />
+            <Route path="/bundle/:id" element={<BundleDetail />} />
             <Route path="/dashboard/seller" element={<SellerDashboard />} />
+            <Route path="/seller/reputation" element={<SellerReputation />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/moderation" element={<ModerationDashboard />} />
             <Route path="/fraud" element={<FraudDashboard />} />
