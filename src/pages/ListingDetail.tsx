@@ -12,6 +12,7 @@ import { ArrowLeft, ShoppingBag, Package, Flag } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
+import { SellerReputation } from "@/components/seller/SellerReputation";
 
 const ListingDetail = () => {
   const { id } = useParams();
@@ -186,25 +187,28 @@ const ListingDetail = () => {
             )}
 
             <div className="border-t border-border pt-6">
-              <h3 className="text-sm font-medium text-foreground mb-3">Seller</h3>
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center overflow-hidden">
-                  {listing.seller.avatar_url ? (
-                    <img src={listing.seller.avatar_url} alt={listing.seller.full_name || "Seller"} />
-                  ) : (
-                    <span className="text-sm text-muted-foreground">
-                      {listing.seller.full_name?.[0] || "S"}
-                    </span>
-                  )}
+              <h3 className="text-sm font-medium text-foreground mb-3">Seller Profile</h3>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center overflow-hidden">
+                    {listing.seller.avatar_url ? (
+                      <img src={listing.seller.avatar_url} alt={listing.seller.full_name || "Seller"} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-sm text-muted-foreground">
+                        {listing.seller.full_name?.[0] || "S"}
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {listing.seller.full_name || "Anonymous"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Trust Score: {listing.seller.trust_score || 50}/100
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">
-                    {listing.seller.full_name || "Anonymous"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Trust Score: {listing.seller.trust_score || 50}/100
-                  </p>
-                </div>
+                <SellerReputation sellerId={listing.seller_id} compact />
               </div>
             </div>
 
