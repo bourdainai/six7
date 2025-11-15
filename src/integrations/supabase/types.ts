@@ -144,9 +144,201 @@ export type Database = {
           },
         ]
       }
+      order_items: {
+        Row: {
+          created_at: string
+          id: string
+          listing_id: string
+          order_id: string
+          price: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          listing_id: string
+          order_id: string
+          price: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          listing_id?: string
+          order_id?: string
+          price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          buyer_id: string
+          created_at: string
+          currency: string
+          id: string
+          platform_fee: number
+          seller_amount: number
+          seller_id: string
+          shipping_address: Json
+          status: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          buyer_id: string
+          created_at?: string
+          currency?: string
+          id?: string
+          platform_fee: number
+          seller_amount: number
+          seller_id: string
+          shipping_address: Json
+          status?: string
+          total_amount: number
+          updated_at?: string
+        }
+        Update: {
+          buyer_id?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          platform_fee?: number
+          seller_amount?: number
+          seller_id?: string
+          shipping_address?: Json
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          order_id: string
+          status: string
+          stripe_payment_intent_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          id?: string
+          order_id: string
+          status: string
+          stripe_payment_intent_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          order_id?: string
+          status?: string
+          stripe_payment_intent_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payouts: {
+        Row: {
+          amount: number
+          completed_at: string | null
+          created_at: string
+          currency: string
+          id: string
+          order_id: string
+          scheduled_at: string | null
+          seller_id: string
+          status: string
+          stripe_transfer_id: string | null
+        }
+        Insert: {
+          amount: number
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          order_id: string
+          scheduled_at?: string | null
+          seller_id: string
+          status?: string
+          stripe_transfer_id?: string | null
+        }
+        Update: {
+          amount?: number
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          order_id?: string
+          scheduled_at?: string | null
+          seller_id?: string
+          status?: string
+          stripe_transfer_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payouts_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payouts_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
+          can_receive_payments: boolean | null
           country: string | null
           created_at: string | null
           email: string | null
@@ -154,11 +346,14 @@ export type Database = {
           id: string
           is_banned: boolean | null
           kyc_status: boolean | null
+          stripe_connect_account_id: string | null
+          stripe_onboarding_complete: boolean | null
           trust_score: number | null
           updated_at: string | null
         }
         Insert: {
           avatar_url?: string | null
+          can_receive_payments?: boolean | null
           country?: string | null
           created_at?: string | null
           email?: string | null
@@ -166,11 +361,14 @@ export type Database = {
           id: string
           is_banned?: boolean | null
           kyc_status?: boolean | null
+          stripe_connect_account_id?: string | null
+          stripe_onboarding_complete?: boolean | null
           trust_score?: number | null
           updated_at?: string | null
         }
         Update: {
           avatar_url?: string | null
+          can_receive_payments?: boolean | null
           country?: string | null
           created_at?: string | null
           email?: string | null
@@ -178,10 +376,47 @@ export type Database = {
           id?: string
           is_banned?: boolean | null
           kyc_status?: boolean | null
+          stripe_connect_account_id?: string | null
+          stripe_onboarding_complete?: boolean | null
           trust_score?: number | null
           updated_at?: string | null
         }
         Relationships: []
+      }
+      seller_balances: {
+        Row: {
+          available_balance: number
+          currency: string
+          id: string
+          pending_balance: number
+          seller_id: string
+          updated_at: string
+        }
+        Insert: {
+          available_balance?: number
+          currency?: string
+          id?: string
+          pending_balance?: number
+          seller_id: string
+          updated_at?: string
+        }
+        Update: {
+          available_balance?: number
+          currency?: string
+          id?: string
+          pending_balance?: number
+          seller_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_balances_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_preferences: {
         Row: {
