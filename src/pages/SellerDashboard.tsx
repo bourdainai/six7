@@ -51,15 +51,13 @@ const SellerDashboard = () => {
 
   const onboardMutation = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke("stripe-connect-onboard");
+      const { data, error } = await supabase.functions.invoke("stripe-connect-account-session");
       if (error) throw error;
       return data;
     },
-    onSuccess: (data) => {
-      if (data.url) {
-        window.open(data.url, "_blank");
-        toast({ title: "Redirecting to Stripe", description: "Complete your onboarding to start receiving payments" });
-      }
+    onSuccess: () => {
+      navigate("/seller/onboarding");
+      toast({ title: "Starting Onboarding", description: "Complete your setup to start receiving payments" });
     },
   });
 
@@ -113,15 +111,27 @@ const SellerDashboard = () => {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
-            {!profile?.stripe_onboarding_complete && (
+            {!profile?.stripe_onboarding_complete ? (
               <Card className="border-amber-500">
                 <CardHeader>
-                  <CardTitle>Complete Stripe Onboarding</CardTitle>
-                  <CardDescription>Set up payments</CardDescription>
+                  <CardTitle>Complete Seller Setup</CardTitle>
+                  <CardDescription>Set up your payment details to start receiving payments</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button onClick={() => onboardMutation.mutate()}>
-                    Connect Stripe <ExternalLink className="ml-2 h-4 w-4" />
+                  <Button onClick={() => onboardMutation.mutate()} disabled={onboardMutation.isPending}>
+                    {onboardMutation.isPending ? "Loading..." : "Start Setup"}
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Payment Account</CardTitle>
+                  <CardDescription>Manage your payment details and view payouts</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button onClick={() => navigate("/seller/account")} variant="outline">
+                    Manage Payment Account
                   </Button>
                 </CardContent>
               </Card>
