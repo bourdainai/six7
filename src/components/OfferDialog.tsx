@@ -46,6 +46,15 @@ export const OfferDialog = ({
       return;
     }
 
+    if (user.id === sellerId) {
+      toast({
+        title: "Not allowed",
+        description: "You cannot make an offer on your own listing",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (offerAmount <= 0 || offerAmount >= listingPrice) {
       toast({
         title: "Invalid offer",
@@ -54,8 +63,6 @@ export const OfferDialog = ({
       });
       return;
     }
-
-    setSubmitting(true);
 
     try {
       // Create or get conversation
