@@ -16,6 +16,8 @@ import Membership from "./pages/Membership";
 import SellerDashboard from "./pages/SellerDashboard";
 import SellerAnalytics from "./pages/SellerAnalytics";
 import SellerReputation from "./pages/SellerReputation";
+import SellerOnboarding from "./pages/SellerOnboarding";
+import SellerAccountManagement from "./pages/SellerAccountManagement";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import ModerationDashboard from "./pages/ModerationDashboard";
@@ -47,12 +49,10 @@ const App = () => (
             <Route path="/bundles" element={<Bundles />} />
             <Route path="/bundle/:id" element={<BundleDetail />} />
             <Route path="/dashboard/seller" element={<SellerDashboard />} />
+            <Route path="/seller/onboarding" element={<SellerOnboarding />} />
+            <Route path="/seller/account" element={<SellerAccountManagement />} />
             <Route path="/seller/analytics" element={<SellerAnalytics />} />
             <Route path="/seller/reputation" element={<SellerReputation />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/analytics" element={<AdminAnalytics />} />
-            <Route path="/moderation" element={<ModerationDashboard />} />
-            <Route path="/fraud" element={<FraudDashboard />} />
             <Route path="/seller/automation" element={<AutoRelistRules />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
