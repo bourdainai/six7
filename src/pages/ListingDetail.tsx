@@ -242,7 +242,6 @@ const ListingDetail = () => {
                     listingId={listing.id}
                     listingPrice={listing.seller_price}
                     sellerId={listing.seller_id}
-                    buyerId={user?.id || ""}
                   />
                   
                   <Button
