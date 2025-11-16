@@ -10,6 +10,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 
 interface BuyerOnboardingProps {
   onComplete: () => void;
+  onSkip?: () => void;
 }
 
 const CATEGORIES = [
@@ -23,7 +24,7 @@ const POPULAR_BRANDS = [
   "PlayStation", "Xbox", "LEGO"
 ];
 
-export const BuyerOnboarding = ({ onComplete }: BuyerOnboardingProps) => {
+export const BuyerOnboarding = ({ onComplete, onSkip }: BuyerOnboardingProps) => {
   const [step, setStep] = useState(1);
   const [categories, setCategories] = useState<string[]>([]);
   const [brands, setBrands] = useState<string[]>([]);
@@ -225,10 +226,15 @@ export const BuyerOnboarding = ({ onComplete }: BuyerOnboardingProps) => {
 
           {/* Navigation */}
           <div className="flex justify-between mt-8">
-            <div>
+            <div className="flex gap-2">
               {step > 1 && (
                 <Button variant="outline" onClick={() => setStep(step - 1)}>
                   Back
+                </Button>
+              )}
+              {onSkip && (
+                <Button variant="ghost" onClick={onSkip}>
+                  Skip for now
                 </Button>
               )}
             </div>

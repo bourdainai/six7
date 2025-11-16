@@ -25,6 +25,7 @@ const Browse = () => {
   const [semanticResults, setSemanticResults] = useState<any[] | null>(null);
   const [searchMode, setSearchMode] = useState<'browse' | 'semantic' | 'vibe'>('browse');
   const [vibeDescription, setVibeDescription] = useState<string>("");
+  const [sortBy, setSortBy] = useState<'relevance' | 'price_low' | 'price_high' | 'newest' | 'popular'>('newest');
 
   const [page, setPage] = useState(1);
   const itemsPerPage = 24;
@@ -52,7 +53,7 @@ const Browse = () => {
     staleTime: 1000 * 60, // 1 minute
   });
 
-  // Client-side filtering - only apply when in browse mode
+  // Client-side filtering and sorting
   const filteredListings = useMemo(() => {
     // If we have semantic/vibe search results, use those
     if (searchMode !== 'browse' && semanticResults) {
@@ -61,7 +62,7 @@ const Browse = () => {
 
     if (!listings) return [];
 
-    return listings.filter((listing) => {
+    let filtered = listings.filter((listing) => {
       // Search filter
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
@@ -105,7 +106,29 @@ const Browse = () => {
 
       return true;
     });
-  }, [listings, filters, semanticResults, searchMode]);
+
+    // Apply sorting
+    switch (sortBy) {
+      case 'price_low':
+        filtered.sort((a, b) => a.seller_price - b.seller_price);
+        break;
+      case 'price_high':
+        filtered.sort((a, b) => b.seller_price - a.seller_price);
+        break;
+      case 'newest':
+        filtered.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+        break;
+      case 'popular':
+        filtered.sort((a, b) => (b.views || 0) - (a.views || 0));
+        break;
+      case 'relevance':
+      default:
+        // Keep default order for relevance
+        break;
+    }
+
+    return filtered;
+  }, [listings, filters, semanticResults, searchMode, sortBy]);
 
   const handleSemanticResults = (results: any[]) => {
     setSemanticResults(results);
@@ -173,6 +196,27 @@ const Browse = () => {
             onSearchTypeChange={handleSearchTypeChange}
             onVibeSearchClick={() => setVibeSearchOpen(true)}
           />
+
+          {/* Sorting Controls */}
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              {filteredListings.length} {filteredListings.length === 1 ? 'item' : 'items'}
+            </p>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Sort by:</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="h-9 px-3 rounded-lg bg-background border border-border text-sm hover:bg-accent/50 transition-colors"
+              >
+                <option value="relevance">Relevance</option>
+                <option value="newest">Newest</option>
+                <option value="popular">Most Popular</option>
+                <option value="price_low">Price: Low to High</option>
+                <option value="price_high">Price: High to Low</option>
+              </select>
+            </div>
+          </div>
         </div>
 
         <VibeSearchDialog
