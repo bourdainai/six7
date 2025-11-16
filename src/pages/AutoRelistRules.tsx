@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -128,20 +129,27 @@ export default function AutoRelistRules() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6 flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-24">
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Auto-Relist Rules</h1>
-        <p className="text-muted-foreground">
-          Automatically refresh and optimize stale listings to keep them visible
-        </p>
-      </div>
+    <div className="min-h-screen bg-background">
+      <Navigation />
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-24">
+        <div className="mb-8">
+          <h1 className="text-3xl font-light text-foreground mb-2">Auto-Relist Rules</h1>
+          <p className="text-base text-muted-foreground font-light">
+            Automatically refresh and optimize stale listings to keep them visible
+          </p>
+        </div>
 
       <Alert className="mb-6">
         <Clock className="h-4 w-4" />
@@ -320,6 +328,7 @@ export default function AutoRelistRules() {
           ))
         )}
       </div>
+      </main>
     </div>
   );
 }
