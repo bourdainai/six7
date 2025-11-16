@@ -235,13 +235,14 @@ const ListingDetail = () => {
                 </Button>
               )}
 
-              {user && user.id !== listing.seller_id && (
+              {/* Show buttons to all users who aren't the seller */}
+              {(!user || user.id !== listing.seller_id) && (
                 <>
                   <OfferDialog
                     listingId={listing.id}
                     listingPrice={listing.seller_price}
                     sellerId={listing.seller_id}
-                    buyerId={user.id}
+                    buyerId={user?.id || ""}
                   />
                   
                   <Button
@@ -264,10 +265,12 @@ const ListingDetail = () => {
                     Report Listing
                   </Button>
 
-                  <div className="mt-6 pt-6 border-t">
-                    <p className="text-sm font-medium mb-3">Help us personalize your feed:</p>
-                    <AgentFeedbackButtons listingId={listing.id} />
-                  </div>
+                  {user && (
+                    <div className="mt-6 pt-6 border-t">
+                      <p className="text-sm font-medium mb-3">Help us personalize your feed:</p>
+                      <AgentFeedbackButtons listingId={listing.id} />
+                    </div>
+                  )}
                 </>
               )}
         </div>
