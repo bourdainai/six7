@@ -338,7 +338,7 @@ export const SearchFilters = ({
                   setShowSuggestions(false);
                 }
               }}
-              className="pl-12 pr-32 h-14 bg-transparent backdrop-blur-md border-0 hover:bg-background/10 focus:bg-background/20 transition-all text-base"
+              className="pl-12 pr-56 h-14 bg-transparent backdrop-blur-md border-0 hover:bg-background/10 focus:bg-background/20 transition-all text-base"
             />
             
             {/* Autocomplete Suggestions */}
@@ -383,7 +383,7 @@ export const SearchFilters = ({
             <Button
               onClick={searchMode === 'semantic' ? handleSemanticSearch : handleKeywordSearch}
               disabled={isSearching || !localFilters.search?.trim()}
-              className="absolute right-16 top-1/2 -translate-y-1/2 h-10 px-4 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-xl z-10"
+              className="absolute right-32 top-1/2 -translate-y-1/2 h-10 px-4 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-xl z-10"
             >
               {isSearching ? (
                 <>
