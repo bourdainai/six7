@@ -2,6 +2,9 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
+// REPLACE WITH YOUR STRIPE PRO MEMBERSHIP PRICE ID FROM STRIPE DASHBOARD
+const PRO_PRICE_ID = "price_XXXXXXXXXXXXX"; // TODO: Update this after creating the product in Stripe
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -74,20 +77,48 @@ serve(async (req) => {
       }
     }
 
-    // Calculate fees (10% platform fee on item price only)
     // Use offer amount if available, otherwise use listing price
-    const listingPrice = offerAmount !== null ? offerAmount : Number(listing.seller_price);
-    const totalAmount = listingPrice + shippingCost;
-    const platformFee = Math.round(listingPrice * 0.10 * 100); // in pence
-    const sellerAmount = Math.round(listingPrice * 100) - platformFee;
+    const itemPrice = offerAmount !== null ? offerAmount : Number(listing.seller_price);
+
+    // Calculate fees using the calculate-fees function
+    const feesResponse = await fetch(
+      `${Deno.env.get('SUPABASE_URL')}/functions/v1/calculate-fees`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': req.headers.get('Authorization')!,
+        },
+        body: JSON.stringify({
+          buyerId: user.id,
+          sellerId: listing.seller_id,
+          itemPrice: itemPrice,
+          shippingCost: shippingCost,
+          wholesaleShippingCost: 0,
+        }),
+      }
+    );
+
+    if (!feesResponse.ok) {
+      throw new Error('Failed to calculate fees');
+    }
+
+    const fees = await feesResponse.json();
+
+    // Total amount includes item price, buyer protection fee, and shipping
+    const totalAmount = fees.totalBuyerPays;
 
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
       apiVersion: '2023-10-16',
     });
 
-    // Create payment intent with application fee (total includes shipping)
+    // Platform fee is buyer protection fee + seller commission (if applicable)
+    const platformFee = Math.round((fees.buyerProtectionFee + fees.sellerCommissionFee) * 100); // in pence
+    const sellerAmount = Math.round(fees.totalSellerReceives * 100); // in pence
+
+    // Create payment intent
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(totalAmount * 100), // in pence (item + shipping)
+      amount: Math.round(totalAmount * 100), // in pence
       currency: listing.currency.toLowerCase(),
       application_fee_amount: platformFee,
       transfer_data: {
@@ -99,6 +130,9 @@ serve(async (req) => {
         sellerId: listing.seller_id,
         shippingCost: shippingCost.toString(),
         offerId: offerId || '',
+        buyerTier: fees.buyerTier,
+        sellerTier: fees.sellerTier,
+        sellerRiskTier: fees.sellerRiskTier,
       },
     });
 
@@ -128,14 +162,14 @@ serve(async (req) => {
     await supabaseClient.from('order_items').insert({
       order_id: order.id,
       listing_id: listing.id,
-      price: listingPrice,
+      price: itemPrice,
     });
 
     // Create payment record
     await supabaseClient.from('payments').insert({
       order_id: order.id,
       stripe_payment_intent_id: paymentIntent.id,
-      amount: listingPrice,
+      amount: itemPrice,
       currency: listing.currency,
       status: paymentIntent.status,
     });

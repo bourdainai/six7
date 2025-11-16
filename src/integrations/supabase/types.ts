@@ -2042,6 +2042,10 @@ export type Database = {
     }
     Functions: {
       ensure_admin_role: { Args: never; Returns: undefined }
+      increment_gmv: {
+        Args: { p_amount: number; p_user_id: string }
+        Returns: undefined
+      }
       refresh_listing_facets: { Args: never; Returns: undefined }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
