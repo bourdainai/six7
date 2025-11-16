@@ -165,7 +165,32 @@ const Browse = () => {
               </p>
             </div>
           )}
+
+          <div className="flex items-center gap-2">
+            <div className="flex-1">
+              <SearchFilters 
+                onFilterChange={setFilters}
+                activeFilters={filters}
+                onSemanticSearch={handleSemanticResults}
+                onSearchTypeChange={handleSearchTypeChange}
+              />
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => setVibeSearchOpen(true)}
+              className="gap-2"
+            >
+              <Image className="w-4 h-4" />
+              Vibe Search
+            </Button>
+          </div>
         </div>
+
+        <VibeSearchDialog
+          open={vibeSearchOpen}
+          onOpenChange={setVibeSearchOpen}
+          onResults={handleVibeResults}
+        />
 
         <div className="mb-4">
           <p className="text-sm text-muted-foreground">
