@@ -5,10 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { SearchFilters, FilterState } from "@/components/SearchFilters";
-import { SemanticSearchBar } from "@/components/SemanticSearchBar";
 import { VibeSearchDialog } from "@/components/VibeSearchDialog";
 import { useState, useMemo } from "react";
-import { Image, Sparkles } from "lucide-react";
+import { Image } from "lucide-react";
 import { SellerReputation } from "@/components/seller/SellerReputation";
 
 const Browse = () => {
@@ -113,6 +112,15 @@ const Browse = () => {
     setSearchMode('semantic');
   };
 
+  const handleSearchTypeChange = (type: 'browse' | 'semantic') => {
+    if (type === 'browse') {
+      setSearchMode('browse');
+      setSemanticResults(null);
+    } else {
+      setSearchMode('semantic');
+    }
+  };
+
   const handleVibeResults = (results: any[], description: string) => {
     setSemanticResults(results);
     setVibeDescription(description);
@@ -157,31 +165,6 @@ const Browse = () => {
               </p>
             </div>
           )}
-
-          {/* Semantic Search Bar */}
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <SemanticSearchBar 
-                onResults={handleSemanticResults}
-                onSearchTypeChange={(type) => setSearchMode(type === 'semantic' ? 'semantic' : 'browse')}
-              />
-            </div>
-            <Button
-              onClick={() => setVibeSearchOpen(true)}
-              variant="outline"
-              className="gap-2"
-            >
-              <Image className="h-4 w-4" />
-              Vibe Search
-            </Button>
-          </div>
-          
-          {searchMode === 'browse' && (
-            <SearchFilters
-              onFilterChange={setFilters}
-              activeFilters={filters}
-            />
-          )}
         </div>
 
         <div className="mb-4">
@@ -189,7 +172,6 @@ const Browse = () => {
             {filteredListings?.length || 0} items {searchMode !== 'browse' ? 'found' : filters.search || Object.values(filters).some(v => v) ? 'found' : 'available'}
             {searchMode === 'semantic' && (
               <Badge variant="secondary" className="ml-2">
-                <Sparkles className="h-3 w-3 mr-1" />
                 AI Ranked
               </Badge>
             )}

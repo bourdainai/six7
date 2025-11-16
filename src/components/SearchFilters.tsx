@@ -5,7 +5,9 @@ import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { Search, SlidersHorizontal, X, Sparkles } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import {
   Sheet,
   SheetContent,
@@ -18,6 +20,8 @@ import {
 interface SearchFiltersProps {
   onFilterChange: (filters: FilterState) => void;
   activeFilters: FilterState;
+  onSemanticSearch?: (results: any[]) => void;
+  onSearchTypeChange?: (type: 'browse' | 'semantic') => void;
 }
 
 export interface FilterState {
@@ -51,14 +55,74 @@ const CONDITIONS = [
 
 const COMMON_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
 
-export const SearchFilters = ({ onFilterChange, activeFilters }: SearchFiltersProps) => {
+export const SearchFilters = ({ 
+  onFilterChange, 
+  activeFilters, 
+  onSemanticSearch,
+  onSearchTypeChange 
+}: SearchFiltersProps) => {
   const [localFilters, setLocalFilters] = useState<FilterState>(activeFilters);
   const [isOpen, setIsOpen] = useState(false);
+  const [searchMode, setSearchMode] = useState<'browse' | 'semantic'>('semantic');
+  const [isSearching, setIsSearching] = useState(false);
+  const { toast } = useToast();
 
   const updateFilter = (key: keyof FilterState, value: string) => {
     const newFilters = { ...localFilters, [key]: value };
     setLocalFilters(newFilters);
-    onFilterChange(newFilters);
+    
+    // If in browse mode, apply filters immediately
+    if (searchMode === 'browse') {
+      onFilterChange(newFilters);
+    }
+  };
+
+  const handleSemanticSearch = async () => {
+    if (!localFilters.search.trim()) return;
+
+    setIsSearching(true);
+    onSearchTypeChange?.('semantic');
+
+    try {
+      if (searchMode === 'semantic') {
+        const { data, error } = await supabase.functions.invoke('semantic-search', {
+          body: { query: localFilters.search.trim(), limit: 40 }
+        });
+
+        if (error) throw error;
+        
+        onSemanticSearch?.(data.results || []);
+        
+        toast({
+          title: "AI Search Complete",
+          description: `Found ${data.results?.length || 0} items matching "${localFilters.search}"`,
+        });
+      }
+    } catch (error: any) {
+      console.error("Search error:", error);
+      toast({
+        title: "Search Failed",
+        description: error.message || "Please try again",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSearchModeChange = (mode: 'browse' | 'semantic') => {
+    setSearchMode(mode);
+    if (mode === 'browse') {
+      // Switch to browse mode - apply filters immediately
+      onFilterChange(localFilters);
+      onSearchTypeChange?.('browse');
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && searchMode === 'semantic') {
+      handleSemanticSearch();
+    }
   };
 
   const clearFilters = () => {
@@ -78,18 +142,40 @@ export const SearchFilters = ({ onFilterChange, activeFilters }: SearchFiltersPr
   const activeFilterCount = Object.values(localFilters).filter(v => v && v !== "").length;
 
   return (
-    <div className="space-y-4">
-      {/* Search Bar */}
+    <div className="space-y-3">
+      {/* Unified Search Bar */}
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search by title, brand, or description..."
+            placeholder={searchMode === 'semantic' 
+              ? "Describe what you're looking for... (e.g., 'cozy oversized sweater for winter')" 
+              : "Search by title, brand, or description..."}
             value={localFilters.search}
             onChange={(e) => updateFilter("search", e.target.value)}
-            className="pl-10"
+            onKeyPress={handleKeyPress}
+            className="pl-10 pr-4"
           />
+          {localFilters.search && (
+            <button
+              onClick={() => updateFilter("search", "")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
+        
+        {searchMode === 'semantic' && (
+          <Button 
+            onClick={handleSemanticSearch} 
+            disabled={!localFilters.search.trim() || isSearching}
+            className="gap-2"
+          >
+            <Sparkles className="h-4 w-4" />
+            {isSearching ? "Searching..." : "Search"}
+          </Button>
+        )}
         
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
@@ -224,6 +310,39 @@ export const SearchFilters = ({ onFilterChange, activeFilters }: SearchFiltersPr
           </SheetContent>
         </Sheet>
       </div>
+
+      {/* Search Mode Toggle */}
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">Search mode:</span>
+        <button
+          onClick={() => handleSearchModeChange('semantic')}
+          className={`text-xs px-3 py-1 rounded-full transition-colors flex items-center gap-1 ${
+            searchMode === 'semantic'
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-muted text-muted-foreground hover:bg-muted/80'
+          }`}
+        >
+          <Sparkles className="h-3 w-3" />
+          AI Semantic
+        </button>
+        <button
+          onClick={() => handleSearchModeChange('browse')}
+          className={`text-xs px-3 py-1 rounded-full transition-colors ${
+            searchMode === 'browse'
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-muted text-muted-foreground hover:bg-muted/80'
+          }`}
+        >
+          Keyword
+        </button>
+      </div>
+
+      {searchMode === 'semantic' && (
+        <p className="text-xs text-muted-foreground flex items-start gap-1">
+          <Sparkles className="h-3 w-3 mt-0.5 flex-shrink-0" />
+          AI understands context and meaning - describe the vibe, style, or feeling you want
+        </p>
+      )}
 
       {/* Active Filters Display */}
       {activeFilterCount > 0 && (
