@@ -58,7 +58,7 @@ const SellerOnboarding = () => {
               description: "Please complete your onboarding to receive payments",
               variant: "destructive",
             });
-            navigate("/seller-dashboard");
+            navigate("/dashboard/seller");
           });
 
           container.innerHTML = '';

@@ -54,6 +54,10 @@ const App = () => (
             <Route path="/seller/analytics" element={<SellerAnalytics />} />
             <Route path="/seller/reputation" element={<SellerReputation />} />
             <Route path="/seller/automation" element={<AutoRelistRules />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/analytics" element={<AdminAnalytics />} />
+            <Route path="/admin/moderation" element={<ModerationDashboard />} />
+            <Route path="/admin/fraud" element={<FraudDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
