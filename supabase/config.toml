@@ -104,3 +104,9 @@ verify_jwt = true
 
 [functions.fraud-scan-scheduler]
 verify_jwt = false
+
+[functions.outfit-builder]
+verify_jwt = true
+
+[functions.auto-relist-executor]
+verify_jwt = false

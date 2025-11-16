@@ -21,6 +21,7 @@ import ModerationDashboard from "./pages/ModerationDashboard";
 import FraudDashboard from "./pages/FraudDashboard";
 import Bundles from "./pages/Bundles";
 import BundleDetail from "./pages/BundleDetail";
+import AutoRelistRules from "./pages/AutoRelistRules";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +51,7 @@ const App = () => (
             <Route path="/admin/analytics" element={<AdminAnalytics />} />
             <Route path="/moderation" element={<ModerationDashboard />} />
             <Route path="/fraud" element={<FraudDashboard />} />
+            <Route path="/seller/automation" element={<AutoRelistRules />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

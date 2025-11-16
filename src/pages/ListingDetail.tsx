@@ -14,6 +14,7 @@ import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 import { SellerReputation } from "@/components/seller/SellerReputation";
+import { OutfitBuilder } from "@/components/OutfitBuilder";
 
 const ListingDetail = () => {
   const { id } = useParams();
@@ -216,7 +217,10 @@ const ListingDetail = () => {
 
             <div className="space-y-3">
               {user && user.id !== listing.seller_id && (
-                <BundleRecommendation listingId={listing.id} />
+                <>
+                  <BundleRecommendation listingId={listing.id} />
+                  <OutfitBuilder listingId={listing.id} listingTitle={listing.title} />
+                </>
               )}
 
               {user && user.id === listing.seller_id && (
