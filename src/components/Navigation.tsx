@@ -52,6 +52,12 @@ export const Navigation = () => {
               Bundles
             </Link>
             <Link 
+              to="/membership" 
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors font-light"
+            >
+              Membership
+            </Link>
+            <Link 
               to="/sell-enhanced" 
               className="text-sm text-muted-foreground hover:text-foreground transition-colors font-light"
             >

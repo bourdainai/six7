@@ -10,6 +10,7 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
 
@@ -83,6 +84,7 @@ const Checkout = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [shippingAddress, setShippingAddress] = useState({
     name: "",
     line1: "",
@@ -144,7 +146,29 @@ const Checkout = () => {
   const shippingCost = calculateShippingCost();
   // Use offer amount if available, otherwise use listing price
   const itemPrice = offer ? Number(offer.amount) : Number(listing?.seller_price || 0);
-  const totalPrice = itemPrice + shippingCost;
+  
+  // Fetch fee calculation
+  const { data: feeData } = useQuery({
+    queryKey: ["fees", user?.id, listing?.seller_id, itemPrice],
+    queryFn: async () => {
+      if (!user?.id || !listing?.seller_id) return null;
+      const { data, error } = await supabase.functions.invoke("calculate-fees", {
+        body: {
+          buyerId: user.id,
+          sellerId: listing.seller_id,
+          itemPrice: itemPrice,
+          shippingCost: shippingCost,
+          wholesaleShippingCost: 0,
+        },
+      });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id && !!listing?.seller_id,
+  });
+
+  const buyerProtectionFee = feeData?.buyerProtectionFee || 0;
+  const totalPrice = itemPrice + shippingCost + buyerProtectionFee;
 
   const createCheckoutMutation = useMutation({
     mutationFn: async () => {
@@ -236,6 +260,17 @@ const Checkout = () => {
                   </span>
                   <span className="text-foreground">£{itemPrice.toFixed(2)}</span>
                 </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Buyer Protection</span>
+                  <span className="text-foreground">
+                    {buyerProtectionFee > 0 ? `£${buyerProtectionFee.toFixed(2)}` : 'FREE'}
+                  </span>
+                </div>
+                {feeData?.buyerTier === 'pro' && buyerProtectionFee === 0 && (
+                  <div className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                    ✓ Pro Member Benefit
+                  </div>
+                )}
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Shipping</span>
                   <span className="text-foreground">
