@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "./AuthProvider";
 import { Loader2 } from "lucide-react";
+import { BuyerOnboarding } from "@/components/BuyerOnboarding";
 
 interface AuthModalProps {
   open: boolean;
@@ -25,6 +26,7 @@ export const AuthModal = ({ open, onOpenChange, defaultMode = "signin" }: AuthMo
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const { signIn, signUp } = useAuth();
 
@@ -36,10 +38,11 @@ export const AuthModal = ({ open, onOpenChange, defaultMode = "signin" }: AuthMo
     try {
       if (mode === "signup") {
         await signUp(email, password, fullName);
+        setShowOnboarding(true); // Show onboarding after signup
       } else {
         await signIn(email, password);
+        onOpenChange(false);
       }
-      onOpenChange(false);
       setEmail("");
       setPassword("");
       setFullName("");
@@ -49,6 +52,20 @@ export const AuthModal = ({ open, onOpenChange, defaultMode = "signin" }: AuthMo
       setLoading(false);
     }
   };
+
+  const handleOnboardingComplete = () => {
+    setShowOnboarding(false);
+    onOpenChange(false);
+  };
+
+  const handleSkipOnboarding = () => {
+    setShowOnboarding(false);
+    onOpenChange(false);
+  };
+
+  if (showOnboarding) {
+    return <BuyerOnboarding onComplete={handleOnboardingComplete} onSkip={handleSkipOnboarding} />;
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { AuthModal } from "@/components/auth/AuthModal";
+import { NotificationCenter } from "@/components/NotificationCenter";
 import logo from "@/assets/logo.png";
 import {
   DropdownMenu,
@@ -74,7 +75,9 @@ export const Navigation = () => {
             )}
 
             {user ? (
-              <DropdownMenu>
+              <>
+                <NotificationCenter />
+                <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="gap-2 font-light">
                     <User className="w-4 h-4" />
@@ -120,6 +123,7 @@ export const Navigation = () => {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              </>
             ) : (
               <div className="flex items-center gap-3">
                 <Button 
