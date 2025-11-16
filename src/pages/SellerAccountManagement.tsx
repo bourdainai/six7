@@ -79,7 +79,7 @@ const SellerAccountManagement = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-24">
         <Button
           variant="ghost"
-          onClick={() => navigate("/seller-dashboard")}
+          onClick={() => navigate("/dashboard/seller")}
           className="mb-6"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
