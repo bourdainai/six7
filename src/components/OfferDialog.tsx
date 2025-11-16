@@ -13,13 +13,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { DollarSign } from "lucide-react";
 
 interface OfferDialogProps {
   listingId: string;
   listingPrice: number;
   sellerId: string;
-  buyerId: string;
   onOfferCreated?: () => void;
 }
 
@@ -27,16 +27,25 @@ export const OfferDialog = ({
   listingId,
   listingPrice,
   sellerId,
-  buyerId,
   onOfferCreated,
 }: OfferDialogProps) => {
   const [open, setOpen] = useState(false);
   const [offerAmount, setOfferAmount] = useState(listingPrice * 0.9);
   const [offerMessage, setOfferMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const { user } = useAuth();
   const { toast } = useToast();
 
   const handleSubmit = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to make an offer",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (offerAmount <= 0 || offerAmount >= listingPrice) {
       toast({
         title: "Invalid offer",
@@ -54,7 +63,7 @@ export const OfferDialog = ({
         .from("conversations")
         .select("id")
         .eq("listing_id", listingId)
-        .eq("buyer_id", buyerId)
+        .eq("buyer_id", user.id)
         .single();
 
       let conversationId = existingConv?.id;
@@ -64,7 +73,7 @@ export const OfferDialog = ({
           .from("conversations")
           .insert({
             listing_id: listingId,
-            buyer_id: buyerId,
+            buyer_id: user.id,
             seller_id: sellerId,
           })
           .select()
@@ -78,7 +87,7 @@ export const OfferDialog = ({
       const { error: offerError } = await supabase.from("offers").insert({
         conversation_id: conversationId,
         listing_id: listingId,
-        buyer_id: buyerId,
+        buyer_id: user.id,
         seller_id: sellerId,
         amount: offerAmount,
         message: offerMessage,
@@ -90,7 +99,7 @@ export const OfferDialog = ({
       // Send notification message
       await supabase.from("messages").insert({
         conversation_id: conversationId,
-        sender_id: buyerId,
+        sender_id: user.id,
         content: `📦 Made an offer of £${offerAmount}${offerMessage ? `\n\n"${offerMessage}"` : ""}`,
       });
 
