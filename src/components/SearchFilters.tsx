@@ -4,10 +4,17 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Search, SlidersHorizontal, X, Sparkles, Image } from "lucide-react";
+import { Search, SlidersHorizontal, X, Sparkles, Image, History, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "./ui/command";
+import { SearchHistoryPanel } from "@/components/SearchHistoryPanel";
+import { SavedSearchesPanel } from "@/components/SavedSearchesPanel";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "./ui/popover";
 import {
   Sheet,
   SheetContent,
@@ -70,6 +77,8 @@ export const SearchFilters = ({
   const [suggestions, setSuggestions] = useState<Array<{ type: string; text: string; icon: string }>>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showSavedSearches, setShowSavedSearches] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -522,6 +531,71 @@ export const SearchFilters = ({
             </Sheet>
           </div>
         </div>
+      </div>
+
+      {/* Search History & Saved Searches */}
+      <div className="flex gap-2 justify-center mt-4">
+        <Popover open={showHistory} onOpenChange={setShowHistory}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              <History className="h-4 w-4" />
+              History
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-96 p-0" align="center">
+            <SearchHistoryPanel
+              onSelectSearch={(query) => {
+                updateFilter("search", query);
+                setShowHistory(false);
+                if (searchMode === 'semantic') {
+                  handleSemanticSearch();
+                } else {
+                  handleKeywordSearch();
+                }
+              }}
+            />
+          </PopoverContent>
+        </Popover>
+
+        <Popover open={showSavedSearches} onOpenChange={setShowSavedSearches}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              <Star className="h-4 w-4" />
+              Saved
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-96 p-0" align="center">
+            <SavedSearchesPanel
+              currentQuery={localFilters.search}
+              currentFilters={{
+                category: localFilters.category,
+                minPrice: localFilters.minPrice,
+                maxPrice: localFilters.maxPrice,
+                condition: localFilters.condition,
+              }}
+              onSelectSearch={(query, savedFilters) => {
+                updateFilter("search", query);
+                if (savedFilters) {
+                  setLocalFilters((prev) => ({ ...prev, ...savedFilters }));
+                }
+                setShowSavedSearches(false);
+                if (searchMode === 'semantic') {
+                  handleSemanticSearch();
+                } else {
+                  handleKeywordSearch();
+                }
+              }}
+            />
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* Active Filters Display */}
