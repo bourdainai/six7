@@ -46,31 +46,31 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.fraud-image-forensics]
-verify_jwt = false
+verify_jwt = true
 
 [functions.fraud-duplicate-detector]
-verify_jwt = false
+verify_jwt = true
 
 [functions.calculate-trust-score]
-verify_jwt = false
+verify_jwt = true
 
 [functions.moderation-auto-classifier]
-verify_jwt = false
+verify_jwt = true
 
 [functions.moderation-content-safety]
-verify_jwt = false
+verify_jwt = true
 
 [functions.dispute-auto-summarizer]
-verify_jwt = false
+verify_jwt = true
 
 [functions.message-reply-helper]
-verify_jwt = false
+verify_jwt = true
 
 [functions.message-safety-scanner]
-verify_jwt = false
+verify_jwt = true
 
 [functions.message-sentiment-analyzer]
-verify_jwt = false
+verify_jwt = true
 
 [functions.seller-analytics]
 verify_jwt = true
@@ -79,19 +79,19 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.calculate-seller-reputation]
-verify_jwt = false
+verify_jwt = true
 
 [functions.collect-seller-analytics]
-verify_jwt = false
+verify_jwt = true
 
 [functions.daily-reputation-calculation]
-verify_jwt = false
+verify_jwt = true
 
 [functions.stale-inventory-detector]
-verify_jwt = false
+verify_jwt = true
 
 [functions.price-drop-notifier]
-verify_jwt = false
+verify_jwt = true
 
 [functions.buyer-agent-recommendations]
 verify_jwt = true
