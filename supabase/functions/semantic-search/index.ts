@@ -12,10 +12,26 @@ serve(async (req) => {
   }
 
   try {
-    const { query, filters, limit = 20 } = await req.json();
+    const { query, filters, limit = 20, forceMode } = await req.json();
     
     if (!query) {
       throw new Error("Search query is required");
+    }
+
+    // Smart routing: Determine if query needs semantic search or keyword search
+    const wordCount = query.trim().split(/\s+/).length;
+    const hasDescriptiveWords = /cozy|comfortable|elegant|stylish|vintage|modern|casual|formal|trendy|chic|sophisticated|minimalist/i.test(query);
+    const isSimpleQuery = wordCount <= 2 && !hasDescriptiveWords;
+
+    // If it's a simple query and not forced to use semantic, route to keyword search
+    if (isSimpleQuery && forceMode !== 'semantic') {
+      return new Response(
+        JSON.stringify({ 
+          routeTo: 'keyword',
+          message: 'Simple query detected, routing to keyword search for faster results'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
@@ -129,68 +145,113 @@ serve(async (req) => {
         .from('listings')
         .select('*, listing_images(image_url)')
         .eq('status', 'active')
-        .or(`title.ilike.%${query}%,description.ilike.%${query}%,brand.ilike.%${query}%`)
         .limit(limit);
 
-      if (filters?.category) fallbackQuery = fallbackQuery.eq('category', filters.category);
-      if (filters?.minPrice) fallbackQuery = fallbackQuery.gte('seller_price', filters.minPrice);
-      if (filters?.maxPrice) fallbackQuery = fallbackQuery.lte('seller_price', filters.maxPrice);
-      if (filters?.brand) fallbackQuery = fallbackQuery.ilike('brand', `%${filters.brand}%`);
+      // Apply filters to fallback
+      if (filters?.category) {
+        fallbackQuery = fallbackQuery.eq('category', filters.category);
+      }
+      if (filters?.minPrice) {
+        fallbackQuery = fallbackQuery.gte('seller_price', filters.minPrice);
+      }
+      if (filters?.maxPrice) {
+        fallbackQuery = fallbackQuery.lte('seller_price', filters.maxPrice);
+      }
+      if (filters?.brand) {
+        fallbackQuery = fallbackQuery.ilike('brand', `%${filters.brand}%`);
+      }
+      if (filters?.condition) {
+        fallbackQuery = fallbackQuery.eq('condition', filters.condition);
+      }
 
       const { data: fallbackResults, error: fallbackError } = await fallbackQuery;
       
-      if (fallbackError) throw fallbackError;
+      if (fallbackError) {
+        throw fallbackError;
+      }
 
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          results: fallbackResults || [],
-          searchType: 'fallback',
-          query 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Log search for learning
-    const authHeader = req.headers.get('Authorization');
-    if (authHeader) {
-      try {
+      console.log(`Fallback search returned ${fallbackResults?.length || 0} results`);
+      
+      // Track search analytics
+      const authHeader = req.headers.get('Authorization');
+      let userId = null;
+      
+      if (authHeader) {
         const token = authHeader.replace('Bearer ', '');
         const { data: { user } } = await supabaseClient.auth.getUser(token);
+        userId = user?.id || null;
         
         if (user) {
           await supabaseClient.from('search_history').insert({
             user_id: user.id,
             search_query: query,
             search_type: 'semantic',
-            results_count: results?.length || 0,
-            filters_applied: filters || {}
+            results_count: fallbackResults?.length || 0,
+            filters_applied: filters
           });
         }
-      } catch (e) {
-        console.error("Failed to log search:", e);
+      }
+
+      await supabaseClient.from('search_analytics').insert({
+        query,
+        search_type: 'semantic_fallback',
+        user_id: userId,
+        results_count: fallbackResults?.length || 0
+      });
+
+      return new Response(
+        JSON.stringify({ 
+          results: fallbackResults || [],
+          searchType: 'semantic_fallback'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`Vector search returned ${results?.length || 0} results`);
+
+    // Track search analytics
+    const authHeader = req.headers.get('Authorization');
+    let userId = null;
+    
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user } } = await supabaseClient.auth.getUser(token);
+      userId = user?.id || null;
+      
+      if (user) {
+        await supabaseClient.from('search_history').insert({
+          user_id: user.id,
+          search_query: query,
+          search_type: 'semantic',
+          results_count: results?.length || 0,
+          filters_applied: filters
+        });
       }
     }
 
+    await supabaseClient.from('search_analytics').insert({
+      query,
+      search_type: 'semantic',
+      user_id: userId,
+      results_count: results?.length || 0
+    });
+
     return new Response(
       JSON.stringify({ 
-        success: true, 
         results: results || [],
-        searchType: 'semantic',
-        query 
+        searchType: 'semantic'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error: any) {
-    console.error("Semantic search error:", error);
+  } catch (error) {
+    console.error("Error in semantic-search function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      JSON.stringify({ 
+        error: error instanceof Error ? error.message : 'An error occurred during search'
+      }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

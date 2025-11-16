@@ -512,6 +512,7 @@ export type Database = {
           published_at: string | null
           quick_sale_price: number | null
           saves: number | null
+          search_vector: unknown
           seller_id: string
           seller_price: number
           shipping_cost_europe: number | null
@@ -550,6 +551,7 @@ export type Database = {
           published_at?: string | null
           quick_sale_price?: number | null
           saves?: number | null
+          search_vector?: unknown
           seller_id: string
           seller_price: number
           shipping_cost_europe?: number | null
@@ -588,6 +590,7 @@ export type Database = {
           published_at?: string | null
           quick_sale_price?: number | null
           saves?: number | null
+          search_vector?: unknown
           seller_id?: string
           seller_price?: number
           shipping_cost_europe?: number | null
@@ -1255,6 +1258,51 @@ export type Database = {
           },
         ]
       }
+      search_analytics: {
+        Row: {
+          clicked_listing_id: string | null
+          created_at: string | null
+          id: string
+          query: string
+          results_count: number | null
+          search_type: string
+          user_id: string | null
+        }
+        Insert: {
+          clicked_listing_id?: string | null
+          created_at?: string | null
+          id?: string
+          query: string
+          results_count?: number | null
+          search_type: string
+          user_id?: string | null
+        }
+        Update: {
+          clicked_listing_id?: string | null
+          created_at?: string | null
+          id?: string
+          query?: string
+          results_count?: number | null
+          search_type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "search_analytics_clicked_listing_id_fkey"
+            columns: ["clicked_listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "search_analytics_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       search_history: {
         Row: {
           clicked_listings: Json | null
@@ -1745,10 +1793,22 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      listing_facets: {
+        Row: {
+          avg_price: number | null
+          category: string | null
+          count: number | null
+          max_price: number | null
+          min_price: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       ensure_admin_role: { Args: never; Returns: undefined }
+      refresh_listing_facets: { Args: never; Returns: undefined }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       condition_type:
