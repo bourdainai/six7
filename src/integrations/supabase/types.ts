@@ -1659,6 +1659,56 @@ export type Database = {
           },
         ]
       }
+      seller_risk_ratings: {
+        Row: {
+          avg_shipping_days: number | null
+          cancellation_rate: number | null
+          created_at: string | null
+          dispute_ratio: number | null
+          id: string
+          last_calculated_at: string | null
+          rating_average: number | null
+          risk_tier: Database["public"]["Enums"]["risk_tier"]
+          seller_id: string
+          updated_at: string | null
+          volume_last_30_days: number | null
+        }
+        Insert: {
+          avg_shipping_days?: number | null
+          cancellation_rate?: number | null
+          created_at?: string | null
+          dispute_ratio?: number | null
+          id?: string
+          last_calculated_at?: string | null
+          rating_average?: number | null
+          risk_tier?: Database["public"]["Enums"]["risk_tier"]
+          seller_id: string
+          updated_at?: string | null
+          volume_last_30_days?: number | null
+        }
+        Update: {
+          avg_shipping_days?: number | null
+          cancellation_rate?: number | null
+          created_at?: string | null
+          dispute_ratio?: number | null
+          id?: string
+          last_calculated_at?: string | null
+          rating_average?: number | null
+          risk_tier?: Database["public"]["Enums"]["risk_tier"]
+          seller_id?: string
+          updated_at?: string | null
+          volume_last_30_days?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_risk_ratings_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shipping_details: {
         Row: {
           carrier: string | null
@@ -1707,6 +1757,65 @@ export type Database = {
             foreignKeyName: "shipping_details_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transaction_fees: {
+        Row: {
+          buyer_gmv_at_purchase: number | null
+          buyer_protection_fee: number
+          buyer_tier: Database["public"]["Enums"]["membership_tier"]
+          created_at: string | null
+          id: string
+          instant_payout_fee: number
+          instant_payout_percentage: number
+          order_id: string
+          protection_addon_fee: number | null
+          seller_commission_fee: number
+          seller_commission_percentage: number
+          seller_risk_tier: Database["public"]["Enums"]["risk_tier"]
+          seller_tier: Database["public"]["Enums"]["membership_tier"]
+          shipping_margin: number | null
+        }
+        Insert: {
+          buyer_gmv_at_purchase?: number | null
+          buyer_protection_fee?: number
+          buyer_tier: Database["public"]["Enums"]["membership_tier"]
+          created_at?: string | null
+          id?: string
+          instant_payout_fee?: number
+          instant_payout_percentage?: number
+          order_id: string
+          protection_addon_fee?: number | null
+          seller_commission_fee?: number
+          seller_commission_percentage?: number
+          seller_risk_tier: Database["public"]["Enums"]["risk_tier"]
+          seller_tier: Database["public"]["Enums"]["membership_tier"]
+          shipping_margin?: number | null
+        }
+        Update: {
+          buyer_gmv_at_purchase?: number | null
+          buyer_protection_fee?: number
+          buyer_tier?: Database["public"]["Enums"]["membership_tier"]
+          created_at?: string | null
+          id?: string
+          instant_payout_fee?: number
+          instant_payout_percentage?: number
+          order_id?: string
+          protection_addon_fee?: number | null
+          seller_commission_fee?: number
+          seller_commission_percentage?: number
+          seller_risk_tier?: Database["public"]["Enums"]["risk_tier"]
+          seller_tier?: Database["public"]["Enums"]["membership_tier"]
+          shipping_margin?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_fees_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
@@ -1778,6 +1887,59 @@ export type Database = {
             foreignKeyName: "typing_indicators_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_memberships: {
+        Row: {
+          created_at: string | null
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          monthly_gmv_counter: number | null
+          promo_expiry: string | null
+          promo_user: boolean | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          tier: Database["public"]["Enums"]["membership_tier"]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          monthly_gmv_counter?: number | null
+          promo_expiry?: string | null
+          promo_user?: boolean | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: Database["public"]["Enums"]["membership_tier"]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          monthly_gmv_counter?: number | null
+          promo_expiry?: string | null
+          promo_user?: boolean | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: Database["public"]["Enums"]["membership_tier"]
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_memberships_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1899,6 +2061,8 @@ export type Database = {
         | "sold"
         | "cancelled"
         | "disputed"
+      membership_tier: "free" | "pro" | "enterprise"
+      risk_tier: "A" | "B" | "C"
       user_role: "buyer" | "seller" | "admin" | "moderator"
     }
     CompositeTypes: {
@@ -2043,6 +2207,8 @@ export const Constants = {
         "cancelled",
         "disputed",
       ],
+      membership_tier: ["free", "pro", "enterprise"],
+      risk_tier: ["A", "B", "C"],
       user_role: ["buyer", "seller", "admin", "moderator"],
     },
   },
