@@ -16,6 +16,7 @@ import SellerDashboard from "./pages/SellerDashboard";
 import SellerAnalytics from "./pages/SellerAnalytics";
 import SellerReputation from "./pages/SellerReputation";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminAnalytics from "./pages/AdminAnalytics";
 import ModerationDashboard from "./pages/ModerationDashboard";
 import FraudDashboard from "./pages/FraudDashboard";
 import Bundles from "./pages/Bundles";
@@ -46,6 +47,7 @@ const App = () => (
             <Route path="/seller/analytics" element={<SellerAnalytics />} />
             <Route path="/seller/reputation" element={<SellerReputation />} />
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/analytics" element={<AdminAnalytics />} />
             <Route path="/moderation" element={<ModerationDashboard />} />
             <Route path="/fraud" element={<FraudDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
