@@ -5,7 +5,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { NotificationCenter } from "@/components/NotificationCenter";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo.svg";
 import {
   DropdownMenu,
   DropdownMenuContent,

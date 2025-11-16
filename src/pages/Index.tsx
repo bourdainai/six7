@@ -9,7 +9,7 @@ import { Link } from "react-router-dom";
 import { BuyerOnboarding } from "@/components/BuyerOnboarding";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo.svg";
 
 const Index = () => {
   const { user } = useAuth();
