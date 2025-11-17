@@ -4,11 +4,8 @@ import { useAuth } from "./auth/AuthProvider";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { useNavigate } from "react-router-dom";
-import { Sparkles, Heart } from "lucide-react";
-import { useState } from "react";
-import { AgentInsightsPanel } from "./AgentInsightsPanel";
+import { Heart } from "lucide-react";
 import { PriceDropAlerts } from "./PriceDropAlerts";
-import { AgentFeedbackButtons } from "./AgentFeedbackButtons";
 
 interface RecommendedListing {
   id: string;
@@ -26,7 +23,6 @@ interface RecommendedListing {
 export const PersonalizedFeed = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [showReasoningFor, setShowReasoningFor] = useState<string | null>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["buyer-recommendations", user?.id],
@@ -46,10 +42,7 @@ export const PersonalizedFeed = () => {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <Sparkles className="w-6 h-6 text-primary animate-pulse" />
-            <h2 className="text-2xl font-light text-foreground">Your AI-Curated Feed</h2>
-          </div>
+          <h2 className="text-2xl font-light text-foreground mb-4">Your Feed</h2>
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -84,9 +77,8 @@ export const PersonalizedFeed = () => {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center py-12 px-6">
-          <Sparkles className="w-12 h-12 text-primary mx-auto mb-4" />
           <h3 className="text-2xl font-light mb-3 text-foreground">
-            Set up your buyer agent
+            Set up your preferences
           </h3>
           <p className="text-muted-foreground mb-6 max-w-md mx-auto">
             Tell us your preferences and we'll curate a personalized feed just for you.
@@ -99,9 +91,8 @@ export const PersonalizedFeed = () => {
   if (recommendations.length === 0) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="flex items-center gap-2 mb-8">
-          <Sparkles className="w-6 h-6 text-primary" />
-          <h2 className="text-2xl font-light text-foreground">Your AI-Curated Feed</h2>
+        <div className="mb-8">
+          <h2 className="text-2xl font-light text-foreground">Your Feed</h2>
         </div>
         
         <div className="text-center py-12">
@@ -117,17 +108,9 @@ export const PersonalizedFeed = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-primary" />
-            <h2 className="text-2xl font-light text-foreground">Your AI-Curated Feed</h2>
-          </div>
-          <Badge variant="outline" className="text-sm">
-            {recommendations.length} matches
-          </Badge>
-        </div>
+        <h2 className="text-2xl font-light text-foreground mb-4">Your Feed</h2>
         <p className="text-muted-foreground text-sm mb-6">
-          Personalized recommendations based on your preferences and style
+          Personalized recommendations based on your preferences
         </p>
         
         <PriceDropAlerts />
@@ -161,13 +144,6 @@ export const PersonalizedFeed = () => {
                       No image
                     </div>
                   )}
-                  
-                  {/* Fit Score Badge */}
-                  <div className="absolute top-2 right-2">
-                    <Badge className="bg-primary/90 backdrop-blur-sm">
-                      {listing.fit_score}% match
-                    </Badge>
-                  </div>
                 </div>
 
                 <div className="space-y-1">
@@ -196,21 +172,11 @@ export const PersonalizedFeed = () => {
                       </Badge>
                     )}
                   </div>
-
-                  {/* AI Insights */}
-                  <div className="mt-3">
-                    <AgentInsightsPanel 
-                      fitScore={listing.fit_score}
-                      reasoning={listing.reasoning}
-                      compact={true}
-                    />
-                  </div>
                 </div>
               </button>
 
-              {/* Feedback and Save Actions */}
-              <div className="mt-3 flex items-center justify-between gap-2 px-2">
-                <AgentFeedbackButtons listingId={listing.id} compact={true} />
+              {/* Save Action */}
+              <div className="mt-3 flex items-center justify-end gap-2 px-2">
                 <Button
                   variant="ghost"
                   size="sm"
