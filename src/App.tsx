@@ -17,6 +17,7 @@ import SellerDashboard from "./pages/SellerDashboard";
 import SellerAnalytics from "./pages/SellerAnalytics";
 import SellerReputation from "./pages/SellerReputation";
 import SellerOnboarding from "./pages/SellerOnboarding";
+import SellerOnboardingMultiStep from "./pages/SellerOnboardingMultiStep";
 import SellerAccountManagement from "./pages/SellerAccountManagement";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminAnalytics from "./pages/AdminAnalytics";
@@ -49,7 +50,7 @@ const App = () => (
             <Route path="/bundles" element={<Bundles />} />
             <Route path="/bundle/:id" element={<BundleDetail />} />
             <Route path="/dashboard/seller" element={<SellerDashboard />} />
-            <Route path="/seller/onboarding" element={<SellerOnboarding />} />
+            <Route path="/seller/onboarding" element={<SellerOnboardingMultiStep />} />
             <Route path="/seller/account" element={<SellerAccountManagement />} />
             <Route path="/seller/analytics" element={<SellerAnalytics />} />
             <Route path="/seller/reputation" element={<SellerReputation />} />

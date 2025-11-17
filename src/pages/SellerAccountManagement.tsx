@@ -5,6 +5,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { loadConnectAndInitialize } from "@stripe/connect-js";
@@ -12,6 +13,8 @@ import {
   ConnectComponentsProvider,
   ConnectAccountManagement,
 } from "@stripe/react-connect-js";
+import PayoutHistory from "@/components/seller/PayoutHistory";
+import PayoutSchedule from "@/components/seller/PayoutSchedule";
 
 const SellerAccountManagement = () => {
   const { user } = useAuth();
@@ -72,27 +75,45 @@ const SellerAccountManagement = () => {
           Back to Dashboard
         </Button>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Manage Your Payment Account</CardTitle>
-            <CardDescription>
-              Update your payment details, view payouts, and manage your seller account
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {!stripeConnectInstance && (
-              <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm text-muted-foreground">Loading account management...</p>
-              </div>
-            )}
-            {stripeConnectInstance && (
-              <ConnectComponentsProvider connectInstance={stripeConnectInstance}>
-                <ConnectAccountManagement />
-              </ConnectComponentsProvider>
-            )}
-          </CardContent>
-        </Card>
+        <Tabs defaultValue="account" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="account">Account</TabsTrigger>
+            <TabsTrigger value="payouts">Payout History</TabsTrigger>
+            <TabsTrigger value="schedule">Payout Schedule</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="account" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Manage Your Payment Account</CardTitle>
+                <CardDescription>
+                  Update your payment details and manage your seller account
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {!stripeConnectInstance && (
+                  <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <p className="text-sm text-muted-foreground">Loading account management...</p>
+                  </div>
+                )}
+                {stripeConnectInstance && (
+                  <ConnectComponentsProvider connectInstance={stripeConnectInstance}>
+                    <ConnectAccountManagement />
+                  </ConnectComponentsProvider>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="payouts" className="mt-6">
+            <PayoutHistory />
+          </TabsContent>
+
+          <TabsContent value="schedule" className="mt-6">
+            <PayoutSchedule />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

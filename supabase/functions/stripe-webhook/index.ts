@@ -29,7 +29,7 @@ serve(async (req) => {
 
     switch (event.type) {
       case 'payment_intent.succeeded': {
-        const paymentIntent = event.data.object;
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
         
         // Update payment status
         const { error: paymentError } = await supabaseAdmin
@@ -50,25 +50,94 @@ serve(async (req) => {
           .single();
 
         if (payment) {
-          await supabaseAdmin
+          // Get order details including seller_id and seller_amount
+          const { data: order } = await supabaseAdmin
             .from('orders')
-            .update({ status: 'paid' })
-            .eq('id', payment.order_id);
+            .select('id, seller_id, seller_amount, currency, status')
+            .eq('id', payment.order_id)
+            .single();
 
-          // Update listing status to sold
-          const { data: orderItems } = await supabaseAdmin
-            .from('order_items')
-            .select('listing_id')
-            .eq('order_id', payment.order_id);
-
-          if (orderItems && orderItems.length > 0) {
+          if (order) {
+            // Update order status to paid
             await supabaseAdmin
-              .from('listings')
-              .update({ status: 'sold' })
-              .eq('id', orderItems[0].listing_id);
-          }
+              .from('orders')
+              .update({ status: 'paid' })
+              .eq('id', payment.order_id);
 
-          console.log(`Payment succeeded for order: ${payment.order_id}`);
+            // Update listing status to sold
+            const { data: orderItems } = await supabaseAdmin
+              .from('order_items')
+              .select('listing_id')
+              .eq('order_id', payment.order_id);
+
+            if (orderItems && orderItems.length > 0) {
+              await supabaseAdmin
+                .from('listings')
+                .update({ status: 'sold' })
+                .eq('id', orderItems[0].listing_id);
+            }
+
+            // Create payout record
+            // Note: With application_fee_amount and transfer_data, Stripe automatically creates a transfer
+            // The transfer ID will be available in the charge object, but we'll create the payout record now
+            // and update it when we get the transfer information from charge.succeeded
+            const { error: payoutError } = await supabaseAdmin
+              .from('payouts')
+              .insert({
+                seller_id: order.seller_id,
+                order_id: order.id,
+                amount: order.seller_amount,
+                currency: order.currency,
+                status: 'pending',
+              });
+
+            if (payoutError) {
+              console.error('Error creating payout record:', payoutError);
+            } else {
+              console.log(`Created payout record for order: ${payment.order_id}`);
+            }
+
+            console.log(`Payment succeeded for order: ${payment.order_id}`);
+          }
+        }
+        break;
+      }
+
+      case 'charge.succeeded': {
+        const charge = event.data.object as Stripe.Charge;
+        
+        // If this charge has a transfer (Connect account payment), update the payout record
+        if (charge.transfer) {
+          // Get the payment intent to find the order
+          const paymentIntentId = typeof charge.payment_intent === 'string' 
+            ? charge.payment_intent 
+            : charge.payment_intent?.id;
+
+          if (paymentIntentId) {
+            const { data: payment } = await supabaseAdmin
+              .from('payments')
+              .select('order_id')
+              .eq('stripe_payment_intent_id', paymentIntentId)
+              .single();
+
+            if (payment) {
+              // Update payout with transfer ID and mark as completed
+              const { error: payoutUpdateError } = await supabaseAdmin
+                .from('payouts')
+                .update({
+                  stripe_transfer_id: charge.transfer as string,
+                  status: 'completed',
+                  completed_at: new Date().toISOString(),
+                })
+                .eq('order_id', payment.order_id);
+
+              if (payoutUpdateError) {
+                console.error('Error updating payout with transfer ID:', payoutUpdateError);
+              } else {
+                console.log(`Updated payout with transfer ID: ${charge.transfer} for order: ${payment.order_id}`);
+              }
+            }
+          }
         }
         break;
       }
