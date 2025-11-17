@@ -163,7 +163,7 @@ serve(async (req) => {
               // Check if payout exists before updating
               const { data: existingPayout } = await supabaseAdmin
                 .from('payouts')
-                .select('id, status')
+                .select('id, status, seller_id, amount')
                 .eq('order_id', payment.order_id)
                 .single();
 

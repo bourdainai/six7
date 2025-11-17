@@ -281,11 +281,11 @@ const ListingDetail = () => {
                       <span className="font-medium">{Number(listing.package_weight).toFixed(2)} kg</span>
                     </div>
                   )}
-                  {listing.package_dimensions && typeof listing.package_dimensions === 'object' && (
+                  {listing.package_dimensions && typeof listing.package_dimensions === 'object' && !Array.isArray(listing.package_dimensions) && (
                     <div className="flex items-center justify-between">
                       <span className="text-muted-foreground">Dimensions:</span>
                       <span className="font-medium">
-                        {listing.package_dimensions.length} × {listing.package_dimensions.width} × {listing.package_dimensions.height} cm
+                        {(listing.package_dimensions as any).length} × {(listing.package_dimensions as any).width} × {(listing.package_dimensions as any).height} cm
                       </span>
                     </div>
                   )}
