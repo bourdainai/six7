@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { PageLayout } from "@/components/PageLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,12 +9,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Upload, Sparkles, Check, Loader2, DollarSign, Package, Scale, Ruler, Tag, X } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Upload, Sparkles, Check, Loader2, DollarSign, Package, Scale, Ruler, Tag, X, AlertCircle, ArrowRight, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { PhotoQualityFeedback } from "@/components/PhotoQualityFeedback";
 import { ImageAnalysisPanel } from "@/components/ImageAnalysisPanel";
+import { AuthModal } from "@/components/auth/AuthModal";
+import { useQuery } from "@tanstack/react-query";
 
 interface ListingData {
   title: string;
@@ -104,6 +108,7 @@ const SUBCATEGORIES: Record<string, string[]> = {
 };
 
 const SellEnhanced = () => {
+  const navigate = useNavigate();
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzed, setAnalyzed] = useState(false);
   const [images, setImages] = useState<string[]>([]);
@@ -125,6 +130,7 @@ const SellEnhanced = () => {
   const [pricing, setPricing] = useState<PricingData | null>(null);
   const [selectedPrice, setSelectedPrice] = useState<number>(0);
   const [publishing, setPublishing] = useState(false);
+  const [publishedListingId, setPublishedListingId] = useState<string | null>(null);
   const [shipping, setShipping] = useState<ShippingData>({
     shipping_cost_uk: 5.99,
     shipping_cost_europe: 12.99,
@@ -137,9 +143,36 @@ const SellEnhanced = () => {
     package_height: null,
   });
   const [styleTagInput, setStyleTagInput] = useState("");
+  const [authModalOpen, setAuthModalOpen] = useState(false);
   
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+
+  // Check seller profile and Stripe Connect status
+  const { data: profile } = useQuery({
+    queryKey: ["profile", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("stripe_connect_account_id, stripe_onboarding_complete, can_receive_payments")
+        .eq("id", user!.id)
+        .single();
+      if (error && error.code !== "PGRST116") throw error;
+      return data;
+    },
+  });
+
+  // Show auth modal if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      setAuthModalOpen(true);
+    }
+  }, [user, authLoading]);
+
+  // Check if seller needs to set up payments (warn but don't block)
+  const needsPaymentSetup = user && profile && !profile.stripe_connect_account_id;
+  const paymentSetupIncomplete = user && profile && profile.stripe_connect_account_id && !profile.stripe_onboarding_complete;
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -364,41 +397,11 @@ const SellEnhanced = () => {
         await supabase.from('listing_images').insert(imageData);
       }
 
+      setPublishedListingId(listing.id);
+
       toast({
         title: "Listed Successfully!",
         description: "Your item is now live on the marketplace.",
-      });
-
-      // Reset form
-      setImages([]);
-      setImageFiles([]);
-      setImageAnalysis(null);
-      setListingData({
-        title: "",
-        description: "",
-        category: "",
-        subcategory: "",
-        brand: "",
-        size: "",
-        color: "",
-        material: "",
-        condition: "",
-        style_tags: [],
-        original_rrp: null,
-      });
-      setPricing(null);
-      setSelectedPrice(0);
-      setAnalyzed(false);
-      setShipping({
-        shipping_cost_uk: 5.99,
-        shipping_cost_europe: 12.99,
-        shipping_cost_international: 19.99,
-        free_shipping: false,
-        estimated_delivery_days: 3,
-        package_weight: null,
-        package_length: null,
-        package_width: null,
-        package_height: null,
       });
 
       // Trigger embedding generation for the new listing
@@ -423,14 +426,182 @@ const SellEnhanced = () => {
     }
   };
 
+  // Show success screen after publishing
+  if (publishedListingId) {
+    return (
+      <PageLayout>
+        <div className="max-w-2xl mx-auto text-center py-12">
+          <div className="mb-8">
+            <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Check className="w-10 h-10 text-green-500" />
+            </div>
+            <h1 className="text-3xl font-light text-foreground mb-4">Listing Published!</h1>
+            <p className="text-lg text-muted-foreground mb-8">
+              Your item is now live and visible to buyers on the marketplace.
+            </p>
+          </div>
+
+          {needsPaymentSetup && (
+            <Alert className="mb-6 text-left border-amber-500/20 bg-amber-500/5">
+              <AlertCircle className="h-4 w-4 text-amber-500" />
+              <AlertTitle>Set up payments to receive money</AlertTitle>
+              <AlertDescription className="mt-2">
+                To receive payments when your item sells, you'll need to complete seller onboarding.
+                You can list items now, but buyers won't be able to purchase until you set up payments.
+              </AlertDescription>
+              <Button
+                className="mt-4"
+                onClick={() => navigate("/seller/onboarding")}
+              >
+                Set Up Payments
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </Alert>
+          )}
+
+          {paymentSetupIncomplete && (
+            <Alert className="mb-6 text-left border-yellow-500/20 bg-yellow-500/5">
+              <AlertCircle className="h-4 w-4 text-yellow-500" />
+              <AlertTitle>Payment setup in progress</AlertTitle>
+              <AlertDescription className="mt-2">
+                Your payment account setup is in progress. Complete verification to start receiving payments.
+              </AlertDescription>
+              <Button
+                variant="outline"
+                className="mt-4"
+                onClick={() => navigate("/seller/account")}
+              >
+                Check Status
+              </Button>
+            </Alert>
+          )}
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button
+              size="lg"
+              onClick={() => navigate(`/listing/${publishedListingId}`)}
+            >
+              View Listing
+              <ExternalLink className="w-4 h-4 ml-2" />
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => {
+                setPublishedListingId(null);
+                setImages([]);
+                setImageFiles([]);
+                setImageAnalysis(null);
+                setListingData({
+                  title: "",
+                  description: "",
+                  category: "",
+                  subcategory: "",
+                  brand: "",
+                  size: "",
+                  color: "",
+                  material: "",
+                  condition: "",
+                  style_tags: [],
+                  original_rrp: null,
+                });
+                setPricing(null);
+                setSelectedPrice(0);
+                setAnalyzed(false);
+                setShipping({
+                  shipping_cost_uk: 5.99,
+                  shipping_cost_europe: 12.99,
+                  shipping_cost_international: 19.99,
+                  free_shipping: false,
+                  estimated_delivery_days: 3,
+                  package_weight: null,
+                  package_length: null,
+                  package_width: null,
+                  package_height: null,
+                });
+              }}
+            >
+              List Another Item
+            </Button>
+            <Button
+              variant="ghost"
+              size="lg"
+              onClick={() => navigate("/dashboard/seller")}
+            >
+              Go to Dashboard
+            </Button>
+          </div>
+        </div>
+      </PageLayout>
+    );
+  }
+
+  // Show auth required screen
+  if (!user && !authLoading) {
+    return (
+      <PageLayout>
+        <div className="max-w-2xl mx-auto text-center py-12">
+          <h1 className="text-3xl font-light text-foreground mb-4">Sign in to List Items</h1>
+          <p className="text-lg text-muted-foreground mb-8">
+            Create an account to start selling on 6Seven. It only takes a moment.
+          </p>
+          <Button size="lg" onClick={() => setAuthModalOpen(true)}>
+            Sign In or Sign Up
+          </Button>
+        </div>
+        <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} defaultMode="signup" />
+      </PageLayout>
+    );
+  }
+
   return (
     <PageLayout>
+      <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} defaultMode="signup" />
+      
       <div className="mb-8 space-y-2">
         <h1 className="text-3xl font-light text-foreground">List Your Item</h1>
         <p className="text-base text-muted-foreground font-light">
           Upload photos and let AI analyze everything in seconds
         </p>
       </div>
+
+      {/* Payment Setup Alerts */}
+      {needsPaymentSetup && (
+        <Alert className="mb-6 border-amber-500/20 bg-amber-500/5">
+          <AlertCircle className="h-4 w-4 text-amber-500" />
+          <AlertTitle>Set up payments to receive money</AlertTitle>
+          <AlertDescription className="mt-2">
+            You can list items now, but to receive payments when they sell, you'll need to complete seller onboarding.
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-3"
+              onClick={() => navigate("/seller/onboarding")}
+            >
+              Set Up Payments
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {paymentSetupIncomplete && (
+        <Alert className="mb-6 border-yellow-500/20 bg-yellow-500/5">
+          <AlertCircle className="h-4 w-4 text-yellow-500" />
+          <AlertTitle>Payment setup in progress</AlertTitle>
+          <AlertDescription className="mt-2">
+            Your payment account setup is in progress. Complete verification to start receiving payments.
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-3"
+              onClick={() => navigate("/seller/account")}
+            >
+              Check Status
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
       
       <div className="max-w-6xl mx-auto">
         <Tabs defaultValue="photos" className="w-full">

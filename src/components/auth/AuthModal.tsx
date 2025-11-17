@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "./AuthProvider";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowRight } from "lucide-react";
 import { BuyerOnboarding } from "@/components/BuyerOnboarding";
 
 interface AuthModalProps {
@@ -20,6 +21,7 @@ interface AuthModalProps {
 }
 
 export const AuthModal = ({ open, onOpenChange, defaultMode = "signin" }: AuthModalProps) => {
+  const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">(defaultMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,6 +29,7 @@ export const AuthModal = ({ open, onOpenChange, defaultMode = "signin" }: AuthMo
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showListingOption, setShowListingOption] = useState(false);
 
   const { signIn, signUp } = useAuth();
 
@@ -38,7 +41,7 @@ export const AuthModal = ({ open, onOpenChange, defaultMode = "signin" }: AuthMo
     try {
       if (mode === "signup") {
         await signUp(email, password, fullName);
-        setShowOnboarding(true); // Show onboarding after signup
+        setShowListingOption(true); // Show option to list or do onboarding
       } else {
         await signIn(email, password);
         onOpenChange(false);
@@ -63,8 +66,62 @@ export const AuthModal = ({ open, onOpenChange, defaultMode = "signin" }: AuthMo
     onOpenChange(false);
   };
 
+  const handleStartListing = () => {
+    setShowListingOption(false);
+    onOpenChange(false);
+    navigate("/sell-enhanced");
+  };
+
+  const handleDoOnboarding = () => {
+    setShowListingOption(false);
+    setShowOnboarding(true);
+  };
+
   if (showOnboarding) {
     return <BuyerOnboarding onComplete={handleOnboardingComplete} onSkip={handleSkipOnboarding} />;
+  }
+
+  if (showListingOption) {
+    return (
+      <Dialog open={true} onOpenChange={() => {}}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Welcome to 6Seven!</DialogTitle>
+            <DialogDescription>
+              Your account has been created. What would you like to do first?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 mt-4">
+            <Button
+              onClick={handleStartListing}
+              className="w-full justify-between"
+              size="lg"
+            >
+              Start Listing Items
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+            <Button
+              onClick={handleDoOnboarding}
+              variant="outline"
+              className="w-full"
+              size="lg"
+            >
+              Set Up Buyer Preferences
+            </Button>
+            <Button
+              onClick={() => {
+                setShowListingOption(false);
+                onOpenChange(false);
+              }}
+              variant="ghost"
+              className="w-full"
+            >
+              Browse Marketplace
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
   }
 
   return (

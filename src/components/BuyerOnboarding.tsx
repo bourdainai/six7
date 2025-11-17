@@ -1,9 +1,10 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sparkles } from "lucide-react";
+import { Sparkles, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -25,6 +26,7 @@ const POPULAR_BRANDS = [
 ];
 
 export const BuyerOnboarding = ({ onComplete, onSkip }: BuyerOnboardingProps) => {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [categories, setCategories] = useState<string[]>([]);
   const [brands, setBrands] = useState<string[]>([]);
@@ -32,6 +34,7 @@ export const BuyerOnboarding = ({ onComplete, onSkip }: BuyerOnboardingProps) =>
   const [budgetMax, setBudgetMax] = useState("");
   const [customBrand, setCustomBrand] = useState("");
   const [saving, setSaving] = useState(false);
+  const [showListingCTA, setShowListingCTA] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -72,7 +75,7 @@ export const BuyerOnboarding = ({ onComplete, onSkip }: BuyerOnboardingProps) =>
         description: "Your personalized feed is now ready.",
       });
       
-      onComplete();
+      setShowListingCTA(true);
     } catch (error) {
       console.error('Error saving preferences:', error);
       toast({
@@ -250,6 +253,38 @@ export const BuyerOnboarding = ({ onComplete, onSkip }: BuyerOnboardingProps) =>
               )}
             </div>
           </div>
+
+          {/* Show CTA after saving */}
+          {showListingCTA && (
+            <div className="mt-8 pt-6 border-t border-border">
+              <div className="text-center space-y-4">
+                <h3 className="text-lg font-medium text-foreground">Ready to start selling?</h3>
+                <p className="text-sm text-muted-foreground">
+                  List your first item in seconds with AI-powered listing
+                </p>
+                <div className="flex gap-3 justify-center">
+                  <Button
+                    onClick={() => {
+                      onComplete();
+                      navigate("/sell-enhanced");
+                    }}
+                    className="flex items-center gap-2"
+                  >
+                    List Your First Item
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      onComplete();
+                    }}
+                  >
+                    Browse Marketplace
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
