@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { Loader2, ArrowLeft, ArrowRight, Check, Edit } from "lucide-react";
 import { Form } from "@/components/ui/form";
 import OnboardingStepPersonal from "@/components/seller/OnboardingStepPersonal";
 import OnboardingStepBusiness from "@/components/seller/OnboardingStepBusiness";
@@ -131,30 +131,49 @@ const SellerOnboardingMultiStep = () => {
     const businessType = form.watch("businessType");
     const isIndividual = businessType === "individual";
     
-    // Step fields to validate
-    const stepFields: Record<number, (keyof OnboardingFormData)[]> = {
-      0: ["businessType"],
-      1: ["firstName", "lastName", "dateOfBirth", "addressLine1", "city", "state", "postalCode", "country", "phone"],
-      2: isIndividual ? [] : ["businessName"],
-      3: ["accountHolderName", "accountNumber", "routingNumber", "accountType"],
-      4: [],
-    };
+    // Determine which fields to validate based on current step
+    let fieldsToValidate: (keyof OnboardingFormData)[] = [];
+    
+    if (currentStep === 0) {
+      // Business Type step
+      fieldsToValidate = ["businessType"];
+    } else if (currentStep === 1) {
+      // Personal Information step
+      fieldsToValidate = ["firstName", "lastName", "dateOfBirth", "addressLine1", "city", "state", "postalCode", "country", "phone"];
+    } else if (currentStep === 2) {
+      // Step 2: Business (if company) OR Payout (if individual)
+      if (isIndividual) {
+        // For individual, step 2 is the payout step
+        fieldsToValidate = ["accountHolderName", "accountNumber", "routingNumber", "accountType"];
+      } else {
+        // For company, step 2 is the business step
+        fieldsToValidate = ["businessName"];
+      }
+    } else if (currentStep === 3) {
+      // Step 3: Payout (if company) OR Review (if individual)
+      if (isIndividual) {
+        // For individual, step 3 is review - no validation needed
+        fieldsToValidate = [];
+      } else {
+        // For company, step 3 is the payout step
+        fieldsToValidate = ["accountHolderName", "accountNumber", "routingNumber", "accountType"];
+      }
+    } else if (currentStep === 4) {
+      // Step 4: Review (company only) - no validation needed
+      fieldsToValidate = [];
+    }
 
-    const fieldsToValidate = stepFields[currentStep] || [];
     const isValid = fieldsToValidate.length === 0 || await form.trigger(fieldsToValidate as any);
 
     if (isValid) {
       let nextStepIndex = currentStep + 1;
       
-      // Skip business step (step 2) if individual
-      if (nextStepIndex === 2 && isIndividual) {
-        nextStepIndex = 3;
-      }
+      // Calculate max step based on business type
+      // Individual: steps 0,1,2,3 (Business Type, Personal, Payout, Review)
+      // Company: steps 0,1,2,3,4 (Business Type, Personal, Business, Payout, Review)
+      const maxStep = isIndividual ? 4 : 5;
       
-      // Adjust review step index
-      const maxStep = isIndividual ? STEPS.length - 2 : STEPS.length - 1;
-      
-      if (nextStepIndex <= maxStep) {
+      if (nextStepIndex < maxStep) {
         setCurrentStep(nextStepIndex);
         setSubmitError(null); // Clear errors when moving forward
       }
@@ -181,12 +200,45 @@ const SellerOnboardingMultiStep = () => {
       
       // Skip business step (step 2) if individual when going back
       if (prevStepIndex === 2 && isIndividual) {
-        prevStepIndex = 1;
+        prevStepIndex = 1; // Skip from step 3 (payout) back to step 1 (personal)
       }
       
       setCurrentStep(prevStepIndex);
       setSubmitError(null); // Clear errors when going back
     }
+  };
+
+  // Navigate to specific step from review
+  // stepNumber: 0=Business Type, 1=Personal, 2=Business, 3=Payout, 4=Review
+  const goToStep = (stepNumber: number) => {
+    const businessType = form.watch("businessType");
+    const isIndividual = businessType === "individual";
+    
+    // Convert logical step number to actual currentStep index
+    let actualStep = stepNumber;
+    
+    if (stepNumber === 0) {
+      actualStep = 0; // Business Type
+    } else if (stepNumber === 1) {
+      actualStep = 1; // Personal Info
+    } else if (stepNumber === 2) {
+      // Business step - only exists for company
+      if (isIndividual) {
+        // For individual, business step doesn't exist, go to personal instead
+        actualStep = 1;
+      } else {
+        actualStep = 2; // Business step for company
+      }
+    } else if (stepNumber === 3) {
+      // Payout step
+      actualStep = isIndividual ? 2 : 3; // Individual: step 2, Company: step 3
+    } else if (stepNumber === 4) {
+      // Review step
+      actualStep = isIndividual ? 3 : 4; // Individual: step 3, Company: step 4
+    }
+    
+    setCurrentStep(actualStep);
+    setSubmitError(null);
   };
 
   const onSubmit = async (data: OnboardingFormData) => {
@@ -201,7 +253,33 @@ const SellerOnboardingMultiStep = () => {
       if (!isValid) {
         const errors = form.formState.errors;
         const firstError = Object.values(errors)[0];
-        throw new Error(firstError?.message || "Please fill in all required fields");
+        const errorMessage = firstError?.message || "Please fill in all required fields";
+        setSubmitError(errorMessage);
+        toast({
+          title: "Validation Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Double-check bank account fields are filled
+      if (!data.accountHolderName || !data.accountNumber || !data.routingNumber || !data.accountType) {
+        const errorMessage = "Please complete all bank account details";
+        setSubmitError(errorMessage);
+        toast({
+          title: "Bank Account Required",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        // Navigate to payout step
+        const businessType = form.watch("businessType");
+        const isIndividual = businessType === "individual";
+        const payoutStep = isIndividual ? 2 : 3;
+        setCurrentStep(payoutStep);
+        setIsSubmitting(false);
+        return;
       }
 
       // Ensure we have an account ID
@@ -293,13 +371,27 @@ const SellerOnboardingMultiStep = () => {
 
   const businessType = form.watch("businessType");
   const isIndividual = businessType === "individual";
-  const totalSteps = isIndividual ? STEPS.length - 1 : STEPS.length; // Exclude business step for individuals
+  
+  // Calculate total steps and progress
+  const totalSteps = isIndividual ? 4 : 5; // Individual: 0,1,2,3 | Company: 0,1,2,3,4
   const progress = ((currentStep + 1) / totalSteps) * 100;
+  
+  // Determine which step we're on
   const isBusinessType = currentStep === 0;
   const isPersonalStep = currentStep === 1;
   const isBusinessStep = currentStep === 2 && !isIndividual;
   const isPayoutStep = currentStep === (isIndividual ? 2 : 3);
   const isReviewStep = currentStep === (isIndividual ? 3 : 4);
+
+  // Get current step title for display
+  const getStepTitle = () => {
+    if (isBusinessType) return "Business Type";
+    if (isPersonalStep) return "Personal Information";
+    if (isBusinessStep) return "Business Details";
+    if (isPayoutStep) return "Bank Account";
+    if (isReviewStep) return "Review";
+    return "Step";
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -324,7 +416,7 @@ const SellerOnboardingMultiStep = () => {
               <Progress value={progress} className="h-2" />
               <div className="flex justify-between mt-2 text-sm text-muted-foreground">
                 <span>Step {currentStep + 1} of {totalSteps}</span>
-                <span>{STEPS[Math.min(currentStep, STEPS.length - 1)].title}</span>
+                <span>{getStepTitle()}</span>
               </div>
             </div>
           </CardHeader>
@@ -394,7 +486,12 @@ const SellerOnboardingMultiStep = () => {
                 {isPayoutStep && <OnboardingStepPayout />}
 
                 {/* Review Step */}
-                {isReviewStep && <OnboardingStepReview formData={form.getValues()} />}
+                {isReviewStep && (
+                  <OnboardingStepReview 
+                    formData={form.getValues()} 
+                    onEditStep={goToStep}
+                  />
+                )}
 
                 {/* Error Display */}
                 {submitError && (
@@ -414,7 +511,7 @@ const SellerOnboardingMultiStep = () => {
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Previous
                   </Button>
-                  {currentStep < (isIndividual ? totalSteps - 1 : STEPS.length - 1) ? (
+                  {!isReviewStep ? (
                     <Button type="button" onClick={nextStep} disabled={isSubmitting}>
                       Next
                       <ArrowRight className="h-4 w-4 ml-2" />
