@@ -77,24 +77,35 @@ serve(async (req) => {
                 .eq('id', orderItems[0].listing_id);
             }
 
-            // Create payout record
-            // Note: With application_fee_amount and transfer_data, Stripe automatically creates a transfer
-            // The transfer ID will be available in the charge object, but we'll create the payout record now
-            // and update it when we get the transfer information from charge.succeeded
-            const { error: payoutError } = await supabaseAdmin
+            // Check if payout already exists to prevent duplicates
+            const { data: existingPayout } = await supabaseAdmin
               .from('payouts')
-              .insert({
-                seller_id: order.seller_id,
-                order_id: order.id,
-                amount: order.seller_amount,
-                currency: order.currency,
-                status: 'pending',
-              });
+              .select('id')
+              .eq('order_id', order.id)
+              .single();
 
-            if (payoutError) {
-              console.error('Error creating payout record:', payoutError);
+            if (!existingPayout) {
+              // Create payout record
+              // Note: With application_fee_amount and transfer_data, Stripe automatically creates a transfer
+              // The transfer ID will be available in the charge object, but we'll create the payout record now
+              // and update it when we get the transfer information from charge.succeeded
+              const { error: payoutError } = await supabaseAdmin
+                .from('payouts')
+                .insert({
+                  seller_id: order.seller_id,
+                  order_id: order.id,
+                  amount: order.seller_amount,
+                  currency: order.currency,
+                  status: 'pending',
+                });
+
+              if (payoutError) {
+                console.error('Error creating payout record:', payoutError);
+              } else {
+                console.log(`Created payout record for order: ${payment.order_id}`);
+              }
             } else {
-              console.log(`Created payout record for order: ${payment.order_id}`);
+              console.log(`Payout already exists for order: ${payment.order_id}`);
             }
 
             console.log(`Payment succeeded for order: ${payment.order_id}`);
@@ -121,20 +132,35 @@ serve(async (req) => {
               .single();
 
             if (payment) {
-              // Update payout with transfer ID and mark as completed
-              const { error: payoutUpdateError } = await supabaseAdmin
+              // Check if payout exists before updating
+              const { data: existingPayout } = await supabaseAdmin
                 .from('payouts')
-                .update({
-                  stripe_transfer_id: charge.transfer as string,
-                  status: 'completed',
-                  completed_at: new Date().toISOString(),
-                })
-                .eq('order_id', payment.order_id);
+                .select('id, status')
+                .eq('order_id', payment.order_id)
+                .single();
 
-              if (payoutUpdateError) {
-                console.error('Error updating payout with transfer ID:', payoutUpdateError);
+              if (existingPayout) {
+                // Only update if not already completed
+                if (existingPayout.status !== 'completed') {
+                  const { error: payoutUpdateError } = await supabaseAdmin
+                    .from('payouts')
+                    .update({
+                      stripe_transfer_id: charge.transfer as string,
+                      status: 'completed',
+                      completed_at: new Date().toISOString(),
+                    })
+                    .eq('order_id', payment.order_id);
+
+                  if (payoutUpdateError) {
+                    console.error('Error updating payout with transfer ID:', payoutUpdateError);
+                  } else {
+                    console.log(`Updated payout with transfer ID: ${charge.transfer} for order: ${payment.order_id}`);
+                  }
+                } else {
+                  console.log(`Payout already completed for order: ${payment.order_id}`);
+                }
               } else {
-                console.log(`Updated payout with transfer ID: ${charge.transfer} for order: ${payment.order_id}`);
+                console.warn(`No payout record found for order: ${payment.order_id}`);
               }
             }
           }

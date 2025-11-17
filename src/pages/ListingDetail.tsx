@@ -119,6 +119,8 @@ const ListingDetail = () => {
                   src={images[selectedImage]?.image_url}
                   alt={listing.title}
                   className="w-full h-full object-cover"
+                  loading="eager"
+                  decoding="async"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-muted-foreground">
@@ -141,6 +143,8 @@ const ListingDetail = () => {
                       src={img.image_url}
                       alt={`${listing.title} ${idx + 1}`}
                       className="w-full h-full object-cover"
+                      loading="lazy"
+                      decoding="async"
                     />
                   </button>
                 ))}

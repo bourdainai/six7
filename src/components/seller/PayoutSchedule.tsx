@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +25,8 @@ const PayoutSchedule = () => {
       }
       return data || { available_balance: 0, pending_balance: 0, currency: "GBP" };
     },
+    staleTime: 1000 * 60, // 1 minute - balance updates frequently
+    refetchInterval: 1000 * 60 * 2, // Refetch every 2 minutes
   });
 
   const { data: pendingPayouts, isLoading: payoutsLoading } = useQuery({
@@ -40,14 +43,32 @@ const PayoutSchedule = () => {
       if (error) throw error;
       return data || [];
     },
+    staleTime: 1000 * 60, // 1 minute
   });
 
-  const formatCurrency = (amount: number, currency: string = "GBP") => {
-    return new Intl.NumberFormat("en-GB", {
+  const formatCurrency = useMemo(() => {
+    const formatter = new Intl.NumberFormat("en-GB", {
       style: "currency",
-      currency: currency.toUpperCase(),
-    }).format(amount);
-  };
+      currency: "GBP",
+    });
+    return (amount: number, currency: string = "GBP") => {
+      if (currency.toUpperCase() !== "GBP") {
+        return new Intl.NumberFormat("en-GB", {
+          style: "currency",
+          currency: currency.toUpperCase(),
+        }).format(amount);
+      }
+      return formatter.format(amount);
+    };
+  }, []);
+
+  const { availableBalance, pendingBalance, currency, totalPending } = useMemo(() => {
+    const avail = balance?.available_balance || 0;
+    const pending = balance?.pending_balance || 0;
+    const curr = balance?.currency || "GBP";
+    const total = pendingPayouts?.reduce((sum, p) => sum + p.amount, 0) || 0;
+    return { availableBalance: avail, pendingBalance: pending, currency: curr, totalPending: total };
+  }, [balance, pendingPayouts]);
 
   if (balanceLoading || payoutsLoading) {
     return (
@@ -64,11 +85,6 @@ const PayoutSchedule = () => {
       </Card>
     );
   }
-
-  const availableBalance = balance?.available_balance || 0;
-  const pendingBalance = balance?.pending_balance || 0;
-  const currency = balance?.currency || "GBP";
-  const totalPending = pendingPayouts?.reduce((sum, p) => sum + p.amount, 0) || 0;
 
   return (
     <Card>

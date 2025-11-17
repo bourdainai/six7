@@ -49,6 +49,25 @@ serve(async (req) => {
       throw new Error('Account ID mismatch');
     }
 
+    // Parse date of birth with error handling
+    const dateParts = formData.dateOfBirth.split('-');
+    if (dateParts.length !== 3) {
+      throw new Error('Invalid date of birth format');
+    }
+    
+    const year = parseInt(dateParts[0]);
+    const month = parseInt(dateParts[1]);
+    const day = parseInt(dateParts[2]);
+    
+    if (isNaN(year) || isNaN(month) || isNaN(day)) {
+      throw new Error('Invalid date of birth values');
+    }
+    
+    // Validate date range
+    if (year < 1900 || year > new Date().getFullYear() || month < 1 || month > 12 || day < 1 || day > 31) {
+      throw new Error('Date of birth is out of valid range');
+    }
+
     // Prepare account update data
     const accountUpdateData: Stripe.AccountUpdateParams = {
       business_type: formData.businessType === 'company' ? 'company' : 'individual',
@@ -56,9 +75,9 @@ serve(async (req) => {
         first_name: formData.firstName,
         last_name: formData.lastName,
         dob: {
-          day: parseInt(formData.dateOfBirth.split('-')[2]),
-          month: parseInt(formData.dateOfBirth.split('-')[1]),
-          year: parseInt(formData.dateOfBirth.split('-')[0]),
+          day: day,
+          month: month,
+          year: year,
         },
         address: {
           line1: formData.addressLine1,

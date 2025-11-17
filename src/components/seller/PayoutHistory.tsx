@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +28,7 @@ const PayoutHistory = () => {
       if (error) throw error;
       return data;
     },
+    staleTime: 1000 * 60 * 2, // 2 minutes - payouts don't change often
   });
 
   const getStatusBadge = (status: string) => {
@@ -42,12 +44,21 @@ const PayoutHistory = () => {
     }
   };
 
-  const formatCurrency = (amount: number, currency: string = "GBP") => {
-    return new Intl.NumberFormat("en-GB", {
+  const formatCurrency = useMemo(() => {
+    const formatter = new Intl.NumberFormat("en-GB", {
       style: "currency",
-      currency: currency.toUpperCase(),
-    }).format(amount);
-  };
+      currency: "GBP",
+    });
+    return (amount: number, currency: string = "GBP") => {
+      if (currency.toUpperCase() !== "GBP") {
+        return new Intl.NumberFormat("en-GB", {
+          style: "currency",
+          currency: currency.toUpperCase(),
+        }).format(amount);
+      }
+      return formatter.format(amount);
+    };
+  }, []);
 
   if (isLoading) {
     return (

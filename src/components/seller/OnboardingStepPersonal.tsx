@@ -69,7 +69,16 @@ const OnboardingStepPersonal = () => {
             <FormItem>
               <FormLabel>SSN Last 4 Digits (Optional)</FormLabel>
               <FormControl>
-                <Input placeholder="1234" maxLength={4} {...field} />
+                <Input 
+                  placeholder="1234" 
+                  maxLength={4} 
+                  {...field}
+                  onChange={(e) => {
+                    // Only allow numeric input
+                    const value = e.target.value.replace(/\D/g, '');
+                    field.onChange(value);
+                  }}
+                />
               </FormControl>
               <FormDescription>Last 4 digits of your Social Security Number</FormDescription>
               <FormMessage />
@@ -188,7 +197,7 @@ const OnboardingStepPersonal = () => {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Country</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select country" />

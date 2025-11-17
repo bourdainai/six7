@@ -47,7 +47,16 @@ const OnboardingStepPayout = () => {
           <FormItem>
             <FormLabel>Account Number</FormLabel>
             <FormControl>
-              <Input type="text" placeholder="12345678" {...field} />
+              <Input 
+                type="text" 
+                placeholder="12345678" 
+                {...field}
+                onChange={(e) => {
+                  // Allow alphanumeric for account numbers (some banks use letters)
+                  const value = e.target.value.replace(/[^a-zA-Z0-9]/g, '');
+                  field.onChange(value);
+                }}
+              />
             </FormControl>
             <FormDescription>Your bank account number</FormDescription>
             <FormMessage />
@@ -62,7 +71,16 @@ const OnboardingStepPayout = () => {
           <FormItem>
             <FormLabel>Routing Number / Sort Code</FormLabel>
             <FormControl>
-              <Input type="text" placeholder="12-34-56" {...field} />
+              <Input 
+                type="text" 
+                placeholder="12-34-56" 
+                {...field}
+                onChange={(e) => {
+                  // Allow numbers and hyphens for routing/sort codes
+                  const value = e.target.value.replace(/[^0-9-]/g, '');
+                  field.onChange(value);
+                }}
+              />
             </FormControl>
             <FormDescription>
               For UK: Sort code (e.g., 12-34-56). For US: Routing number (9 digits)
@@ -78,7 +96,7 @@ const OnboardingStepPayout = () => {
         render={({ field }) => (
           <FormItem>
             <FormLabel>Account Type</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <Select onValueChange={field.onChange} value={field.value}>
               <FormControl>
                 <SelectTrigger>
                   <SelectValue placeholder="Select account type" />
