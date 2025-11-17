@@ -6,6 +6,7 @@ import { Button } from "./ui/button";
 import { useNavigate } from "react-router-dom";
 import { Heart } from "lucide-react";
 import { PriceDropAlerts } from "./PriceDropAlerts";
+import { useSavedListings } from "@/hooks/useSavedListings";
 
 interface RecommendedListing {
   id: string;
@@ -23,6 +24,7 @@ interface RecommendedListing {
 export const PersonalizedFeed = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { isSaved, toggleSave, isSaving } = useSavedListings();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["buyer-recommendations", user?.id],
@@ -160,19 +162,23 @@ export const PersonalizedFeed = () => {
                 </div>
               </button>
 
-              {/* Save Action */}
-              <div className="mt-3 flex items-center justify-end gap-2 px-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // TODO: Implement save functionality
-                  }}
-                >
-                  <Heart className="w-4 h-4" />
-                </Button>
-              </div>
+                  {/* Save Action */}
+                  <div className="mt-3 flex items-center justify-end gap-2 px-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleSave(listing.id);
+                      }}
+                      disabled={isSaving}
+                      className={isSaved(listing.id) ? "text-red-500 hover:text-red-600" : ""}
+                    >
+                      <Heart 
+                        className={`w-4 h-4 ${isSaved(listing.id) ? "fill-current" : ""}`} 
+                      />
+                    </Button>
+                  </div>
             </div>
           );
         })}

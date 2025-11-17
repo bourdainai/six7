@@ -10,18 +10,20 @@ import { CreateBundleDialog } from "@/components/bundles/CreateBundleDialog";
 import { ReportDialog } from "@/components/moderation/ReportDialog";
 import { BundleRecommendation } from "@/components/BundleRecommendation";
 import { AgentFeedbackButtons } from "@/components/AgentFeedbackButtons";
-import { ArrowLeft, ShoppingBag, Package, Flag } from "lucide-react";
+import { ArrowLeft, ShoppingBag, Package, Flag, Heart } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 import { SellerReputation } from "@/components/seller/SellerReputation";
 import { OutfitBuilder } from "@/components/OutfitBuilder";
+import { useSavedListings } from "@/hooks/useSavedListings";
 
 const ListingDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { isSaved, toggleSave, isSaving } = useSavedListings();
   const [selectedImage, setSelectedImage] = useState(0);
   const [bundleDialogOpen, setBundleDialogOpen] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
@@ -339,6 +341,21 @@ const ListingDetail = () => {
 
               {/* Action buttons - always visible */}
               <>
+                {user && user.id !== listing.seller_id && (
+                  <Button
+                    onClick={() => toggleSave(listing.id)}
+                    variant="outline"
+                    size="lg"
+                    className="w-full h-12"
+                    disabled={isSaving}
+                  >
+                    <Heart 
+                      className={`mr-2 h-5 w-5 ${isSaved(listing.id) ? "fill-current text-red-500" : ""}`} 
+                    />
+                    {isSaved(listing.id) ? "Saved" : "Save Item"}
+                  </Button>
+                )}
+
                 <OfferDialog
                   listingId={listing.id}
                   listingPrice={listing.seller_price}

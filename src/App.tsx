@@ -17,6 +17,7 @@ const Checkout = lazy(() => import("./pages/Checkout"));
 const Orders = lazy(() => import("./pages/Orders"));
 const Messages = lazy(() => import("./pages/Messages"));
 const Membership = lazy(() => import("./pages/Membership"));
+const SavedItems = lazy(() => import("./pages/SavedItems"));
 const SellerDashboard = lazy(() => import("./pages/SellerDashboard"));
 const SellerAnalytics = lazy(() => import("./pages/SellerAnalytics"));
 const SellerReputation = lazy(() => import("./pages/SellerReputation"));
@@ -65,9 +66,10 @@ const AppRoutes = () => {
           <Route path="/browse" element={<Browse />} />
           <Route path="/listing/:id" element={<ListingDetail />} />
           <Route path="/checkout/:id" element={<Checkout />} />
-          <Route path="/orders" element={<Orders />} />
-          <Route path="/messages" element={<Messages />} />
-          <Route path="/membership" element={<Membership />} />
+              <Route path="/orders" element={<Orders />} />
+              <Route path="/messages" element={<Messages />} />
+              <Route path="/membership" element={<Membership />} />
+              <Route path="/saved" element={<SavedItems />} />
           <Route path="/bundles" element={<Bundles />} />
           <Route path="/bundle/:id" element={<BundleDetail />} />
           <Route path="/dashboard/seller" element={<SellerDashboard />} />

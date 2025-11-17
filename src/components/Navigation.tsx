@@ -20,7 +20,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { User, LogOut, Shield, Menu, X, Bell } from "lucide-react";
+import { User, LogOut, Shield, Menu, X, Bell, Heart } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 export const Navigation = () => {
@@ -159,6 +159,12 @@ export const Navigation = () => {
                         Orders
                       </Link>
                     </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/saved" className="cursor-pointer">
+                        <Heart className="w-4 h-4 mr-2" />
+                        Saved Items
+                      </Link>
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-destructive">
                       <LogOut className="w-4 h-4 mr-2" />
@@ -247,6 +253,16 @@ export const Navigation = () => {
                           className="block px-4 py-3 text-base font-light text-foreground hover:bg-muted rounded-lg transition-colors"
                         >
                           Orders
+                        </Link>
+                        
+                        {/* Saved Items */}
+                        <Link
+                          to="/saved"
+                          onClick={handleNavClick}
+                          className="block px-4 py-3 text-base font-light text-foreground hover:bg-muted rounded-lg transition-colors flex items-center gap-2"
+                        >
+                          <Heart className="w-4 h-4" />
+                          Saved Items
                         </Link>
                         
                         {/* Notifications - as a menu item */}
