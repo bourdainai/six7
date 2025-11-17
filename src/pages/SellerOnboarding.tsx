@@ -7,13 +7,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { loadConnectAndInitialize } from "@stripe/connect-js";
+import {
+  ConnectComponentsProvider,
+  ConnectAccountOnboarding,
+} from "@stripe/react-connect-js";
 
 const SellerOnboarding = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [stripeConnectInstance, setStripeConnectInstance] = useState<any>(null);
 
   useEffect(() => {
     if (!user) {
@@ -23,21 +26,14 @@ const SellerOnboarding = () => {
 
     const initializeStripeConnect = async () => {
       try {
-        setLoading(true);
-        setError(null);
-
-        // Get account session from backend
-        const { data, error: invokeError } = await supabase.functions.invoke(
-          "stripe-connect-account-session"
-        );
-
-        if (invokeError) throw invokeError;
-        if (!data?.clientSecret) throw new Error("No client secret returned");
-
-        // Initialize Stripe Connect
-        const stripeConnectInstance = await loadConnectAndInitialize({
+        const instance = await loadConnectAndInitialize({
           publishableKey: import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "",
-          fetchClientSecret: async () => data.clientSecret,
+          fetchClientSecret: async () => {
+            const { data } = await supabase.functions.invoke(
+              "stripe-connect-account-session"
+            );
+            return data.clientSecret;
+          },
           appearance: {
             overlays: 'dialog',
             variables: {
@@ -46,30 +42,9 @@ const SellerOnboarding = () => {
           },
         });
 
-        // Mount the onboarding component
-        const container = document.getElementById("stripe-connect-onboarding");
-        if (container) {
-          const onboardingComponent = stripeConnectInstance.create("account-onboarding");
-          
-          onboardingComponent.setOnExit(() => {
-            // User closed the onboarding, navigate back
-            toast({
-              title: "Onboarding incomplete",
-              description: "Please complete your onboarding to receive payments",
-              variant: "destructive",
-            });
-            navigate("/dashboard/seller");
-          });
-
-          container.innerHTML = '';
-          container.appendChild(onboardingComponent);
-        }
-
-        setLoading(false);
+        setStripeConnectInstance(instance);
       } catch (err) {
         console.error("Error initializing Stripe Connect:", err);
-        setError(err instanceof Error ? err.message : "Failed to load onboarding");
-        setLoading(false);
         toast({
           title: "Error",
           description: "Failed to load onboarding. Please try again.",
@@ -95,18 +70,26 @@ const SellerOnboarding = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {loading && (
+            {!stripeConnectInstance && (
               <div className="flex flex-col items-center justify-center py-12 space-y-4">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 <p className="text-sm text-muted-foreground">Loading onboarding...</p>
               </div>
             )}
-            {error && (
-              <div className="text-center py-12">
-                <p className="text-destructive mb-4">{error}</p>
-              </div>
+            {stripeConnectInstance && (
+              <ConnectComponentsProvider connectInstance={stripeConnectInstance}>
+                <ConnectAccountOnboarding
+                  onExit={() => {
+                    toast({
+                      title: "Onboarding incomplete",
+                      description: "Please complete your onboarding to receive payments",
+                      variant: "destructive",
+                    });
+                    navigate("/dashboard/seller");
+                  }}
+                />
+              </ConnectComponentsProvider>
             )}
-            <div id="stripe-connect-onboarding" className="min-h-[500px]" />
           </CardContent>
         </Card>
       </div>
