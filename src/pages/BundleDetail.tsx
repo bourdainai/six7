@@ -10,6 +10,7 @@ import { ShoppingBag, Package, User, Shield } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { toast } from "sonner";
 import { SellerReputation } from "@/components/seller/SellerReputation";
+import { formatCondition } from "@/lib/format";
 
 export default function BundleDetail() {
   const { id } = useParams();
