@@ -33,9 +33,21 @@ export const Navigation = () => {
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 group">
-            <img src={logo} alt="6Seven" className="h-14 w-auto group-hover:scale-105 transition-transform" />
+        <div className="max-w-7xl mx-auto px-6 h-[72px] flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2 group relative h-14 flex-shrink-0">
+            <img 
+              src={logo} 
+              alt="6Seven" 
+              className="h-14 w-auto group-hover:scale-105 transition-transform"
+              style={{ 
+                width: 'auto',
+                height: '56px',
+                maxHeight: '56px',
+                display: 'block',
+                position: 'relative',
+                flexShrink: 0
+              }}
+            />
           </Link>
 
           <div className="flex items-center gap-8">
