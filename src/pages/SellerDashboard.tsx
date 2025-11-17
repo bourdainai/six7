@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
-import { ExternalLink, Package, DollarSign, ShoppingCart, TrendingUp, Award, Wallet, Clock, AlertCircle, CheckCircle2 } from "lucide-react";
+import { ExternalLink, Package, DollarSign, ShoppingCart, TrendingUp, Award, Wallet, Clock, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { SellerCopilot } from "@/components/SellerCopilot";
