@@ -41,10 +41,6 @@ export const PersonalizedFeed = () => {
   if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-8">
-          <h2 className="text-2xl font-light text-foreground mb-4">Your Feed</h2>
-        </div>
-        
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
             <div key={i} className="space-y-3">
@@ -91,10 +87,6 @@ export const PersonalizedFeed = () => {
   if (recommendations.length === 0) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-8">
-          <h2 className="text-2xl font-light text-foreground">Your Feed</h2>
-        </div>
-        
         <div className="text-center py-12">
           <p className="text-muted-foreground mb-4">
             No new recommendations right now. Check back soon!
@@ -107,16 +99,9 @@ export const PersonalizedFeed = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="mb-8">
-        <h2 className="text-2xl font-light text-foreground mb-4">Your Feed</h2>
-        <p className="text-muted-foreground text-sm mb-6">
-          Personalized recommendations based on your preferences
-        </p>
-        
-        <PriceDropAlerts />
-      </div>
+      <PriceDropAlerts />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8">
         {recommendations.map((listing) => {
           const firstImage = listing.images?.sort(
             (a, b) => a.display_order - b.display_order
