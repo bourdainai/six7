@@ -67,27 +67,50 @@ const OnboardingStepPayout = () => {
       <FormField
         control={form.control}
         name="routingNumber"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Routing Number / Sort Code</FormLabel>
-            <FormControl>
-              <Input 
-                type="text" 
-                placeholder="12-34-56" 
-                {...field}
-                onChange={(e) => {
-                  // Allow numbers and hyphens for routing/sort codes
-                  const value = e.target.value.replace(/[^0-9-]/g, '');
-                  field.onChange(value);
-                }}
-              />
-            </FormControl>
-            <FormDescription>
-              For UK: Sort code (e.g., 12-34-56). For US: Routing number (9 digits)
-            </FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
+        render={({ field }) => {
+          const country = form.watch("country");
+          const isUK = country === "GB";
+          const isUS = country === "US";
+          
+          return (
+            <FormItem>
+              <FormLabel>Routing Number / Sort Code</FormLabel>
+              <FormControl>
+                <Input 
+                  type="text" 
+                  placeholder={isUK ? "12-34-56" : isUS ? "123456789" : "Routing number"}
+                  maxLength={isUK ? 8 : isUS ? 9 : undefined}
+                  {...field}
+                  onChange={(e) => {
+                    let value = e.target.value;
+                    
+                    if (isUK) {
+                      // UK sort code: format as XX-XX-XX
+                      value = value.replace(/[^0-9]/g, ''); // Remove non-digits
+                      if (value.length > 2) value = value.slice(0, 2) + '-' + value.slice(2);
+                      if (value.length > 5) value = value.slice(0, 5) + '-' + value.slice(5);
+                      if (value.length > 8) value = value.slice(0, 8);
+                    } else if (isUS) {
+                      // US routing number: 9 digits only
+                      value = value.replace(/[^0-9]/g, '').slice(0, 9);
+                    } else {
+                      // Other countries: allow numbers and hyphens
+                      value = value.replace(/[^0-9-]/g, '');
+                    }
+                    
+                    field.onChange(value);
+                  }}
+                />
+              </FormControl>
+              <FormDescription>
+                {isUK && "UK sort code format: XX-XX-XX (e.g., 12-34-56)"}
+                {isUS && "US routing number: 9 digits (e.g., 123456789)"}
+                {!isUK && !isUS && "Enter your routing number or sort code"}
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          );
+        }}
       />
 
       <FormField

@@ -36,12 +36,22 @@ serve(async (req) => {
     // Get listing details with shipping info
     const { data: listing, error: listingError } = await supabaseClient
       .from('listings')
-      .select('*, seller:profiles!seller_id(id, stripe_connect_account_id, stripe_onboarding_complete)')
+      .select('*, seller:profiles!seller_id(id, stripe_connect_account_id, stripe_onboarding_complete, can_receive_payments)')
       .eq('id', listingId)
       .single();
 
     if (listingError || !listing) {
       throw new Error('Listing not found');
+    }
+
+    // Validate listing status
+    if (listing.status !== 'active') {
+      throw new Error('This listing is no longer available for purchase');
+    }
+
+    // Validate user is not buying their own item
+    if (listing.seller_id === user.id) {
+      throw new Error('You cannot purchase your own listing');
     }
 
     // Check if there's an accepted offer
@@ -59,8 +69,21 @@ serve(async (req) => {
       }
     }
 
-    if (!listing.seller.stripe_connect_account_id || !listing.seller.stripe_onboarding_complete) {
-      throw new Error('Seller has not completed Stripe onboarding');
+    // Validate seller payment setup
+    if (!listing.seller) {
+      throw new Error('Seller information not found');
+    }
+
+    if (!listing.seller.stripe_connect_account_id) {
+      throw new Error('Seller has not set up payment processing. Please contact support.');
+    }
+
+    if (!listing.seller.stripe_onboarding_complete) {
+      throw new Error('Seller payment account setup is incomplete. Please try again later.');
+    }
+
+    if (!listing.seller.can_receive_payments) {
+      throw new Error('Seller cannot receive payments at this time. Please contact support.');
     }
 
     // Calculate shipping cost based on country

@@ -15,6 +15,7 @@ import {
 } from "@stripe/react-connect-js";
 import PayoutHistory from "@/components/seller/PayoutHistory";
 import PayoutSchedule from "@/components/seller/PayoutSchedule";
+import VerificationRequirements from "@/components/seller/VerificationRequirements";
 
 const SellerAccountManagement = () => {
   const { user } = useAuth();
@@ -76,8 +77,9 @@ const SellerAccountManagement = () => {
         </Button>
 
         <Tabs defaultValue="account" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="account">Account</TabsTrigger>
+            <TabsTrigger value="verification">Verification</TabsTrigger>
             <TabsTrigger value="payouts">Payout History</TabsTrigger>
             <TabsTrigger value="schedule">Payout Schedule</TabsTrigger>
           </TabsList>
@@ -104,6 +106,10 @@ const SellerAccountManagement = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="verification" className="mt-6">
+            <VerificationRequirements />
           </TabsContent>
 
           <TabsContent value="payouts" className="mt-6">

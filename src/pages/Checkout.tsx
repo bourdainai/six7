@@ -14,7 +14,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
 
-const CheckoutForm = ({ orderId, listingTitle }: { orderId: string; listingTitle: string }) => {
+const CheckoutForm = ({ orderId, listingTitle, canProceed }: { orderId: string; listingTitle: string; canProceed: boolean }) => {
   const stripe = useStripe();
   const elements = useElements();
   const navigate = useNavigate();
@@ -25,6 +25,15 @@ const CheckoutForm = ({ orderId, listingTitle }: { orderId: string; listingTitle
     e.preventDefault();
 
     if (!stripe || !elements) {
+      return;
+    }
+
+    if (!canProceed) {
+      toast({
+        title: "Cannot proceed",
+        description: "Please resolve validation errors before completing payment",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -43,9 +52,8 @@ const CheckoutForm = ({ orderId, listingTitle }: { orderId: string; listingTitle
         description: error.message,
         variant: "destructive",
       });
+      setIsProcessing(false);
     }
-
-    setIsProcessing(false);
   };
 
   return (
@@ -57,12 +65,12 @@ const CheckoutForm = ({ orderId, listingTitle }: { orderId: string; listingTitle
 
       <PaymentElement />
 
-      <Button
-        type="submit"
-        disabled={!stripe || isProcessing}
-        className="w-full h-12"
-        size="lg"
-      >
+              <Button
+                type="submit"
+                disabled={!stripe || isProcessing || !canProceed}
+                className="w-full h-12"
+                size="lg"
+              >
         {isProcessing ? (
           <>
             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -103,7 +111,15 @@ const Checkout = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("listings")
-        .select("*")
+        .select(`
+          *,
+          seller:profiles!seller_id(
+            id,
+            stripe_connect_account_id,
+            stripe_onboarding_complete,
+            can_receive_payments
+          )
+        `)
         .eq("id", id)
         .single();
 
@@ -193,6 +209,36 @@ const Checkout = () => {
 
   const handleCreateCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Additional validation before submitting
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to complete your purchase",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!canProceed) {
+      toast({
+        title: "Cannot proceed",
+        description: "Please resolve the validation errors above",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate shipping address
+    if (!shippingAddress.name || !shippingAddress.line1 || !shippingAddress.city || !shippingAddress.postal_code) {
+      toast({
+        title: "Incomplete shipping address",
+        description: "Please fill in all required shipping address fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
     createCheckoutMutation.mutate();
   };
 
@@ -224,6 +270,31 @@ const Checkout = () => {
     );
   }
 
+  // Validation checks
+  const validationErrors: string[] = [];
+  
+  if (user?.id === listing.seller_id) {
+    validationErrors.push("You cannot purchase your own listing");
+  }
+  
+  if (listing.status !== "active") {
+    validationErrors.push("This listing is no longer available for purchase");
+  }
+  
+  if (listing.seller && !listing.seller.stripe_connect_account_id) {
+    validationErrors.push("The seller has not set up payment processing yet");
+  }
+  
+  if (listing.seller && !listing.seller.stripe_onboarding_complete) {
+    validationErrors.push("The seller's payment account is not fully set up");
+  }
+  
+  if (listing.seller && !listing.seller.can_receive_payments) {
+    validationErrors.push("The seller cannot receive payments at this time");
+  }
+
+  const canProceed = validationErrors.length === 0;
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -239,8 +310,33 @@ const Checkout = () => {
 
         <h1 className="text-3xl font-light text-foreground mb-8">Checkout</h1>
 
+        {validationErrors.length > 0 && (
+          <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+            <h3 className="text-sm font-semibold text-destructive mb-2">Cannot Complete Purchase</h3>
+            <ul className="list-disc list-inside space-y-1 text-sm text-destructive">
+              {validationErrors.map((error, idx) => (
+                <li key={idx}>{error}</li>
+              ))}
+            </ul>
+            <Button
+              variant="outline"
+              className="mt-4"
+              onClick={() => navigate(`/listing/${id}`)}
+            >
+              Back to Listing
+            </Button>
+          </div>
+        )}
+
         {!createCheckoutMutation.data ? (
-          <form onSubmit={handleCreateCheckout} className="space-y-6">
+            <form onSubmit={handleCreateCheckout} className="space-y-6">
+              {!canProceed && (
+                <div className="p-4 bg-muted border border-border rounded-lg">
+                  <p className="text-sm text-muted-foreground">
+                    Please resolve the issues above before proceeding with checkout.
+                  </p>
+                </div>
+              )}
             <div className="bg-muted/30 rounded-lg p-6 mb-8">
               <h2 className="text-lg font-light text-foreground mb-4">{listing.title}</h2>
               {offer && (
@@ -378,6 +474,7 @@ const Checkout = () => {
             <CheckoutForm
               orderId={createCheckoutMutation.data.orderId}
               listingTitle={listing.title}
+              canProceed={canProceed}
             />
           </Elements>
         )}

@@ -116,19 +116,80 @@ serve(async (req) => {
     console.log(`Updated Stripe account: ${accountId} for user: ${user.id}`);
 
     // Attach external account (bank account) directly to the Connect account
-    const externalAccount = await stripe.accounts.createExternalAccount(accountId, {
-      bank_account: {
-        country: formData.country,
-        currency: formData.country === 'GB' ? 'gbp' : 'usd',
-        account_number: formData.accountNumber,
-        routing_number: formData.routingNumber,
-        account_holder_name: formData.accountHolderName,
-        account_holder_type: formData.businessType === 'company' ? 'company' : 'individual',
-      },
-      default_for_currency: true,
-    });
+    let externalAccount;
+    try {
+      externalAccount = await stripe.accounts.createExternalAccount(accountId, {
+        bank_account: {
+          country: formData.country,
+          currency: formData.country === 'GB' ? 'gbp' : 'usd',
+          account_number: formData.accountNumber,
+          routing_number: formData.routingNumber,
+          account_holder_name: formData.accountHolderName,
+          account_holder_type: formData.businessType === 'company' ? 'company' : 'individual',
+        },
+        default_for_currency: true,
+      });
+      console.log(`Created external account for account: ${accountId}`);
+    } catch (bankError: any) {
+      // Parse Stripe error for bank account creation
+      let errorMessage = 'Failed to add bank account. Please check your details and try again.';
+      let errorField = 'bank_account';
 
-    console.log(`Created external account for account: ${accountId}`);
+      if (bankError?.type === 'StripeInvalidRequestError') {
+        const code = bankError?.code;
+        const param = bankError?.param;
+
+        // Map Stripe error codes to user-friendly messages
+        switch (code) {
+          case 'invalid_account_number':
+            errorMessage = 'The account number you entered is invalid. Please check and try again.';
+            errorField = 'accountNumber';
+            break;
+          case 'invalid_routing_number':
+            errorMessage = formData.country === 'GB' 
+              ? 'The sort code you entered is invalid. Please use format XX-XX-XX (e.g., 12-34-56).'
+              : 'The routing number you entered is invalid. Please check and try again.';
+            errorField = 'routingNumber';
+            break;
+          case 'invalid_account_holder_name':
+            errorMessage = 'The account holder name is invalid. Please use the name as it appears on your bank account.';
+            errorField = 'accountHolderName';
+            break;
+          case 'account_number_mismatch':
+            errorMessage = 'The account number does not match the routing number. Please verify both and try again.';
+            errorField = 'accountNumber';
+            break;
+          case 'routing_number_mismatch':
+            errorMessage = 'The routing number does not match the account number. Please verify both and try again.';
+            errorField = 'routingNumber';
+            break;
+          default:
+            errorMessage = bankError?.message || errorMessage;
+        }
+
+        // If we have a specific field error, include it in the response
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: errorMessage,
+            errorCode: code,
+            errorField: errorField,
+            errorParam: param,
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // For other errors, return generic message
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: errorMessage,
+          errorCode: bankError?.code || 'bank_account_error',
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Check account requirements
     const accountWithRequirements = await stripe.accounts.retrieve(accountId, {

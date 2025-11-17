@@ -103,6 +103,34 @@ serve(async (req) => {
                 console.error('Error creating payout record:', payoutError);
               } else {
                 console.log(`Created payout record for order: ${payment.order_id}`);
+                
+                // Update seller_balances - add to pending balance
+                const { data: existingBalance } = await supabaseAdmin
+                  .from('seller_balances')
+                  .select('*')
+                  .eq('seller_id', order.seller_id)
+                  .single();
+
+                if (existingBalance) {
+                  // Update existing balance
+                  await supabaseAdmin
+                    .from('seller_balances')
+                    .update({
+                      pending_balance: (parseFloat(existingBalance.pending_balance.toString()) || 0) + parseFloat(order.seller_amount.toString()),
+                      updated_at: new Date().toISOString(),
+                    })
+                    .eq('seller_id', order.seller_id);
+                } else {
+                  // Create new balance record
+                  await supabaseAdmin
+                    .from('seller_balances')
+                    .insert({
+                      seller_id: order.seller_id,
+                      pending_balance: order.seller_amount,
+                      available_balance: 0,
+                      currency: order.currency,
+                    });
+                }
               }
             } else {
               console.log(`Payout already exists for order: ${payment.order_id}`);
@@ -155,6 +183,28 @@ serve(async (req) => {
                     console.error('Error updating payout with transfer ID:', payoutUpdateError);
                   } else {
                     console.log(`Updated payout with transfer ID: ${charge.transfer} for order: ${payment.order_id}`);
+                    
+                    // Update seller_balances - move from pending to available
+                    const { data: balance } = await supabaseAdmin
+                      .from('seller_balances')
+                      .select('*')
+                      .eq('seller_id', existingPayout.seller_id)
+                      .single();
+
+                    if (balance) {
+                      const currentPending = parseFloat(balance.pending_balance.toString()) || 0;
+                      const currentAvailable = parseFloat(balance.available_balance.toString()) || 0;
+                      const payoutAmount = parseFloat(existingPayout.amount.toString());
+
+                      await supabaseAdmin
+                        .from('seller_balances')
+                        .update({
+                          pending_balance: Math.max(0, currentPending - payoutAmount),
+                          available_balance: currentAvailable + payoutAmount,
+                          updated_at: new Date().toISOString(),
+                        })
+                        .eq('seller_id', existingPayout.seller_id);
+                    }
                   }
                 } else {
                   console.log(`Payout already completed for order: ${payment.order_id}`);
@@ -177,6 +227,53 @@ serve(async (req) => {
           .eq('stripe_payment_intent_id', paymentIntent.id);
 
         console.log(`Payment failed for intent: ${paymentIntent.id}`);
+        break;
+      }
+
+      case 'transfer.failed':
+      case 'transfer.paid_failed': {
+        const transfer = event.data.object as Stripe.Transfer;
+        
+        // Find the payout record by transfer ID
+        const { data: payout } = await supabaseAdmin
+          .from('payouts')
+          .select('*')
+          .eq('stripe_transfer_id', transfer.id)
+          .single();
+
+        if (payout) {
+          // Update payout status to failed
+          await supabaseAdmin
+            .from('payouts')
+            .update({
+              status: 'failed',
+            })
+            .eq('id', payout.id);
+
+          // Update seller_balances - move back to pending (or keep in pending)
+          const { data: balance } = await supabaseAdmin
+            .from('seller_balances')
+            .select('*')
+            .eq('seller_id', payout.seller_id)
+            .single();
+
+          if (balance) {
+            const currentAvailable = parseFloat(balance.available_balance.toString()) || 0;
+            const currentPending = parseFloat(balance.pending_balance.toString()) || 0;
+            const payoutAmount = parseFloat(payout.amount.toString());
+
+            await supabaseAdmin
+              .from('seller_balances')
+              .update({
+                available_balance: Math.max(0, currentAvailable - payoutAmount),
+                pending_balance: currentPending + payoutAmount,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('seller_id', payout.seller_id);
+          }
+
+          console.log(`Transfer failed for payout: ${payout.id}, transfer: ${transfer.id}`);
+        }
         break;
       }
 

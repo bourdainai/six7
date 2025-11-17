@@ -9,6 +9,12 @@ verify_jwt = true
 [functions.stripe-connect-onboard]
 verify_jwt = true
 
+[functions.stripe-connect-onboard-complete]
+verify_jwt = true
+
+[functions.stripe-connect-requirements]
+verify_jwt = true
+
 [functions.create-checkout]
 verify_jwt = true
 

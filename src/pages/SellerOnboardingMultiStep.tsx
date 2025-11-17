@@ -55,6 +55,21 @@ const onboardingSchema = z.object({
 }, {
   message: "Business name is required for companies",
   path: ["businessName"],
+}).refine((data) => {
+  // Validate UK sort code format (XX-XX-XX)
+  if (data.country === "GB") {
+    const sortCodeRegex = /^\d{2}-\d{2}-\d{2}$/;
+    return sortCodeRegex.test(data.routingNumber);
+  }
+  // Validate US routing number (9 digits)
+  if (data.country === "US") {
+    const routingRegex = /^\d{9}$/;
+    return routingRegex.test(data.routingNumber);
+  }
+  return true;
+}, {
+  message: "Invalid routing number format for selected country",
+  path: ["routingNumber"],
 });
 
 export type OnboardingFormData = z.infer<typeof onboardingSchema>;
@@ -217,7 +232,35 @@ const SellerOnboardingMultiStep = () => {
 
         navigate("/seller/account");
       } else {
-        throw new Error(result?.error || "Failed to submit onboarding");
+        // Handle specific error fields from bank account creation
+        const errorMessage = result?.error || "Failed to submit onboarding";
+        const errorField = result?.errorField;
+        
+        // If we have a specific field error, set it on the form
+        if (errorField && form) {
+          const fieldMap: Record<string, keyof OnboardingFormData> = {
+            'accountNumber': 'accountNumber',
+            'routingNumber': 'routingNumber',
+            'accountHolderName': 'accountHolderName',
+            'bank_account': 'accountNumber', // Default to account number
+          };
+          
+          const formField = fieldMap[errorField];
+          if (formField) {
+            form.setError(formField, {
+              type: 'server',
+              message: errorMessage,
+            });
+            
+            // Navigate to payout step if we're not already there
+            const businessType = form.watch("businessType");
+            const isIndividual = businessType === "individual";
+            const payoutStep = isIndividual ? 2 : 3;
+            setCurrentStep(payoutStep);
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
     } catch (err) {
       console.error("Error submitting onboarding:", err);
