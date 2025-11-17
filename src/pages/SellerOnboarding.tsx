@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { loadConnectAndInitialize } from "@stripe/connect-js";
+import "@stripe/connect-js/styles.css";
 
 const SellerOnboarding = () => {
   const { user } = useAuth();
@@ -15,6 +16,7 @@ const SellerOnboarding = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const mountedRef = useRef(false);
 
   useEffect(() => {
     if (!user) {
@@ -24,6 +26,10 @@ const SellerOnboarding = () => {
 
     const initializeStripeConnect = async () => {
       try {
+        if (mountedRef.current) {
+          console.log("Onboarding already initialized");
+          return;
+        }
         setLoading(true);
         setError(null);
 
@@ -74,7 +80,7 @@ const SellerOnboarding = () => {
           });
 
           // Mount the component
-          container.appendChild(accountOnboarding as unknown as Node);
+          (accountOnboarding as any).mount(container);
           console.log("Account onboarding component mounted");
         }
 
