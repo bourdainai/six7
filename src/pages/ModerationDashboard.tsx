@@ -9,6 +9,7 @@ import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useNavigate } from "react-router-dom";
 import { Flag, AlertTriangle, Shield, TrendingUp, Clock, CheckCircle, XCircle } from "lucide-react";
 import { format } from "date-fns";
+import { formatForDisplay } from "@/lib/format";
 import { ModerationQueue } from "@/components/ModerationQueue";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -258,7 +259,7 @@ export default function ModerationDashboard() {
                     <div className="flex items-start justify-between">
                       <div>
                         <CardTitle className="text-lg">
-                          {report.report_type.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())}
+                          {formatForDisplay(report.report_type)}
                         </CardTitle>
                         <CardDescription>
                           Reported by {report.reporter?.full_name || "Unknown"} on{" "}
@@ -308,7 +309,7 @@ export default function ModerationDashboard() {
                     <div className="flex items-start justify-between">
                       <div>
                         <CardTitle className="text-lg">
-                          {dispute.dispute_type.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())}
+                          {formatForDisplay(dispute.dispute_type)}
                         </CardTitle>
                         <CardDescription>
                           {dispute.buyer?.full_name} vs {dispute.seller?.full_name}

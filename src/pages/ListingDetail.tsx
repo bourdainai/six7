@@ -18,6 +18,7 @@ import { SellerReputation } from "@/components/seller/SellerReputation";
 import { OutfitBuilder } from "@/components/OutfitBuilder";
 import { useSavedListings } from "@/hooks/useSavedListings";
 import { formatCondition } from "@/lib/format";
+import { PackageDimensions } from "@/integrations/supabase/types";
 
 const ListingDetail = () => {
   const { id } = useParams();
@@ -93,11 +94,15 @@ const ListingDetail = () => {
     );
   }
 
-  if (!listing) {
+  if (listingError || (!listing && !isLoading)) {
     return (
       <PageLayout>
-        <div className="text-center">
-          <h1 className="text-2xl font-light text-foreground mb-4">Listing not found</h1>
+        <ErrorDisplay
+          title="Listing not found"
+          message={listingError ? "Failed to load listing details." : "This listing doesn't exist or has been removed."}
+          onRetry={listingError ? () => window.location.reload() : undefined}
+        />
+        <div className="text-center mt-4">
           <Button variant="outline" onClick={() => navigate("/browse")}>
             Browse Items
           </Button>
@@ -286,7 +291,7 @@ const ListingDetail = () => {
                     <div className="flex items-center justify-between">
                       <span className="text-muted-foreground">Dimensions:</span>
                       <span className="font-medium">
-                        {(listing.package_dimensions as any).length} × {(listing.package_dimensions as any).width} × {(listing.package_dimensions as any).height} cm
+                        {(listing.package_dimensions as PackageDimensions).length} × {(listing.package_dimensions as PackageDimensions).width} × {(listing.package_dimensions as PackageDimensions).height} cm
                       </span>
                     </div>
                   )}

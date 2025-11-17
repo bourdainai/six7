@@ -1,13 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./auth/AuthProvider";
-import { Badge } from "./ui/badge";
-import { Button } from "./ui/button";
 import { useNavigate } from "react-router-dom";
-import { Heart } from "lucide-react";
 import { PriceDropAlerts } from "./PriceDropAlerts";
 import { useSavedListings } from "@/hooks/useSavedListings";
-import { formatCondition } from "@/lib/format";
+import { ListingCard } from "@/components/ListingCard";
+import { ErrorDisplay } from "@/components/ErrorDisplay";
+import { Button } from "./ui/button";
 
 interface RecommendedListing {
   id: string;
@@ -22,7 +21,7 @@ interface RecommendedListing {
   images: { image_url: string; display_order: number }[];
 }
 
-export const PersonalizedFeed = () => {
+export const PersonalizedFeed = React.memo(() => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { isSaved, toggleSave, isSaving } = useSavedListings();
@@ -60,11 +59,11 @@ export const PersonalizedFeed = () => {
   if (error) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">
-            Failed to load recommendations. Please try again later.
-          </p>
-        </div>
+        <ErrorDisplay
+          title="Failed to load recommendations"
+          message="We couldn't load your personalized feed. Please try again."
+          onRetry={() => window.location.reload()}
+        />
       </div>
     );
   }
@@ -104,86 +103,18 @@ export const PersonalizedFeed = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <PriceDropAlerts />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8">
-        {recommendations.map((listing) => {
-          const firstImage = listing.images?.sort(
-            (a, b) => a.display_order - b.display_order
-          )[0];
-
-          return (
-            <div key={listing.id} className="group relative">
-              <button
-                onClick={() => navigate(`/listing/${listing.id}`)}
-                className="text-left w-full"
-              >
-                <div className="aspect-[3/4] bg-muted rounded-lg overflow-hidden mb-3 relative">
-                  {firstImage ? (
-                    <img
-                      src={firstImage.image_url}
-                      alt={listing.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      loading="lazy"
-                      decoding="async"
-                      width="400"
-                      height="533"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                      No image
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-1">
-                  <h3 className="text-sm font-medium text-foreground line-clamp-1 group-hover:text-primary transition-colors">
-                    {listing.title}
-                  </h3>
-                  
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm text-muted-foreground">
-                          {listing.brand}
-                        </p>
-                        {listing.condition && (
-                          <Badge variant="secondary" className="text-xs">
-                            {formatCondition(listing.condition)}
-                          </Badge>
-                        )}
-                      </div>
-
-                  <div className="flex items-baseline gap-2">
-                    <p className="text-base font-medium text-foreground">
-                      £{Number(listing.seller_price).toFixed(2)}
-                    </p>
-                    {listing.size && (
-                      <Badge variant="outline" className="text-xs">
-                        {listing.size}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </button>
-
-                  {/* Save Action */}
-                  <div className="mt-3 flex items-center justify-end gap-2 px-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleSave(listing.id);
-                      }}
-                      disabled={isSaving}
-                      className={isSaved(listing.id) ? "text-red-500 hover:text-red-600" : ""}
-                    >
-                      <Heart 
-                        className={`w-4 h-4 ${isSaved(listing.id) ? "fill-current" : ""}`} 
-                      />
-                    </Button>
-                  </div>
-            </div>
-          );
-        })}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8">
+          {recommendations.map((listing) => (
+            <ListingCard
+              key={listing.id}
+              listing={listing}
+              onSaveClick={toggleSave}
+              isSaved={isSaved(listing.id)}
+              isSaving={isSaving}
+              showSaveButton={true}
+            />
+          ))}
       </div>
     </div>
   );
-};
+});

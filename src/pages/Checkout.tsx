@@ -14,7 +14,13 @@ import { useAuth } from "@/components/auth/AuthProvider";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
 
-const CheckoutForm = ({ orderId, listingTitle, canProceed }: { orderId: string; listingTitle: string; canProceed: boolean }) => {
+interface CheckoutFormProps {
+  orderId: string;
+  listingTitle: string;
+  canProceed: boolean;
+}
+
+const CheckoutForm = ({ orderId, listingTitle, canProceed }: CheckoutFormProps) => {
   const stripe = useStripe();
   const elements = useElements();
   const navigate = useNavigate();

@@ -9,8 +9,7 @@ import { SearchFilters, FilterState } from "@/components/SearchFilters";
 import { VibeSearchDialog } from "@/components/VibeSearchDialog";
 import { useState, useMemo } from "react";
 import { Image } from "lucide-react";
-import { SellerReputation } from "@/components/seller/SellerReputation";
-import { formatCondition } from "@/lib/format";
+import { ListingCard } from "@/components/ListingCard";
 
 const Browse = () => {
   const navigate = useNavigate();
@@ -229,75 +228,13 @@ const Browse = () => {
           </div>
         ) : filteredListings && filteredListings.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredListings.map((listing) => {
-              const firstImage = listing.images?.sort(
-                (a, b) => a.display_order - b.display_order
-              )[0];
-
-              return (
-                <button
-                  key={listing.id}
-                  onClick={() => navigate(`/listing/${listing.id}`)}
-                  className="group text-left"
-                >
-                  <div className="aspect-[3/4] bg-muted rounded-lg overflow-hidden mb-3 relative">
-                    {firstImage ? (
-                      <img
-                        src={firstImage.image_url}
-                        alt={listing.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        loading="lazy"
-                        decoding="async"
-                        width="400"
-                        height="533"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                        No image
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="space-y-1">
-                    <h3 className="text-sm font-medium text-foreground line-clamp-1 group-hover:text-primary transition-colors">
-                      {listing.title}
-                    </h3>
-                    
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm text-muted-foreground">
-                        {listing.brand}
-                      </p>
-                          {listing.condition && (
-                            <Badge variant="secondary" className="text-xs">
-                              {formatCondition(listing.condition)}
-                            </Badge>
-                          )}
-                    </div>
-
-                    <div className="flex items-baseline gap-2">
-                      <p className="text-base font-medium text-foreground">
-                        £{Number(listing.seller_price).toFixed(2)}
-                      </p>
-                      {listing.original_rrp && (
-                        <p className="text-xs text-muted-foreground line-through">
-                          £{Number(listing.original_rrp).toFixed(2)}
-                        </p>
-                      )}
-                    </div>
-
-                    {listing.size && (
-                      <p className="text-xs text-muted-foreground">Size: {listing.size}</p>
-                    )}
-
-                    {listing.seller?.id && (
-                      <div className="pt-1">
-                        <SellerReputation sellerId={listing.seller.id} compact />
-                      </div>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
+            {filteredListings.map((listing) => (
+              <ListingCard
+                key={listing.id}
+                listing={listing}
+                showSaveButton={false}
+              />
+            ))}
           </div>
         ) : (
           <div className="text-center py-12">

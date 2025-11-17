@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import React, { ReactNode } from "react";
 import { Navigation } from "./Navigation";
 
 interface PageLayoutProps {
@@ -6,7 +6,7 @@ interface PageLayoutProps {
   className?: string;
 }
 
-export const PageLayout = ({ children, className = "" }: PageLayoutProps) => {
+export const PageLayout = React.memo(({ children, className = "" }: PageLayoutProps) => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -15,5 +15,5 @@ export const PageLayout = ({ children, className = "" }: PageLayoutProps) => {
       </div>
     </div>
   );
-};
+});
 

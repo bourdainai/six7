@@ -10,14 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Upload, Sparkles, Check, Loader2, DollarSign, Package, Scale, Ruler, Tag, X, AlertCircle, ArrowRight, ExternalLink } from "lucide-react";
+import { Upload, Check, Loader2, Package, Scale, Ruler, Tag, X, AlertCircle, ArrowRight, ExternalLink, Camera } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
-import { PhotoQualityFeedback } from "@/components/PhotoQualityFeedback";
-import { ImageAnalysisPanel } from "@/components/ImageAnalysisPanel";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { useQuery } from "@tanstack/react-query";
+import { PackageDimensions } from "@/integrations/supabase/types";
 
 interface ListingData {
   title: string;
@@ -45,50 +44,6 @@ interface ShippingData {
   package_height: number | null;
 }
 
-interface PricingData {
-  suggested_price: number;
-  quick_sale_price: number;
-  ambitious_price: number;
-  reasoning: string;
-  estimated_days_to_sell?: {
-    quick: string;
-    fair: string;
-    ambitious: string;
-  };
-}
-
-interface QualityAnalysis {
-  overall_quality: number;
-  lighting: number;
-  angle: number;
-  background: number;
-  clarity: number;
-}
-
-interface DamageDetected {
-  type: string;
-  severity: "minor" | "moderate" | "significant";
-  confidence: number;
-  location: string;
-}
-
-interface LogoDetected {
-  brand: string;
-  confidence: number;
-  authentic_appearance: boolean;
-}
-
-interface ImageAnalysisData {
-  quality_analysis?: QualityAnalysis;
-  damage_detected?: DamageDetected[];
-  logo_analysis?: {
-    logos_detected: LogoDetected[];
-    counterfeit_risk: number;
-  };
-  stock_photo_detected?: boolean;
-  photo_advice?: string[];
-}
-
 const CATEGORIES = [
   "Outerwear", "Tops", "Bottoms", "Dresses", "Accessories", 
   "Shoes", "Trading Cards", "Electronics", "Books", "Music"
@@ -109,11 +64,9 @@ const SUBCATEGORIES: Record<string, string[]> = {
 
 const SellEnhanced = () => {
   const navigate = useNavigate();
-  const [analyzing, setAnalyzing] = useState(false);
-  const [analyzed, setAnalyzed] = useState(false);
   const [images, setImages] = useState<string[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
-  const [imageAnalysis, setImageAnalysis] = useState<ImageAnalysisData | null>(null);
+  const [activeTab, setActiveTab] = useState("photos");
   const [listingData, setListingData] = useState<ListingData>({
     title: "",
     description: "",
@@ -127,7 +80,6 @@ const SellEnhanced = () => {
     style_tags: [],
     original_rrp: null,
   });
-  const [pricing, setPricing] = useState<PricingData | null>(null);
   const [selectedPrice, setSelectedPrice] = useState<number>(0);
   const [publishing, setPublishing] = useState(false);
   const [publishedListingId, setPublishedListingId] = useState<string | null>(null);
@@ -174,7 +126,7 @@ const SellEnhanced = () => {
   const needsPaymentSetup = user && profile && !profile.stripe_connect_account_id;
   const paymentSetupIncomplete = user && profile && profile.stripe_connect_account_id && !profile.stripe_onboarding_complete;
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || !user) return;
 
@@ -184,95 +136,51 @@ const SellEnhanced = () => {
     // Create preview URLs
     const newImages = fileArray.map(file => URL.createObjectURL(file));
     setImages(newImages);
-    
-    // Start AI analysis
-    setAnalyzing(true);
-    setAnalyzed(false);
+  };
 
-    try {
-      // Convert images to base64 for AI analysis
-      const base64Images = await Promise.all(
-        fileArray.map(file => {
-          return new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(file);
-          });
-        })
-      );
+  const removeImage = (index: number) => {
+    const newImages = [...images];
+    const newFiles = [...imageFiles];
+    newImages.splice(index, 1);
+    newFiles.splice(index, 1);
+    setImages(newImages);
+    setImageFiles(newFiles);
+  };
 
-      // Call AI vision extraction
-      const { data: visionData, error: visionError } = await supabase.functions.invoke(
-        'analyze-listing-images',
-        { body: { images: base64Images } }
-      );
-
-      if (visionError) throw visionError;
-      if (!visionData?.success) throw new Error(visionData?.error || "Analysis failed");
-
-      const extracted = visionData.data;
-      console.log("Extracted data:", extracted);
-
-      // Update listing data
-      setListingData({
-        title: extracted.title || "",
-        description: extracted.description || "",
-        category: extracted.category || "",
-        subcategory: extracted.subcategory || "",
-        brand: extracted.brand || "",
-        size: extracted.size_hints || "",
-        color: extracted.color || "",
-        material: extracted.material || "",
-        condition: extracted.condition || "",
-        style_tags: extracted.style_tags || [],
-        original_rrp: null,
-      });
-
-      // Capture image analysis data
-      setImageAnalysis({
-        quality_analysis: extracted.quality_analysis,
-        damage_detected: extracted.damage_detected,
-        logo_analysis: extracted.logo_analysis,
-        stock_photo_detected: extracted.stock_photo_detected,
-        photo_advice: extracted.photo_advice
-      });
-
-      // Get pricing suggestions
-      const { data: pricingData, error: pricingError } = await supabase.functions.invoke(
-        'suggest-listing-price',
-        { 
-          body: { 
-            category: extracted.category,
-            subcategory: extracted.subcategory,
-            brand: extracted.brand,
-            condition: extracted.condition,
-            originalRrp: null
-          } 
-        }
-      );
-
-      if (pricingError) throw pricingError;
-      if (!pricingData?.success) throw new Error(pricingData?.error || "Pricing failed");
-
-      setPricing(pricingData.data);
-      setSelectedPrice(pricingData.data.suggested_price);
-      
-      setAnalyzed(true);
+  const handleContinueFromPhotos = () => {
+    if (images.length === 0) {
       toast({
-        title: "AI Analysis Complete",
-        description: "Your item has been analyzed. Review and adjust as needed.",
-      });
-
-    } catch (error: any) {
-      console.error("Analysis error:", error);
-      toast({
-        title: "Analysis Failed",
-        description: error.message || "Please try again or fill in details manually.",
+        title: "Photos required",
+        description: "Please upload at least one photo to continue.",
         variant: "destructive"
       });
-    } finally {
-      setAnalyzing(false);
+      return;
     }
+    setActiveTab("details");
+  };
+
+  const handleContinueFromDetails = () => {
+    if (!listingData.title || !listingData.category) {
+      toast({
+        title: "Required fields missing",
+        description: "Please fill in title and category to continue.",
+        variant: "destructive"
+      });
+      return;
+    }
+    setActiveTab("pricing");
+  };
+
+  const handleContinueFromPricing = () => {
+    if (!selectedPrice || selectedPrice <= 0) {
+      toast({
+        title: "Price required",
+        description: "Please set a price to continue.",
+        variant: "destructive"
+      });
+      return;
+    }
+    setActiveTab("shipping");
   };
 
   const addStyleTag = () => {
@@ -293,10 +201,10 @@ const SellEnhanced = () => {
   };
 
   const handlePublish = async () => {
-    if (!user || !selectedPrice || !listingData.title || !listingData.category) {
+    if (!user || !selectedPrice || !listingData.title || !listingData.category || images.length === 0) {
       toast({
         title: "Cannot publish",
-        description: "Please complete all required fields (title, category, price).",
+        description: "Please complete all required fields (photos, title, category, price).",
         variant: "destructive"
       });
       return;
@@ -330,9 +238,6 @@ const SellEnhanced = () => {
           condition: listingData.condition as any,
           seller_price: selectedPrice,
           original_rrp: listingData.original_rrp,
-          suggested_price: pricing?.suggested_price || null,
-          quick_sale_price: pricing?.quick_sale_price || null,
-          ambitious_price: pricing?.ambitious_price || null,
           style_tags: listingData.style_tags as any,
           status: 'active' as any,
           published_at: new Date().toISOString(),
@@ -342,7 +247,7 @@ const SellEnhanced = () => {
           free_shipping: shipping.free_shipping,
           estimated_delivery_days: shipping.estimated_delivery_days,
           package_weight: shipping.package_weight,
-          package_dimensions: packageDimensions as any,
+          package_dimensions: packageDimensions as PackageDimensions,
         } as any)
         .select()
         .single();
@@ -367,34 +272,11 @@ const SellEnhanced = () => {
           .from('listing-images')
           .getPublicUrl(fileName);
 
-        // Prepare image analysis data
-        const imageData: any = {
+        await supabase.from('listing_images').insert({
           listing_id: listing.id,
           image_url: publicUrl,
           display_order: i
-        };
-
-        // Add quality and analysis data if available
-        if (imageAnalysis) {
-          if (imageAnalysis.quality_analysis) {
-            imageData.quality_score = imageAnalysis.quality_analysis.overall_quality;
-            imageData.lighting_score = imageAnalysis.quality_analysis.lighting;
-            imageData.angle_score = imageAnalysis.quality_analysis.angle;
-            imageData.background_score = imageAnalysis.quality_analysis.background;
-          }
-          if (imageAnalysis.damage_detected) {
-            imageData.damage_detected = imageAnalysis.damage_detected;
-          }
-          if (imageAnalysis.logo_analysis) {
-            imageData.logo_detected = imageAnalysis.logo_analysis.logos_detected;
-            imageData.counterfeit_risk_score = imageAnalysis.logo_analysis.counterfeit_risk;
-          }
-          if (imageAnalysis.stock_photo_detected !== undefined) {
-            imageData.is_stock_photo = imageAnalysis.stock_photo_detected;
-          }
-        }
-
-        await supabase.from('listing_images').insert(imageData);
+        });
       }
 
       setPublishedListingId(listing.id);
@@ -403,16 +285,6 @@ const SellEnhanced = () => {
         title: "Listed Successfully!",
         description: "Your item is now live on the marketplace.",
       });
-
-      // Trigger embedding generation for the new listing
-      try {
-        await supabase.functions.invoke('generate-listing-embedding', {
-          body: { listingId: listing.id }
-        });
-        console.log("Embedding generation triggered");
-      } catch (embError) {
-        console.error("Failed to generate embedding:", embError);
-      }
 
     } catch (error: any) {
       console.error("Publish error:", error);
@@ -491,7 +363,6 @@ const SellEnhanced = () => {
                 setPublishedListingId(null);
                 setImages([]);
                 setImageFiles([]);
-                setImageAnalysis(null);
                 setListingData({
                   title: "",
                   description: "",
@@ -505,9 +376,7 @@ const SellEnhanced = () => {
                   style_tags: [],
                   original_rrp: null,
                 });
-                setPricing(null);
                 setSelectedPrice(0);
-                setAnalyzed(false);
                 setShipping({
                   shipping_cost_uk: 5.99,
                   shipping_cost_europe: 12.99,
@@ -519,6 +388,7 @@ const SellEnhanced = () => {
                   package_width: null,
                   package_height: null,
                 });
+                setActiveTab("photos");
               }}
             >
               List Another Item
@@ -558,10 +428,10 @@ const SellEnhanced = () => {
     <PageLayout>
       <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} defaultMode="signup" />
       
-      <div className="mb-8 space-y-2">
-        <h1 className="text-3xl font-light text-foreground">List Your Item</h1>
-        <p className="text-base text-muted-foreground font-light">
-          Upload photos and let AI analyze everything in seconds
+      <div className="mb-6 sm:mb-8 space-y-2">
+        <h1 className="text-2xl sm:text-3xl font-light text-foreground">List Your Item</h1>
+        <p className="text-sm sm:text-base text-muted-foreground font-light">
+          Add photos and details to get your item online
         </p>
       </div>
 
@@ -604,41 +474,60 @@ const SellEnhanced = () => {
       )}
       
       <div className="max-w-6xl mx-auto">
-        <Tabs defaultValue="photos" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-8">
-            <TabsTrigger value="photos">1. Photos</TabsTrigger>
-            <TabsTrigger value="details" disabled={!analyzed}>2. Details</TabsTrigger>
-            <TabsTrigger value="pricing" disabled={!analyzed}>3. Pricing</TabsTrigger>
-            <TabsTrigger value="shipping" disabled={!analyzed}>4. Shipping</TabsTrigger>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-4 mb-6 sm:mb-8 overflow-x-auto">
+            <TabsTrigger value="photos" className="text-xs sm:text-sm">1. Photos</TabsTrigger>
+            <TabsTrigger value="details" className="text-xs sm:text-sm">2. Details</TabsTrigger>
+            <TabsTrigger value="pricing" className="text-xs sm:text-sm">3. Pricing</TabsTrigger>
+            <TabsTrigger value="shipping" className="text-xs sm:text-sm">4. Shipping</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="photos" className="space-y-6">
+          <TabsContent value="photos" className="space-y-4 sm:space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Upload Photos</CardTitle>
-                <CardDescription>Upload 1-5 photos of your item. AI will analyze them automatically.</CardDescription>
+                <CardTitle className="text-lg sm:text-xl">Upload Photos</CardTitle>
+                <CardDescription className="text-sm">Upload 1-5 photos of your item</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                {/* Image Preview - Above fold on mobile */}
+                {images.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+                    {images.map((img, idx) => (
+                      <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-border group">
+                        <img src={img} alt={`Upload ${idx + 1}`} className="w-full h-full object-cover" />
+                        <button
+                          onClick={() => removeImage(idx)}
+                          className="absolute top-1 right-1 bg-background/90 hover:bg-background rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="w-4 h-4 text-destructive" />
+                        </button>
+                        <div className="absolute bottom-1 left-1 bg-background/80 rounded-full px-2 py-0.5">
+                          <span className="text-xs font-medium">{idx + 1}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Upload Area */}
                 <Label
                   htmlFor="image-upload"
-                  className="flex flex-col items-center justify-center border-2 border-dashed border-border rounded-xl p-12 cursor-pointer hover:border-primary transition-colors min-h-[400px]"
+                  className={`flex flex-col items-center justify-center border-2 border-dashed border-border rounded-xl p-8 sm:p-12 cursor-pointer hover:border-primary transition-colors ${
+                    images.length > 0 ? 'min-h-[200px] sm:min-h-[300px]' : 'min-h-[300px] sm:min-h-[400px]'
+                  }`}
                 >
-                  {images.length > 0 ? (
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 w-full">
-                      {images.map((img, idx) => (
-                        <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-border">
-                          <img src={img} alt={`Upload ${idx + 1}`} className="w-full h-full object-cover" />
-                          <div className="absolute top-2 right-2 bg-background/80 rounded-full p-1">
-                            <span className="text-xs font-medium">{idx + 1}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                  {images.length === 0 ? (
+                    <>
+                      <Camera className="w-12 h-12 sm:w-16 sm:h-16 text-muted-foreground mb-4" />
+                      <span className="text-base sm:text-lg font-medium text-foreground mb-2">Click to upload photos</span>
+                      <span className="text-xs sm:text-sm text-muted-foreground text-center">1-5 images recommended</span>
+                      <span className="text-xs text-muted-foreground mt-2">You can select multiple images at once</span>
+                    </>
                   ) : (
                     <>
-                      <Upload className="w-16 h-16 text-muted-foreground mb-4" />
-                      <span className="text-base font-medium text-foreground mb-2">Click to upload photos</span>
-                      <span className="text-sm text-muted-foreground">1-5 images recommended</span>
+                      <Upload className="w-8 h-8 sm:w-12 sm:h-12 text-muted-foreground mb-3" />
+                      <span className="text-sm sm:text-base font-medium text-foreground mb-1">Add more photos</span>
+                      <span className="text-xs text-muted-foreground">Tap to select additional images</span>
                     </>
                   )}
                 </Label>
@@ -653,77 +542,45 @@ const SellEnhanced = () => {
                 />
 
                 {!user && (
-                  <p className="mt-4 text-sm text-muted-foreground text-center">
+                  <p className="text-sm text-muted-foreground text-center">
                     Sign in to start listing
                   </p>
                 )}
 
-                {analyzing && (
-                  <div className="mt-6 p-4 rounded-lg bg-primary/10 border border-primary/20 flex items-center gap-3">
-                    <Loader2 className="w-5 h-5 text-primary animate-spin" />
-                    <span className="text-sm font-medium text-foreground">AI analyzing your item...</span>
-                  </div>
-                )}
-
-                {analyzed && (
-                  <div className="mt-6 p-4 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center gap-3">
-                    <Check className="w-5 h-5 text-green-500" />
-                    <span className="text-sm font-medium text-foreground">Analysis complete! Continue to Details.</span>
-                  </div>
-                )}
-
-                {/* Image Quality Feedback */}
-                {analyzed && imageAnalysis?.quality_analysis && (
-                  <div className="mt-6">
-                    <PhotoQualityFeedback
-                      quality={imageAnalysis.quality_analysis}
-                      stockPhoto={imageAnalysis.stock_photo_detected}
-                      advice={imageAnalysis.photo_advice}
-                    />
-                  </div>
-                )}
-
-                {/* Damage & Logo Analysis */}
-                {analyzed && (imageAnalysis?.damage_detected || imageAnalysis?.logo_analysis) && (
-                  <div className="mt-6">
-                    <ImageAnalysisPanel
-                      damageDetected={imageAnalysis.damage_detected}
-                      logoAnalysis={imageAnalysis.logo_analysis}
-                      condition={listingData.condition}
-                    />
-                  </div>
+                {/* Continue Button - Prominent on mobile */}
+                {images.length > 0 && (
+                  <Button 
+                    className="w-full sm:w-auto sm:ml-auto sm:block" 
+                    size="lg"
+                    onClick={handleContinueFromPhotos}
+                  >
+                    Continue to Details
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="details" className="space-y-6">
+          <TabsContent value="details" className="space-y-4 sm:space-y-6">
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Item Details</CardTitle>
-                  {analyzed && (
-                    <div className="flex items-center gap-2 text-sm text-primary">
-                      <Sparkles className="w-4 h-4" />
-                      <span>AI Generated</span>
-                    </div>
-                  )}
-                </div>
-                <CardDescription>Review and edit the details extracted by AI</CardDescription>
+                <CardTitle className="text-lg sm:text-xl">Item Details</CardTitle>
+                <CardDescription className="text-sm">Tell us about your item</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4 sm:space-y-6">
                 <div>
                   <Label htmlFor="title">Title *</Label>
                   <Input
                     id="title"
-                    placeholder="Item title"
+                    placeholder="e.g., Vintage Denim Jacket"
                     value={listingData.title}
                     onChange={(e) => setListingData({...listingData, title: e.target.value})}
                     className="mt-1"
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="category">Category *</Label>
                     <Select
@@ -732,7 +589,7 @@ const SellEnhanced = () => {
                         setListingData({
                           ...listingData,
                           category: value,
-                          subcategory: "" // Reset subcategory when category changes
+                          subcategory: ""
                         });
                       }}
                     >
@@ -765,7 +622,7 @@ const SellEnhanced = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="brand">Brand</Label>
                     <Input
@@ -788,7 +645,7 @@ const SellEnhanced = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="color">Color</Label>
                     <Input
@@ -847,7 +704,7 @@ const SellEnhanced = () => {
                   <div className="flex gap-2 mt-1">
                     <Input
                       id="style-tags"
-                      placeholder="Add style tag (e.g., vintage, casual, formal)"
+                      placeholder="Add style tag (e.g., vintage, casual)"
                       value={styleTagInput}
                       onChange={(e) => setStyleTagInput(e.target.value)}
                       onKeyPress={(e) => e.key === "Enter" && addStyleTag()}
@@ -872,17 +729,39 @@ const SellEnhanced = () => {
                     </div>
                   )}
                 </div>
+
+                <Button 
+                  className="w-full sm:w-auto sm:ml-auto sm:block" 
+                  size="lg"
+                  onClick={handleContinueFromDetails}
+                >
+                  Continue to Pricing
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="pricing" className="space-y-6">
+          <TabsContent value="pricing" className="space-y-4 sm:space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Pricing</CardTitle>
-                <CardDescription>Set your price and original retail price if applicable</CardDescription>
+                <CardTitle className="text-lg sm:text-xl">Pricing</CardTitle>
+                <CardDescription className="text-sm">Set your price</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4 sm:space-y-6">
+                <div>
+                  <Label htmlFor="price">Price (£) *</Label>
+                  <Input
+                    id="price"
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={selectedPrice || ""}
+                    onChange={(e) => setSelectedPrice(parseFloat(e.target.value) || 0)}
+                    className="mt-1 text-lg"
+                  />
+                </div>
+
                 <div>
                   <Label htmlFor="original-rrp">Original Retail Price (Optional)</Label>
                   <Input
@@ -902,95 +781,25 @@ const SellEnhanced = () => {
                   </p>
                 </div>
 
-                {pricing && (
-                  <div className="p-6 rounded-lg bg-muted border border-border">
-                    <div className="flex items-center gap-2 mb-4">
-                      <DollarSign className="w-5 h-5 text-primary" />
-                      <span className="font-semibold text-foreground">AI Price Suggestions</span>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <label className="flex items-center justify-between p-4 rounded-lg border-2 border-border hover:border-primary cursor-pointer transition-colors bg-background">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="radio"
-                              name="price"
-                              checked={selectedPrice === pricing.quick_sale_price}
-                              onChange={() => setSelectedPrice(pricing.quick_sale_price)}
-                              className="text-primary"
-                            />
-                            <span className="font-medium text-foreground">Quick Sale</span>
-                          </div>
-                          <p className="text-xs text-muted-foreground ml-6 mt-1">
-                            {pricing.estimated_days_to_sell?.quick || "3-7 days"}
-                          </p>
-                        </div>
-                        <span className="text-2xl font-bold text-foreground">£{pricing.quick_sale_price.toFixed(2)}</span>
-                      </label>
-
-                      <label className="flex items-center justify-between p-4 rounded-lg border-2 border-primary bg-primary/5 cursor-pointer">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="radio"
-                              name="price"
-                              checked={selectedPrice === pricing.suggested_price}
-                              onChange={() => setSelectedPrice(pricing.suggested_price)}
-                              className="text-primary"
-                            />
-                            <span className="font-medium text-foreground">Fair Price</span>
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-primary text-primary-foreground">Recommended</span>
-                          </div>
-                          <p className="text-xs text-muted-foreground ml-6 mt-1">
-                            {pricing.estimated_days_to_sell?.fair || "1-2 weeks"}
-                          </p>
-                        </div>
-                        <span className="text-2xl font-bold text-primary">£{pricing.suggested_price.toFixed(2)}</span>
-                      </label>
-
-                      <label className="flex items-center justify-between p-4 rounded-lg border-2 border-border hover:border-primary cursor-pointer transition-colors bg-background">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="radio"
-                              name="price"
-                              checked={selectedPrice === pricing.ambitious_price}
-                              onChange={() => setSelectedPrice(pricing.ambitious_price)}
-                              className="text-primary"
-                            />
-                            <span className="font-medium text-foreground">Premium Price</span>
-                          </div>
-                          <p className="text-xs text-muted-foreground ml-6 mt-1">
-                            {pricing.estimated_days_to_sell?.ambitious || "3-4 weeks"}
-                          </p>
-                        </div>
-                        <span className="text-2xl font-bold text-foreground">£{pricing.ambitious_price.toFixed(2)}</span>
-                      </label>
-                    </div>
-
-                    <p className="text-xs text-muted-foreground mt-4">{pricing.reasoning}</p>
-                  </div>
-                )}
-
-                {!pricing && (
-                  <div className="p-6 rounded-lg bg-muted border border-border text-center">
-                    <p className="text-sm text-muted-foreground">
-                      Upload photos first to get AI price suggestions
-                    </p>
-                  </div>
-                )}
+                <Button 
+                  className="w-full sm:w-auto sm:ml-auto sm:block" 
+                  size="lg"
+                  onClick={handleContinueFromPricing}
+                >
+                  Continue to Shipping
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="shipping" className="space-y-6">
+          <TabsContent value="shipping" className="space-y-4 sm:space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Shipping & Packaging</CardTitle>
-                <CardDescription>Configure shipping costs and package details</CardDescription>
+                <CardTitle className="text-lg sm:text-xl">Shipping & Packaging</CardTitle>
+                <CardDescription className="text-sm">Configure shipping costs and package details</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4 sm:space-y-6">
                 <div className="flex items-center gap-2 p-4 rounded-lg border border-border">
                   <input
                     type="checkbox"
@@ -1005,7 +814,7 @@ const SellEnhanced = () => {
                 </div>
 
                 {!shipping.free_shipping && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                       <Label htmlFor="ship-uk">UK Shipping (£)</Label>
                       <Input
@@ -1124,7 +933,7 @@ const SellEnhanced = () => {
                 <Button 
                   className="w-full" 
                   size="lg" 
-                  disabled={!analyzed || publishing || !selectedPrice}
+                  disabled={publishing || !selectedPrice}
                   onClick={handlePublish}
                 >
                   {publishing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}

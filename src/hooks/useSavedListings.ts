@@ -70,7 +70,10 @@ export const useSavedListings = () => {
       });
     },
     onError: (error: any) => {
-      console.error("Error saving listing:", error);
+      // Log error in development only
+      if (import.meta.env.DEV) {
+        console.error("Error saving listing:", error);
+      }
       toast({
         title: "Error",
         description: error.message || "Failed to save listing",
@@ -108,7 +111,10 @@ export const useSavedListings = () => {
       });
     },
     onError: (error: any) => {
-      console.error("Error unsaving listing:", error);
+      // Log error in development only
+      if (import.meta.env.DEV) {
+        console.error("Error unsaving listing:", error);
+      }
       toast({
         title: "Error",
         description: error.message || "Failed to remove listing",

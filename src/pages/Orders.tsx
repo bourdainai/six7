@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageLayout } from "@/components/PageLayout";
+import { formatForDisplay } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -290,7 +291,7 @@ const Orders = () => {
                       <div className="text-sm space-y-1">
                         <p className="capitalize">
                           Status: <Badge variant="outline" className="ml-2">
-                            {(order.shipping_status || 'pending').replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())}
+                            {formatForDisplay(order.shipping_status || 'pending')}
                           </Badge>
                         </p>
                         {order.tracking_number && (

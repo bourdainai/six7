@@ -22,8 +22,9 @@ import {
 } from "@/components/ui/sheet";
 import { User, LogOut, Shield, Menu, X, Bell, Heart } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import React from "react";
 
-export const Navigation = () => {
+export const Navigation = React.memo(() => {
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -387,4 +388,4 @@ export const Navigation = () => {
       />
     </>
   );
-};
+});

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { formatForDisplay } from "@/lib/format";
 import { TrendingUp, Lightbulb, Heart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -69,7 +70,7 @@ export const ConversationSentiment = ({ conversationId, messages }: Conversation
 
       <div className="flex flex-wrap gap-2">
         <Badge className={getSentimentColor(analysis.overall_sentiment)}>
-          {analysis.overall_sentiment.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())}
+          {formatForDisplay(analysis.overall_sentiment)}
         </Badge>
         <Badge className={getInterestColor(analysis.buyer_interest)}>
           {analysis.buyer_interest} interest
