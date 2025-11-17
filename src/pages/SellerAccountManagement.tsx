@@ -8,13 +8,16 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { loadConnectAndInitialize } from "@stripe/connect-js";
+import {
+  ConnectComponentsProvider,
+  ConnectAccountManagement,
+} from "@stripe/react-connect-js";
 
 const SellerAccountManagement = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [stripeConnectInstance, setStripeConnectInstance] = useState<any>(null);
 
   useEffect(() => {
     if (!user) {
@@ -24,21 +27,14 @@ const SellerAccountManagement = () => {
 
     const initializeStripeConnect = async () => {
       try {
-        setLoading(true);
-        setError(null);
-
-        // Get account session from backend
-        const { data, error: invokeError } = await supabase.functions.invoke(
-          "stripe-connect-account-session"
-        );
-
-        if (invokeError) throw invokeError;
-        if (!data?.clientSecret) throw new Error("No client secret returned");
-
-        // Initialize Stripe Connect
-        const stripeConnectInstance = await loadConnectAndInitialize({
+        const instance = await loadConnectAndInitialize({
           publishableKey: import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "",
-          fetchClientSecret: async () => data.clientSecret,
+          fetchClientSecret: async () => {
+            const { data } = await supabase.functions.invoke(
+              "stripe-connect-account-session"
+            );
+            return data.clientSecret;
+          },
           appearance: {
             overlays: 'dialog',
             variables: {
@@ -47,19 +43,9 @@ const SellerAccountManagement = () => {
           },
         });
 
-        // Mount the account management component
-        const container = document.getElementById("stripe-connect-management");
-        if (container) {
-          const managementComponent = stripeConnectInstance.create("account-management");
-          container.innerHTML = '';
-          container.appendChild(managementComponent);
-        }
-
-        setLoading(false);
+        setStripeConnectInstance(instance);
       } catch (err) {
         console.error("Error initializing Stripe Connect:", err);
-        setError(err instanceof Error ? err.message : "Failed to load account management");
-        setLoading(false);
         toast({
           title: "Error",
           description: "Failed to load account management. Please try again.",
@@ -94,18 +80,17 @@ const SellerAccountManagement = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {loading && (
+            {!stripeConnectInstance && (
               <div className="flex flex-col items-center justify-center py-12 space-y-4">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 <p className="text-sm text-muted-foreground">Loading account management...</p>
               </div>
             )}
-            {error && (
-              <div className="text-center py-12">
-                <p className="text-destructive mb-4">{error}</p>
-              </div>
+            {stripeConnectInstance && (
+              <ConnectComponentsProvider connectInstance={stripeConnectInstance}>
+                <ConnectAccountManagement />
+              </ConnectComponentsProvider>
             )}
-            <div id="stripe-connect-management" className="min-h-[500px]" />
           </CardContent>
         </Card>
       </div>
