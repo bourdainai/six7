@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { loadConnectAndInitialize } from "@stripe/connect-js";
-import "@stripe/connect-js/styles.css";
+
 
 const SellerOnboarding = () => {
   const { user } = useAuth();
