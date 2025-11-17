@@ -1,4 +1,5 @@
-import { Navigation } from "@/components/Navigation";
+import { PageLayout } from "@/components/PageLayout";
+import { ListingCardSkeleton } from "@/components/ListingCardSkeleton";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
@@ -157,9 +158,7 @@ const Browse = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-24">
+    <PageLayout>
         <div className="mb-8 space-y-6">
           <div className="flex items-center justify-between mb-2">
             <div className="space-y-2">
@@ -239,11 +238,7 @@ const Browse = () => {
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-              <div key={i} className="space-y-3">
-                <div className="aspect-[3/4] bg-muted rounded-lg animate-pulse" />
-                <div className="h-4 bg-muted rounded w-3/4 animate-pulse" />
-                <div className="h-4 bg-muted rounded w-1/2 animate-pulse" />
-              </div>
+              <ListingCardSkeleton key={i} />
             ))}
           </div>
         ) : filteredListings && filteredListings.length > 0 ? (
@@ -259,13 +254,16 @@ const Browse = () => {
                   onClick={() => navigate(`/listing/${listing.id}`)}
                   className="group text-left"
                 >
-                  <div className="aspect-[3/4] bg-muted rounded-lg overflow-hidden mb-3">
+                  <div className="aspect-[3/4] bg-muted rounded-lg overflow-hidden mb-3 relative">
                     {firstImage ? (
                       <img
                         src={firstImage.image_url}
                         alt={listing.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         loading="lazy"
+                        decoding="async"
+                        width="400"
+                        height="533"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-muted-foreground">
@@ -347,8 +345,7 @@ const Browse = () => {
             </Button>
           </div>
         )}
-      </div>
-    </div>
+    </PageLayout>
   );
 };
 

@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Navigation } from "@/components/Navigation";
+import { PageLayout } from "@/components/PageLayout";
+import { Skeleton } from "@/components/ui/skeleton";
 import { OfferDialog } from "@/components/OfferDialog";
 import { CreateBundleDialog } from "@/components/bundles/CreateBundleDialog";
 import { ReportDialog } from "@/components/moderation/ReportDialog";
@@ -68,40 +69,44 @@ const ListingDetail = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navigation />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="animate-pulse">
-            <div className="h-96 bg-muted rounded-lg mb-8"></div>
-            <div className="h-8 bg-muted rounded w-3/4 mb-4"></div>
-            <div className="h-6 bg-muted rounded w-1/4"></div>
+      <PageLayout>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          <div className="space-y-4">
+            <Skeleton className="aspect-[3/4] w-full rounded-lg" />
+            <div className="grid grid-cols-4 gap-2">
+              {[1, 2, 3, 4].map((i) => (
+                <Skeleton key={i} className="aspect-square w-full rounded" />
+              ))}
+            </div>
+          </div>
+          <div className="space-y-6">
+            <Skeleton className="h-8 w-3/4" />
+            <Skeleton className="h-6 w-1/2" />
+            <Skeleton className="h-32 w-full" />
+            <Skeleton className="h-12 w-full" />
           </div>
         </div>
-      </div>
+      </PageLayout>
     );
   }
 
   if (!listing) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navigation />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
+      <PageLayout>
+        <div className="text-center">
           <h1 className="text-2xl font-light text-foreground mb-4">Listing not found</h1>
           <Button variant="outline" onClick={() => navigate("/browse")}>
             Browse Items
           </Button>
         </div>
-      </div>
+      </PageLayout>
     );
   }
 
   const images = listing.images?.sort((a, b) => a.display_order - b.display_order) || [];
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-24">
+    <PageLayout>
         <button
           onClick={() => navigate("/browse")}
           className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors"
@@ -113,7 +118,7 @@ const ListingDetail = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Images */}
           <div className="space-y-4">
-            <div className="aspect-[3/4] bg-muted rounded-lg overflow-hidden">
+            <div className="aspect-[3/4] bg-muted rounded-lg overflow-hidden relative">
               {images.length > 0 ? (
                 <img
                   src={images[selectedImage]?.image_url}
@@ -121,6 +126,8 @@ const ListingDetail = () => {
                   className="w-full h-full object-cover"
                   loading="eager"
                   decoding="async"
+                  width="800"
+                  height="1067"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-muted-foreground">
@@ -145,6 +152,8 @@ const ListingDetail = () => {
                       className="w-full h-full object-cover"
                       loading="lazy"
                       decoding="async"
+                      width="200"
+                      height="200"
                     />
                   </button>
                 ))}
@@ -159,37 +168,126 @@ const ListingDetail = () => {
               <p className="text-sm text-muted-foreground">{listing.brand}</p>
             </div>
 
-            <div className="flex items-baseline gap-3">
-              <span className="text-4xl font-light text-foreground">
-                £{Number(listing.seller_price).toFixed(2)}
-              </span>
-              {listing.original_rrp && (
-                <span className="text-lg text-muted-foreground line-through">
-                  £{Number(listing.original_rrp).toFixed(2)}
+            <div className="space-y-2">
+              <div className="flex items-baseline gap-3">
+                <span className="text-4xl font-light text-foreground">
+                  £{Number(listing.seller_price).toFixed(2)}
                 </span>
+                {listing.original_rrp && (
+                  <>
+                    <span className="text-lg text-muted-foreground line-through">
+                      £{Number(listing.original_rrp).toFixed(2)}
+                    </span>
+                    <Badge variant="secondary" className="ml-2">
+                      {Math.round((1 - Number(listing.seller_price) / Number(listing.original_rrp)) * 100)}% off
+                    </Badge>
+                  </>
+                )}
+              </div>
+              {listing.original_rrp && (
+                <p className="text-xs text-muted-foreground">
+                  Original price: £{Number(listing.original_rrp).toFixed(2)}
+                </p>
               )}
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {listing.condition && <Badge variant="secondary">{listing.condition}</Badge>}
+              {listing.condition && <Badge variant="secondary">{listing.condition.replace(/_/g, ' ')}</Badge>}
               {listing.size && <Badge variant="outline">Size: {listing.size}</Badge>}
               {listing.color && <Badge variant="outline">{listing.color}</Badge>}
               {listing.category && <Badge variant="outline">{listing.category}</Badge>}
+              {listing.subcategory && <Badge variant="outline">{listing.subcategory}</Badge>}
             </div>
+
+            {listing.style_tags && Array.isArray(listing.style_tags) && listing.style_tags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {listing.style_tags.map((tag: string, idx: number) => (
+                  <Badge key={idx} variant="secondary" className="text-xs">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            )}
 
             {listing.description && (
               <div className="border-t border-border pt-6">
                 <h3 className="text-sm font-medium text-foreground mb-2">Description</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
+                <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
                   {listing.description}
                 </p>
               </div>
             )}
 
-            {listing.material && (
+            <div className="grid grid-cols-2 gap-4 border-t border-border pt-6">
+              {listing.material && (
+                <div>
+                  <h3 className="text-sm font-medium text-foreground mb-1">Material</h3>
+                  <p className="text-sm text-muted-foreground">{listing.material}</p>
+                </div>
+              )}
+              {listing.brand && (
+                <div>
+                  <h3 className="text-sm font-medium text-foreground mb-1">Brand</h3>
+                  <p className="text-sm text-muted-foreground">{listing.brand}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Shipping Information */}
+            <div className="border-t border-border pt-6">
+              <h3 className="text-sm font-medium text-foreground mb-3">Shipping & Delivery</h3>
+              <div className="space-y-3">
+                {listing.free_shipping ? (
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="bg-green-500/10 text-green-500 border-green-500/20">
+                      Free Shipping
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">
+                      Estimated delivery: {listing.estimated_delivery_days || 3} days
+                    </span>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">UK:</span>
+                      <span className="font-medium">£{Number(listing.shipping_cost_uk || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Europe:</span>
+                      <span className="font-medium">£{Number(listing.shipping_cost_europe || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">International:</span>
+                      <span className="font-medium">£{Number(listing.shipping_cost_international || 0).toFixed(2)}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Estimated delivery: {listing.estimated_delivery_days || 3} days
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Package Details */}
+            {(listing.package_weight || listing.package_dimensions) && (
               <div className="border-t border-border pt-6">
-                <h3 className="text-sm font-medium text-foreground mb-2">Material</h3>
-                <p className="text-sm text-muted-foreground">{listing.material}</p>
+                <h3 className="text-sm font-medium text-foreground mb-3">Package Details</h3>
+                <div className="space-y-2 text-sm">
+                  {listing.package_weight && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Weight:</span>
+                      <span className="font-medium">{Number(listing.package_weight).toFixed(2)} kg</span>
+                    </div>
+                  )}
+                  {listing.package_dimensions && typeof listing.package_dimensions === 'object' && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Dimensions:</span>
+                      <span className="font-medium">
+                        {listing.package_dimensions.length} × {listing.package_dimensions.width} × {listing.package_dimensions.height} cm
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -274,8 +372,9 @@ const ListingDetail = () => {
                   </div>
                 )}
               </>
+            </div>
+          </div>
         </div>
-      </div>
 
       <CreateBundleDialog
         open={bundleDialogOpen}
@@ -288,9 +387,7 @@ const ListingDetail = () => {
         onOpenChange={setReportDialogOpen}
         reportedListingId={id}
       />
-    </div>
-      </div>
-    </div>
+    </PageLayout>
   );
 };
 

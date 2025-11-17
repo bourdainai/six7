@@ -1,6 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Navigation } from "@/components/Navigation";
+import { PageLayout } from "@/components/PageLayout";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -73,19 +74,16 @@ const SellerDashboard = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navigation />
-        <div className="max-w-7xl mx-auto px-4 py-12 text-center">
+      <PageLayout>
+        <div className="text-center">
           <h1 className="text-2xl font-light mb-4">Please sign in</h1>
         </div>
-      </div>
+      </PageLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-24">
+    <PageLayout>
         <div className="mb-8 space-y-2">
           <div className="flex items-center justify-between">
             <div className="space-y-2">
@@ -204,7 +202,6 @@ const SellerDashboard = () => {
             <AutomationRulesPanel />
           </TabsContent>
         </Tabs>
-      </div>
 
       {selectedListingForCopilot && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
@@ -214,7 +211,7 @@ const SellerDashboard = () => {
           </div>
         </div>
       )}
-    </div>
+    </PageLayout>
   );
 };
 

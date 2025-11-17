@@ -67,7 +67,7 @@ export function ImageSearchDialog({
           {/* Search Image */}
           <div className="flex gap-4">
             <div className="w-32 h-32 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-              <img src={imageUrl} alt="Search" className="w-full h-full object-cover" />
+              <img src={imageUrl} alt="Search" className="w-full h-full object-cover" width="400" height="400" />
             </div>
             <div className="flex-1 flex flex-col justify-center gap-2">
               <p className="text-sm text-muted-foreground">
@@ -124,6 +124,9 @@ export function ImageSearchDialog({
                           src={listing.listing_images[0].image_url}
                           alt={listing.title}
                           className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                          width="200"
+                          height="200"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">

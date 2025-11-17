@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Navigation } from "@/components/Navigation";
+import { PageLayout } from "@/components/PageLayout";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -100,16 +101,13 @@ const Membership = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navigation />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-24">
-          <div className="text-center">
-            <h1 className="text-3xl font-light text-foreground mb-4">Membership</h1>
-            <p className="text-muted-foreground mb-6">Please sign in to view membership options</p>
-            <Button onClick={() => navigate("/")}>Go Home</Button>
-          </div>
+      <PageLayout>
+        <div className="text-center">
+          <h1 className="text-3xl font-light text-foreground mb-4">Membership</h1>
+          <p className="text-muted-foreground mb-6">Please sign in to view membership options</p>
+          <Button onClick={() => navigate("/")}>Go Home</Button>
         </div>
-      </div>
+      </PageLayout>
     );
   }
 
@@ -118,10 +116,7 @@ const Membership = () => {
   const gmvRemaining = Math.max(0, 1000 - (membership?.monthly_gmv || 0));
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-24">
+    <PageLayout>
         <div className="text-center mb-12">
           <h1 className="text-4xl font-light text-foreground mb-4">Choose Your Membership</h1>
           <p className="text-lg text-muted-foreground">
@@ -300,8 +295,7 @@ const Membership = () => {
             </Card>
           </div>
         </div>
-      </div>
-    </div>
+    </PageLayout>
   );
 };
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { Navigation } from "@/components/Navigation";
+import { PageLayout } from "@/components/PageLayout";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -229,20 +230,16 @@ const Messages = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navigation />
-        <div className="container mx-auto px-4 py-8 pt-24 text-center">
+      <PageLayout>
+        <div className="text-center">
           <p className="text-muted-foreground">Please sign in to view messages</p>
         </div>
-      </div>
+      </PageLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-24">
+    <PageLayout>
         <div className="mb-8 space-y-2">
           <h1 className="text-3xl font-light text-foreground">
             Messages
@@ -278,6 +275,9 @@ const Messages = () => {
                             src={firstImage.image_url}
                             alt={conv.listing?.title || "Item"}
                             className="w-12 h-12 object-cover rounded"
+                            width="48"
+                            height="48"
+                            loading="lazy"
                           />
                         )}
                         <div className="flex-1 min-w-0">
@@ -314,6 +314,9 @@ const Messages = () => {
                         src={selectedConv.listing.images[0].image_url}
                         alt={selectedConv.listing?.title || "Item"}
                         className="w-12 h-12 object-cover rounded"
+                        width="48"
+                        height="48"
+                        loading="lazy"
                       />
                     )}
                     <div className="flex-1">
@@ -448,8 +451,7 @@ const Messages = () => {
             )}
           </Card>
         </div>
-      </div>
-    </div>
+    </PageLayout>
   );
 };
 

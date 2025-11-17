@@ -2,6 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Prevent layout shift */
+@layer base {
+  img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+  
+  /* Reserve space for images */
+  img[loading="lazy"] {
+    content-visibility: auto;
+  }
+  
+  /* Prevent content jumps */
+  body {
+    overflow-x: hidden;
+  }
+  
+  /* Consistent container spacing */
+  .page-container {
+    min-height: calc(100vh - 6rem);
+  }
+}
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */

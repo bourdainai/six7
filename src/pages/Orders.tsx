@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Navigation } from "@/components/Navigation";
+import { PageLayout } from "@/components/PageLayout";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -78,11 +79,32 @@ const Orders = () => {
     }
   };
 
+  if (isLoadingBuyer || isLoadingSeller) {
+    return (
+      <PageLayout>
+        <div className="mb-8 space-y-2">
+          <Skeleton className="h-9 w-48" />
+          <Skeleton className="h-5 w-64" />
+        </div>
+        <Tabs defaultValue="purchases" className="w-full">
+          <TabsList className="mb-8">
+            <TabsTrigger value="purchases">My Purchases</TabsTrigger>
+            <TabsTrigger value="sales">My Sales</TabsTrigger>
+          </TabsList>
+          <TabsContent value="purchases">
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-32 w-full rounded-lg" />
+              ))}
+            </div>
+          </TabsContent>
+        </Tabs>
+      </PageLayout>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-24">
+    <PageLayout>
         <div className="mb-8 space-y-2">
           <h1 className="text-3xl font-light text-foreground">
             Orders
@@ -302,10 +324,9 @@ const Orders = () => {
               </div>
             )}
           </TabsContent>
-        </Tabs>
-      </div>
+          </Tabs>
 
-      {selectedOrder && (
+        {selectedOrder && (
         <>
           <DisputeDialog
             open={disputeOpen}
@@ -330,7 +351,7 @@ const Orders = () => {
           />
         </>
       )}
-    </div>
+    </PageLayout>
   );
 };
 
