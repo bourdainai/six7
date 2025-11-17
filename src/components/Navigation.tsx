@@ -253,13 +253,18 @@ export const Navigation = () => {
                         <button
                           onClick={() => {
                             setMobileMenuOpen(false);
-                            // Small delay to let menu close, then trigger notification bell
+                            // Trigger notification center after menu closes
                             setTimeout(() => {
-                              const notificationButton = document.querySelector('button[aria-label*="notification"], button:has(svg.lucide-bell)') as HTMLElement;
+                              // Find the notification bell button by looking for the Bell icon
+                              const buttons = Array.from(document.querySelectorAll('button'));
+                              const notificationButton = buttons.find(btn => {
+                                const bellIcon = btn.querySelector('svg');
+                                return bellIcon && bellIcon.getAttribute('class')?.includes('lucide-bell');
+                              }) as HTMLElement;
                               if (notificationButton) {
                                 notificationButton.click();
                               }
-                            }, 200);
+                            }, 300);
                           }}
                           className="w-full text-left px-4 py-3 text-base font-light text-foreground hover:bg-muted rounded-lg transition-colors flex items-center gap-2"
                         >
