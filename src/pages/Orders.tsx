@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageLayout } from "@/components/PageLayout";
 import { formatForDisplay } from "@/lib/format";
@@ -10,16 +10,19 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { DisputeDialog } from "@/components/disputes/DisputeDialog";
 import { RatingDialog } from "@/components/ratings/RatingDialog";
 import { ShipOrderDialog } from "@/components/ShipOrderDialog";
-import { AlertCircle, Star, Truck, Package } from "lucide-react";
+import { AlertCircle, Star, Truck, Package, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 const Orders = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [disputeOpen, setDisputeOpen] = useState(false);
   const [ratingOpen, setRatingOpen] = useState(false);
   const [shipOrderOpen, setShipOrderOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [markingDelivered, setMarkingDelivered] = useState<string | null>(null);
 
   const { data: buyerOrders, isLoading: isLoadingBuyer } = useQuery({
     queryKey: ["orders", "buyer", user?.id],
@@ -67,6 +70,34 @@ const Orders = () => {
     },
   });
 
+  const markAsDeliveredMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      const { data, error } = await supabase.functions.invoke('mark-order-delivered', {
+        body: { orderId },
+      });
+
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Failed to mark order as delivered');
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      toast.success('Order marked as delivered! Payout will be processed shortly.');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to mark order as delivered');
+    },
+  });
+
+  const handleMarkAsDelivered = async (orderId: string) => {
+    setMarkingDelivered(orderId);
+    try {
+      await markAsDeliveredMutation.mutateAsync(orderId);
+    } finally {
+      setMarkingDelivered(null);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "paid":
@@ -75,6 +106,8 @@ const Orders = () => {
         return "bg-yellow-500/10 text-yellow-500 border-yellow-500/20";
       case "cancelled":
         return "bg-red-500/10 text-red-500 border-red-500/20";
+      case "completed":
+        return "bg-blue-500/10 text-blue-500 border-blue-500/20";
       default:
         return "bg-muted text-muted-foreground border-muted";
     }
@@ -190,8 +223,20 @@ const Orders = () => {
                         </div>
                       </div>
                     </div>
-                    {order.status === "paid" && (
-                      <div className="flex gap-2 mt-4">
+                    {order.status === "paid" && !order.delivered_at && (
+                      <div className="flex gap-2 mt-4 flex-wrap">
+                        {order.shipping_status === 'shipped' || order.shipping_status === 'in_transit' ? (
+                          <Button
+                            size="sm"
+                            variant="default"
+                            onClick={() => handleMarkAsDelivered(order.id)}
+                            disabled={markingDelivered === order.id}
+                            className="flex items-center gap-2"
+                          >
+                            <CheckCircle2 className="h-4 w-4" />
+                            {markingDelivered === order.id ? 'Marking as Delivered...' : 'Mark as Delivered'}
+                          </Button>
+                        ) : null}
                         <Button
                           size="sm"
                           variant="outline"
@@ -206,7 +251,7 @@ const Orders = () => {
                         </Button>
                         <Button
                           size="sm"
-                          variant="default"
+                          variant="outline"
                           onClick={() => {
                             setSelectedOrder(order);
                             setRatingOpen(true);
@@ -216,6 +261,17 @@ const Orders = () => {
                           <Star className="h-4 w-4" />
                           Rate Seller
                         </Button>
+                      </div>
+                    )}
+                    {order.delivered_at && (
+                      <div className="mt-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                        <div className="flex items-center gap-2 text-sm text-green-500">
+                          <CheckCircle2 className="h-4 w-4" />
+                          <span className="font-medium">Delivered on {format(new Date(order.delivered_at), "PPP")}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Payout has been processed to the seller.
+                        </p>
                       </div>
                     )}
                   </div>

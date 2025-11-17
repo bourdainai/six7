@@ -68,12 +68,18 @@ serve(async (req) => {
       throw new Error('Date of birth is out of valid range');
     }
 
+    // Get user IP address from request headers
+    const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0] || 
+                     req.headers.get('x-real-ip') || 
+                     '0.0.0.0';
+
     // Prepare account update data
     const accountUpdateData: Stripe.AccountUpdateParams = {
       business_type: formData.businessType === 'company' ? 'company' : 'individual',
       individual: {
         first_name: formData.firstName,
         last_name: formData.lastName,
+        email: user.email || undefined, // Add email address
         dob: {
           day: day,
           month: month,
@@ -88,6 +94,17 @@ serve(async (req) => {
           country: formData.country,
         },
         phone: formData.phone,
+      },
+      // Add Terms of Service acceptance
+      tos_acceptance: {
+        date: Math.floor(Date.now() / 1000), // Current timestamp in seconds
+        ip: clientIP,
+      },
+      // Add business profile with MCC (Merchant Category Code)
+      // 5969 = Direct Marketing - Catalog and Mail Order Houses (suitable for marketplaces)
+      business_profile: {
+        mcc: '5969', // Marketplace/Mail Order category
+        url: (formData as any).businessWebsite || undefined,
       },
     };
 
