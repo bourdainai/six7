@@ -8,6 +8,7 @@ import { Search, SlidersHorizontal, X, Sparkles, Image, History, Star } from "lu
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "./ui/command";
+import { formatCondition } from "@/lib/format";
 import { SearchHistoryPanel } from "@/components/SearchHistoryPanel";
 import { SavedSearchesPanel } from "@/components/SavedSearchesPanel";
 import {

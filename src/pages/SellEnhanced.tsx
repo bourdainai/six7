@@ -16,7 +16,13 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { useQuery } from "@tanstack/react-query";
-import { PackageDimensions } from "@/integrations/supabase/types";
+
+type PackageDimensions = {
+  length: number;
+  width: number;
+  height: number;
+  unit: string;
+};
 
 interface ListingData {
   title: string;
