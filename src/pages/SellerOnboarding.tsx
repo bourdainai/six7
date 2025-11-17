@@ -63,13 +63,13 @@ const SellerOnboarding = () => {
           // Clear any existing content
           container.innerHTML = '';
           
-          // Create the account onboarding component with correct API
+          // Create the account onboarding component using Connect JS
           const accountOnboarding = stripeConnectInstance.create("account-onboarding");
           
           console.log("Account onboarding component created");
           
-          // Set up exit handler using event listener
-          accountOnboarding.addEventListener("exit", () => {
+          // Set up exit handler using event listener (optional chaining to be safe)
+          (accountOnboarding as any)?.addEventListener?.("exit", () => {
             console.log("User exited onboarding");
             toast({
               title: "Onboarding incomplete",
@@ -79,9 +79,10 @@ const SellerOnboarding = () => {
             navigate("/dashboard/seller");
           });
 
-          // Mount the component
-          (accountOnboarding as any).mount(container);
-          console.log("Account onboarding component mounted");
+          // Mount the component by appending the element to the container
+          container.appendChild(accountOnboarding as unknown as HTMLElement);
+          mountedRef.current = true;
+          console.log("Account onboarding component appended");
         }
 
         setLoading(false);
