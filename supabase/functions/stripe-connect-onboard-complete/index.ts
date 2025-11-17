@@ -81,7 +81,7 @@ serve(async (req) => {
         },
         address: {
           line1: formData.addressLine1,
-          line2: formData.addressLine2 || undefined,
+          line2: (formData as any).addressLine2 || undefined,
           city: formData.city,
           state: formData.state,
           postal_code: formData.postalCode,
@@ -91,22 +91,22 @@ serve(async (req) => {
       },
     };
 
-    // Add SSN last 4 if provided
-    if (formData.ssnLast4) {
-      accountUpdateData.individual!.ssn_last_4 = formData.ssnLast4;
+    // Add SSN last 4 if provided (optional field)
+    if ((formData as any).ssnLast4) {
+      accountUpdateData.individual!.ssn_last_4 = (formData as any).ssnLast4;
     }
 
-    // Add personal ID if provided
-    if (formData.personalIdNumber) {
-      accountUpdateData.individual!.id_number = formData.personalIdNumber;
+    // Add personal ID if provided (optional field)
+    if ((formData as any).personalIdNumber) {
+      accountUpdateData.individual!.id_number = (formData as any).personalIdNumber;
     }
 
     // Add business information if company
-    if (formData.businessType === 'company') {
+    if (formData.businessType === 'company' && formData.businessName) {
       accountUpdateData.company = {
         name: formData.businessName,
-        tax_id: formData.businessTaxId || undefined,
-        structure: formData.businessTypeCategory || undefined,
+        tax_id: (formData as any).businessTaxId || undefined,
+        structure: (formData as any).businessTypeCategory || undefined,
       };
     }
 

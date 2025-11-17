@@ -22,7 +22,7 @@ const OnboardingStepPersonal = () => {
           name="firstName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>First Name</FormLabel>
+              <FormLabel>First Name *</FormLabel>
               <FormControl>
                 <Input placeholder="John" {...field} />
               </FormControl>
@@ -36,7 +36,7 @@ const OnboardingStepPersonal = () => {
           name="lastName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Last Name</FormLabel>
+              <FormLabel>Last Name *</FormLabel>
               <FormControl>
                 <Input placeholder="Doe" {...field} />
               </FormControl>
@@ -51,7 +51,7 @@ const OnboardingStepPersonal = () => {
         name="dateOfBirth"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Date of Birth</FormLabel>
+            <FormLabel>Date of Birth *</FormLabel>
             <FormControl>
               <Input type="date" {...field} />
             </FormControl>
@@ -61,53 +61,12 @@ const OnboardingStepPersonal = () => {
         )}
       />
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <FormField
-          control={form.control}
-          name="ssnLast4"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>SSN Last 4 Digits (Optional)</FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="1234" 
-                  maxLength={4} 
-                  {...field}
-                  onChange={(e) => {
-                    // Only allow numeric input
-                    const value = e.target.value.replace(/\D/g, '');
-                    field.onChange(value);
-                  }}
-                />
-              </FormControl>
-              <FormDescription>Last 4 digits of your Social Security Number</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="personalIdNumber"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Government ID Number (Optional)</FormLabel>
-              <FormControl>
-                <Input placeholder="ID number" {...field} />
-              </FormControl>
-              <FormDescription>National ID, passport number, or driver's license</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
-
       <FormField
         control={form.control}
         name="phone"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Phone Number</FormLabel>
+            <FormLabel>Phone Number *</FormLabel>
             <FormControl>
               <Input type="tel" placeholder="+44 20 1234 5678" {...field} />
             </FormControl>
@@ -117,13 +76,13 @@ const OnboardingStepPersonal = () => {
       />
 
       <div className="border-t pt-6">
-        <h4 className="font-medium mb-4">Address</h4>
+        <h4 className="font-medium mb-4">Address *</h4>
         <FormField
           control={form.control}
           name="addressLine1"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Address Line 1</FormLabel>
+              <FormLabel>Address Line 1 *</FormLabel>
               <FormControl>
                 <Input placeholder="123 Main Street" {...field} />
               </FormControl>
@@ -132,27 +91,13 @@ const OnboardingStepPersonal = () => {
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="addressLine2"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Address Line 2 (Optional)</FormLabel>
-              <FormControl>
-                <Input placeholder="Apartment, suite, etc." {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2 mt-4">
           <FormField
             control={form.control}
             name="city"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>City</FormLabel>
+                <FormLabel>City *</FormLabel>
                 <FormControl>
                   <Input placeholder="London" {...field} />
                 </FormControl>
@@ -166,7 +111,7 @@ const OnboardingStepPersonal = () => {
             name="state"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>State/Province</FormLabel>
+                <FormLabel>State/Province *</FormLabel>
                 <FormControl>
                   <Input placeholder="England" {...field} />
                 </FormControl>
@@ -176,13 +121,13 @@ const OnboardingStepPersonal = () => {
           />
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2 mt-4">
           <FormField
             control={form.control}
             name="postalCode"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Postal Code</FormLabel>
+                <FormLabel>Postal Code *</FormLabel>
                 <FormControl>
                   <Input placeholder="SW1A 1AA" {...field} />
                 </FormControl>
@@ -196,7 +141,7 @@ const OnboardingStepPersonal = () => {
             name="country"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Country</FormLabel>
+                <FormLabel>Country *</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
@@ -227,4 +172,3 @@ const OnboardingStepPersonal = () => {
 };
 
 export default OnboardingStepPersonal;
-

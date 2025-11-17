@@ -17,29 +17,24 @@ import OnboardingStepBusiness from "@/components/seller/OnboardingStepBusiness";
 import OnboardingStepPayout from "@/components/seller/OnboardingStepPayout";
 import OnboardingStepReview from "@/components/seller/OnboardingStepReview";
 
-// Zod schema for the complete form
+// Streamlined schema - only essential fields
 const onboardingSchema = z.object({
   businessType: z.enum(["individual", "company"], {
     required_error: "Please select a business type",
   }),
-  // Personal information
+  // Personal information - essential only
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date of birth must be in YYYY-MM-DD format"),
-  ssnLast4: z.string().regex(/^\d{4}$/, "SSN last 4 digits must be 4 numbers").optional(),
-  personalIdNumber: z.string().min(1, "ID number is required").optional(),
   addressLine1: z.string().min(1, "Address is required"),
-  addressLine2: z.string().optional(),
   city: z.string().min(1, "City is required"),
   state: z.string().min(1, "State/Province is required"),
   postalCode: z.string().min(1, "Postal code is required"),
   country: z.string().min(1, "Country is required"),
   phone: z.string().min(1, "Phone number is required"),
-  // Business information (if company)
+  // Business information (only if company)
   businessName: z.string().optional(),
-  businessTaxId: z.string().optional(),
-  businessTypeCategory: z.string().optional(),
-  // Bank account information
+  // Bank account information - essential
   accountHolderName: z.string().min(1, "Account holder name is required"),
   accountNumber: z.string().min(1, "Account number is required"),
   routingNumber: z.string().min(1, "Routing number is required"),
@@ -47,7 +42,7 @@ const onboardingSchema = z.object({
     required_error: "Please select an account type",
   }),
 }).refine((data) => {
-  // If company, require business fields
+  // If company, require business name
   if (data.businessType === "company") {
     return data.businessName && data.businessName.length > 0;
   }
@@ -89,6 +84,7 @@ const SellerOnboardingMultiStep = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [accountId, setAccountId] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const form = useForm<OnboardingFormData>({
     resolver: zodResolver(onboardingSchema),
@@ -135,17 +131,11 @@ const SellerOnboardingMultiStep = () => {
     const businessType = form.watch("businessType");
     const isIndividual = businessType === "individual";
     
-    // Adjust step indices based on business type
-    // Step 0: Business Type
-    // Step 1: Personal Info
-    // Step 2: Business Details (skip if individual)
-    // Step 3: Payout (becomes step 2 if individual)
-    // Step 4: Review (becomes step 3 if individual)
-    
+    // Step fields to validate
     const stepFields: Record<number, (keyof OnboardingFormData)[]> = {
       0: ["businessType"],
       1: ["firstName", "lastName", "dateOfBirth", "addressLine1", "city", "state", "postalCode", "country", "phone"],
-      2: isIndividual ? [] : ["businessName", "businessTaxId", "businessTypeCategory"],
+      2: isIndividual ? [] : ["businessName"],
       3: ["accountHolderName", "accountNumber", "routingNumber", "accountType"],
       4: [],
     };
@@ -166,6 +156,18 @@ const SellerOnboardingMultiStep = () => {
       
       if (nextStepIndex <= maxStep) {
         setCurrentStep(nextStepIndex);
+        setSubmitError(null); // Clear errors when moving forward
+      }
+    } else {
+      // Show validation errors
+      const errors = form.formState.errors;
+      const firstError = Object.values(errors)[0];
+      if (firstError?.message) {
+        toast({
+          title: "Please fix errors",
+          description: firstError.message,
+          variant: "destructive",
+        });
       }
     }
   };
@@ -183,14 +185,25 @@ const SellerOnboardingMultiStep = () => {
       }
       
       setCurrentStep(prevStepIndex);
+      setSubmitError(null); // Clear errors when going back
     }
   };
 
   const onSubmit = async (data: OnboardingFormData) => {
     if (!user) return;
 
+    setSubmitError(null);
     setIsSubmitting(true);
+    
     try {
+      // Validate all fields before submitting
+      const isValid = await form.trigger();
+      if (!isValid) {
+        const errors = form.formState.errors;
+        const firstError = Object.values(errors)[0];
+        throw new Error(firstError?.message || "Please fill in all required fields");
+      }
+
       // Ensure we have an account ID
       let connectAccountId = accountId;
       
@@ -242,7 +255,7 @@ const SellerOnboardingMultiStep = () => {
             'accountNumber': 'accountNumber',
             'routingNumber': 'routingNumber',
             'accountHolderName': 'accountHolderName',
-            'bank_account': 'accountNumber', // Default to account number
+            'bank_account': 'accountNumber',
           };
           
           const formField = fieldMap[errorField];
@@ -264,9 +277,11 @@ const SellerOnboardingMultiStep = () => {
       }
     } catch (err) {
       console.error("Error submitting onboarding:", err);
+      const errorMessage = err instanceof Error ? err.message : "Failed to submit onboarding. Please try again.";
+      setSubmitError(errorMessage);
       toast({
         title: "Error",
-        description: err instanceof Error ? err.message : "Failed to submit onboarding. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -381,6 +396,13 @@ const SellerOnboardingMultiStep = () => {
                 {/* Review Step */}
                 {isReviewStep && <OnboardingStepReview formData={form.getValues()} />}
 
+                {/* Error Display */}
+                {submitError && (
+                  <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+                    {submitError}
+                  </div>
+                )}
+
                 {/* Navigation Buttons */}
                 <div className="flex justify-between pt-6 border-t">
                   <Button
@@ -420,4 +442,3 @@ const SellerOnboardingMultiStep = () => {
 };
 
 export default SellerOnboardingMultiStep;
-

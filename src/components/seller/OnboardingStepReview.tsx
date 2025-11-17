@@ -1,13 +1,20 @@
 import type { OnboardingFormData } from "@/pages/SellerOnboardingMultiStep";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { formatForDisplay } from "@/lib/format";
 
 interface OnboardingStepReviewProps {
   formData: OnboardingFormData;
 }
 
 const OnboardingStepReview = ({ formData }: OnboardingStepReviewProps) => {
+  // Safely get last 4 digits of account number
+  const getAccountLast4 = () => {
+    if (!formData.accountNumber || formData.accountNumber.length < 4) {
+      return "****";
+    }
+    return formData.accountNumber.slice(-4);
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -49,18 +56,11 @@ const OnboardingStepReview = ({ formData }: OnboardingStepReviewProps) => {
                 <span className="text-muted-foreground">Phone:</span>
                 <p className="font-medium">{formData.phone}</p>
               </div>
-              {formData.ssnLast4 && (
-                <div>
-                  <span className="text-muted-foreground">SSN Last 4:</span>
-                  <p className="font-medium">****{formData.ssnLast4}</p>
-                </div>
-              )}
             </div>
             <div className="pt-2 border-t">
               <span className="text-muted-foreground">Address:</span>
               <p className="font-medium">
                 {formData.addressLine1}
-                {formData.addressLine2 && `, ${formData.addressLine2}`}
                 <br />
                 {formData.city}, {formData.state} {formData.postalCode}
                 <br />
@@ -71,32 +71,16 @@ const OnboardingStepReview = ({ formData }: OnboardingStepReviewProps) => {
         </Card>
 
         {/* Business Details (if company) */}
-        {formData.businessType === "company" && (
+        {formData.businessType === "company" && formData.businessName && (
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Business Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
-              {formData.businessName && (
-                <div>
-                  <span className="text-muted-foreground">Business Name:</span>
-                  <p className="font-medium">{formData.businessName}</p>
-                </div>
-              )}
-              {formData.businessTaxId && (
-                <div>
-                  <span className="text-muted-foreground">Tax ID:</span>
-                  <p className="font-medium">{formData.businessTaxId}</p>
-                </div>
-              )}
-              {formData.businessTypeCategory && (
-                <div>
-                  <span className="text-muted-foreground">Business Type:</span>
-                  <p className="font-medium capitalize">
-                    {formatForDisplay(formData.businessTypeCategory)}
-                  </p>
-                </div>
-              )}
+              <div>
+                <span className="text-muted-foreground">Business Name:</span>
+                <p className="font-medium">{formData.businessName}</p>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -109,20 +93,20 @@ const OnboardingStepReview = ({ formData }: OnboardingStepReviewProps) => {
           <CardContent className="space-y-2 text-sm">
             <div>
               <span className="text-muted-foreground">Account Holder:</span>
-              <p className="font-medium">{formData.accountHolderName}</p>
+              <p className="font-medium">{formData.accountHolderName || "Not provided"}</p>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <span className="text-muted-foreground">Account Number:</span>
-                <p className="font-medium">****{formData.accountNumber?.slice(-4) || "****"}</p>
+                <p className="font-medium">****{getAccountLast4()}</p>
               </div>
               <div>
                 <span className="text-muted-foreground">Routing Number:</span>
-                <p className="font-medium">{formData.routingNumber}</p>
+                <p className="font-medium">{formData.routingNumber || "Not provided"}</p>
               </div>
               <div>
                 <span className="text-muted-foreground">Account Type:</span>
-                <p className="font-medium capitalize">{formData.accountType}</p>
+                <p className="font-medium capitalize">{formData.accountType || "Not provided"}</p>
               </div>
             </div>
           </CardContent>
@@ -133,4 +117,3 @@ const OnboardingStepReview = ({ formData }: OnboardingStepReviewProps) => {
 };
 
 export default OnboardingStepReview;
-
