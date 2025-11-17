@@ -152,17 +152,11 @@ const Checkout = () => {
     enabled: !!offerId,
   });
 
-  // Calculate shipping cost based on country
+  // Calculate shipping cost - UK only
   const calculateShippingCost = () => {
     if (!listing) return 0;
     if (listing.free_shipping) return 0;
-
-    const country = shippingAddress.country?.toUpperCase();
-    if (country === 'GB') return Number(listing.shipping_cost_uk || 0);
-    if (['FR', 'DE', 'IT', 'ES', 'NL', 'BE', 'IE', 'AT', 'PT', 'DK', 'SE', 'FI', 'NO'].includes(country)) {
-      return Number(listing.shipping_cost_europe || 0);
-    }
-    return Number(listing.shipping_cost_international || 0);
+    return Number(listing.shipping_cost_uk || 0);
   };
 
   const shippingCost = calculateShippingCost();
@@ -434,12 +428,13 @@ const Checkout = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="postal_code">Postal Code</Label>
+                  <Label htmlFor="postal_code">Postcode</Label>
                   <Input
                     id="postal_code"
                     required
                     value={shippingAddress.postal_code}
                     onChange={(e) => setShippingAddress({ ...shippingAddress, postal_code: e.target.value })}
+                    placeholder="SW1A 1AA"
                   />
                 </div>
               </div>
