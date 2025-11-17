@@ -1,24 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { loadConnectAndInitialize } from "@stripe/connect-js";
-import {
-  ConnectComponentsProvider,
-  ConnectAccountOnboarding,
-} from "@stripe/react-connect-js";
 
 const SellerOnboarding = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [stripeConnectInstance, setStripeConnectInstance] = useState<any>(null);
-  const [fallbackLoading, setFallbackLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!user) {
@@ -28,26 +24,65 @@ const SellerOnboarding = () => {
 
     const initializeStripeConnect = async () => {
       try {
-        const instance = await loadConnectAndInitialize({
+        setLoading(true);
+        setError(null);
+
+        // Get account session from backend
+        const { data, error: invokeError } = await supabase.functions.invoke(
+          "stripe-connect-account-session"
+        );
+
+        if (invokeError) throw invokeError;
+        if (!data?.clientSecret) throw new Error("No client secret returned");
+
+        console.log("Initializing Stripe Connect with account:", data.accountId);
+
+        // Initialize Stripe Connect
+        const stripeConnectInstance = await loadConnectAndInitialize({
           publishableKey: import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "",
-          fetchClientSecret: async () => {
-            const { data, error } = await supabase.functions.invoke(
-              "stripe-connect-account-session"
-            );
-            if (error) throw error;
-            return data.clientSecret;
-          },
+          fetchClientSecret: async () => data.clientSecret,
           appearance: {
             overlays: 'dialog',
             variables: {
-              colorPrimary: 'hsl(var(--primary))',
+              colorPrimary: '#635BFF',
             },
           },
         });
 
-        setStripeConnectInstance(instance);
+        console.log("Stripe Connect instance created");
+
+        // Mount the onboarding component using the lower-level API
+        const container = containerRef.current;
+        if (container) {
+          // Clear any existing content
+          container.innerHTML = '';
+          
+          // Create the account onboarding component
+          const accountOnboarding = stripeConnectInstance.create("account-onboarding");
+          
+          console.log("Account onboarding component created");
+          
+          // Set up exit handler
+          accountOnboarding.setOnExit(() => {
+            console.log("User exited onboarding");
+            toast({
+              title: "Onboarding incomplete",
+              description: "Please complete your onboarding to receive payments",
+              variant: "destructive",
+            });
+            navigate("/dashboard/seller");
+          });
+
+          // Mount the component
+          container.appendChild(accountOnboarding);
+          console.log("Account onboarding component mounted");
+        }
+
+        setLoading(false);
       } catch (err) {
         console.error("Error initializing Stripe Connect:", err);
+        setError(err instanceof Error ? err.message : "Failed to load onboarding");
+        setLoading(false);
         toast({
           title: "Error",
           description: "Failed to load onboarding. Please try again.",
@@ -58,24 +93,6 @@ const SellerOnboarding = () => {
 
     initializeStripeConnect();
   }, [user, navigate, toast]);
-
-  const openHostedOnboarding = async () => {
-    try {
-      setFallbackLoading(true);
-      const { data, error } = await supabase.functions.invoke("stripe-connect-onboard");
-      if (error) throw error;
-      if (data?.url) window.open(data.url, "_blank", "noopener,noreferrer");
-    } catch (e) {
-      console.error(e);
-      toast({
-        title: "Could not open onboarding",
-        description: "Please try again in a moment.",
-        variant: "destructive",
-      });
-    } finally {
-      setFallbackLoading(false);
-    }
-  };
 
   if (!user) return null;
 
@@ -91,38 +108,22 @@ const SellerOnboarding = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {!stripeConnectInstance && (
+            {loading && (
               <div className="flex flex-col items-center justify-center py-12 space-y-4">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm text-muted-foreground">Loading onboarding...</p>
+                <p className="text-sm text-muted-foreground">Loading onboarding form...</p>
               </div>
             )}
-            {stripeConnectInstance && (
-              <ConnectComponentsProvider connectInstance={stripeConnectInstance}>
-                <ConnectAccountOnboarding
-                  onExit={() => {
-                    toast({
-                      title: "Onboarding incomplete",
-                      description: "Please complete your onboarding to receive payments",
-                      variant: "destructive",
-                    });
-                    navigate("/dashboard/seller");
-                  }}
-                />
-                <div className="mt-6 flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">
-                    If the form doesn’t appear, open the hosted onboarding instead.
-                  </p>
-                  <Button size="sm" onClick={openHostedOnboarding} disabled={fallbackLoading}>
-                    {fallbackLoading ? (
-                      <span className="inline-flex items-center"><Loader2 className="mr-2 h-4 w-4 animate-spin" />Opening…</span>
-                    ) : (
-                      "Open Onboarding"
-                    )}
-                  </Button>
-                </div>
-              </ConnectComponentsProvider>
+            {error && (
+              <div className="text-center py-12">
+                <p className="text-destructive mb-4">{error}</p>
+              </div>
             )}
+            <div 
+              ref={containerRef}
+              className="min-h-[600px] w-full"
+              style={{ minHeight: '600px' }}
+            />
           </CardContent>
         </Card>
       </div>
