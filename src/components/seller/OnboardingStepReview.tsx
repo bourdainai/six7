@@ -1,6 +1,7 @@
 import type { OnboardingFormData } from "@/pages/SellerOnboardingMultiStep";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { formatForDisplay } from "@/lib/format";
 
 interface OnboardingStepReviewProps {
   formData: OnboardingFormData;
@@ -113,7 +114,7 @@ const OnboardingStepReview = ({ formData }: OnboardingStepReviewProps) => {
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <span className="text-muted-foreground">Account Number:</span>
-                <p className="font-medium">****{formData.accountNumber.slice(-4)}</p>
+                <p className="font-medium">****{formData.accountNumber?.slice(-4) || "****"}</p>
               </div>
               <div>
                 <span className="text-muted-foreground">Routing Number:</span>

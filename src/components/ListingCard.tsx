@@ -1,8 +1,9 @@
+import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Heart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { formatCondition } from "@/lib/format";
+import { formatCondition, formatStatus } from "@/lib/format";
 import { SellerReputation } from "@/components/seller/SellerReputation";
 
 interface ListingImage {

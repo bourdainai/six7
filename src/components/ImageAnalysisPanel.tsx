@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Shield, AlertTriangle, Package, Tag } from "lucide-react";
+import { formatForDisplay } from "@/lib/format";
 
 interface DamageDetected {
   type: string;

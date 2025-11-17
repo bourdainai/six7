@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertTriangle, CheckCircle, Clock, Shield, FileText, Scale, CheckSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { formatForDisplay } from "@/lib/format";
 import { toast } from "sonner";
 
 export const ModerationQueue = () => {

@@ -18,7 +18,14 @@ import { SellerReputation } from "@/components/seller/SellerReputation";
 import { OutfitBuilder } from "@/components/OutfitBuilder";
 import { useSavedListings } from "@/hooks/useSavedListings";
 import { formatCondition } from "@/lib/format";
-import { PackageDimensions } from "@/integrations/supabase/types";
+import { ErrorDisplay } from "@/components/ErrorDisplay";
+
+type PackageDimensions = {
+  length: number;
+  width: number;
+  height: number;
+  unit: string;
+};
 
 const ListingDetail = () => {
   const { id } = useParams();
@@ -94,13 +101,12 @@ const ListingDetail = () => {
     );
   }
 
-  if (listingError || (!listing && !isLoading)) {
+  if (!listing && !isLoading) {
     return (
       <PageLayout>
         <ErrorDisplay
           title="Listing not found"
-          message={listingError ? "Failed to load listing details." : "This listing doesn't exist or has been removed."}
-          onRetry={listingError ? () => window.location.reload() : undefined}
+          message="This listing doesn't exist or has been removed."
         />
         <div className="text-center mt-4">
           <Button variant="outline" onClick={() => navigate("/browse")}>
