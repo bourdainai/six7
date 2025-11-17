@@ -20,7 +20,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { User, LogOut, Shield, Menu, X } from "lucide-react";
+import { User, LogOut, Shield, Menu, X, Bell } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 export const Navigation = () => {
@@ -90,15 +90,22 @@ export const Navigation = () => {
                 {link.label}
               </Link>
             ))}
-            {userNavLinks.map((link) => (
-              <Link
-                key={link.to}
-                to={link.to}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors font-light"
-              >
-                {link.label}
-              </Link>
-            ))}
+            {user && (
+              <>
+                <Link 
+                  to="/messages" 
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors font-light"
+                >
+                  Messages
+                </Link>
+                <Link 
+                  to="/orders" 
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors font-light"
+                >
+                  Orders
+                </Link>
+              </>
+            )}
 
             {user ? (
               <>
@@ -199,19 +206,10 @@ export const Navigation = () => {
                 <SheetHeader className="px-6 py-4 border-b border-border">
                   <SheetTitle className="text-left">Menu</SheetTitle>
                 </SheetHeader>
-                <div className="flex flex-col h-full">
+                <div className="flex flex-col h-full overflow-y-auto">
                   <nav className="flex-1 px-6 py-6 space-y-1">
+                    {/* Main Navigation */}
                     {navLinks.map((link) => (
-                      <Link
-                        key={link.to}
-                        to={link.to}
-                        onClick={handleNavClick}
-                        className="block px-4 py-3 text-base font-light text-foreground hover:bg-muted rounded-lg transition-colors"
-                      >
-                        {link.label}
-                      </Link>
-                    ))}
-                    {userNavLinks.map((link) => (
                       <Link
                         key={link.to}
                         to={link.to}
@@ -225,6 +223,59 @@ export const Navigation = () => {
                     {user && (
                       <>
                         <div className="border-t border-border my-4" />
+                        
+                        {/* User Section Header */}
+                        <div className="px-4 py-2">
+                          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                            Account
+                          </h3>
+                        </div>
+                        
+                        {/* Messages */}
+                        <Link
+                          to="/messages"
+                          onClick={handleNavClick}
+                          className="block px-4 py-3 text-base font-light text-foreground hover:bg-muted rounded-lg transition-colors"
+                        >
+                          Messages
+                        </Link>
+                        
+                        {/* Orders */}
+                        <Link
+                          to="/orders"
+                          onClick={handleNavClick}
+                          className="block px-4 py-3 text-base font-light text-foreground hover:bg-muted rounded-lg transition-colors"
+                        >
+                          Orders
+                        </Link>
+                        
+                        {/* Notifications - as a menu item */}
+                        <button
+                          onClick={() => {
+                            setMobileMenuOpen(false);
+                            // Small delay to let menu close, then trigger notification bell
+                            setTimeout(() => {
+                              const notificationButton = document.querySelector('button[aria-label*="notification"], button:has(svg.lucide-bell)') as HTMLElement;
+                              if (notificationButton) {
+                                notificationButton.click();
+                              }
+                            }, 200);
+                          }}
+                          className="w-full text-left px-4 py-3 text-base font-light text-foreground hover:bg-muted rounded-lg transition-colors flex items-center gap-2"
+                        >
+                          <Bell className="w-4 h-4" />
+                          Notifications
+                        </button>
+                        
+                        <div className="border-t border-border my-4" />
+                        
+                        {/* Seller Section Header */}
+                        <div className="px-4 py-2">
+                          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                            Seller
+                          </h3>
+                        </div>
+                        
                         <Link
                           to="/dashboard/seller"
                           onClick={handleNavClick}
@@ -254,14 +305,22 @@ export const Navigation = () => {
                           Reputation
                         </Link>
                         {isAdmin && (
-                          <Link
-                            to="/admin"
-                            onClick={handleNavClick}
-                            className="block px-4 py-3 text-base font-light text-foreground hover:bg-muted rounded-lg transition-colors"
-                          >
-                            <Shield className="w-4 h-4 inline mr-2" />
-                            Admin Dashboard
-                          </Link>
+                          <>
+                            <div className="border-t border-border my-4" />
+                            <div className="px-4 py-2">
+                              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                Admin
+                              </h3>
+                            </div>
+                            <Link
+                              to="/admin"
+                              onClick={handleNavClick}
+                              className="block px-4 py-3 text-base font-light text-foreground hover:bg-muted rounded-lg transition-colors"
+                            >
+                              <Shield className="w-4 h-4 inline mr-2" />
+                              Admin Dashboard
+                            </Link>
+                          </>
                         )}
                         <div className="border-t border-border my-4" />
                         <button
