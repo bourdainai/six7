@@ -289,7 +289,9 @@ const Orders = () => {
                       </div>
                       <div className="text-sm space-y-1">
                         <p className="capitalize">
-                          Status: <Badge variant="outline" className="ml-2">{order.shipping_status || 'pending'}</Badge>
+                          Status: <Badge variant="outline" className="ml-2">
+                            {(order.shipping_status || 'pending').replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())}
+                          </Badge>
                         </p>
                         {order.tracking_number && (
                           <>

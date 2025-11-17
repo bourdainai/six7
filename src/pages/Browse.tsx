@@ -10,6 +10,7 @@ import { VibeSearchDialog } from "@/components/VibeSearchDialog";
 import { useState, useMemo } from "react";
 import { Image } from "lucide-react";
 import { SellerReputation } from "@/components/seller/SellerReputation";
+import { formatCondition } from "@/lib/format";
 
 const Browse = () => {
   const navigate = useNavigate();
@@ -266,11 +267,11 @@ const Browse = () => {
                       <p className="text-sm text-muted-foreground">
                         {listing.brand}
                       </p>
-                      {listing.condition && (
-                        <Badge variant="secondary" className="text-xs">
-                          {listing.condition.replace(/_/g, ' ')}
-                        </Badge>
-                      )}
+                          {listing.condition && (
+                            <Badge variant="secondary" className="text-xs">
+                              {formatCondition(listing.condition)}
+                            </Badge>
+                          )}
                     </div>
 
                     <div className="flex items-baseline gap-2">

@@ -261,7 +261,7 @@ export const ModerationQueue = () => {
                           {getTypeIcon(item.item_type)}
                           {item.item_type.charAt(0).toUpperCase() + item.item_type.slice(1)}
                           <Badge variant={getPriorityColor(item.ai_classification)}>
-                            {item.ai_classification?.replace('_', ' ')}
+                            {item.ai_classification?.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())}
                           </Badge>
                         </CardTitle>
                         <CardDescription>

@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { Heart } from "lucide-react";
 import { PriceDropAlerts } from "./PriceDropAlerts";
 import { useSavedListings } from "@/hooks/useSavedListings";
+import { formatCondition } from "@/lib/format";
 
 interface RecommendedListing {
   id: string;
@@ -138,16 +139,16 @@ export const PersonalizedFeed = () => {
                     {listing.title}
                   </h3>
                   
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm text-muted-foreground">
-                      {listing.brand}
-                    </p>
-                    {listing.condition && (
-                      <Badge variant="secondary" className="text-xs">
-                        {listing.condition}
-                      </Badge>
-                    )}
-                  </div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm text-muted-foreground">
+                          {listing.brand}
+                        </p>
+                        {listing.condition && (
+                          <Badge variant="secondary" className="text-xs">
+                            {formatCondition(listing.condition)}
+                          </Badge>
+                        )}
+                      </div>
 
                   <div className="flex items-baseline gap-2">
                     <p className="text-base font-medium text-foreground">

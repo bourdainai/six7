@@ -9,6 +9,7 @@ import { Heart, ArrowLeft } from "lucide-react";
 import { ListingCardSkeleton } from "@/components/ListingCardSkeleton";
 import { SellerReputation } from "@/components/seller/SellerReputation";
 import { useSavedListings } from "@/hooks/useSavedListings";
+import { formatCondition, formatStatus } from "@/lib/format";
 
 const SavedItems = () => {
   const navigate = useNavigate();
@@ -121,7 +122,7 @@ const SavedItems = () => {
                     {listing.status !== "active" && (
                       <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
                         <Badge variant="secondary" className="text-sm">
-                          {listing.status === "sold" ? "Sold" : "Unavailable"}
+                          {formatStatus(listing.status)}
                         </Badge>
                       </div>
                     )}
@@ -138,7 +139,7 @@ const SavedItems = () => {
                       </p>
                       {listing.condition && (
                         <Badge variant="secondary" className="text-xs">
-                          {listing.condition.replace(/_/g, ' ')}
+                          {formatCondition(listing.condition)}
                         </Badge>
                       )}
                     </div>

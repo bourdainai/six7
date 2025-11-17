@@ -113,7 +113,7 @@ export const ImageAnalysisPanel = ({
           
           {condition && (
             <Badge variant="outline" className="mb-2">
-              AI Estimated: {condition.replace(/_/g, " ").toUpperCase()}
+              AI Estimated: {condition.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())}
             </Badge>
           )}
 
@@ -124,8 +124,8 @@ export const ImageAnalysisPanel = ({
                 className={`p-3 rounded-lg border ${getSeverityColor(damage.severity)}`}
               >
                 <div className="flex items-start justify-between mb-1">
-                  <span className="text-sm font-medium capitalize">
-                    {damage.type.replace(/_/g, " ")}
+                  <span className="text-sm font-medium">
+                    {damage.type.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())}
                   </span>
                   <Badge variant="outline" className="text-xs">
                     {damage.severity}

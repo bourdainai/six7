@@ -258,7 +258,7 @@ export default function ModerationDashboard() {
                     <div className="flex items-start justify-between">
                       <div>
                         <CardTitle className="text-lg">
-                          {report.report_type.replace(/_/g, " ").toUpperCase()}
+                          {report.report_type.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())}
                         </CardTitle>
                         <CardDescription>
                           Reported by {report.reporter?.full_name || "Unknown"} on{" "}
@@ -308,7 +308,7 @@ export default function ModerationDashboard() {
                     <div className="flex items-start justify-between">
                       <div>
                         <CardTitle className="text-lg">
-                          {dispute.dispute_type.replace(/_/g, " ").toUpperCase()}
+                          {dispute.dispute_type.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())}
                         </CardTitle>
                         <CardDescription>
                           {dispute.buyer?.full_name} vs {dispute.seller?.full_name}

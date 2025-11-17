@@ -61,6 +61,12 @@ const CONDITIONS = [
   "fair"
 ];
 
+// Format condition for display
+const formatConditionDisplay = (condition: string): string => {
+  if (condition === "All Conditions") return condition;
+  return condition.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
 const COMMON_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
 
 export const SearchFilters = ({ 
@@ -461,7 +467,7 @@ export const SearchFilters = ({
                       <SelectContent>
                         {CONDITIONS.map((cond) => (
                           <SelectItem key={cond} value={cond}>
-                            {cond}
+                            {formatConditionDisplay(cond)}
                           </SelectItem>
                         ))}
                       </SelectContent>

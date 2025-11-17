@@ -69,7 +69,7 @@ export const ConversationSentiment = ({ conversationId, messages }: Conversation
 
       <div className="flex flex-wrap gap-2">
         <Badge className={getSentimentColor(analysis.overall_sentiment)}>
-          {analysis.overall_sentiment.replace('_', ' ')}
+          {analysis.overall_sentiment.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())}
         </Badge>
         <Badge className={getInterestColor(analysis.buyer_interest)}>
           {analysis.buyer_interest} interest

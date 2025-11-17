@@ -92,7 +92,7 @@ const OnboardingStepReview = ({ formData }: OnboardingStepReviewProps) => {
                 <div>
                   <span className="text-muted-foreground">Business Type:</span>
                   <p className="font-medium capitalize">
-                    {formData.businessTypeCategory.replace(/_/g, " ")}
+                    {formData.businessTypeCategory.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())}
                   </p>
                 </div>
               )}

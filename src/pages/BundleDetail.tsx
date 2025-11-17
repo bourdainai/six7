@@ -269,7 +269,7 @@ export default function BundleDetail() {
                   <p className="text-sm text-muted-foreground mb-2">{item.listing.brand}</p>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground capitalize">
-                      {item.listing.condition?.replace("_", " ")}
+                      {item.listing.condition ? formatCondition(item.listing.condition) : ''}
                     </span>
                     <span className="font-medium text-foreground">
                       £{Number(item.listing.seller_price).toFixed(2)}

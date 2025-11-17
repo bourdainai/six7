@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { SellerReputation } from "@/components/seller/SellerReputation";
 import { OutfitBuilder } from "@/components/OutfitBuilder";
 import { useSavedListings } from "@/hooks/useSavedListings";
+import { formatCondition } from "@/lib/format";
 
 const ListingDetail = () => {
   const { id } = useParams();
@@ -194,7 +195,7 @@ const ListingDetail = () => {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {listing.condition && <Badge variant="secondary">{listing.condition.replace(/_/g, ' ')}</Badge>}
+              {listing.condition && <Badge variant="secondary">{formatCondition(listing.condition)}</Badge>}
               {listing.size && <Badge variant="outline">Size: {listing.size}</Badge>}
               {listing.color && <Badge variant="outline">{listing.color}</Badge>}
               {listing.category && <Badge variant="outline">{listing.category}</Badge>}
