@@ -39,7 +39,7 @@ const SellerOnboarding = () => {
 
         // Initialize Stripe Connect
         const stripeConnectInstance = await loadConnectAndInitialize({
-          publishableKey: import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "",
+          publishableKey: (data.publishableKey as string) || import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "",
           fetchClientSecret: async () => data.clientSecret,
           appearance: {
             overlays: 'dialog',
@@ -57,13 +57,13 @@ const SellerOnboarding = () => {
           // Clear any existing content
           container.innerHTML = '';
           
-          // Create the account onboarding component
+          // Create the account onboarding component with correct API
           const accountOnboarding = stripeConnectInstance.create("account-onboarding");
           
           console.log("Account onboarding component created");
           
-          // Set up exit handler
-          accountOnboarding.setOnExit(() => {
+          // Set up exit handler using event listener
+          accountOnboarding.addEventListener("exit", () => {
             console.log("User exited onboarding");
             toast({
               title: "Onboarding incomplete",
@@ -74,7 +74,7 @@ const SellerOnboarding = () => {
           });
 
           // Mount the component
-          container.appendChild(accountOnboarding);
+          container.appendChild(accountOnboarding as unknown as Node);
           console.log("Account onboarding component mounted");
         }
 

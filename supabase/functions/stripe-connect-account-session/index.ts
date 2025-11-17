@@ -78,7 +78,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         clientSecret: accountSession.client_secret,
-        accountId: accountId 
+        accountId: accountId,
+        publishableKey: Deno.env.get('VITE_STRIPE_PUBLISHABLE_KEY') || Deno.env.get('STRIPE_PUBLISHABLE_KEY') || null
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
