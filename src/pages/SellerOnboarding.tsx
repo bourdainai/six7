@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { loadConnectAndInitialize } from "@stripe/connect-js";
@@ -17,6 +18,7 @@ const SellerOnboarding = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [stripeConnectInstance, setStripeConnectInstance] = useState<any>(null);
+  const [fallbackLoading, setFallbackLoading] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -29,9 +31,10 @@ const SellerOnboarding = () => {
         const instance = await loadConnectAndInitialize({
           publishableKey: import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "",
           fetchClientSecret: async () => {
-            const { data } = await supabase.functions.invoke(
+            const { data, error } = await supabase.functions.invoke(
               "stripe-connect-account-session"
             );
+            if (error) throw error;
             return data.clientSecret;
           },
           appearance: {
@@ -55,6 +58,24 @@ const SellerOnboarding = () => {
 
     initializeStripeConnect();
   }, [user, navigate, toast]);
+
+  const openHostedOnboarding = async () => {
+    try {
+      setFallbackLoading(true);
+      const { data, error } = await supabase.functions.invoke("stripe-connect-onboard");
+      if (error) throw error;
+      if (data?.url) window.open(data.url, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      console.error(e);
+      toast({
+        title: "Could not open onboarding",
+        description: "Please try again in a moment.",
+        variant: "destructive",
+      });
+    } finally {
+      setFallbackLoading(false);
+    }
+  };
 
   if (!user) return null;
 
@@ -88,6 +109,18 @@ const SellerOnboarding = () => {
                     navigate("/dashboard/seller");
                   }}
                 />
+                <div className="mt-6 flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    If the form doesn’t appear, open the hosted onboarding instead.
+                  </p>
+                  <Button size="sm" onClick={openHostedOnboarding} disabled={fallbackLoading}>
+                    {fallbackLoading ? (
+                      <span className="inline-flex items-center"><Loader2 className="mr-2 h-4 w-4 animate-spin" />Opening…</span>
+                    ) : (
+                      "Open Onboarding"
+                    )}
+                  </Button>
+                </div>
               </ConnectComponentsProvider>
             )}
           </CardContent>
