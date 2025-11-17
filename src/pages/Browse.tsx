@@ -162,15 +162,11 @@ const Browse = () => {
         <div className="mb-8 space-y-6">
           <div className="flex items-center justify-between mb-2">
             <div className="space-y-2">
-              <h1 className="text-3xl font-light text-foreground">
-                {searchMode === 'semantic' && 'AI Search Results'}
-                {searchMode === 'vibe' && 'Vibe Search Results'}
-                {searchMode === 'browse' && 'Browse'}
-              </h1>
-              {searchMode === 'browse' && (
-                <p className="text-base text-muted-foreground font-light">
-                  Discover unique items from verified sellers
-                </p>
+              {searchMode === 'semantic' && (
+                <h1 className="text-3xl font-light text-foreground">AI Search Results</h1>
+              )}
+              {searchMode === 'vibe' && (
+                <h1 className="text-3xl font-light text-foreground">Vibe Search Results</h1>
               )}
             </div>
             {searchMode !== 'browse' && (
@@ -199,7 +195,7 @@ const Browse = () => {
           {/* Sorting Controls */}
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
-              {filteredListings.length} {filteredListings.length === 1 ? 'item' : 'items'}
+              {filteredListings.length} {filteredListings.length === 1 ? 'item' : 'items'} available
             </p>
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Sort by:</span>
@@ -223,17 +219,6 @@ const Browse = () => {
           onOpenChange={setVibeSearchOpen}
           onResults={handleVibeResults}
         />
-
-        <div className="mb-4">
-          <p className="text-sm text-muted-foreground">
-            {filteredListings?.length || 0} items {searchMode !== 'browse' ? 'found' : filters.search || Object.values(filters).some(v => v) ? 'found' : 'available'}
-            {searchMode === 'semantic' && (
-              <Badge variant="secondary" className="ml-2">
-                AI Ranked
-              </Badge>
-            )}
-          </p>
-        </div>
 
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -283,7 +268,7 @@ const Browse = () => {
                       </p>
                       {listing.condition && (
                         <Badge variant="secondary" className="text-xs">
-                          {listing.condition}
+                          {listing.condition.replace(/_/g, ' ')}
                         </Badge>
                       )}
                     </div>
