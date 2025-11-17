@@ -17,7 +17,7 @@ import OnboardingStepBusiness from "@/components/seller/OnboardingStepBusiness";
 import OnboardingStepPayout from "@/components/seller/OnboardingStepPayout";
 import OnboardingStepReview from "@/components/seller/OnboardingStepReview";
 
-// Streamlined schema - only essential fields
+// Streamlined schema - UK only
 const onboardingSchema = z.object({
   businessType: z.enum(["individual", "company"], {
     required_error: "Please select a business type",
@@ -28,16 +28,14 @@ const onboardingSchema = z.object({
   dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date of birth must be in YYYY-MM-DD format"),
   addressLine1: z.string().min(1, "Address is required"),
   city: z.string().min(1, "City is required"),
-  state: z.string().min(1, "State/Province is required"),
-  postalCode: z.string().min(1, "Postal code is required"),
-  country: z.string().min(1, "Country is required"),
+  postalCode: z.string().min(1, "Postcode is required"),
   phone: z.string().min(1, "Phone number is required"),
   // Business information (only if company)
   businessName: z.string().optional(),
-  // Bank account information - essential
+  // Bank account information - UK only
   accountHolderName: z.string().min(1, "Account holder name is required"),
   accountNumber: z.string().min(1, "Account number is required"),
-  routingNumber: z.string().min(1, "Routing number is required"),
+  routingNumber: z.string().min(1, "Sort code is required"),
   accountType: z.enum(["checking", "savings"], {
     required_error: "Please select an account type",
   }),
@@ -52,18 +50,10 @@ const onboardingSchema = z.object({
   path: ["businessName"],
 }).refine((data) => {
   // Validate UK sort code format (XX-XX-XX)
-  if (data.country === "GB") {
-    const sortCodeRegex = /^\d{2}-\d{2}-\d{2}$/;
-    return sortCodeRegex.test(data.routingNumber);
-  }
-  // Validate US routing number (9 digits)
-  if (data.country === "US") {
-    const routingRegex = /^\d{9}$/;
-    return routingRegex.test(data.routingNumber);
-  }
-  return true;
+  const sortCodeRegex = /^\d{2}-\d{2}-\d{2}$/;
+  return sortCodeRegex.test(data.routingNumber);
 }, {
-  message: "Invalid routing number format for selected country",
+  message: "Sort code must be in format XX-XX-XX (e.g., 12-34-56)",
   path: ["routingNumber"],
 });
 
@@ -90,7 +80,6 @@ const SellerOnboardingMultiStep = () => {
     resolver: zodResolver(onboardingSchema),
     defaultValues: {
       businessType: "individual",
-      country: "GB",
       accountType: "checking",
     },
     mode: "onChange",
@@ -139,7 +128,7 @@ const SellerOnboardingMultiStep = () => {
       fieldsToValidate = ["businessType"];
     } else if (currentStep === 1) {
       // Personal Information step
-      fieldsToValidate = ["firstName", "lastName", "dateOfBirth", "addressLine1", "city", "state", "postalCode", "country", "phone"];
+      fieldsToValidate = ["firstName", "lastName", "dateOfBirth", "addressLine1", "city", "postalCode", "phone"];
     } else if (currentStep === 2) {
       // Step 2: Business (if company) OR Payout (if individual)
       if (isIndividual) {

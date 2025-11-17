@@ -111,9 +111,9 @@ const OnboardingStepReview = ({ formData, onEditStep }: OnboardingStepReviewProp
               <p className="font-medium">
                 {formData.addressLine1}
                 <br />
-                {formData.city}, {formData.state} {formData.postalCode}
+                {formData.city} {formData.postalCode}
                 <br />
-                {formData.country}
+                United Kingdom
               </p>
             </div>
           </CardContent>
@@ -186,7 +186,7 @@ const OnboardingStepReview = ({ formData, onEditStep }: OnboardingStepReviewProp
                 </p>
               </div>
               <div>
-                <span className="text-muted-foreground">Routing Number:</span>
+                <span className="text-muted-foreground">Sort Code:</span>
                 <p className={`font-medium ${!formData.routingNumber ? "text-destructive" : ""}`}>
                   {formData.routingNumber || "Not provided"}
                 </p>

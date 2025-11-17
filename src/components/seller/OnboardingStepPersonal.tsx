@@ -108,59 +108,13 @@ const OnboardingStepPersonal = () => {
 
           <FormField
             control={form.control}
-            name="state"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>State/Province *</FormLabel>
-                <FormControl>
-                  <Input placeholder="England" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2 mt-4">
-          <FormField
-            control={form.control}
             name="postalCode"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Postal Code *</FormLabel>
+                <FormLabel>Postcode *</FormLabel>
                 <FormControl>
                   <Input placeholder="SW1A 1AA" {...field} />
                 </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="country"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Country *</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select country" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="GB">United Kingdom</SelectItem>
-                    <SelectItem value="US">United States</SelectItem>
-                    <SelectItem value="CA">Canada</SelectItem>
-                    <SelectItem value="AU">Australia</SelectItem>
-                    <SelectItem value="DE">Germany</SelectItem>
-                    <SelectItem value="FR">France</SelectItem>
-                    <SelectItem value="ES">Spain</SelectItem>
-                    <SelectItem value="IT">Italy</SelectItem>
-                    <SelectItem value="NL">Netherlands</SelectItem>
-                    <SelectItem value="IE">Ireland</SelectItem>
-                  </SelectContent>
-                </Select>
                 <FormMessage />
               </FormItem>
             )}

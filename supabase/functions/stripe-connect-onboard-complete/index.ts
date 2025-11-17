@@ -89,9 +89,8 @@ serve(async (req) => {
           line1: formData.addressLine1,
           line2: (formData as any).addressLine2 || undefined,
           city: formData.city,
-          state: formData.state,
           postal_code: formData.postalCode,
-          country: formData.country,
+          country: 'GB', // UK only
         },
         phone: formData.phone,
       },
@@ -137,8 +136,8 @@ serve(async (req) => {
     try {
       externalAccount = await stripe.accounts.createExternalAccount(accountId, {
         bank_account: {
-          country: formData.country,
-          currency: formData.country === 'GB' ? 'gbp' : 'usd',
+          country: 'GB', // UK only
+          currency: 'gbp',
           account_number: formData.accountNumber,
           routing_number: formData.routingNumber,
           account_holder_name: formData.accountHolderName,
@@ -163,9 +162,7 @@ serve(async (req) => {
             errorField = 'accountNumber';
             break;
           case 'invalid_routing_number':
-            errorMessage = formData.country === 'GB' 
-              ? 'The sort code you entered is invalid. Please use format XX-XX-XX (e.g., 12-34-56).'
-              : 'The routing number you entered is invalid. Please check and try again.';
+            errorMessage = 'The sort code you entered is invalid. Please use format XX-XX-XX (e.g., 12-34-56).';
             errorField = 'routingNumber';
             break;
           case 'invalid_account_holder_name':
