@@ -64,9 +64,9 @@ const CheckoutForm = ({ orderId, listingTitle, canProceed }: CheckoutFormProps) 
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="bg-muted/30 rounded-lg p-6 mb-6">
-        <h3 className="text-sm font-medium text-foreground mb-2">Order Summary</h3>
-        <p className="text-sm text-muted-foreground">{listingTitle}</p>
+      <div className="bg-soft-neutral border border-divider-gray p-6 mb-6">
+        <h3 className="text-sm font-normal text-foreground mb-2 tracking-tight">Order Summary</h3>
+        <p className="text-sm text-muted-foreground font-normal">{listingTitle}</p>
       </div>
 
       <PaymentElement />
@@ -247,12 +247,12 @@ const Checkout = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navigation />
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="animate-pulse space-y-4">
-            <div className="h-8 bg-muted rounded w-1/2"></div>
-            <div className="h-64 bg-muted rounded"></div>
-          </div>
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-soft-neutral w-1/2"></div>
+          <div className="h-64 bg-soft-neutral"></div>
         </div>
+      </div>
       </div>
     );
   }
@@ -262,7 +262,7 @@ const Checkout = () => {
       <div className="min-h-screen bg-background">
         <Navigation />
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
-          <h1 className="text-2xl font-light text-foreground mb-4">Listing not found</h1>
+          <h1 className="text-2xl font-light text-foreground mb-4 tracking-tight">Listing not found</h1>
           <Button variant="outline" onClick={() => navigate("/browse")}>
             Browse Items
           </Button>
@@ -309,12 +309,12 @@ const Checkout = () => {
           Back to Listing
         </button>
 
-        <h1 className="text-3xl font-light text-foreground mb-8">Checkout</h1>
+        <h1 className="text-3xl font-light text-foreground mb-8 tracking-tight">Checkout</h1>
 
         {validationErrors.length > 0 && (
-          <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
-            <h3 className="text-sm font-semibold text-destructive mb-2">Cannot Complete Purchase</h3>
-            <ul className="list-disc list-inside space-y-1 text-sm text-destructive">
+          <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20">
+            <h3 className="text-sm font-normal text-destructive mb-2 tracking-tight">Cannot Complete Purchase</h3>
+            <ul className="list-disc list-inside space-y-1 text-sm text-destructive font-normal">
               {validationErrors.map((error, idx) => (
                 <li key={idx}>{error}</li>
               ))}
@@ -332,20 +332,20 @@ const Checkout = () => {
         {!createCheckoutMutation.data ? (
             <form onSubmit={handleCreateCheckout} className="space-y-6">
               {!canProceed && (
-                <div className="p-4 bg-muted border border-border rounded-lg">
-                  <p className="text-sm text-muted-foreground">
+                <div className="p-4 bg-soft-neutral border border-divider-gray">
+                  <p className="text-sm text-muted-foreground font-normal">
                     Please resolve the issues above before proceeding with checkout.
                   </p>
                 </div>
               )}
-            <div className="bg-muted/30 rounded-lg p-6 mb-8">
-              <h2 className="text-lg font-light text-foreground mb-4">{listing.title}</h2>
+            <div className="bg-soft-neutral border border-divider-gray p-6 mb-8">
+              <h2 className="text-lg font-light text-foreground mb-4 tracking-tight">{listing.title}</h2>
               {offer && (
-                <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-                  <p className="text-sm font-medium text-green-600 dark:text-green-400">
+                <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20">
+                  <p className="text-sm font-normal text-green-600 dark:text-green-400">
                     ✅ Accepted Offer Price
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground mt-1 font-normal">
                     Original price: £{Number(listing?.seller_price || 0).toFixed(2)}
                   </p>
                 </div>
@@ -374,10 +374,10 @@ const Checkout = () => {
                     {listing.free_shipping ? 'FREE' : `£${shippingCost.toFixed(2)}`}
                   </span>
                 </div>
-                <div className="border-t border-border pt-2 mt-2">
+                <div className="border-t border-divider-gray pt-2 mt-2">
                   <div className="flex justify-between">
-                    <span className="font-medium text-foreground">Total</span>
-                    <span className="text-2xl font-light text-foreground">
+                    <span className="font-normal text-foreground tracking-tight">Total</span>
+                    <span className="text-2xl font-light text-foreground tracking-tight">
                       £{totalPrice.toFixed(2)}
                     </span>
                   </div>
@@ -386,7 +386,7 @@ const Checkout = () => {
             </div>
 
             <div className="space-y-4">
-              <h3 className="text-sm font-medium text-foreground">Shipping Address</h3>
+              <h3 className="text-sm font-normal text-foreground tracking-tight">Shipping Address</h3>
               
               <div>
                 <Label htmlFor="name">Full Name</Label>
@@ -468,7 +468,7 @@ const Checkout = () => {
                   colorPrimary: "hsl(var(--primary))",
                   colorBackground: "hsl(var(--background))",
                   colorText: "hsl(var(--foreground))",
-                  borderRadius: "0.5rem",
+                  borderRadius: "2px",
                 },
               },
             }}

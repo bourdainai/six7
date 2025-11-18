@@ -83,10 +83,10 @@ const ListingDetail = () => {
       <PageLayout>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           <div className="space-y-4">
-            <Skeleton className="aspect-[3/4] w-full rounded-lg" />
+            <Skeleton className="aspect-[3/4] w-full" />
             <div className="grid grid-cols-4 gap-2">
               {[1, 2, 3, 4].map((i) => (
-                <Skeleton key={i} className="aspect-square w-full rounded" />
+                <Skeleton key={i} className="aspect-square w-full" />
               ))}
             </div>
           </div>
@@ -132,7 +132,7 @@ const ListingDetail = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Images */}
           <div className="space-y-4">
-            <div className="aspect-[3/4] bg-muted rounded-lg overflow-hidden relative">
+            <div className="aspect-[3/4] bg-soft-neutral border border-divider-gray overflow-hidden relative">
               {images.length > 0 ? (
                 <img
                   src={images[selectedImage]?.image_url}
@@ -156,8 +156,8 @@ const ListingDetail = () => {
                   <button
                     key={idx}
                     onClick={() => setSelectedImage(idx)}
-                    className={`aspect-square bg-muted rounded overflow-hidden border-2 transition-all ${
-                      selectedImage === idx ? "border-primary" : "border-transparent"
+                    className={`aspect-square bg-soft-neutral overflow-hidden border transition-all duration-fast ${
+                      selectedImage === idx ? "border-foreground" : "border-divider-gray"
                     }`}
                   >
                     <img
@@ -178,18 +178,18 @@ const ListingDetail = () => {
           {/* Details */}
           <div className="space-y-6">
             <div>
-              <h1 className="text-3xl font-light text-foreground mb-2">{listing.title}</h1>
-              <p className="text-sm text-muted-foreground">{listing.brand}</p>
+              <h1 className="text-3xl font-light text-foreground mb-2 tracking-tight">{listing.title}</h1>
+              <p className="text-sm text-muted-foreground font-normal">{listing.brand}</p>
             </div>
 
             <div className="space-y-2">
               <div className="flex items-baseline gap-3">
-                <span className="text-4xl font-light text-foreground">
+                <span className="text-4xl font-light text-foreground tracking-tight">
                   £{Number(listing.seller_price).toFixed(2)}
                 </span>
                 {listing.original_rrp && (
                   <>
-                    <span className="text-lg text-muted-foreground line-through">
+                    <span className="text-lg text-muted-foreground line-through font-normal">
                       £{Number(listing.original_rrp).toFixed(2)}
                     </span>
                     <Badge variant="secondary" className="ml-2">
@@ -199,7 +199,7 @@ const ListingDetail = () => {
                 )}
               </div>
               {listing.original_rrp && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground font-normal">
                   Original price: £{Number(listing.original_rrp).toFixed(2)}
                 </p>
               )}
@@ -224,32 +224,32 @@ const ListingDetail = () => {
             )}
 
             {listing.description && (
-              <div className="border-t border-border pt-6">
-                <h3 className="text-sm font-medium text-foreground mb-2">Description</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+              <div className="border-t border-divider-gray pt-6">
+                <h3 className="text-sm font-normal text-foreground mb-2 tracking-tight">Description</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap font-normal tracking-tight">
                   {listing.description}
                 </p>
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4 border-t border-border pt-6">
+            <div className="grid grid-cols-2 gap-4 border-t border-divider-gray pt-6">
               {listing.material && (
                 <div>
-                  <h3 className="text-sm font-medium text-foreground mb-1">Material</h3>
-                  <p className="text-sm text-muted-foreground">{listing.material}</p>
+                  <h3 className="text-sm font-normal text-foreground mb-1 tracking-tight">Material</h3>
+                  <p className="text-sm text-muted-foreground font-normal">{listing.material}</p>
                 </div>
               )}
               {listing.brand && (
                 <div>
-                  <h3 className="text-sm font-medium text-foreground mb-1">Brand</h3>
-                  <p className="text-sm text-muted-foreground">{listing.brand}</p>
+                  <h3 className="text-sm font-normal text-foreground mb-1 tracking-tight">Brand</h3>
+                  <p className="text-sm text-muted-foreground font-normal">{listing.brand}</p>
                 </div>
               )}
             </div>
 
             {/* Shipping Information */}
-            <div className="border-t border-border pt-6">
-              <h3 className="text-sm font-medium text-foreground mb-3">Shipping & Delivery</h3>
+            <div className="border-t border-divider-gray pt-6">
+              <h3 className="text-sm font-normal text-foreground mb-3 tracking-tight">Shipping & Delivery</h3>
               <div className="space-y-3">
                 {listing.free_shipping ? (
                   <div className="flex items-center gap-2">
@@ -284,8 +284,8 @@ const ListingDetail = () => {
 
             {/* Package Details */}
             {(listing.package_weight || listing.package_dimensions) && (
-              <div className="border-t border-border pt-6">
-                <h3 className="text-sm font-medium text-foreground mb-3">Package Details</h3>
+              <div className="border-t border-divider-gray pt-6">
+                <h3 className="text-sm font-normal text-foreground mb-3 tracking-tight">Package Details</h3>
                 <div className="space-y-2 text-sm">
                   {listing.package_weight && (
                     <div className="flex items-center justify-between">
@@ -305,24 +305,24 @@ const ListingDetail = () => {
               </div>
             )}
 
-            <div className="border-t border-border pt-6">
-              <h3 className="text-sm font-medium text-foreground mb-3">Seller Profile</h3>
+            <div className="border-t border-divider-gray pt-6">
+              <h3 className="text-sm font-normal text-foreground mb-3 tracking-tight">Seller Profile</h3>
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center overflow-hidden">
+                  <div className="w-12 h-12 bg-soft-neutral flex items-center justify-center overflow-hidden border border-divider-gray">
                     {listing.seller.avatar_url ? (
                       <img src={listing.seller.avatar_url} alt={listing.seller.full_name || "Seller"} className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-sm text-muted-foreground font-normal">
                         {listing.seller.full_name?.[0] || "S"}
                       </span>
                     )}
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-normal text-foreground tracking-tight">
                       {listing.seller.full_name || "Anonymous"}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground font-normal">
                       Trust Score: {listing.seller.trust_score || 50}/100
                     </p>
                   </div>

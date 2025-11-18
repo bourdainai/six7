@@ -241,10 +241,10 @@ const Messages = () => {
   return (
     <PageLayout>
         <div className="mb-8 space-y-2">
-          <h1 className="text-3xl font-light text-foreground">
+          <h1 className="text-3xl font-light text-foreground tracking-tight">
             Messages
           </h1>
-          <p className="text-base text-muted-foreground font-light">
+          <p className="text-base text-muted-foreground font-normal tracking-tight">
             Connect with buyers and sellers
           </p>
         </div>
@@ -252,7 +252,7 @@ const Messages = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
           {/* Conversations List */}
           <Card className="p-4 overflow-y-auto">
-            <h2 className="text-lg font-semibold mb-4">Conversations</h2>
+            <h2 className="text-lg font-normal mb-4 tracking-tight">Conversations</h2>
             {conversations && conversations.length > 0 ? (
               <div className="space-y-2">
                 {conversations.map((conv) => {
@@ -263,29 +263,29 @@ const Messages = () => {
                     <button
                       key={conv.id}
                       onClick={() => setSelectedConversation(conv.id)}
-                      className={`w-full p-3 rounded-lg text-left transition-colors ${
+                      className={`w-full p-3 text-left transition-colors duration-fast border ${
                         selectedConversation === conv.id
-                          ? "bg-primary/10 border-primary"
-                          : "bg-muted hover:bg-muted/80"
-                      } border`}
+                          ? "bg-soft-neutral border-foreground"
+                          : "bg-background border-divider-gray hover:bg-soft-neutral"
+                      }`}
                     >
                       <div className="flex gap-3">
                         {firstImage && (
                           <img
                             src={firstImage.image_url}
                             alt={conv.listing?.title || "Item"}
-                            className="w-12 h-12 object-cover rounded"
+                            className="w-12 h-12 object-cover border border-divider-gray"
                             width="48"
                             height="48"
                             loading="lazy"
                           />
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{conv.listing?.title || "Untitled"}</p>
-                          <p className="text-xs text-muted-foreground truncate">
+                          <p className="font-normal text-sm truncate tracking-tight">{conv.listing?.title || "Untitled"}</p>
+                          <p className="text-xs text-muted-foreground truncate font-normal">
                             {otherUser?.full_name || "Unknown"}
                           </p>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-xs text-muted-foreground font-normal">
                             {format(new Date(conv.updated_at), "MMM d, h:mm a")}
                           </p>
                         </div>
@@ -297,7 +297,7 @@ const Messages = () => {
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 <MessageSquare className="mx-auto h-12 w-12 mb-2 opacity-50" />
-                <p>No conversations yet</p>
+                <p className="font-normal">No conversations yet</p>
               </div>
             )}
           </Card>
@@ -307,21 +307,21 @@ const Messages = () => {
             {selectedConv ? (
               <>
                 {/* Header */}
-                <div className="p-4 border-b space-y-3">
+                <div className="p-4 border-b border-divider-gray space-y-3">
                   <div className="flex items-center gap-3">
                     {selectedConv.listing?.images?.[0] && (
                       <img
                         src={selectedConv.listing.images[0].image_url}
                         alt={selectedConv.listing?.title || "Item"}
-                        className="w-12 h-12 object-cover rounded"
+                        className="w-12 h-12 object-cover border border-divider-gray"
                         width="48"
                         height="48"
                         loading="lazy"
                       />
                     )}
                     <div className="flex-1">
-                      <h3 className="font-semibold">{selectedConv.listing?.title || "Untitled"}</h3>
-                      <p className="text-sm text-muted-foreground">
+                      <h3 className="font-normal tracking-tight">{selectedConv.listing?.title || "Untitled"}</h3>
+                      <p className="text-sm text-muted-foreground font-normal">
                         {selectedConv.buyer_id === user.id
                           ? selectedConv.seller?.full_name || "Unknown"
                           : selectedConv.buyer?.full_name || "Unknown"}
@@ -361,17 +361,17 @@ const Messages = () => {
                                 className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}
                               >
                                 <div
-                                  className={`max-w-[70%] rounded-lg p-3 ${
+                                  className={`max-w-[70%] p-3 border ${
                                     isOwnMessage
-                                      ? "bg-primary text-primary-foreground"
-                                      : "bg-muted"
+                                      ? "bg-foreground text-background border-foreground"
+                                      : "bg-soft-neutral border-divider-gray"
                                   }`}
                                 >
-                                  <p className="text-sm">{msg.content}</p>
+                                  <p className="text-sm font-normal tracking-tight">{msg.content}</p>
                                   <p
-                                    className={`text-xs mt-1 ${
+                                    className={`text-xs mt-1 font-normal ${
                                       isOwnMessage
-                                        ? "text-primary-foreground/70"
+                                        ? "text-background/70"
                                         : "text-muted-foreground"
                                     }`}
                                   >
@@ -406,7 +406,7 @@ const Messages = () => {
                 </div>
 
                 {/* Input */}
-                <div className="p-4 border-t space-y-3">
+                <div className="p-4 border-t border-divider-gray space-y-3">
                   <MessageSafetyIndicator 
                     message={messageInput}
                     onBlock={() => setShouldBlockMessage(true)}

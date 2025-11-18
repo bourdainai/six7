@@ -96,7 +96,7 @@ const SellerDashboard = () => {
     return (
       <PageLayout>
         <div className="text-center">
-          <h1 className="text-2xl font-light mb-4">Please sign in</h1>
+          <h1 className="text-2xl font-light mb-4 tracking-tight">Please sign in</h1>
         </div>
       </PageLayout>
     );
@@ -107,10 +107,10 @@ const SellerDashboard = () => {
         <div className="mb-8 space-y-2">
           <div className="flex items-center justify-between">
             <div className="space-y-2">
-              <h1 className="text-3xl font-light text-foreground">
+              <h1 className="text-3xl font-light text-foreground tracking-tight">
                 Seller Dashboard
               </h1>
-              <p className="text-base text-muted-foreground font-light">
+              <p className="text-base text-muted-foreground font-normal tracking-tight">
                 Manage your listings and track your performance
               </p>
             </div>
@@ -132,14 +132,14 @@ const SellerDashboard = () => {
             {!profile?.stripe_connect_account_id ? (
               <Card className="border-amber-500 bg-amber-500/5">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 font-normal tracking-tight">
                     <AlertCircle className="h-5 w-5 text-amber-500" />
                     Complete Seller Setup
                   </CardTitle>
-                  <CardDescription>Set up your payment details to start receiving payments from buyers</CardDescription>
+                  <CardDescription className="font-normal">Set up your payment details to start receiving payments from buyers</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground mb-4">
+                  <p className="text-sm text-muted-foreground mb-4 font-normal">
                     You need to complete Stripe Connect onboarding before you can receive payments. This process takes
                     just a few minutes.
                   </p>
@@ -158,16 +158,16 @@ const SellerDashboard = () => {
             ) : !profile?.stripe_onboarding_complete ? (
               <Card className="border-yellow-500 bg-yellow-500/5">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 font-normal tracking-tight">
                     <AlertCircle className="h-5 w-5 text-yellow-500" />
                     Onboarding In Progress
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="font-normal">
                     Your payment account setup is in progress. Complete verification to start receiving payments.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground mb-4">
+                  <p className="text-sm text-muted-foreground mb-4 font-normal">
                     You may need to provide additional information or upload documents to complete verification.
                   </p>
                   <div className="flex gap-2">
@@ -183,16 +183,16 @@ const SellerDashboard = () => {
             ) : !profile?.can_receive_payments ? (
               <Card className="border-yellow-500 bg-yellow-500/5">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 font-normal tracking-tight">
                     <AlertCircle className="h-5 w-5 text-yellow-500" />
                     Verification Pending
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="font-normal">
                     Your onboarding is complete, but your account is still being verified by Stripe.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground mb-4">
+                  <p className="text-sm text-muted-foreground mb-4 font-normal">
                     This usually takes a few minutes. You'll be able to receive payments once verification is complete.
                   </p>
                   <Button onClick={() => navigate("/seller/account")} variant="outline">
@@ -203,11 +203,11 @@ const SellerDashboard = () => {
             ) : (
               <Card className="border-green-500 bg-green-500/5">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 font-normal tracking-tight">
                     <CheckCircle2 className="h-5 w-5 text-green-500" />
                     Payment Account Active
                   </CardTitle>
-                  <CardDescription>Your payment account is set up and ready to receive payments</CardDescription>
+                  <CardDescription className="font-normal">Your payment account is set up and ready to receive payments</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Button onClick={() => navigate("/seller/account")} variant="outline">
@@ -220,35 +220,35 @@ const SellerDashboard = () => {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <CardTitle className="text-sm font-normal flex items-center gap-2 tracking-tight">
                     <Package className="h-4 w-4" />Active Listings
                   </CardTitle>
                 </CardHeader>
-                <CardContent><div className="text-2xl font-bold">{activeListings}</div></CardContent>
+                <CardContent><div className="text-2xl font-light tracking-tight">{activeListings}</div></CardContent>
               </Card>
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <CardTitle className="text-sm font-normal flex items-center gap-2 tracking-tight">
                     <ShoppingCart className="h-4 w-4" />Total Sales
                   </CardTitle>
                 </CardHeader>
-                <CardContent><div className="text-2xl font-bold">{totalOrders}</div></CardContent>
+                <CardContent><div className="text-2xl font-light tracking-tight">{totalOrders}</div></CardContent>
               </Card>
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <CardTitle className="text-sm font-normal flex items-center gap-2 tracking-tight">
                     <DollarSign className="h-4 w-4" />Revenue
                   </CardTitle>
                 </CardHeader>
-                <CardContent><div className="text-2xl font-bold">£{totalSales.toFixed(2)}</div></CardContent>
+                <CardContent><div className="text-2xl font-light tracking-tight">£{totalSales.toFixed(2)}</div></CardContent>
               </Card>
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <CardTitle className="text-sm font-normal flex items-center gap-2 tracking-tight">
                     <TrendingUp className="h-4 w-4" />Avg Order
                   </CardTitle>
                 </CardHeader>
-                <CardContent><div className="text-2xl font-bold">£{totalOrders > 0 ? (totalSales / totalOrders).toFixed(2) : "0.00"}</div></CardContent>
+                <CardContent><div className="text-2xl font-light tracking-tight">£{totalOrders > 0 ? (totalSales / totalOrders).toFixed(2) : "0.00"}</div></CardContent>
               </Card>
             </div>
 
@@ -257,16 +257,16 @@ const SellerDashboard = () => {
               <div className="grid gap-4 md:grid-cols-2">
                 <Card className="border-green-500/20">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <CardTitle className="text-sm font-normal flex items-center gap-2 tracking-tight">
                       <Wallet className="h-4 w-4 text-green-500" />Available Balance
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">
+                    <div className="text-2xl font-light tracking-tight">
                       {balance?.currency === "GBP" ? "£" : balance?.currency || "£"}
                       {(balance?.available_balance || 0).toFixed(2)}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">Ready to withdraw</p>
+                    <p className="text-xs text-muted-foreground mt-1 font-normal">Ready to withdraw</p>
                     <Button
                       variant="outline"
                       size="sm"
@@ -279,16 +279,16 @@ const SellerDashboard = () => {
                 </Card>
                 <Card className="border-yellow-500/20">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <CardTitle className="text-sm font-normal flex items-center gap-2 tracking-tight">
                       <Clock className="h-4 w-4 text-yellow-500" />Pending Balance
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">
+                    <div className="text-2xl font-light tracking-tight">
                       {balance?.currency === "GBP" ? "£" : balance?.currency || "£"}
                       {(balance?.pending_balance || 0).toFixed(2)}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">Processing</p>
+                    <p className="text-xs text-muted-foreground mt-1 font-normal">Processing</p>
                     <Button
                       variant="outline"
                       size="sm"
@@ -309,22 +309,22 @@ const SellerDashboard = () => {
           <TabsContent value="copilot">
             <Card>
               <CardHeader>
-                <CardTitle>AI Copilot</CardTitle>
-                <CardDescription>Get insights for your listings</CardDescription>
+                <CardTitle className="font-normal tracking-tight">AI Copilot</CardTitle>
+                <CardDescription className="font-normal">Get insights for your listings</CardDescription>
               </CardHeader>
               <CardContent>
                 {listings && listings.length > 0 ? (
                   <div className="grid gap-4 md:grid-cols-3">
                     {listings.slice(0, 6).map((listing) => (
-                      <Card key={listing.id} className="cursor-pointer hover:shadow-lg" onClick={() => setSelectedListingForCopilot(listing.id)}>
+                      <Card key={listing.id} className="cursor-pointer hover:border-foreground transition-all duration-fast" onClick={() => setSelectedListingForCopilot(listing.id)}>
                         <CardContent className="p-4">
-                          <h3 className="font-medium truncate">{listing.title}</h3>
+                          <h3 className="font-normal truncate tracking-tight">{listing.title}</h3>
                         </CardContent>
                       </Card>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-center py-8 text-muted-foreground">No listings yet</p>
+                  <p className="text-center py-8 text-muted-foreground font-normal">No listings yet</p>
                 )}
               </CardContent>
             </Card>
@@ -337,7 +337,7 @@ const SellerDashboard = () => {
 
       {selectedListingForCopilot && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="relative max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="relative max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-divider-gray bg-background shadow-elevation">
             <Button variant="ghost" size="sm" className="absolute top-2 right-2 z-10" onClick={() => setSelectedListingForCopilot(null)}>Close</Button>
             <SellerCopilot listingId={selectedListingForCopilot} />
           </div>
