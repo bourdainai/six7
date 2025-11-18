@@ -494,14 +494,22 @@ const Help = () => {
                                 {getStatusBadge(ticket.status)}
                               </div>
                               <p className="text-sm text-muted-foreground">
-                                {ticket.message.substring(0, 150)}
-                                {ticket.message.length > 150 && "..."}
+                                {ticket.message ? (
+                                  <>
+                                    {ticket.message.substring(0, 150)}
+                                    {ticket.message.length > 150 && "..."}
+                                  </>
+                                ) : (
+                                  "No message"
+                                )}
                               </p>
                               <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                                <span>Category: {ticket.category}</span>
-                                <span>
-                                  Created: {format(new Date(ticket.created_at), "MMM d, yyyy")}
-                                </span>
+                                <span>Category: {ticket.category || "other"}</span>
+                                {ticket.created_at && (
+                                  <span>
+                                    Created: {format(new Date(ticket.created_at), "MMM d, yyyy")}
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>
