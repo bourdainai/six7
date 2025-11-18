@@ -12,3 +12,13 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+# Sitemap
+Sitemap: https://6seven.ai/sitemap.xml
+
+# Disallow admin and private areas
+Disallow: /admin
+Disallow: /checkout
+Disallow: /orders
+Disallow: /messages
+Disallow: /saved

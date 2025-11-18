@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { useQuery } from "@tanstack/react-query";
 import type { Database, Json } from "@/integrations/supabase/types";
+import { SEO } from "@/components/SEO";
 
 type PackageDimensions = {
   length: number;
@@ -440,6 +441,19 @@ const SellEnhanced = () => {
 
   return (
     <PageLayout>
+      <SEO
+        title="Sell Your Items | List in Seconds with AI | 6Seven"
+        description="Sell your items in seconds with AI-powered listing. Get smart pricing suggestions, instant matching with buyers, and maximize your sales on 6Seven marketplace."
+        keywords="sell online, list items, AI selling, marketplace seller, resale platform, sell fashion, sell electronics, sell collectibles, smart pricing, instant listing, 6Seven seller"
+        url="https://6seven.ai/sell"
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          "name": "Sell Your Items on 6Seven",
+          "description": "List your items in seconds with AI-powered tools",
+          "url": "https://6seven.ai/sell"
+        }}
+      />
       <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} defaultMode="signup" />
       
       <div className="mb-6 sm:mb-8 space-y-2">

@@ -10,6 +10,7 @@ import { BuyerOnboarding } from "@/components/BuyerOnboarding";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.svg";
+import { SEO } from "@/components/SEO";
 
 const Index = () => {
   const { user } = useAuth();
@@ -44,6 +45,11 @@ const Index = () => {
   if (user) {
     return (
       <div className="min-h-screen bg-background">
+        <SEO
+          title="6Seven - Personalized Marketplace Feed"
+          description="Discover personalized listings tailored to your preferences. Browse fashion, electronics, collectibles, and more on 6Seven's AI-powered marketplace."
+          keywords="personalized shopping, AI recommendations, marketplace feed, buy and sell, fashion, electronics, collectibles"
+        />
         <Navigation />
         <div className="pt-[72px]">
           <PersonalizedFeed />
@@ -70,6 +76,23 @@ const Index = () => {
   // If not logged in, show marketing pages
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="6Seven - AI-Native Marketplace | Buy & Sell with AI"
+        description="List items in seconds with AI. Smart pricing, instant matching, and personalized discovery. The next generation of C2C marketplace for fashion, electronics, collectibles, and more."
+        keywords="online marketplace, buy and sell, AI marketplace, resale platform, secondhand goods, fashion marketplace, electronics marketplace, collectibles, C2C marketplace, smart pricing, AI-powered selling, instant matching, personalized shopping, resale AI, 6Seven"
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "6Seven",
+          "url": "https://6seven.ai",
+          "description": "AI-native marketplace for buying and selling items",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://6seven.ai/browse?search={search_term_string}",
+            "query-input": "required name=search_term_string"
+          }
+        }}
+      />
       <Navigation />
       <Hero />
       <Features />

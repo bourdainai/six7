@@ -11,6 +11,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { toast } from "sonner";
 import { SellerReputation } from "@/components/seller/SellerReputation";
 import { formatCondition } from "@/lib/format";
+import { SEO } from "@/components/SEO";
 
 export default function BundleDetail() {
   const { id } = useParams();
@@ -123,8 +124,37 @@ export default function BundleDetail() {
   );
   const savings = originalPrice - Number(bundle.total_price);
 
+  const bundleUrl = `https://6seven.ai/bundle/${id}`;
+  const bundleTitle = bundle?.title || "Product Bundle";
+  const bundleDescription = bundle?.description || `Shop this curated bundle on 6Seven. Save money by buying multiple items together.`;
+  
+  // Build bundle structured data
+  const bundleStructuredData = bundle ? {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": bundleTitle,
+    "description": bundleDescription,
+    "url": bundleUrl,
+    "offers": {
+      "@type": "Offer",
+      "url": bundleUrl,
+      "priceCurrency": "GBP",
+      "price": bundle.bundle_price?.toString() || "0",
+      "availability": bundle.status === "active" ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
+    }
+  } : undefined;
+
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title={`${bundleTitle} | Product Bundle | 6Seven`}
+        description={bundleDescription}
+        keywords={`${bundleTitle}, product bundle, bundle deal, save money, multiple items, 6Seven bundle`}
+        url={bundleUrl}
+        canonical={bundleUrl}
+        type="product"
+        structuredData={bundleStructuredData}
+      />
       <Navigation />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-24">

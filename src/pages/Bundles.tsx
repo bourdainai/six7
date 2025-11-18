@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Package, ShoppingBag } from "lucide-react";
+import { SEO } from "@/components/SEO";
 
 export default function Bundles() {
   const navigate = useNavigate();
@@ -33,6 +34,19 @@ export default function Bundles() {
 
   return (
     <PageLayout>
+      <SEO
+        title="Product Bundles | Save More Buying Multiple Items | 6Seven"
+        description="Shop curated product bundles on 6Seven. Save money by buying multiple items together. Discover fashion bundles, electronics bundles, and more."
+        keywords="product bundles, bundle deals, save money, multiple items, fashion bundles, electronics bundles, bundle shopping, 6Seven bundles"
+        url="https://6seven.ai/bundles"
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          "name": "Product Bundles",
+          "description": "Shop curated product bundles and save money",
+          "url": "https://6seven.ai/bundles"
+        }}
+      />
         <div className="mb-8 space-y-2">
           <h1 className="text-3xl font-light text-foreground">
             Bundles

@@ -19,6 +19,7 @@ import { OutfitBuilder } from "@/components/OutfitBuilder";
 import { useSavedListings } from "@/hooks/useSavedListings";
 import { formatCondition } from "@/lib/format";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
+import { SEO } from "@/components/SEO";
 
 type PackageDimensions = {
   length: number;
@@ -118,9 +119,63 @@ const ListingDetail = () => {
   }
 
   const images = listing.images?.sort((a, b) => a.display_order - b.display_order) || [];
+  const mainImage = images[0]?.image_url || "";
+  const listingUrl = `https://6seven.ai/listing/${id}`;
+  
+  // Build product structured data
+  const productStructuredData: any = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": listing.title,
+    "description": listing.description || listing.title,
+    "image": images.map(img => img.image_url),
+    "offers": {
+      "@type": "Offer",
+      "url": listingUrl,
+      "priceCurrency": "GBP",
+      "price": listing.seller_price.toString(),
+      "availability": listing.status === "active" ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      "seller": {
+        "@type": "Person",
+        "name": listing.seller?.full_name || "Seller"
+      }
+    },
+    "category": listing.category
+  };
+  
+  // Add optional fields only if they exist
+  if (listing.brand) {
+    productStructuredData.brand = {
+      "@type": "Brand",
+      "name": listing.brand
+    };
+  }
+  
+  if (listing.condition) {
+    const conditionMap: Record<string, string> = {
+      "new": "NewCondition",
+      "like_new": "NewCondition",
+      "excellent": "ExcellentCondition",
+      "good": "GoodCondition",
+      "fair": "FairCondition",
+      "poor": "PoorCondition"
+    };
+    const conditionType = conditionMap[listing.condition] || "UsedCondition";
+    productStructuredData.condition = `https://schema.org/${conditionType}`;
+  }
 
   return (
     <PageLayout>
+      <SEO
+        title={`${listing.title} | ${listing.category} | 6Seven`}
+        description={listing.description || `Buy ${listing.title} on 6Seven. ${listing.category}${listing.brand ? ` by ${listing.brand}` : ''}. ${listing.condition ? `Condition: ${formatCondition(listing.condition)}.` : ''} Price: £${listing.seller_price}.`}
+        keywords={`${listing.title}, ${listing.category}, ${listing.brand || ''}, buy ${listing.category}, ${listing.category} marketplace, 6Seven, resale, secondhand`}
+        image={mainImage}
+        url={listingUrl}
+        canonical={listingUrl}
+        type="product"
+        structuredData={productStructuredData}
+      />
         <button
           onClick={() => navigate("/browse")}
           className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors"

@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Check, Crown, Sparkles, Zap, Shield, TrendingUp } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { SEO } from "@/components/SEO";
 
 interface MembershipData {
   subscribed: boolean;
@@ -117,6 +118,19 @@ const Membership = () => {
 
   return (
     <PageLayout>
+      <SEO
+        title="Membership Plans | Pro & Enterprise Seller Plans | 6Seven"
+        description="Upgrade your 6Seven seller account with Pro or Enterprise membership. Get lower fees, priority support, advanced analytics, and more selling tools."
+        keywords="6Seven membership, seller membership, pro seller, enterprise seller, marketplace membership, seller subscription, lower fees, seller tools"
+        url="https://6seven.ai/membership"
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          "name": "6Seven Membership Plans",
+          "description": "Choose a membership plan to enhance your selling experience",
+          "url": "https://6seven.ai/membership"
+        }}
+      />
         <div className="text-center mb-12">
           <h1 className="text-4xl font-light text-foreground mb-4">Choose Your Membership</h1>
           <p className="text-lg text-muted-foreground">

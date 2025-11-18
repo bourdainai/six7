@@ -11,6 +11,8 @@ import { useState, useMemo } from "react";
 import { Image } from "lucide-react";
 import { ListingCard } from "@/components/ListingCard";
 import type { ListingSummary } from "@/types/listings";
+import { SEO } from "@/components/SEO";
+import { useLocation } from "react-router-dom";
 
 const Browse = () => {
   const navigate = useNavigate();
@@ -158,8 +160,46 @@ const Browse = () => {
     setVibeDescription("");
   };
 
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const searchQuery = searchParams.get('search') || filters.search;
+  const categoryQuery = filters.category || '';
+  
+  // Build dynamic SEO based on filters
+  const seoTitle = searchQuery 
+    ? `Search Results for "${searchQuery}" | 6Seven Marketplace`
+    : categoryQuery
+    ? `Shop ${categoryQuery} | 6Seven Marketplace`
+    : "Browse Marketplace | Shop Fashion, Electronics & Collectibles | 6Seven";
+    
+  const seoDescription = searchQuery
+    ? `Find ${searchQuery} on 6Seven. Browse thousands of listings with AI-powered search. Buy and sell with confidence.`
+    : categoryQuery
+    ? `Shop ${categoryQuery} on 6Seven. Discover great deals on quality items with AI-powered pricing and matching.`
+    : "Browse thousands of listings on 6Seven marketplace. Shop fashion, electronics, collectibles, and more. AI-powered search and smart pricing.";
+
+  const seoKeywords = searchQuery
+    ? `${searchQuery}, buy ${searchQuery}, sell ${searchQuery}, marketplace, 6Seven`
+    : categoryQuery
+    ? `${categoryQuery}, buy ${categoryQuery}, ${categoryQuery} marketplace, 6Seven`
+    : "browse marketplace, shop online, buy and sell, fashion marketplace, electronics marketplace, collectibles, secondhand goods, resale platform";
+
   return (
     <PageLayout>
+      <SEO
+        title={seoTitle}
+        description={seoDescription}
+        keywords={seoKeywords}
+        url={`https://6seven.ai/browse${location.search}`}
+        canonical={`https://6seven.ai/browse${location.search}`}
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          "name": seoTitle,
+          "description": seoDescription,
+          "url": `https://6seven.ai/browse${location.search}`
+        }}
+      />
         <div className="mb-8 space-y-6">
           <div className="flex items-center justify-between mb-2">
             <div className="space-y-2">
