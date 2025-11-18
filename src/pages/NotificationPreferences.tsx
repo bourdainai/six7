@@ -47,7 +47,7 @@ const NotificationPreferences = () => {
     },
   });
 
-  const preferences: NotificationPreferences = profile?.notification_preferences || {
+  const preferences: NotificationPreferences = (profile?.notification_preferences as any) || {
     email_enabled: true,
     push_enabled: true,
     email_order_confirmation: true,
@@ -68,7 +68,7 @@ const NotificationPreferences = () => {
       const { error } = await supabase
         .from("profiles")
         .update({
-          notification_preferences: newPreferences,
+          notification_preferences: newPreferences as any,
         })
         .eq("id", user!.id);
 

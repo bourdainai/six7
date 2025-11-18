@@ -187,13 +187,11 @@ serve(async (req) => {
 
     // In production, send actual email via your email service
     // For now, we'll log it (you can integrate SendGrid, Mailgun, etc. here)
-    if (import.meta.env.DEV) {
-      console.log("Email would be sent:", {
-        to: profile.email,
-        subject,
-        body: emailBody,
-      });
-    }
+    console.log("Email would be sent:", {
+      to: profile.email,
+      subject,
+      body: emailBody,
+    });
 
     return new Response(
       JSON.stringify({ 

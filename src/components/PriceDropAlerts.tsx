@@ -28,7 +28,7 @@ export const PriceDropAlerts = () => {
         const { data, error } = await supabase.functions.invoke<PriceDropResponse>('buyer-agent-price-drop-detector');
       
       if (error) throw error;
-        return data?.data || { priceDrops: [] };
+        return (data as any)?.data || { priceDrops: [] };
     },
     refetchInterval: 60000 * 5, // Check every 5 minutes
   });
