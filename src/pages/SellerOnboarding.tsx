@@ -27,7 +27,9 @@ const SellerOnboarding = () => {
     const initializeStripeConnect = async () => {
       try {
         if (mountedRef.current) {
-          console.log("Onboarding already initialized");
+          if (import.meta.env.DEV) {
+            console.log("Onboarding already initialized");
+          }
           return;
         }
         setLoading(true);
@@ -41,7 +43,9 @@ const SellerOnboarding = () => {
         if (invokeError) throw invokeError;
         if (!data?.clientSecret) throw new Error("No client secret returned");
 
-        console.log("Initializing Stripe Connect with account:", data.accountId);
+        if (import.meta.env.DEV) {
+          console.log("Initializing Stripe Connect with account:", data.accountId);
+        }
 
         // Initialize Stripe Connect
         const stripeConnectInstance = await loadConnectAndInitialize({
@@ -55,7 +59,9 @@ const SellerOnboarding = () => {
           },
         });
 
-        console.log("Stripe Connect instance created");
+        if (import.meta.env.DEV) {
+          console.log("Stripe Connect instance created");
+        }
 
         // Mount the onboarding component using the lower-level API
         const container = containerRef.current;
@@ -66,11 +72,15 @@ const SellerOnboarding = () => {
             // Create the account onboarding component using Connect JS
             const accountOnboarding = stripeConnectInstance.create("account-onboarding");
           
-          console.log("Account onboarding component created");
+          if (import.meta.env.DEV) {
+            console.log("Account onboarding component created");
+          }
           
             // Set up exit handler using event listener (optional chaining to be safe)
             accountOnboarding.addEventListener?.("exit", () => {
-            console.log("User exited onboarding");
+            if (import.meta.env.DEV) {
+              console.log("User exited onboarding");
+            }
             toast({
               title: "Onboarding incomplete",
               description: "Please complete your onboarding to receive payments",
@@ -82,12 +92,16 @@ const SellerOnboarding = () => {
           // Mount the component by appending the element to the container
             container.appendChild(accountOnboarding);
           mountedRef.current = true;
-          console.log("Account onboarding component appended");
+          if (import.meta.env.DEV) {
+            console.log("Account onboarding component appended");
+          }
         }
 
         setLoading(false);
       } catch (err) {
-        console.error("Error initializing Stripe Connect:", err);
+        if (import.meta.env.DEV) {
+          console.error("Error initializing Stripe Connect:", err);
+        }
         setError(err instanceof Error ? err.message : "Failed to load onboarding");
         setLoading(false);
         toast({

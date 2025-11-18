@@ -143,10 +143,14 @@ const SellerDashboard = () => {
                     You need to complete Stripe Connect onboarding before you can receive payments. This process takes
                     just a few minutes.
                   </p>
-                  <Button onClick={() => onboardMutation.mutate()} disabled={onboardMutation.isPending}>
+                  <Button 
+                    onClick={() => onboardMutation.mutate()} 
+                    disabled={onboardMutation.isPending}
+                    aria-label="Start seller onboarding process"
+                  >
                     {onboardMutation.isPending ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
                         Starting...
                       </>
                     ) : (

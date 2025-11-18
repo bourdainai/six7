@@ -36,7 +36,9 @@ export const MessageReplySuggestions = ({
       
       setSuggestions(data.suggestions);
     } catch (error) {
-      console.error('Error generating suggestions:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error generating suggestions:', error);
+      }
       toast({
         title: "Error",
         description: "Failed to generate reply suggestions",

@@ -96,6 +96,7 @@ export class ErrorBoundary extends Component<Props, State> {
                     onClick={() => (window.location.href = "/")}
                     variant="outline"
                     size="sm"
+                    aria-label="Navigate to home page"
                   >
                     Go Home
                   </Button>

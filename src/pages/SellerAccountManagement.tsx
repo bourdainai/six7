@@ -49,7 +49,9 @@ const SellerAccountManagement = () => {
 
         setStripeConnectInstance(instance);
       } catch (err) {
-        console.error("Error initializing Stripe Connect:", err);
+        if (import.meta.env.DEV) {
+          console.error("Error initializing Stripe Connect:", err);
+        }
         toast({
           title: "Error",
           description: "Failed to load account management. Please try again.",

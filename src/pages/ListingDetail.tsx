@@ -123,7 +123,32 @@ const ListingDetail = () => {
   const listingUrl = `https://6seven.ai/listing/${id}`;
   
   // Build product structured data
-  const productStructuredData: any = {
+  interface ProductStructuredData {
+    "@context": string;
+    "@type": string;
+    name: string;
+    description: string;
+    image: string[];
+    offers: {
+      "@type": string;
+      url: string;
+      priceCurrency: string;
+      price: string;
+      availability: string;
+      seller: {
+        "@type": string;
+        name: string;
+      };
+    };
+    category: string;
+    brand?: {
+      "@type": string;
+      name: string;
+    };
+    condition?: string;
+  }
+
+  const productStructuredData: ProductStructuredData = {
     "@context": "https://schema.org",
     "@type": "Product",
     "name": listing.title,

@@ -103,7 +103,9 @@ export const SearchFilters = ({
         if (error) throw error;
         setSuggestions(data.suggestions || []);
       } catch (error) {
-        console.error('Autocomplete error:', error);
+        if (import.meta.env.DEV) {
+          console.error('Autocomplete error:', error);
+        }
       } finally {
         setIsLoadingSuggestions(false);
       }
@@ -192,7 +194,9 @@ export const SearchFilters = ({
       });
       } catch (error) {
         const message = error instanceof Error ? error.message : "Please try again";
-      console.error("Search error:", error);
+      if (import.meta.env.DEV) {
+        console.error("Search error:", error);
+      }
       toast({
         title: "Search Failed",
           description: message,
@@ -243,7 +247,9 @@ export const SearchFilters = ({
       });
       } catch (error) {
         const message = error instanceof Error ? error.message : "Please try again";
-      console.error("Keyword search error:", error);
+      if (import.meta.env.DEV) {
+        console.error("Keyword search error:", error);
+      }
       toast({
         title: "Search Failed",
           description: message,

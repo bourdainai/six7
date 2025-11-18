@@ -67,7 +67,9 @@ const Membership = () => {
         window.open(data.url, "_blank");
       }
     } catch (error) {
-      console.error("Error creating checkout:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error creating checkout:", error);
+      }
       toast({
         title: "Error",
         description: "Failed to start checkout process. Please try again.",
@@ -89,7 +91,9 @@ const Membership = () => {
         window.open(data.url, "_blank");
       }
     } catch (error) {
-      console.error("Error opening customer portal:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error opening customer portal:", error);
+      }
       toast({
         title: "Error",
         description: "Failed to open subscription management. Please try again.",

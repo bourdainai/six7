@@ -32,7 +32,7 @@ const Browse = () => {
   const [sortBy, setSortBy] = useState<'relevance' | 'price_low' | 'price_high' | 'newest' | 'popular'>('newest');
 
   const [page, setPage] = useState(1);
-  const itemsPerPage = 24;
+  const itemsPerPage = 24; // TODO: Move to constants
 
     const { data: listings, isLoading } = useQuery<ListingSummary[]>({
     queryKey: ["active-listings", page],

@@ -35,7 +35,9 @@ export const ConversationSentiment = ({ conversationId, messages }: Conversation
         if (error) throw error;
         setAnalysis(data);
       } catch (error) {
-        console.error('Error analyzing sentiment:', error);
+        if (import.meta.env.DEV) {
+          console.error('Error analyzing sentiment:', error);
+        }
       } finally {
         setIsLoading(false);
       }

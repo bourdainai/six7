@@ -61,7 +61,9 @@ export const VibeSearchDialog = ({ open, onOpenChange, onResults }: VibeSearchDi
       }
       } catch (error) {
         const message = error instanceof Error ? error.message : "Please try again";
-      console.error("Vibe search error:", error);
+      if (import.meta.env.DEV) {
+        console.error("Vibe search error:", error);
+      }
       toast({
         title: "Search Failed",
           description: message,

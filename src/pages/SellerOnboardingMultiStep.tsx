@@ -362,7 +362,9 @@ const SellerOnboardingMultiStep = () => {
         throw new Error(errorMessage);
       }
     } catch (err) {
-      console.error("Error submitting onboarding:", err);
+      if (import.meta.env.DEV) {
+        console.error("Error submitting onboarding:", err);
+      }
       const errorMessage = err instanceof Error ? err.message : "Failed to submit onboarding. Please try again.";
       setSubmitError(errorMessage);
       toast({

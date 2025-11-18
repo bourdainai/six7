@@ -52,7 +52,9 @@ export const OfferManagementCard = ({ offer, userRole, onOfferUpdate }: OfferMan
       onOfferUpdate?.();
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to accept offer";
-      console.error("Error accepting offer:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error accepting offer:", error);
+      }
         toast.error(message);
     } finally {
       setIsProcessing(false);
@@ -88,7 +90,9 @@ export const OfferManagementCard = ({ offer, userRole, onOfferUpdate }: OfferMan
       onOfferUpdate?.();
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to reject offer";
-      console.error("Error rejecting offer:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error rejecting offer:", error);
+      }
         toast.error(message);
     } finally {
       setIsProcessing(false);

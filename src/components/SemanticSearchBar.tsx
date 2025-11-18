@@ -62,7 +62,9 @@ export const SemanticSearchBar = ({ onResults, onSearchTypeChange }: SemanticSea
       }
       } catch (error) {
         const message = error instanceof Error ? error.message : "Please try again";
-      console.error("Search error:", error);
+      if (import.meta.env.DEV) {
+        console.error("Search error:", error);
+      }
       toast({
         title: "Search Failed",
           description: message,

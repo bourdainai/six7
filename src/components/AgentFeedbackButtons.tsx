@@ -40,7 +40,9 @@ export const AgentFeedbackButtons = ({
         description: "Your preferences have been updated",
       });
     } catch (error) {
-      console.error('Error recording feedback:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error recording feedback:', error);
+      }
       toast({
         title: "Error",
         description: "Failed to record feedback",

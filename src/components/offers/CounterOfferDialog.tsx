@@ -83,7 +83,9 @@ export const CounterOfferDialog = ({ open, onOpenChange, originalOffer, userRole
       setMessage("");
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to send counter offer";
-      console.error("Error creating counter offer:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error creating counter offer:", error);
+      }
         toast.error(message);
     } finally {
       setIsSubmitting(false);

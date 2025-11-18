@@ -36,7 +36,9 @@ export const MessageSafetyIndicator = ({ message, onBlock }: MessageSafetyIndica
           onBlock();
         }
       } catch (error) {
-        console.error('Error scanning message:', error);
+        if (import.meta.env.DEV) {
+          console.error('Error scanning message:', error);
+        }
       } finally {
         setIsScanning(false);
       }

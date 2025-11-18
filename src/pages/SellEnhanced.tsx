@@ -278,7 +278,10 @@ const SellEnhanced = () => {
           .upload(fileName, file);
 
         if (uploadError) {
-          console.error("Image upload error:", uploadError);
+          // Log error but continue with other images
+          if (import.meta.env.DEV) {
+            console.error("Image upload error:", uploadError);
+          }
           continue;
         }
 
@@ -301,8 +304,10 @@ const SellEnhanced = () => {
       });
 
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Please try again.";
-      console.error("Publish error:", error);
+      const message = error instanceof Error ? error.message : "Failed to publish listing. Please try again.";
+      if (import.meta.env.DEV) {
+        console.error("Publish error:", error);
+      }
       toast({
         title: "Publishing Failed",
         description: message,

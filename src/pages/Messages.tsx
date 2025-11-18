@@ -212,10 +212,10 @@ const Messages = () => {
       refetchMessages();
       refetchConversations();
     } catch (error) {
-      console.error("Error sending message:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to send message. Please try again.";
       toast({
         title: "Error",
-        description: "Failed to send message",
+        description: errorMessage,
         variant: "destructive",
       });
     }

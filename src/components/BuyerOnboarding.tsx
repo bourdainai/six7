@@ -77,7 +77,9 @@ export const BuyerOnboarding = ({ onComplete, onSkip }: BuyerOnboardingProps) =>
       
       setShowListingCTA(true);
     } catch (error) {
-      console.error('Error saving preferences:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error saving preferences:', error);
+      }
       toast({
         title: "Error",
         description: "Failed to save preferences. Please try again.",

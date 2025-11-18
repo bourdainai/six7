@@ -59,7 +59,9 @@ export function ImageSearchDialog({
         toast.info("No similar items found");
       }
       } catch (error) {
-      console.error("Image search error:", error);
+      if (import.meta.env.DEV) {
+        console.error("Image search error:", error);
+      }
       toast.error("Failed to search for similar items");
     } finally {
       setIsSearching(false);
