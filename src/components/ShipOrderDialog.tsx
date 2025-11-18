@@ -40,10 +40,11 @@ export const ShipOrderDialog = ({ open, onOpenChange, orderId }: ShipOrderDialog
       setTrackingNumber("");
       setCarrier("");
     },
-    onError: (error: any) => {
+      onError: (error) => {
+        const message = error instanceof Error ? error.message : "An unexpected error occurred";
       toast({
         title: "Failed to update shipping",
-        description: error.message,
+          description: message,
         variant: "destructive",
       });
     },

@@ -14,19 +14,20 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import type { FilterState } from "@/components/SearchFilters";
 
 interface SavedSearch {
   id: string;
   name: string;
   query: string;
-  filters: any;
+  filters: FilterState | null;
   created_at: string;
 }
 
 interface SavedSearchesPanelProps {
   currentQuery: string;
-  currentFilters: any;
-  onSelectSearch: (query: string, filters: any) => void;
+  currentFilters: FilterState;
+  onSelectSearch: (query: string, filters: FilterState) => void;
   className?: string;
 }
 
@@ -57,8 +58,8 @@ export const SavedSearchesPanel = ({
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
-    if (!error && data) {
-      setSearches(data);
+      if (!error && data) {
+        setSearches(data as SavedSearch[]);
     }
   };
 
@@ -152,11 +153,11 @@ export const SavedSearchesPanel = ({
             </div>
           ) : (
             searches.map((search) => (
-              <div
-                key={search.id}
-                className="group flex items-center justify-between p-2 hover:bg-accent rounded-md transition-colors cursor-pointer"
-                onClick={() => onSelectSearch(search.query, search.filters)}
-              >
+                <div
+                  key={search.id}
+                  className="group flex items-center justify-between p-2 hover:bg-accent rounded-md transition-colors cursor-pointer"
+                  onClick={() => onSelectSearch(search.query, search.filters ?? currentFilters)}
+                >
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{search.name}</p>
                   <p className="text-xs text-muted-foreground truncate">

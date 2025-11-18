@@ -26,14 +26,35 @@ import {
   Pie,
   Cell,
 } from "recharts";
+import type {
+  AdminAnalyticsResponse,
+  AdminOverview,
+  CategoryBreakdownEntry,
+  OrderStatusEntry,
+  RevenueChartPoint,
+  TopSeller,
+  UserGrowthPoint,
+} from "@/types/analytics";
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--secondary))", "hsl(var(--accent))", "hsl(var(--muted))"];
 
 export default function AdminAnalytics() {
-  const { data: isAdmin, isLoading: loading } = useAdminCheck();
-  const navigate = useNavigate();
-  const [stats, setStats] = useState<any>(null);
-  const [chartData, setChartData] = useState<any>(null);
+    const { data: isAdmin, isLoading: loading } = useAdminCheck();
+    const navigate = useNavigate();
+    const [overview, setOverview] = useState<AdminOverview | null>(null);
+    const [charts, setCharts] = useState<{
+      revenue: RevenueChartPoint[];
+      users: UserGrowthPoint[];
+      categories: CategoryBreakdownEntry[];
+      orderStatus: OrderStatusEntry[];
+      topSellers: TopSeller[];
+    }>({
+      revenue: [],
+      users: [],
+      categories: [],
+      orderStatus: [],
+      topSellers: [],
+    });
 
   useEffect(() => {
     if (!loading && !isAdmin) {
@@ -47,14 +68,20 @@ export default function AdminAnalytics() {
     }
   }, [isAdmin]);
 
-  const fetchAnalytics = async () => {
+    const fetchAnalytics = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke("admin-analytics");
+        const { data, error } = await supabase.functions.invoke<AdminAnalyticsResponse>("admin-analytics");
       
       if (error) throw error;
       
-      setStats(data.stats);
-      setChartData(data.charts);
+        setOverview(data.overview);
+        setCharts({
+          revenue: data.revenueChart,
+          users: data.userGrowthChart,
+          categories: data.categoryBreakdown,
+          orderStatus: data.orderStatusBreakdown,
+          topSellers: data.topSellers,
+        });
     } catch (error) {
       console.error("Error fetching analytics:", error);
     }
@@ -80,9 +107,9 @@ export default function AdminAnalytics() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalUsers || 0}</div>
+              <div className="text-2xl font-bold">{overview?.totalUsers || 0}</div>
             <p className="text-xs text-muted-foreground">
-              +{stats?.newUsersThisMonth || 0} this month
+                +{overview?.newUsers || 0} new
             </p>
           </CardContent>
         </Card>
@@ -94,11 +121,10 @@ export default function AdminAnalytics() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              £{(stats?.gmv30d || 0).toLocaleString()}
+                £{(overview?.totalRevenue || 0).toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground">
-              {stats?.gmvGrowth > 0 ? "+" : ""}
-              {stats?.gmvGrowth?.toFixed(1)}% from last month
+                  Avg order value £{overview?.avgOrderValue?.toFixed(2) || 0}
             </p>
           </CardContent>
         </Card>
@@ -109,9 +135,9 @@ export default function AdminAnalytics() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.activeListings || 0}</div>
+              <div className="text-2xl font-bold">{overview?.activeListings || 0}</div>
             <p className="text-xs text-muted-foreground">
-              {stats?.soldListings || 0} sold this month
+                {overview?.completedOrders || 0} sold this period
             </p>
           </CardContent>
         </Card>
@@ -123,10 +149,10 @@ export default function AdminAnalytics() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-destructive">
-              {stats?.fraudFlags || 0}
+                {overview?.pendingReports || 0}
             </div>
             <p className="text-xs text-muted-foreground">
-              {stats?.pendingFraudFlags || 0} pending review
+                  {overview?.openDisputes || 0} disputes open
             </p>
           </CardContent>
         </Card>
@@ -148,7 +174,7 @@ export default function AdminAnalytics() {
             </CardHeader>
             <CardContent className="h-[400px]">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData?.revenue || []}>
+                  <LineChart data={charts.revenue}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
                   <YAxis />
@@ -172,7 +198,7 @@ export default function AdminAnalytics() {
             </CardHeader>
             <CardContent className="h-[400px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData?.users || []}>
+                  <BarChart data={charts.users}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
                   <YAxis />
@@ -193,7 +219,7 @@ export default function AdminAnalytics() {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={chartData?.categories || []}
+                      data={charts.categories}
                     cx="50%"
                     cy="50%"
                     labelLine={false}
@@ -202,8 +228,8 @@ export default function AdminAnalytics() {
                     fill="hsl(var(--primary))"
                     dataKey="value"
                   >
-                    {(chartData?.categories || []).map((_: any, index: number) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      {charts.categories.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip />
@@ -220,8 +246,8 @@ export default function AdminAnalytics() {
                 <CardTitle className="text-sm">Moderation Queue</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{stats?.moderationQueue || 0}</div>
-                <p className="text-xs text-muted-foreground">Items pending review</p>
+                  <div className="text-3xl font-bold">{overview?.pendingReports || 0}</div>
+                  <p className="text-xs text-muted-foreground">Reports pending review</p>
               </CardContent>
             </Card>
 
@@ -230,7 +256,7 @@ export default function AdminAnalytics() {
                 <CardTitle className="text-sm">Active Disputes</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{stats?.activeDisputes || 0}</div>
+                  <div className="text-3xl font-bold">{overview?.openDisputes || 0}</div>
                 <p className="text-xs text-muted-foreground">Open cases</p>
               </CardContent>
             </Card>
@@ -240,8 +266,8 @@ export default function AdminAnalytics() {
                 <CardTitle className="text-sm">Reports (7d)</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{stats?.reportsLast7d || 0}</div>
-                <p className="text-xs text-muted-foreground">User reports filed</p>
+                  <div className="text-3xl font-bold">{overview?.resolvedDisputes || 0}</div>
+                  <p className="text-xs text-muted-foreground">Resolved disputes</p>
               </CardContent>
             </Card>
           </div>

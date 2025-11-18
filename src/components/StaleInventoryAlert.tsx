@@ -6,28 +6,49 @@ import { Button } from "@/components/ui/button";
 import { AlertTriangle, TrendingDown, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
+interface StaleRecommendation {
+  type: string;
+  message: string;
+  priority: "high" | "medium" | "low";
+}
+
+interface StaleListing {
+  id: string;
+  title: string;
+  stale_risk_score: number;
+  views_per_day: string;
+  days_since_listed: number;
+  recommendations?: StaleRecommendation[];
+}
+
+interface StaleInventoryResponse {
+  staleListings: StaleListing[];
+  totalListings: number;
+  staleCount: number;
+}
+
 export const StaleInventoryAlert = () => {
   const navigate = useNavigate();
 
-  const { data, isLoading } = useQuery({
+    const { data, isLoading } = useQuery<StaleInventoryResponse>({
     queryKey: ['stale-inventory'],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke('seller-copilot-stale-detector');
+        const { data, error } = await supabase.functions.invoke<{ data: StaleInventoryResponse }>('seller-copilot-stale-detector');
       
       if (error) throw error;
-      return data?.data || { staleListings: [], totalListings: 0, staleCount: 0 };
+        return data?.data || { staleListings: [], totalListings: 0, staleCount: 0 };
     },
     refetchInterval: 60000 * 30, // Check every 30 minutes
   });
 
-  const staleListings = data?.staleListings || [];
-  const staleCount = data?.staleCount || 0;
+    const staleListings = data?.staleListings || [];
+    const staleCount = data?.staleCount || 0;
 
   if (isLoading || staleCount === 0) {
     return null;
   }
 
-  const criticalListings = staleListings.filter((l: any) => l.stale_risk_score >= 70);
+    const criticalListings = staleListings.filter((l) => l.stale_risk_score >= 70);
 
   return (
     <Card className="p-4 mb-6 border-orange-200 bg-orange-50/50 dark:bg-orange-950/20 dark:border-orange-900">
@@ -49,7 +70,7 @@ export const StaleInventoryAlert = () => {
           </p>
 
           <div className="space-y-2 mb-4">
-            {staleListings.slice(0, 2).map((listing: any) => (
+              {staleListings.slice(0, 2).map((listing) => (
               <div
                 key={listing.id}
                 className="flex items-center justify-between gap-4 p-2 rounded-lg bg-background/80"

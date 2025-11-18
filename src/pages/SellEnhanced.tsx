@@ -16,6 +16,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { useQuery } from "@tanstack/react-query";
+import type { Database, Json } from "@/integrations/supabase/types";
 
 type PackageDimensions = {
   length: number;
@@ -23,6 +24,9 @@ type PackageDimensions = {
   height: number;
   unit: string;
 };
+
+type ConditionType = Database["public"]["Enums"]["condition_type"];
+type ListingInsert = Database["public"]["Tables"]["listings"]["Insert"];
 
 interface ListingData {
   title: string;
@@ -33,7 +37,7 @@ interface ListingData {
   size: string;
   color: string;
   material: string;
-  condition: string;
+  condition: ConditionType | "";
   style_tags: string[];
   original_rrp: number | null;
 }
@@ -220,32 +224,31 @@ const SellEnhanced = () => {
 
     try {
       // Prepare package dimensions
-      const packageDimensions = shipping.package_length && shipping.package_width && shipping.package_height
-        ? {
-            length: shipping.package_length,
-            width: shipping.package_width,
-            height: shipping.package_height
-          }
-        : null;
+        const packageDimensions = shipping.package_length && shipping.package_width && shipping.package_height
+          ? {
+              length: shipping.package_length,
+              width: shipping.package_width,
+              height: shipping.package_height,
+              unit: "cm",
+            }
+          : null;
 
       // Create listing
-      const { data: listing, error: listingError } = await supabase
-        .from('listings')
-        .insert({
+        const listingPayload: ListingInsert = {
           seller_id: user.id,
           title: listingData.title,
           description: listingData.description,
-          category: listingData.category,
-          subcategory: listingData.subcategory,
-          brand: listingData.brand,
-          size: listingData.size,
-          color: listingData.color,
-          material: listingData.material,
-          condition: listingData.condition as any,
+          category: listingData.category || null,
+          subcategory: listingData.subcategory || null,
+          brand: listingData.brand || null,
+          size: listingData.size || null,
+          color: listingData.color || null,
+          material: listingData.material || null,
+          condition: listingData.condition || null,
           seller_price: selectedPrice,
           original_rrp: listingData.original_rrp,
-          style_tags: listingData.style_tags as any,
-          status: 'active' as any,
+          style_tags: listingData.style_tags.length ? (listingData.style_tags as Json) : null,
+          status: "active",
           published_at: new Date().toISOString(),
           shipping_cost_uk: shipping.shipping_cost_uk,
           shipping_cost_europe: shipping.shipping_cost_europe,
@@ -253,10 +256,14 @@ const SellEnhanced = () => {
           free_shipping: shipping.free_shipping,
           estimated_delivery_days: shipping.estimated_delivery_days,
           package_weight: shipping.package_weight,
-          package_dimensions: packageDimensions as PackageDimensions,
-        } as any)
-        .select()
-        .single();
+          package_dimensions: packageDimensions,
+        };
+
+        const { data: listing, error: listingError } = await supabase
+          .from('listings')
+          .insert(listingPayload)
+          .select()
+          .single();
 
       if (listingError) throw listingError;
 
@@ -292,11 +299,12 @@ const SellEnhanced = () => {
         description: "Your item is now live on the marketplace.",
       });
 
-    } catch (error: any) {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Please try again.";
       console.error("Publish error:", error);
       toast({
         title: "Publishing Failed",
-        description: error.message || "Please try again.",
+        description: message,
         variant: "destructive"
       });
     } finally {

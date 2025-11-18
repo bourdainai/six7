@@ -5,9 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Sparkles, Image, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import type { ListingSummary } from "@/types/listings";
 
 interface SemanticSearchBarProps {
-  onResults: (results: any[]) => void;
+  onResults: (results: ListingSummary[]) => void;
   onSearchTypeChange?: (type: 'text' | 'semantic' | 'vibe') => void;
 }
 
@@ -17,7 +18,11 @@ export const SemanticSearchBar = ({ onResults, onSearchTypeChange }: SemanticSea
   const [searchType, setSearchType] = useState<'text' | 'semantic'>('semantic');
   const { toast } = useToast();
 
-  const handleSearch = async () => {
+    interface SemanticSearchResponse {
+      results?: ListingSummary[];
+    }
+
+    const handleSearch = async () => {
     if (!query.trim()) return;
 
     setIsSearching(true);
@@ -25,13 +30,13 @@ export const SemanticSearchBar = ({ onResults, onSearchTypeChange }: SemanticSea
 
     try {
       if (searchType === 'semantic') {
-        const { data, error } = await supabase.functions.invoke('semantic-search', {
+          const { data, error } = await supabase.functions.invoke<SemanticSearchResponse>('semantic-search', {
           body: { query: query.trim(), limit: 40 }
         });
 
         if (error) throw error;
         
-        onResults(data.results || []);
+          onResults(data.results || []);
         
         toast({
           title: "AI Search Complete",
@@ -39,7 +44,7 @@ export const SemanticSearchBar = ({ onResults, onSearchTypeChange }: SemanticSea
         });
       } else {
         // Fallback to text search
-        const { data, error } = await supabase
+          const { data, error } = await supabase
           .from('listings')
           .select('*, listing_images(image_url)')
           .eq('status', 'active')
@@ -48,18 +53,19 @@ export const SemanticSearchBar = ({ onResults, onSearchTypeChange }: SemanticSea
 
         if (error) throw error;
         
-        onResults(data || []);
+          onResults((data as ListingSummary[]) || []);
         
         toast({
           title: "Search Complete",
           description: `Found ${data?.length || 0} items`,
         });
       }
-    } catch (error: any) {
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Please try again";
       console.error("Search error:", error);
       toast({
         title: "Search Failed",
-        description: error.message || "Please try again",
+          description: message,
         variant: "destructive"
       });
     } finally {

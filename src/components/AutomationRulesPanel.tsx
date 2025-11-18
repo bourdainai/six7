@@ -9,11 +9,25 @@ import { Badge } from "@/components/ui/badge";
 import { Bot, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+type RuleValue = string | number | boolean | null;
+
+interface RuleConditions {
+  [key: string]: RuleValue | undefined;
+  days_old?: number | string | null;
+  stale_score?: number | string | null;
+}
+
+interface RuleActions {
+  [key: string]: RuleValue | undefined;
+  discount_percent?: number | string | null;
+  price_reduction?: number | string | null;
+}
+
 interface AutomationRule {
   id: string;
   rule_type: string;
-  conditions: any;
-  actions: any;
+  conditions: RuleConditions | null;
+  actions: RuleActions | null;
   enabled: boolean;
 }
 
@@ -166,19 +180,28 @@ export const AutomationRulesPanel = () => {
   );
 };
 
+const parseNumericValue = (value: RuleValue | undefined, fallback: number): number => {
+  if (typeof value === "number") return value;
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isNaN(parsed) ? fallback : parsed;
+  }
+  return fallback;
+};
+
 function getRuleDescription(rule: AutomationRule): string {
   const conditions = rule.conditions || {};
   const actions = rule.actions || {};
 
   switch (rule.rule_type) {
     case 'auto_relist':
-      return `Relist items after ${conditions.days_old || 30} days with no views`;
+      return `Relist items after ${parseNumericValue(conditions.days_old, 30)} days with no views`;
     case 'auto_discount':
-      return `Apply ${actions.discount_percent || 10}% discount after ${conditions.days_old || 14} days`;
+      return `Apply ${parseNumericValue(actions.discount_percent, 10)}% discount after ${parseNumericValue(conditions.days_old, 14)} days`;
     case 'auto_bundle':
       return `Create bundles from similar items in same category`;
     case 'price_drop':
-      return `Drop price by ${actions.price_reduction || 5}% when stale risk > ${conditions.stale_score || 70}%`;
+      return `Drop price by ${parseNumericValue(actions.price_reduction, 5)}% when stale risk > ${parseNumericValue(conditions.stale_score, 70)}%`;
     default:
       return 'Custom automation rule';
   }

@@ -7,12 +7,25 @@ import { supabase } from "@/integrations/supabase/client";
 import { Camera, Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import type { ListingSummary } from "@/types/listings";
 
 interface ImageSearchDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   imageUrl: string;
   listingId?: string;
+}
+
+interface ImageAnalysis {
+  category?: string;
+  color?: string;
+  style?: string;
+  pattern?: string;
+}
+
+interface ImageSearchResponse {
+  results?: ListingSummary[];
+  analysis?: ImageAnalysis | null;
 }
 
 export function ImageSearchDialog({
@@ -23,13 +36,13 @@ export function ImageSearchDialog({
 }: ImageSearchDialogProps) {
   const navigate = useNavigate();
   const [isSearching, setIsSearching] = useState(false);
-  const [results, setResults] = useState<any[]>([]);
-  const [analysis, setAnalysis] = useState<any>(null);
+  const [results, setResults] = useState<ListingSummary[]>([]);
+  const [analysis, setAnalysis] = useState<ImageAnalysis | null>(null);
 
   const handleSearch = async () => {
     setIsSearching(true);
     try {
-      const { data, error } = await supabase.functions.invoke("image-search", {
+      const { data, error } = await supabase.functions.invoke<ImageSearchResponse>("image-search", {
         body: {
           imageUrl,
           listingId,
@@ -45,7 +58,7 @@ export function ImageSearchDialog({
       if (data.results?.length === 0) {
         toast.info("No similar items found");
       }
-    } catch (error) {
+      } catch (error) {
       console.error("Image search error:", error);
       toast.error("Failed to search for similar items");
     } finally {

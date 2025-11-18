@@ -14,12 +14,24 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Plus, Trash2, Clock, TrendingDown, RefreshCw, Tag } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
+type RuleConditions = {
+  days_listed_min?: number;
+  min_stale_risk_score?: number;
+  max_views_per_day?: number;
+};
+
+type RuleActions = {
+  reduce_price_by_percentage?: number;
+  mark_as_quick_sale?: boolean;
+  refresh_listing?: boolean;
+};
+
 interface AutomationRule {
   id: string;
   rule_type: string;
   enabled: boolean;
-  conditions: any;
-  actions: any;
+  conditions: RuleConditions;
+  actions: RuleActions;
   created_at: string;
 }
 
@@ -82,10 +94,11 @@ export default function AutoRelistRules() {
         description: "Your auto-relist rule has been created successfully.",
       });
     },
-    onError: (error: any) => {
+      onError: (error) => {
+        const message = error instanceof Error ? error.message : "Failed to create rule";
       toast({
         title: "Failed to Create Rule",
-        description: error.message,
+          description: message,
         variant: "destructive",
       });
     },

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
+import { useForm, type FieldPath } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -121,7 +121,7 @@ const SellerOnboardingMultiStep = () => {
     const isIndividual = businessType === "individual";
     
     // Determine which fields to validate based on current step
-    let fieldsToValidate: (keyof OnboardingFormData)[] = [];
+      let fieldsToValidate: FieldPath<OnboardingFormData>[] = [];
     
     if (currentStep === 0) {
       // Business Type step
@@ -152,10 +152,10 @@ const SellerOnboardingMultiStep = () => {
       fieldsToValidate = [];
     }
 
-    const isValid = fieldsToValidate.length === 0 || await form.trigger(fieldsToValidate as any);
+      const isValid = fieldsToValidate.length === 0 || await form.trigger(fieldsToValidate);
 
     if (isValid) {
-      let nextStepIndex = currentStep + 1;
+        const nextStepIndex = currentStep + 1;
       
       // Calculate max step based on business type
       // Individual: steps 0,1,2,3 (Business Type, Personal, Payout, Review)

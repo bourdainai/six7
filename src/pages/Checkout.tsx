@@ -186,7 +186,7 @@ const Checkout = () => {
   const buyerProtectionFee = feeData?.buyerProtectionFee || 0;
   const totalPrice = itemPrice + shippingCost + buyerProtectionFee;
 
-  const createCheckoutMutation = useMutation({
+    const createCheckoutMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: {
@@ -198,10 +198,11 @@ const Checkout = () => {
       if (error) throw error;
       return data;
     },
-    onError: (error: any) => {
+      onError: (error) => {
+        const message = error instanceof Error ? error.message : "An unexpected error occurred";
       toast({
         title: "Checkout failed",
-        description: error.message,
+          description: message,
         variant: "destructive",
       });
     },

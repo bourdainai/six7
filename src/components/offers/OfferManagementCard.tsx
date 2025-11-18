@@ -8,9 +8,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
+import type { Database } from "@/integrations/supabase/types";
+
+type OfferRow = Database["public"]["Tables"]["offers"]["Row"];
 
 interface OfferManagementCardProps {
-  offer: any;
+  offer: OfferRow;
   userRole: 'buyer' | 'seller';
   onOfferUpdate?: () => void;
 }
@@ -47,9 +50,10 @@ export const OfferManagementCard = ({ offer, userRole, onOfferUpdate }: OfferMan
       toast.success("Offer accepted");
       queryClient.invalidateQueries({ queryKey: ["offers"] });
       onOfferUpdate?.();
-    } catch (error: any) {
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to accept offer";
       console.error("Error accepting offer:", error);
-      toast.error(error.message || "Failed to accept offer");
+        toast.error(message);
     } finally {
       setIsProcessing(false);
     }
@@ -82,9 +86,10 @@ export const OfferManagementCard = ({ offer, userRole, onOfferUpdate }: OfferMan
       toast.success("Offer rejected");
       queryClient.invalidateQueries({ queryKey: ["offers"] });
       onOfferUpdate?.();
-    } catch (error: any) {
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to reject offer";
       console.error("Error rejecting offer:", error);
-      toast.error(error.message || "Failed to reject offer");
+        toast.error(message);
     } finally {
       setIsProcessing(false);
     }

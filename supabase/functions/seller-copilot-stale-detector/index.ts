@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
       const daysSinceView = Math.floor((now - lastViewDate) / oneDayMs);
 
       let staleScore = 0;
-      let recommendations = [];
+      const recommendations: Array<{ type: string; message: string; priority: "high" | "medium" }> = [];
 
       // Time-based scoring
       if (daysSinceListed > 30) staleScore += 30;

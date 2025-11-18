@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { useNotifications } from "@/hooks/useNotifications";
+import { useNotifications, type NotificationRecord } from "@/hooks/useNotifications";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 
@@ -17,7 +17,7 @@ export const NotificationCenter = () => {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
 
-  const handleNotificationClick = (notification: any) => {
+  const handleNotificationClick = (notification: NotificationRecord) => {
     markAsRead(notification.id);
     if (notification.link) {
       navigate(notification.link);

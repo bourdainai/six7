@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ArrowLeft } from "lucide-react";
-import { loadConnectAndInitialize } from "@stripe/connect-js";
+import { loadConnectAndInitialize, type StripeConnectInstance } from "@stripe/connect-js";
 import {
   ConnectComponentsProvider,
   ConnectAccountManagement,
@@ -21,7 +21,7 @@ const SellerAccountManagement = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [stripeConnectInstance, setStripeConnectInstance] = useState<any>(null);
+    const [stripeConnectInstance, setStripeConnectInstance] = useState<StripeConnectInstance | null>(null);
 
   useEffect(() => {
     if (!user) {

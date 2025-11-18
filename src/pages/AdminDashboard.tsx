@@ -11,22 +11,23 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, Area, AreaChart } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import type { AdminAnalyticsResponse } from "@/types/analytics";
 
 const AdminDashboard = () => {
   const { data: isAdmin, isLoading: adminLoading } = useAdminCheck();
   const navigate = useNavigate();
   const [analyticsPeriod, setAnalyticsPeriod] = useState("30d");
 
-  const { data: analytics } = useQuery({
+    const { data: analytics } = useQuery<AdminAnalyticsResponse | null>({
     queryKey: ["admin-analytics", analyticsPeriod],
     enabled: isAdmin === true,
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke("admin-analytics", {
+        const { data, error } = await supabase.functions.invoke<AdminAnalyticsResponse>("admin-analytics", {
         body: { period: analyticsPeriod },
       });
 
       if (error) throw error;
-      return data;
+        return data;
     },
   });
 
@@ -218,7 +219,7 @@ const AdminDashboard = () => {
                           outerRadius={60}
                           label
                         >
-                          {analytics.orderStatusBreakdown.map((_: any, index: number) => (
+                            {analytics.orderStatusBreakdown.map((_, index) => (
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
                         </Pie>
@@ -276,7 +277,7 @@ const AdminDashboard = () => {
               <CardContent>
                 {analytics?.topSellers && analytics.topSellers.length > 0 ? (
                   <div className="space-y-4">
-                    {analytics.topSellers.map((seller: any, index: number) => (
+                      {analytics.topSellers.map((seller, index) => (
                       <div key={seller.id} className="flex items-center gap-4 p-4 border border-border rounded-lg">
                         <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-medium">
                           {index + 1}
@@ -413,7 +414,7 @@ const AdminDashboard = () => {
               <CardContent>
                 {analytics?.categoryBreakdown && analytics.categoryBreakdown.length > 0 ? (
                   <div className="space-y-4">
-                    {analytics.categoryBreakdown.map((category: any) => (
+                      {analytics.categoryBreakdown.map((category) => (
                       <div key={category.category} className="p-4 border border-border rounded-lg">
                         <div className="flex items-center justify-between mb-2">
                           <h4 className="font-medium">{category.category}</h4>

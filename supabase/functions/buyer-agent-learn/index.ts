@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
     }
 
     // Update preferences based on feedback
-    let updatedPrefs = currentPrefs || {
+      const updatedPrefs = currentPrefs || {
       user_id: user.id,
       brands: [],
       categories: [],

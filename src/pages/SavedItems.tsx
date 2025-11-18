@@ -9,13 +9,14 @@ import { ListingCardSkeleton } from "@/components/ListingCardSkeleton";
 import { useSavedListings } from "@/hooks/useSavedListings";
 import { formatStatus } from "@/lib/format";
 import { ListingCard } from "@/components/ListingCard";
+import type { ListingSummary } from "@/types/listings";
 
 const SavedItems = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { isSaved, toggleSave, isSaving } = useSavedListings();
 
-  const { data: savedListings, isLoading, error: savedError } = useQuery({
+    const { data: savedListings, isLoading, error: savedError } = useQuery<ListingSummary[]>({
     queryKey: ["saved-listings-full", user?.id],
     queryFn: async () => {
       if (!user) return [];
@@ -44,7 +45,7 @@ const SavedItems = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data.map((item) => item.listing).filter(Boolean);
+        return data.map((item) => item.listing as ListingSummary).filter(Boolean);
     },
     enabled: !!user,
     staleTime: 1000 * 60 * 2, // 2 minutes
@@ -91,7 +92,7 @@ const SavedItems = () => {
         </div>
       ) : savedListings && savedListings.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {savedListings.map((listing: any) => (
+            {savedListings.map((listing) => (
             <ListingCard
               key={listing.id}
               listing={{

@@ -14,6 +14,24 @@ import { AlertCircle, Star, Truck, Package, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import type { Database } from "@/integrations/supabase/types";
+
+type OrderRow = Database["public"]["Tables"]["orders"]["Row"];
+type OrderItemRow = Database["public"]["Tables"]["order_items"]["Row"];
+type ListingRow = Database["public"]["Tables"]["listings"]["Row"];
+type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
+type ShippingDetailRow = Database["public"]["Tables"]["shipping_details"]["Row"];
+
+interface OrderWithRelations extends OrderRow {
+  order_items: Array<
+    OrderItemRow & {
+      listing: Pick<ListingRow, "title" | "brand" | "id">;
+    }
+  >;
+  seller?: Pick<ProfileRow, "id" | "full_name" | "avatar_url"> | null;
+  buyer?: Pick<ProfileRow, "id" | "full_name" | "avatar_url"> | null;
+  shipping_details: ShippingDetailRow[] | null;
+}
 
 const Orders = () => {
   const { user } = useAuth();
@@ -21,10 +39,10 @@ const Orders = () => {
   const [disputeOpen, setDisputeOpen] = useState(false);
   const [ratingOpen, setRatingOpen] = useState(false);
   const [shipOrderOpen, setShipOrderOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+    const [selectedOrder, setSelectedOrder] = useState<OrderWithRelations | null>(null);
   const [markingDelivered, setMarkingDelivered] = useState<string | null>(null);
 
-  const { data: buyerOrders, isLoading: isLoadingBuyer } = useQuery({
+    const { data: buyerOrders, isLoading: isLoadingBuyer } = useQuery<OrderWithRelations[]>({
     queryKey: ["orders", "buyer", user?.id],
     enabled: !!user,
     queryFn: async () => {
@@ -43,11 +61,11 @@ const Orders = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data;
+        return data as OrderWithRelations[];
     },
   });
 
-  const { data: sellerOrders, isLoading: isLoadingSeller } = useQuery({
+    const { data: sellerOrders, isLoading: isLoadingSeller } = useQuery<OrderWithRelations[]>({
     queryKey: ["orders", "seller", user?.id],
     enabled: !!user,
     queryFn: async () => {
@@ -66,7 +84,7 @@ const Orders = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data;
+        return data as OrderWithRelations[];
     },
   });
 
@@ -178,7 +196,7 @@ const Orders = () => {
                     </Badge>
                   </div>
 
-                  {order.order_items.map((item: any) => (
+                    {order.order_items.map((item) => (
                     <div key={item.id} className="flex items-center gap-4 mb-4">
                       <div className="flex-1">
                         <p className="text-sm font-medium text-foreground">
@@ -308,7 +326,7 @@ const Orders = () => {
                     </Badge>
                   </div>
 
-                  {order.order_items.map((item: any) => (
+                    {order.order_items.map((item) => (
                     <div key={item.id} className="flex items-center gap-4 mb-4">
                       <div className="flex-1">
                         <p className="text-sm font-medium text-foreground">

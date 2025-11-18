@@ -10,6 +10,7 @@ import { VibeSearchDialog } from "@/components/VibeSearchDialog";
 import { useState, useMemo } from "react";
 import { Image } from "lucide-react";
 import { ListingCard } from "@/components/ListingCard";
+import type { ListingSummary } from "@/types/listings";
 
 const Browse = () => {
   const navigate = useNavigate();
@@ -22,8 +23,8 @@ const Browse = () => {
     brand: "",
     size: "",
   });
-  const [vibeSearchOpen, setVibeSearchOpen] = useState(false);
-  const [semanticResults, setSemanticResults] = useState<any[] | null>(null);
+    const [vibeSearchOpen, setVibeSearchOpen] = useState(false);
+    const [semanticResults, setSemanticResults] = useState<ListingSummary[] | null>(null);
   const [searchMode, setSearchMode] = useState<'browse' | 'semantic' | 'vibe'>('browse');
   const [vibeDescription, setVibeDescription] = useState<string>("");
   const [sortBy, setSortBy] = useState<'relevance' | 'price_low' | 'price_high' | 'newest' | 'popular'>('newest');
@@ -31,7 +32,7 @@ const Browse = () => {
   const [page, setPage] = useState(1);
   const itemsPerPage = 24;
 
-  const { data: listings, isLoading } = useQuery({
+    const { data: listings, isLoading } = useQuery<ListingSummary[]>({
     queryKey: ["active-listings", page],
     queryFn: async () => {
       const from = (page - 1) * itemsPerPage;
@@ -49,13 +50,13 @@ const Browse = () => {
         .range(from, to);
 
       if (error) throw error;
-      return data;
+        return data as ListingSummary[];
     },
     staleTime: 1000 * 60, // 1 minute
   });
 
   // Client-side filtering and sorting
-  const filteredListings = useMemo(() => {
+    const filteredListings = useMemo((): ListingSummary[] => {
     // If we have semantic/vibe search results, use those
     if (searchMode !== 'browse' && semanticResults) {
       return semanticResults;
@@ -63,7 +64,7 @@ const Browse = () => {
 
     if (!listings) return [];
 
-    let filtered = listings.filter((listing) => {
+      const filtered = listings.filter((listing) => {
       // Search filter
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
@@ -131,7 +132,7 @@ const Browse = () => {
     return filtered;
   }, [listings, filters, semanticResults, searchMode, sortBy]);
 
-  const handleSemanticResults = (results: any[]) => {
+    const handleSemanticResults = (results: ListingSummary[]) => {
     setSemanticResults(results);
     setSearchMode('semantic');
   };
@@ -145,7 +146,7 @@ const Browse = () => {
     }
   };
 
-  const handleVibeResults = (results: any[], description: string) => {
+    const handleVibeResults = (results: ListingSummary[], description: string) => {
     setSemanticResults(results);
     setVibeDescription(description);
     setSearchMode('vibe');
@@ -200,8 +201,8 @@ const Browse = () => {
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Sort by:</span>
               <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
                 className="h-9 px-3 rounded-lg bg-background border border-border text-sm hover:bg-accent/50 transition-colors"
               >
                 <option value="relevance">Relevance</option>

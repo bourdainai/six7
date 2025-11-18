@@ -69,16 +69,16 @@ export const useSavedListings = () => {
         description: "Item added to your saved items",
       });
     },
-    onError: (error: any) => {
-      // Log error in development only
-      if (import.meta.env.DEV) {
-        console.error("Error saving listing:", error);
-      }
-      toast({
-        title: "Error",
-        description: error.message || "Failed to save listing",
-        variant: "destructive",
-      });
+      onError: (error) => {
+        const message = error instanceof Error ? error.message : "Failed to save listing";
+        if (import.meta.env.DEV) {
+          console.error("Error saving listing:", error);
+        }
+        toast({
+          title: "Error",
+          description: message,
+          variant: "destructive",
+        });
     },
   });
 
@@ -110,16 +110,16 @@ export const useSavedListings = () => {
         description: "Item removed from your saved items",
       });
     },
-    onError: (error: any) => {
-      // Log error in development only
-      if (import.meta.env.DEV) {
-        console.error("Error unsaving listing:", error);
-      }
-      toast({
-        title: "Error",
-        description: error.message || "Failed to remove listing",
-        variant: "destructive",
-      });
+      onError: (error) => {
+        const message = error instanceof Error ? error.message : "Failed to remove listing";
+        if (import.meta.env.DEV) {
+          console.error("Error unsaving listing:", error);
+        }
+        toast({
+          title: "Error",
+          description: message,
+          variant: "destructive",
+        });
     },
   });
 

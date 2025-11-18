@@ -10,13 +10,38 @@ import { AlertTriangle, CheckCircle, Clock, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { RiskScoreIndicator } from "@/components/RiskScoreIndicator";
+import type { Database, Json } from "@/integrations/supabase/types";
+
+type FraudFlagRow = Database["public"]["Tables"]["fraud_flags"]["Row"];
+type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
+type ListingRow = Database["public"]["Tables"]["listings"]["Row"];
+type OrderRow = Database["public"]["Tables"]["orders"]["Row"];
+
+interface FraudFlagDetails {
+  message?: string;
+  duplicate_count?: number;
+  stock_photo_count?: number;
+  total_images?: number;
+}
+
+type FraudFlagWithRelations = FraudFlagRow & {
+  profiles?: Pick<ProfileRow, "id" | "full_name" | "email" | "trust_score"> | null;
+  listings?: Pick<ListingRow, "id" | "title"> | null;
+  orders?: Pick<OrderRow, "id" | "status"> | null;
+};
+
+type FlagStatusFilter = "pending" | "reviewed" | "confirmed" | "dismissed" | "all";
+
+const isFraudFlagDetails = (details: Json | null): details is FraudFlagDetails => {
+  return !!details && typeof details === "object" && !Array.isArray(details);
+};
 
 export default function FraudDashboard() {
   const navigate = useNavigate();
-  const [selectedStatus, setSelectedStatus] = useState<string>("pending");
+    const [selectedStatus, setSelectedStatus] = useState<FlagStatusFilter>("pending");
 
   // Fetch fraud flags
-  const { data: flags, isLoading, refetch } = useQuery({
+    const { data: flags, isLoading, refetch } = useQuery<FraudFlagWithRelations[]>({
     queryKey: ["fraud-flags", selectedStatus],
     queryFn: async () => {
       const query = supabase
@@ -35,7 +60,7 @@ export default function FraudDashboard() {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data;
+        return data as FraudFlagWithRelations[];
     }
   });
 
@@ -149,7 +174,7 @@ export default function FraudDashboard() {
           <TabsTrigger value="all">All</TabsTrigger>
         </TabsList>
 
-        <TabsContent value={selectedStatus} className="mt-6">
+          <TabsContent value={selectedStatus} className="mt-6">
           <div className="space-y-4">
             {flags?.map((flag) => (
               <Card key={flag.id}>
@@ -181,17 +206,17 @@ export default function FraudDashboard() {
                 <CardContent>
                   <div className="space-y-4">
                     {/* Details */}
-                    {flag.details && typeof flag.details === 'object' && (
-                      <div className="text-sm text-muted-foreground">
-                        {(flag.details as any).message && <p>{(flag.details as any).message}</p>}
-                        {(flag.details as any).duplicate_count && (
-                          <p>Duplicate listings found: {(flag.details as any).duplicate_count}</p>
-                        )}
-                        {(flag.details as any).stock_photo_count && (
-                          <p>Stock photos: {(flag.details as any).stock_photo_count}/{(flag.details as any).total_images}</p>
-                        )}
-                      </div>
-                    )}
+                      {isFraudFlagDetails(flag.details) && (
+                        <div className="text-sm text-muted-foreground">
+                          {flag.details.message && <p>{flag.details.message}</p>}
+                          {flag.details.duplicate_count && (
+                            <p>Duplicate listings found: {flag.details.duplicate_count}</p>
+                          )}
+                          {flag.details.stock_photo_count && (
+                            <p>Stock photos: {flag.details.stock_photo_count}/{flag.details.total_images}</p>
+                          )}
+                        </div>
+                      )}
 
                     {/* Linked Items */}
                     <div className="flex flex-wrap gap-2 text-sm">

@@ -41,7 +41,12 @@ export const OutfitBuilder = ({ listingId, listingTitle }: OutfitBuilderProps) =
   const buildOutfit = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('outfit-builder', {
+        interface OutfitResponse {
+          success: boolean;
+          outfit?: Outfit;
+        }
+
+        const { data, error } = await supabase.functions.invoke<OutfitResponse>('outfit-builder', {
         body: {
           baseItemId: listingId,
         },
@@ -49,18 +54,19 @@ export const OutfitBuilder = ({ listingId, listingTitle }: OutfitBuilderProps) =
 
       if (error) throw error;
 
-      if (data.success && data.outfit) {
-        setOutfit(data.outfit);
+        if (data.success && data.outfit) {
+          setOutfit(data.outfit);
         toast({
           title: "Outfit Created!",
           description: `Built a complete look around ${listingTitle}`,
         });
       }
-    } catch (error: any) {
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Please try again";
       console.error('Outfit builder error:', error);
       toast({
         title: "Failed to Build Outfit",
-        description: error.message || "Please try again",
+          description: message,
         variant: "destructive",
       });
     } finally {

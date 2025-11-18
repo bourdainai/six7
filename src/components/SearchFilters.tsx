@@ -24,11 +24,12 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "./ui/sheet";
+import type { ListingSummary } from "@/types/listings";
 
 interface SearchFiltersProps {
   onFilterChange: (filters: FilterState) => void;
   activeFilters: FilterState;
-  onSemanticSearch?: (results: any[]) => void;
+  onSemanticSearch?: (results: ListingSummary[]) => void;
   onSearchTypeChange?: (type: 'browse' | 'semantic') => void;
   onVibeSearchClick?: () => void;
 }
@@ -139,7 +140,12 @@ export const SearchFilters = ({
     }
   };
 
-  const handleSemanticSearch = async () => {
+    interface SemanticSearchResponse {
+      routeTo?: "keyword" | "semantic";
+      results?: ListingSummary[];
+    }
+
+    const handleSemanticSearch = async () => {
     if (!localFilters.search?.trim()) {
       toast({
         title: "Search Required",
@@ -154,7 +160,7 @@ export const SearchFilters = ({
     onSearchTypeChange?.('semantic');
 
     try {
-      const { data, error } = await supabase.functions.invoke('semantic-search', {
+        const { data, error } = await supabase.functions.invoke<SemanticSearchResponse>('semantic-search', {
         body: { 
           query: localFilters.search.trim(), 
           filters: {
@@ -170,7 +176,7 @@ export const SearchFilters = ({
         }
       });
 
-      if (error) throw error;
+        if (error) throw error;
 
       // Check if we should route to keyword search instead
       if (data.routeTo === 'keyword') {
@@ -178,17 +184,18 @@ export const SearchFilters = ({
         return;
       }
 
-      onSemanticSearch?.(data.results || []);
+        onSemanticSearch?.(data.results || []);
       
       toast({
         title: "AI Search Complete",
         description: `Found ${data.results?.length || 0} items matching "${localFilters.search}"`,
       });
-    } catch (error: any) {
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Please try again";
       console.error("Search error:", error);
       toast({
         title: "Search Failed",
-        description: error.message || "Please try again",
+          description: message,
         variant: "destructive"
       });
     } finally {
@@ -211,7 +218,7 @@ export const SearchFilters = ({
     onSearchTypeChange?.('semantic');
 
     try {
-      const { data, error } = await supabase.functions.invoke('keyword-search', {
+        const { data, error } = await supabase.functions.invoke<SemanticSearchResponse>('keyword-search', {
         body: { 
           query: localFilters.search.trim(),
           filters: {
@@ -228,17 +235,18 @@ export const SearchFilters = ({
 
       if (error) throw error;
 
-      onSemanticSearch?.(data.results || []);
+        onSemanticSearch?.(data.results || []);
       
       toast({
         title: "Search Complete",
         description: `Found ${data.results?.length || 0} results`,
       });
-    } catch (error: any) {
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Please try again";
       console.error("Keyword search error:", error);
       toast({
         title: "Search Failed",
-        description: error.message || "Please try again",
+          description: message,
         variant: "destructive"
       });
     } finally {

@@ -5,22 +5,35 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TrendingDown, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import type { ListingSummary } from "@/types/listings";
+
+interface PriceDrop {
+  listing_id: string;
+  old_price: number;
+  new_price: number;
+  discount_percentage: number;
+  listing: Pick<ListingSummary, "id" | "title" | "brand" | "seller_price">;
+}
+
+interface PriceDropResponse {
+  priceDrops: PriceDrop[];
+}
 
 export const PriceDropAlerts = () => {
   const navigate = useNavigate();
 
-  const { data, isLoading } = useQuery({
+    const { data, isLoading } = useQuery<PriceDropResponse>({
     queryKey: ['price-drops'],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke('buyer-agent-price-drop-detector');
+        const { data, error } = await supabase.functions.invoke<PriceDropResponse>('buyer-agent-price-drop-detector');
       
       if (error) throw error;
-      return data?.data || { priceDrops: [] };
+        return data?.data || { priceDrops: [] };
     },
     refetchInterval: 60000 * 5, // Check every 5 minutes
   });
 
-  const priceDrops = data?.priceDrops || [];
+    const priceDrops = data?.priceDrops || [];
 
   if (isLoading || priceDrops.length === 0) {
     return null;
@@ -38,7 +51,7 @@ export const PriceDropAlerts = () => {
             <Badge variant="secondary">{priceDrops.length}</Badge>
           </h3>
           <div className="space-y-2">
-            {priceDrops.slice(0, 3).map((drop: any) => (
+              {priceDrops.slice(0, 3).map((drop) => (
               <div
                 key={drop.listing_id}
                 className="flex items-center justify-between gap-4 p-2 rounded-lg bg-background/80"

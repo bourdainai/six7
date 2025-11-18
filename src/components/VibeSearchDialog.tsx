@@ -6,11 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Image, Upload, Sparkles, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import type { ListingSummary } from "@/types/listings";
 
 interface VibeSearchDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onResults: (results: any[], description: string) => void;
+  onResults: (results: ListingSummary[], description: string) => void;
 }
 
 export const VibeSearchDialog = ({ open, onOpenChange, onResults }: VibeSearchDialogProps) => {
@@ -29,20 +30,26 @@ export const VibeSearchDialog = ({ open, onOpenChange, onResults }: VibeSearchDi
     reader.readAsDataURL(file);
   };
 
-  const handleVibeSearch = async () => {
+    interface VibeSearchResponse {
+      success: boolean;
+      results: ListingSummary[];
+      styleDescription: string;
+    }
+
+    const handleVibeSearch = async () => {
     if (!image) return;
 
     setIsSearching(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('vibe-search', {
+        const { data, error } = await supabase.functions.invoke<VibeSearchResponse>('vibe-search', {
         body: { image, limit: 40 }
       });
 
       if (error) throw error;
       
-      if (data.success) {
-        onResults(data.results || [], data.styleDescription);
+        if (data.success) {
+          onResults(data.results || [], data.styleDescription);
         
         toast({
           title: "Vibe Search Complete!",
@@ -52,11 +59,12 @@ export const VibeSearchDialog = ({ open, onOpenChange, onResults }: VibeSearchDi
         onOpenChange(false);
         setImage(null);
       }
-    } catch (error: any) {
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Please try again";
       console.error("Vibe search error:", error);
       toast({
         title: "Search Failed",
-        description: error.message || "Please try again",
+          description: message,
         variant: "destructive"
       });
     } finally {

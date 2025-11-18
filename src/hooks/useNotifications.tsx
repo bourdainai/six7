@@ -3,8 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import type { Json } from "@/integrations/supabase/types";
 
-interface Notification {
+export interface NotificationRecord {
   id: string;
   user_id: string;
   type: string;
@@ -12,12 +13,12 @@ interface Notification {
   message: string;
   link: string | null;
   read: boolean;
-  metadata: any;
+  metadata: Json | null;
   created_at: string;
 }
 
 export const useNotifications = () => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<NotificationRecord[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -44,7 +45,7 @@ export const useNotifications = () => {
         return;
       }
 
-      setNotifications(data || []);
+        setNotifications((data as NotificationRecord[]) || []);
       setUnreadCount(data?.filter((n) => !n.read).length || 0);
     };
 
@@ -61,8 +62,8 @@ export const useNotifications = () => {
           table: "notifications",
           filter: `user_id=eq.${user.id}`,
         },
-        (payload) => {
-          const newNotification = payload.new as Notification;
+          (payload) => {
+            const newNotification = payload.new as NotificationRecord;
           
           setNotifications((prev) => [newNotification, ...prev]);
           setUnreadCount((prev) => prev + 1);
@@ -85,20 +86,16 @@ export const useNotifications = () => {
           table: "notifications",
           filter: `user_id=eq.${user.id}`,
         },
-        (payload) => {
-          const updatedNotification = payload.new as Notification;
-          
-          setNotifications((prev) =>
-            prev.map((n) => (n.id === updatedNotification.id ? updatedNotification : n))
-          );
-          
-          setUnreadCount((prev) => {
-            const oldNotification = notifications.find((n) => n.id === updatedNotification.id);
-            if (oldNotification && !oldNotification.read && updatedNotification.read) {
-              return Math.max(0, prev - 1);
-            }
-            return prev;
-          });
+          (payload) => {
+            const updatedNotification = payload.new as NotificationRecord;
+            
+            setNotifications((prev) => {
+              const oldNotification = prev.find((n) => n.id === updatedNotification.id);
+              if (oldNotification && !oldNotification.read && updatedNotification.read) {
+                setUnreadCount((prevCount) => Math.max(0, prevCount - 1));
+              }
+              return prev.map((n) => (n.id === updatedNotification.id ? updatedNotification : n));
+            });
         }
       )
       .subscribe();
@@ -108,7 +105,7 @@ export const useNotifications = () => {
     };
   }, [user, toast, queryClient]);
 
-  const markAsRead = async (notificationId: string) => {
+    const markAsRead = async (notificationId: string) => {
     if (!user) return;
 
     const { error } = await supabase

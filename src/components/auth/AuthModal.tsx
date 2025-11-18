@@ -49,8 +49,9 @@ export const AuthModal = ({ open, onOpenChange, defaultMode = "signin" }: AuthMo
       setEmail("");
       setPassword("");
       setFullName("");
-    } catch (err: any) {
-      setError(err.message || "An error occurred");
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "An error occurred";
+        setError(message);
     } finally {
       setLoading(false);
     }

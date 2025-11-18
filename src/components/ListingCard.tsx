@@ -5,32 +5,10 @@ import { Heart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatCondition, formatStatus } from "@/lib/format";
 import { SellerReputation } from "@/components/seller/SellerReputation";
-
-interface ListingImage {
-  image_url: string;
-  display_order: number;
-}
-
-interface ListingSeller {
-  id: string;
-  full_name?: string;
-  trust_score?: number;
-}
+import type { ListingImageSummary, ListingSummary } from "@/types/listings";
 
 interface ListingCardProps {
-  listing: {
-    id: string;
-    title: string;
-    brand?: string;
-    size?: string;
-    color?: string;
-    condition?: string;
-    seller_price: number;
-    original_rrp?: number;
-    status?: string;
-    images?: ListingImage[];
-    seller?: ListingSeller;
-  };
+  listing: ListingSummary;
   onSaveClick?: (listingId: string) => void;
   isSaved?: boolean;
   isSaving?: boolean;
@@ -38,19 +16,27 @@ interface ListingCardProps {
   className?: string;
 }
 
-export const ListingCard = React.memo(({
-  listing,
-  onSaveClick,
-  isSaved = false,
-  isSaving = false,
-  showSaveButton = true,
-  className = "",
-}: ListingCardProps) => {
-  const navigate = useNavigate();
+const getListingImages = (listing: ListingSummary): ListingImageSummary[] => {
+  if (Array.isArray(listing.images)) {
+    return listing.images;
+  }
+  if (Array.isArray(listing.listing_images)) {
+    return listing.listing_images;
+  }
+  return [];
+};
 
-  const firstImage = listing.images?.sort(
-    (a, b) => a.display_order - b.display_order
-  )[0];
+export const ListingCard = React.memo(
+  ({ listing, onSaveClick, isSaved = false, isSaving = false, showSaveButton = true, className = "" }: ListingCardProps) => {
+    const navigate = useNavigate();
+
+    const listingImages = getListingImages(listing);
+    const firstImage = listingImages
+      .slice()
+      .sort(
+        (a, b) =>
+          (a.display_order ?? 0) - (b.display_order ?? 0),
+      )[0];
 
   return (
     <div className={`group relative ${className}`}>
@@ -74,7 +60,7 @@ export const ListingCard = React.memo(({
               No image
             </div>
           )}
-          {listing.status && listing.status !== "active" && (
+            {listing.status && listing.status !== "active" && (
             <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
               <Badge variant="secondary" className="text-sm">
                 {formatStatus(listing.status)}
@@ -101,9 +87,9 @@ export const ListingCard = React.memo(({
             )}
           </div>
 
-          <div className="flex items-baseline gap-2">
+            <div className="flex items-baseline gap-2">
             <p className="text-base font-medium text-foreground">
-              £{Number(listing.seller_price).toFixed(2)}
+                £{Number(listing.seller_price).toFixed(2)}
             </p>
             {listing.original_rrp && (
               <p className="text-xs text-muted-foreground line-through">
@@ -125,7 +111,7 @@ export const ListingCard = React.memo(({
       </button>
 
       {/* Save Action */}
-      {showSaveButton && onSaveClick && (
+        {showSaveButton && onSaveClick && (
         <div className="mt-3 flex items-center justify-end gap-2 px-2">
           <Button
             variant="ghost"
@@ -145,5 +131,6 @@ export const ListingCard = React.memo(({
       )}
     </div>
   );
-});
+  },
+);
 

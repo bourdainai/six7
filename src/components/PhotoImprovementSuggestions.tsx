@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Camera, AlertCircle, CheckCircle, Info } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,7 +10,36 @@ interface PhotoImprovementSuggestionsProps {
   listingId: string;
 }
 
-const priorityConfig = {
+type AdvicePriority = "high" | "medium" | "low";
+
+interface AdviceIssue {
+  image_id: string;
+  quality_score?: number | null;
+  lighting_score?: number | null;
+  angle_score?: number | null;
+  background_score?: number | null;
+}
+
+interface PhotoAdvice {
+  type: string;
+  priority: AdvicePriority;
+  title: string;
+  message: string;
+  missing_angles?: string[];
+  missing_shots?: string[];
+  recommendations?: string[];
+  recommendation?: string;
+  issues?: AdviceIssue[];
+}
+
+interface PhotoAdviceResponse {
+  overall_score: number;
+  photo_count: number;
+  average_quality: number;
+  advice: PhotoAdvice[];
+}
+
+const priorityConfig: Record<AdvicePriority, { icon: typeof AlertCircle; color: string; badgeColor: BadgeProps["variant"] }> = {
   high: {
     icon: AlertCircle,
     color: 'text-red-600',
@@ -29,15 +58,15 @@ const priorityConfig = {
 };
 
 export const PhotoImprovementSuggestions = ({ listingId }: PhotoImprovementSuggestionsProps) => {
-  const { data, isLoading } = useQuery({
+    const { data, isLoading } = useQuery<PhotoAdviceResponse>({
     queryKey: ['photo-advice', listingId],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke('seller-copilot-photo-advisor', {
+        const { data, error } = await supabase.functions.invoke<{ data: PhotoAdviceResponse }>('seller-copilot-photo-advisor', {
         body: { listingId }
       });
       
       if (error) throw error;
-      return data?.data;
+        return data?.data as PhotoAdviceResponse;
     },
   });
 
@@ -89,8 +118,8 @@ export const PhotoImprovementSuggestions = ({ listingId }: PhotoImprovementSugge
       </div>
 
       <div className="space-y-3">
-        {data.advice.map((advice: any, idx: number) => {
-          const config = priorityConfig[advice.priority as keyof typeof priorityConfig];
+          {data.advice.map((advice, idx) => {
+            const config = priorityConfig[advice.priority];
           const Icon = config.icon;
 
           return (
@@ -103,7 +132,7 @@ export const PhotoImprovementSuggestions = ({ listingId }: PhotoImprovementSugge
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <h4 className="font-medium text-sm">{advice.title}</h4>
-                    <Badge variant={config.badgeColor as any} className="text-xs">
+                      <Badge variant={config.badgeColor} className="text-xs">
                       {advice.priority}
                     </Badge>
                   </div>
