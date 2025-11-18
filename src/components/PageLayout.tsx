@@ -1,5 +1,6 @@
 import React, { ReactNode } from "react";
 import { Navigation } from "./Navigation";
+import { Footer } from "./Footer";
 
 interface PageLayoutProps {
   children: ReactNode;
@@ -8,11 +9,12 @@ interface PageLayoutProps {
 
 export const PageLayout = React.memo(({ children, className = "" }: PageLayoutProps) => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navigation />
-      <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-[88px] ${className}`}>
+      <main className={`flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-[88px] w-full ${className}`}>
         {children}
-      </div>
+      </main>
+      <Footer />
     </div>
   );
 });

@@ -9,6 +9,7 @@ import { Loader2 } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { HelmetProvider } from "react-helmet-async";
+import { CookieConsent } from "@/components/CookieConsent";
 
 // Lazy load routes for code splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -32,6 +33,11 @@ const FraudDashboard = lazy(() => import("./pages/FraudDashboard"));
 const Bundles = lazy(() => import("./pages/Bundles"));
 const BundleDetail = lazy(() => import("./pages/BundleDetail"));
 const AutoRelistRules = lazy(() => import("./pages/AutoRelistRules"));
+const TermsOfService = lazy(() => import("./pages/TermsOfService"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const ReturnPolicy = lazy(() => import("./pages/ReturnPolicy"));
+const CookiePolicy = lazy(() => import("./pages/CookiePolicy"));
+const Help = lazy(() => import("./pages/Help"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Configure QueryClient with performance optimizations
@@ -84,6 +90,12 @@ const AppRoutes = () => {
           <Route path="/admin/analytics" element={<AdminAnalytics />} />
           <Route path="/admin/moderation" element={<ModerationDashboard />} />
           <Route path="/admin/fraud" element={<FraudDashboard />} />
+          {/* Legal & Help Pages */}
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/returns" element={<ReturnPolicy />} />
+          <Route path="/cookies" element={<CookiePolicy />} />
+          <Route path="/help" element={<Help />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
@@ -102,6 +114,7 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <AppRoutes />
+              <CookieConsent />
             </BrowserRouter>
           </TooltipProvider>
         </AuthProvider>

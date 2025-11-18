@@ -1,4 +1,5 @@
 import { Navigation } from "@/components/Navigation";
+import { Footer } from "@/components/Footer";
 import { Hero } from "@/components/Hero";
 import { Features } from "@/components/Features";
 import { HowItWorks } from "@/components/HowItWorks";
@@ -9,7 +10,6 @@ import { Link } from "react-router-dom";
 import { BuyerOnboarding } from "@/components/BuyerOnboarding";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import logo from "@/assets/logo.svg";
 import { SEO } from "@/components/SEO";
 
 const Index = () => {
@@ -62,13 +62,7 @@ const Index = () => {
           }} />
         )}
 
-        {/* Footer */}
-        <footer className="py-12 px-6 border-t border-divider-gray">
-          <div className="max-w-7xl mx-auto flex flex-col items-center gap-4">
-            <img src={logo} alt="6Seven" className="h-6 w-auto opacity-60" />
-            <p className="text-xs text-muted-foreground font-normal tracking-tight">© 2025 6Seven — AI-native marketplace</p>
-          </div>
-        </footer>
+        <Footer />
       </div>
     );
   }
@@ -113,13 +107,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-12 px-6 border-t border-divider-gray">
-        <div className="max-w-7xl mx-auto flex flex-col items-center gap-4">
-          <img src={logo} alt="6Seven" className="h-6 w-auto opacity-60" />
-          <p className="text-xs text-muted-foreground font-normal tracking-tight">© 2025 6Seven — AI-native marketplace</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };
