@@ -39,6 +39,7 @@ const ReturnPolicy = lazy(() => import("./pages/ReturnPolicy"));
 const CookiePolicy = lazy(() => import("./pages/CookiePolicy"));
 const Help = lazy(() => import("./pages/Help"));
 const NotificationPreferences = lazy(() => import("./pages/NotificationPreferences"));
+const SellerVerification = lazy(() => import("./pages/SellerVerification"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Configure QueryClient with performance optimizations
@@ -87,6 +88,7 @@ const AppRoutes = () => {
           <Route path="/seller/analytics" element={<SellerAnalytics />} />
           <Route path="/seller/reputation" element={<SellerReputation />} />
           <Route path="/seller/automation" element={<AutoRelistRules />} />
+          <Route path="/seller/verification" element={<SellerVerification />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/analytics" element={<AdminAnalytics />} />
           <Route path="/admin/moderation" element={<ModerationDashboard />} />

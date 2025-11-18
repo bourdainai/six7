@@ -114,10 +114,16 @@ const SellerDashboard = () => {
                 Manage your listings and track your performance
               </p>
             </div>
-            <Button onClick={() => navigate("/seller/reputation")} variant="outline" className="gap-2">
-              <Award className="h-4 w-4" />
-              View Reputation
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={() => navigate("/seller/verification")} variant="outline" className="gap-2">
+                <CheckCircle2 className="h-4 w-4" />
+                Verification
+              </Button>
+              <Button onClick={() => navigate("/seller/reputation")} variant="outline" className="gap-2">
+                <Award className="h-4 w-4" />
+                Reputation
+              </Button>
+            </div>
           </div>
         </div>
 

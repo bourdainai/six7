@@ -15,6 +15,8 @@ import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 import { SellerReputation } from "@/components/seller/SellerReputation";
+import { SellerBadges } from "@/components/seller/SellerBadges";
+import { TrustScore } from "@/components/seller/TrustScore";
 import { OutfitBuilder } from "@/components/OutfitBuilder";
 import { useSavedListings } from "@/hooks/useSavedListings";
 import { formatCondition } from "@/lib/format";
@@ -407,7 +409,11 @@ const ListingDetail = () => {
                     </p>
                   </div>
                 </div>
-                <SellerReputation sellerId={listing.seller_id} compact />
+                <div className="space-y-3">
+                  <SellerReputation sellerId={listing.seller_id} compact />
+                  <SellerBadges sellerId={listing.seller_id} size="sm" />
+                  <TrustScore sellerId={listing.seller_id} compact />
+                </div>
               </div>
             </div>
 
