@@ -44,12 +44,12 @@ export const ListingCard = React.memo(
         onClick={() => navigate(`/listing/${listing.id}`)}
         className="text-left w-full"
       >
-        <div className="aspect-[3/4] bg-muted rounded-lg overflow-hidden mb-3 relative">
+        <div className="aspect-[3/4] bg-soft-neutral overflow-hidden mb-3 relative border border-divider-gray group-hover:border-foreground transition-all duration-fast">
           {firstImage ? (
             <img
               src={firstImage.image_url}
               alt={listing.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              className="w-full h-full object-cover group-hover:opacity-95 transition-opacity duration-fast"
               loading="lazy"
               decoding="async"
               width="400"
@@ -61,7 +61,7 @@ export const ListingCard = React.memo(
             </div>
           )}
             {listing.status && listing.status !== "active" && (
-            <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+            <div className="absolute inset-0 bg-background/90 flex items-center justify-center">
               <Badge variant="secondary" className="text-sm">
                 {formatStatus(listing.status)}
               </Badge>
@@ -70,13 +70,13 @@ export const ListingCard = React.memo(
         </div>
 
         <div className="space-y-1">
-          <h3 className="text-sm font-medium text-foreground line-clamp-1 group-hover:text-primary transition-colors">
+          <h3 className="text-sm font-normal text-foreground line-clamp-1 group-hover:opacity-70 transition-opacity duration-fast tracking-tight">
             {listing.title}
           </h3>
           
           <div className="flex items-center gap-2">
             {listing.brand && (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground font-normal">
                 {listing.brand}
               </p>
             )}
@@ -88,18 +88,18 @@ export const ListingCard = React.memo(
           </div>
 
             <div className="flex items-baseline gap-2">
-            <p className="text-base font-medium text-foreground">
+            <p className="text-base font-normal text-foreground tracking-tight">
                 £{Number(listing.seller_price).toFixed(2)}
             </p>
             {listing.original_rrp && (
-              <p className="text-xs text-muted-foreground line-through">
+              <p className="text-xs text-muted-foreground line-through font-normal">
                 £{Number(listing.original_rrp).toFixed(2)}
               </p>
             )}
           </div>
 
           {listing.size && (
-            <p className="text-xs text-muted-foreground">Size: {listing.size}</p>
+            <p className="text-xs text-muted-foreground font-normal">Size: {listing.size}</p>
           )}
 
           {listing.seller?.id && (
@@ -121,7 +121,7 @@ export const ListingCard = React.memo(
               onSaveClick(listing.id);
             }}
             disabled={isSaving}
-            className={isSaved ? "text-red-500 hover:text-red-600" : ""}
+            className={isSaved ? "text-destructive hover:text-destructive/80" : ""}
           >
             <Heart 
               className={`w-4 h-4 ${isSaved ? "fill-current" : ""}`} 

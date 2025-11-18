@@ -57,10 +57,10 @@ const Index = () => {
         )}
 
         {/* Footer */}
-        <footer className="py-12 px-6 border-t border-border/50">
+        <footer className="py-12 px-6 border-t border-divider-gray">
           <div className="max-w-7xl mx-auto flex flex-col items-center gap-4">
             <img src={logo} alt="6Seven" className="h-6 w-auto opacity-60" />
-            <p className="text-xs text-muted-foreground font-light tracking-wide">© 2025 6Seven — AI-native marketplace</p>
+            <p className="text-xs text-muted-foreground font-normal tracking-tight">© 2025 6Seven — AI-native marketplace</p>
           </div>
         </footer>
       </div>
@@ -78,10 +78,10 @@ const Index = () => {
       {/* CTA Section */}
       <section className="py-32 px-6 bg-foreground">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-5xl md:text-6xl font-light mb-6 text-background leading-tight">
+          <h2 className="text-5xl md:text-6xl font-light mb-6 text-background leading-tight tracking-tight">
             Ready to start?
           </h2>
-          <p className="text-lg text-background/80 mb-10 font-light">
+          <p className="text-lg text-background/80 mb-10 font-normal tracking-tight">
             Join the marketplace where selling is effortless and buying is intelligent.
           </p>
           <Button asChild size="lg" variant="secondary" className="text-base px-8 h-12 font-normal">
@@ -91,10 +91,10 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-6 border-t border-border/50">
+      <footer className="py-12 px-6 border-t border-divider-gray">
         <div className="max-w-7xl mx-auto flex flex-col items-center gap-4">
           <img src={logo} alt="6Seven" className="h-6 w-auto opacity-60" />
-          <p className="text-xs text-muted-foreground font-light tracking-wide">© 2025 6Seven — AI-native marketplace</p>
+          <p className="text-xs text-muted-foreground font-normal tracking-tight">© 2025 6Seven — AI-native marketplace</p>
         </div>
       </footer>
     </div>

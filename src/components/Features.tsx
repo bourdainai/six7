@@ -36,21 +36,21 @@ const features = [
 
 export const Features = () => {
   return (
-    <section className="py-32 px-6 bg-muted/30">
+    <section className="py-32 px-6 bg-background">
       <div className="max-w-7xl mx-auto">
         <div className="max-w-2xl mb-20">
-          <h2 className="text-5xl md:text-6xl font-light mb-6 text-foreground leading-tight">
+          <h2 className="text-5xl md:text-6xl font-light mb-6 text-foreground leading-tight tracking-tight">
             AI-Native
             <br />
-            <span className="font-medium">From Day One.</span>
+            <span className="font-normal">From Day One.</span>
           </h2>
-          <p className="text-lg text-muted-foreground font-light">
+          <p className="text-lg text-muted-foreground font-normal tracking-tight">
             Not a bolt-on. Every feature designed to work smarter, not harder.
           </p>
         </div>
 
         {/* AI Feature Highlight */}
-        <div className="mb-24 rounded-lg overflow-hidden shadow-medium">
+        <div className="mb-24 overflow-hidden border border-divider-gray">
           <img 
             src={aiFeatureImage} 
             alt="AI analyzing fashion" 
@@ -63,11 +63,11 @@ export const Features = () => {
           {features.map((feature, index) => (
             <div
               key={index}
-              className="p-8 rounded-lg bg-card border border-border hover:border-foreground/20 transition-all group"
+              className="p-8 bg-card border border-divider-gray hover:border-foreground transition-all duration-fast group"
             >
-              <feature.icon className="w-8 h-8 text-foreground mb-6 group-hover:scale-110 transition-transform" />
-              <h3 className="text-lg font-medium mb-2 text-foreground">{feature.title}</h3>
-              <p className="text-sm text-muted-foreground font-light leading-relaxed">{feature.description}</p>
+              <feature.icon className="w-8 h-8 text-foreground mb-6 group-hover:opacity-70 transition-opacity duration-fast" strokeWidth={2} />
+              <h3 className="text-lg font-normal mb-2 text-foreground tracking-tight">{feature.title}</h3>
+              <p className="text-sm text-muted-foreground font-normal leading-relaxed tracking-tight">{feature.description}</p>
             </div>
           ))}
         </div>

@@ -164,10 +164,10 @@ const Browse = () => {
           <div className="flex items-center justify-between mb-2">
             <div className="space-y-2">
               {searchMode === 'semantic' && (
-                <h1 className="text-3xl font-light text-foreground">AI Search Results</h1>
+                <h1 className="text-3xl font-light text-foreground tracking-tight">AI Search Results</h1>
               )}
               {searchMode === 'vibe' && (
-                <h1 className="text-3xl font-light text-foreground">Vibe Search Results</h1>
+                <h1 className="text-3xl font-light text-foreground tracking-tight">Vibe Search Results</h1>
               )}
             </div>
             {searchMode !== 'browse' && (
@@ -178,9 +178,9 @@ const Browse = () => {
           </div>
 
           {searchMode === 'vibe' && vibeDescription && (
-            <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
-              <p className="text-sm">
-                <span className="font-medium">AI detected style:</span> {vibeDescription}
+            <div className="p-4 border border-divider-gray bg-soft-neutral">
+              <p className="text-sm font-normal">
+                <span className="font-normal">AI detected style:</span> {vibeDescription}
               </p>
             </div>
           )}
@@ -195,15 +195,15 @@ const Browse = () => {
 
           {/* Sorting Controls */}
           <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground font-normal">
               {filteredListings.length} {filteredListings.length === 1 ? 'item' : 'items'} available
             </p>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Sort by:</span>
+              <span className="text-sm text-muted-foreground font-normal">Sort by:</span>
               <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                className="h-9 px-3 rounded-lg bg-background border border-border text-sm hover:bg-accent/50 transition-colors"
+                className="h-9 px-3 bg-background border border-divider-gray text-sm hover:bg-soft-neutral transition-colors duration-fast rounded-sm font-normal"
               >
                 <option value="relevance">Relevance</option>
                 <option value="newest">Newest</option>

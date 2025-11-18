@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -41,103 +43,84 @@
   }
 }
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* Premium Futuristic Design System - 6SEVEN
+   "If Apple designed the future of marketplaces"
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 9%;
+    /* Primary Colors - Pure Monochrome */
+    --background: 0 0% 100%; /* Pure White #FFFFFF */
+    --foreground: 0 0% 0%; /* True Black #000000 */
+    
+    /* Carbon & Graphite Grays */
+    --carbon-black: 0 0% 4%; /* #0A0A0A */
+    --graphite-gray: 0 0% 16%; /* #2A2A2A */
+    
+    /* Neutral Grays */
+    --soft-neutral: 0 0% 96%; /* #F5F5F5 */
+    --divider-gray: 0 0% 93%; /* #EDEDED */
+    
+    /* Minimal Accents (Used Sparingly) */
+    --silver-chrome: 0 0% 81%; /* #CFCFCF */
+    --future-cyan: 180 100% 88%; /* #A8F4FF */
 
+    /* Component Colors */
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 9%;
+    --card-foreground: 0 0% 0%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 9%;
+    --popover-foreground: 0 0% 0%;
 
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
+    --primary: 0 0% 0%;
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 9%;
+    --secondary-foreground: 0 0% 0%;
 
     --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
+    --muted-foreground: 0 0% 16%;
 
-    --accent: 0 0% 9%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 0 0% 0%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
-    --ring: 0 0% 9%;
+    --border: 0 0% 93%; /* Hyper-thin divider */
+    --input: 0 0% 93%;
+    --ring: 0 0% 0%;
 
-    --radius: 0.5rem;
+    /* Sharp Corners - Ultra Minimal Radius */
+    --radius: 0px; /* Hard 90° corners, max 2px when needed */
 
-    /* Premium design tokens */
-    --gradient-hero: linear-gradient(135deg, hsl(0 0% 9%) 0%, hsl(0 0% 20%) 100%);
-    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(0 0% 98%) 100%);
-    --shadow-soft: 0 1px 2px 0 hsl(0 0% 0% / 0.05);
-    --shadow-medium: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -2px hsl(0 0% 0% / 0.1);
-    --shadow-large: 0 20px 25px -5px hsl(0 0% 0% / 0.1), 0 8px 10px -6px hsl(0 0% 0% / 0.1);
-    --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Premium Typography */
+    --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --letter-spacing-tight: -0.02em;
+    --letter-spacing-normal: -0.01em;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 0 0% 9%;
-    --sidebar-primary: 0 0% 9%;
-    --sidebar-primary-foreground: 0 0% 98%;
+    /* Ultra-Minimal Shadows (Hyper-soft elevation) */
+    --shadow-ultra-soft: 0 1px 1px 0 hsl(0 0% 0% / 0.02);
+    --shadow-soft: 0 1px 2px 0 hsl(0 0% 0% / 0.03);
+    --shadow-elevation: 0 1px 3px 0 hsl(0 0% 0% / 0.05);
+
+    /* Premium Motion - Smooth, Precise */
+    --transition-fast: 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    --transition-smooth: 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    --transition-ease-out: 250ms ease-out;
+
+    /* No gradients unless hyper-soft and nearly invisible */
+    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(0 0% 99%) 100%);
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 0%;
+    --sidebar-primary: 0 0% 0%;
+    --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 0 0% 96%;
-    --sidebar-accent-foreground: 0 0% 9%;
-    --sidebar-border: 0 0% 90%;
-    --sidebar-ring: 0 0% 9%;
-  }
-
-  .dark {
-    --background: 0 0% 9%;
-    --foreground: 0 0% 98%;
-
-    --card: 0 0% 12%;
-    --card-foreground: 0 0% 98%;
-
-    --popover: 0 0% 12%;
-    --popover-foreground: 0 0% 98%;
-
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-
-    --secondary: 0 0% 15%;
-    --secondary-foreground: 0 0% 98%;
-
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 65%;
-
-    --accent: 0 0% 98%;
-    --accent-foreground: 0 0% 9%;
-
-    --destructive: 0 63% 50%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
-    --ring: 0 0% 98%;
-
-    --gradient-hero: linear-gradient(135deg, hsl(0 0% 9%) 0%, hsl(0 0% 20%) 100%);
-    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 9%) 0%, hsl(0 0% 12%) 100%);
-    --shadow-soft: 0 1px 2px 0 hsl(0 0% 0% / 0.2);
-    --shadow-medium: 0 4px 6px -1px hsl(0 0% 0% / 0.3), 0 2px 4px -2px hsl(0 0% 0% / 0.3);
-    --shadow-large: 0 20px 25px -5px hsl(0 0% 0% / 0.4), 0 8px 10px -6px hsl(0 0% 0% / 0.4);
-
-    --sidebar-background: 0 0% 9%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 0 0% 98%;
-    --sidebar-primary-foreground: 0 0% 9%;
-    --sidebar-accent: 0 0% 15%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 0 0% 20%;
-    --sidebar-ring: 0 0% 98%;
+    --sidebar-accent-foreground: 0 0% 0%;
+    --sidebar-border: 0 0% 93%;
+    --sidebar-ring: 0 0% 0%;
   }
 }
 
@@ -148,5 +131,46 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-primary);
+    letter-spacing: var(--letter-spacing-normal);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Premium Typography Scale */
+  h1, h2, h3, h4, h5, h6 {
+    letter-spacing: var(--letter-spacing-tight);
+    font-weight: 400;
+  }
+
+  h1 {
+    font-size: clamp(3.5rem, 8vw, 5rem);
+    line-height: 1.1;
+    font-weight: 300;
+  }
+
+  h2 {
+    font-size: clamp(2.5rem, 6vw, 3.5rem);
+    line-height: 1.15;
+    font-weight: 300;
+  }
+
+  h3 {
+    font-size: clamp(1.75rem, 4vw, 2.25rem);
+    line-height: 1.2;
+    font-weight: 400;
+  }
+
+  /* Body Text */
+  p, body {
+    font-size: 16px;
+    line-height: 1.6;
+    font-weight: 400;
+  }
+
+  @media (min-width: 768px) {
+    p, body {
+      font-size: 18px;
+    }
   }
 }

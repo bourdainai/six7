@@ -62,13 +62,13 @@ export const Navigation = React.memo(() => {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-divider-gray">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-[72px] flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 group relative h-14 flex-shrink-0" onClick={handleNavClick}>
             <img 
               src={logo} 
               alt="6Seven" 
-              className="h-14 w-auto group-hover:scale-105 transition-transform"
+              className="h-14 w-auto transition-opacity duration-fast group-hover:opacity-80"
               style={{ 
                 width: 'auto',
                 height: '56px',
@@ -86,7 +86,7 @@ export const Navigation = React.memo(() => {
               <Link
                 key={link.to}
                 to={link.to}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors font-light"
+                className="text-sm text-foreground hover:opacity-70 transition-opacity duration-fast font-normal tracking-tight"
               >
                 {link.label}
               </Link>
@@ -95,13 +95,13 @@ export const Navigation = React.memo(() => {
               <>
                 <Link 
                   to="/messages" 
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors font-light"
+                  className="text-sm text-foreground hover:opacity-70 transition-opacity duration-fast font-normal tracking-tight"
                 >
                   Messages
                 </Link>
                 <Link 
                   to="/orders" 
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors font-light"
+                  className="text-sm text-foreground hover:opacity-70 transition-opacity duration-fast font-normal tracking-tight"
                 >
                   Orders
                 </Link>
@@ -113,7 +113,7 @@ export const Navigation = React.memo(() => {
                 <NotificationCenter />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="gap-2 font-light">
+                    <Button variant="ghost" size="sm" className="gap-2 font-normal">
                       <User className="w-4 h-4" />
                       <span className="hidden sm:inline">Account</span>
                     </Button>
@@ -180,14 +180,14 @@ export const Navigation = React.memo(() => {
                   variant="ghost" 
                   size="sm" 
                   onClick={() => handleAuthClick("signin")}
-                  className="font-light"
+                  className="font-normal"
                 >
                   Sign In
                 </Button>
                 <Button 
                   size="sm" 
                   onClick={() => handleAuthClick("signup")}
-                  className="font-light"
+                  className="font-normal"
                 >
                   Sign Up
                 </Button>
@@ -209,9 +209,9 @@ export const Navigation = React.memo(() => {
                   <span className="sr-only">Toggle menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[300px] sm:w-[400px] p-0">
-                <SheetHeader className="px-6 py-4 border-b border-border">
-                  <SheetTitle className="text-left">Menu</SheetTitle>
+              <SheetContent side="right" className="w-[300px] sm:w-[400px] p-0 border-l border-divider-gray">
+                <SheetHeader className="px-6 py-4 border-b border-divider-gray">
+                  <SheetTitle className="text-left font-normal">Menu</SheetTitle>
                 </SheetHeader>
                 <div className="flex flex-col h-full overflow-y-auto">
                   <nav className="flex-1 px-6 py-6 space-y-1">
@@ -221,7 +221,7 @@ export const Navigation = React.memo(() => {
                         key={link.to}
                         to={link.to}
                         onClick={handleNavClick}
-                        className="block px-4 py-3 text-base font-light text-foreground hover:bg-muted rounded-lg transition-colors"
+                        className="block px-4 py-3 text-base font-normal text-foreground hover:bg-soft-neutral transition-colors duration-fast rounded-sm"
                       >
                         {link.label}
                       </Link>
@@ -229,11 +229,11 @@ export const Navigation = React.memo(() => {
                     
                     {user && (
                       <>
-                        <div className="border-t border-border my-4" />
+                        <div className="border-t border-divider-gray my-4" />
                         
                         {/* User Section Header */}
                         <div className="px-4 py-2">
-                          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                          <h3 className="text-xs font-normal text-muted-foreground uppercase tracking-wider">
                             Account
                           </h3>
                         </div>
@@ -242,7 +242,7 @@ export const Navigation = React.memo(() => {
                         <Link
                           to="/messages"
                           onClick={handleNavClick}
-                          className="block px-4 py-3 text-base font-light text-foreground hover:bg-muted rounded-lg transition-colors"
+                          className="block px-4 py-3 text-base font-normal text-foreground hover:bg-soft-neutral transition-colors duration-fast rounded-sm"
                         >
                           Messages
                         </Link>
@@ -251,7 +251,7 @@ export const Navigation = React.memo(() => {
                         <Link
                           to="/orders"
                           onClick={handleNavClick}
-                          className="block px-4 py-3 text-base font-light text-foreground hover:bg-muted rounded-lg transition-colors"
+                          className="block px-4 py-3 text-base font-normal text-foreground hover:bg-soft-neutral transition-colors duration-fast rounded-sm"
                         >
                           Orders
                         </Link>
@@ -260,7 +260,7 @@ export const Navigation = React.memo(() => {
                         <Link
                           to="/saved"
                           onClick={handleNavClick}
-                          className="block px-4 py-3 text-base font-light text-foreground hover:bg-muted rounded-lg transition-colors flex items-center gap-2"
+                          className="block px-4 py-3 text-base font-normal text-foreground hover:bg-soft-neutral transition-colors duration-fast rounded-sm flex items-center gap-2"
                         >
                           <Heart className="w-4 h-4" />
                           Saved Items
@@ -289,11 +289,11 @@ export const Navigation = React.memo(() => {
                           Notifications
                         </button>
                         
-                        <div className="border-t border-border my-4" />
+                        <div className="border-t border-divider-gray my-4" />
                         
                         {/* Seller Section Header */}
                         <div className="px-4 py-2">
-                          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                          <h3 className="text-xs font-normal text-muted-foreground uppercase tracking-wider">
                             Seller
                           </h3>
                         </div>
@@ -301,53 +301,53 @@ export const Navigation = React.memo(() => {
                         <Link
                           to="/dashboard/seller"
                           onClick={handleNavClick}
-                          className="block px-4 py-3 text-base font-light text-foreground hover:bg-muted rounded-lg transition-colors"
+                          className="block px-4 py-3 text-base font-normal text-foreground hover:bg-soft-neutral transition-colors duration-fast rounded-sm"
                         >
                           Seller Dashboard
                         </Link>
                         <Link
                           to="/seller/analytics"
                           onClick={handleNavClick}
-                          className="block px-4 py-3 text-base font-light text-foreground hover:bg-muted rounded-lg transition-colors"
+                          className="block px-4 py-3 text-base font-normal text-foreground hover:bg-soft-neutral transition-colors duration-fast rounded-sm"
                         >
                           Analytics
                         </Link>
                         <Link
                           to="/seller/automation"
                           onClick={handleNavClick}
-                          className="block px-4 py-3 text-base font-light text-foreground hover:bg-muted rounded-lg transition-colors"
+                          className="block px-4 py-3 text-base font-normal text-foreground hover:bg-soft-neutral transition-colors duration-fast rounded-sm"
                         >
                           Automation Rules
                         </Link>
                         <Link
                           to="/seller/reputation"
                           onClick={handleNavClick}
-                          className="block px-4 py-3 text-base font-light text-foreground hover:bg-muted rounded-lg transition-colors"
+                          className="block px-4 py-3 text-base font-normal text-foreground hover:bg-soft-neutral transition-colors duration-fast rounded-sm"
                         >
                           Reputation
                         </Link>
                         {isAdmin && (
                           <>
-                            <div className="border-t border-border my-4" />
+                            <div className="border-t border-divider-gray my-4" />
                             <div className="px-4 py-2">
-                              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                              <h3 className="text-xs font-normal text-muted-foreground uppercase tracking-wider">
                                 Admin
                               </h3>
                             </div>
                             <Link
                               to="/admin"
                               onClick={handleNavClick}
-                              className="block px-4 py-3 text-base font-light text-foreground hover:bg-muted rounded-lg transition-colors"
+                              className="block px-4 py-3 text-base font-normal text-foreground hover:bg-soft-neutral transition-colors duration-fast rounded-sm"
                             >
                               <Shield className="w-4 h-4 inline mr-2" />
                               Admin Dashboard
                             </Link>
                           </>
                         )}
-                        <div className="border-t border-border my-4" />
+                        <div className="border-t border-divider-gray my-4" />
                         <button
                           onClick={handleSignOut}
-                          className="w-full text-left px-4 py-3 text-base font-light text-destructive hover:bg-muted rounded-lg transition-colors"
+                          className="w-full text-left px-4 py-3 text-base font-normal text-destructive hover:bg-soft-neutral transition-colors duration-fast rounded-sm"
                         >
                           <LogOut className="w-4 h-4 inline mr-2" />
                           Sign Out
@@ -357,16 +357,16 @@ export const Navigation = React.memo(() => {
                     
                     {!user && (
                       <>
-                        <div className="border-t border-border my-4" />
+                        <div className="border-t border-divider-gray my-4" />
                         <Button
                           variant="outline"
-                          className="w-full justify-start font-light mb-2"
+                          className="w-full justify-start font-normal mb-2"
                           onClick={() => handleAuthClick("signin")}
                         >
                           Sign In
                         </Button>
                         <Button
-                          className="w-full justify-start font-light"
+                          className="w-full justify-start font-normal"
                           onClick={() => handleAuthClick("signup")}
                         >
                           Sign Up

@@ -14,12 +14,25 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+      },
+      letterSpacing: {
+        tight: '-0.02em',
+        normal: '-0.01em',
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        'carbon-black': "hsl(var(--carbon-black))",
+        'graphite-gray': "hsl(var(--graphite-gray))",
+        'soft-neutral': "hsl(var(--soft-neutral))",
+        'divider-gray': "hsl(var(--divider-gray))",
+        'silver-chrome': "hsl(var(--silver-chrome))",
+        'future-cyan': "hsl(var(--future-cyan))",
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -60,21 +73,27 @@ export default {
         },
       },
       backgroundImage: {
-        'gradient-hero': 'var(--gradient-hero)',
         'gradient-subtle': 'var(--gradient-subtle)',
       },
       boxShadow: {
+        'ultra-soft': 'var(--shadow-ultra-soft)',
         'soft': 'var(--shadow-soft)',
-        'medium': 'var(--shadow-medium)',
-        'large': 'var(--shadow-large)',
+        'elevation': 'var(--shadow-elevation)',
       },
       transitionTimingFunction: {
-        'smooth': 'var(--transition-smooth)',
+        'fast': 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+        'smooth': 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+        'ease-out': 'ease-out',
+      },
+      transitionDuration: {
+        'fast': '200ms',
+        'smooth': '300ms',
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        lg: "2px",
+        md: "1px",
+        sm: "0px",
+        none: "0px",
       },
       keyframes: {
         "accordion-down": {
@@ -93,10 +112,21 @@ export default {
             height: "0",
           },
         },
+        "fade-up": {
+          from: {
+            opacity: "0",
+            transform: "translateY(10px)",
+          },
+          to: {
+            opacity: "1",
+            transform: "translateY(0)",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "fade-up": "fade-up 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)",
       },
     },
   },
