@@ -206,10 +206,9 @@ const Help = () => {
       const { data: ticket, error } = await supabase
         .from("support_tickets")
         .insert({
-          user_id: user?.id || null,
-          email: data.email,
+          user_id: user!.id,
           subject: data.subject,
-          message: data.message,
+          description: data.message,
           category: data.category,
           status: "open",
         })

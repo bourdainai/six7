@@ -139,7 +139,7 @@ export default function BundleDetail() {
       "@type": "Offer",
       "url": bundleUrl,
       "priceCurrency": "GBP",
-      "price": bundle.bundle_price?.toString() || "0",
+      "price": bundle.total_price?.toString() || "0",
       "availability": bundle.status === "active" ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
     }
   } : undefined;

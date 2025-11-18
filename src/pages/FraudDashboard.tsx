@@ -32,7 +32,7 @@ type FraudFlagWithRelations = FraudFlagRow & {
 
 type FlagStatusFilter = "pending" | "reviewed" | "confirmed" | "dismissed" | "all";
 
-const isFraudFlagDetails = (details: Json | null): details is FraudFlagDetails => {
+const isFraudFlagDetails = (details: Json | null): details is any => {
   return !!details && typeof details === "object" && !Array.isArray(details);
 };
 
@@ -165,7 +165,7 @@ export default function FraudDashboard() {
       </div>
 
       {/* Flags List */}
-      <Tabs value={selectedStatus} onValueChange={setSelectedStatus}>
+      <Tabs value={selectedStatus} onValueChange={(value) => setSelectedStatus(value as FlagStatusFilter)}>
         <TabsList>
           <TabsTrigger value="pending">Pending</TabsTrigger>
           <TabsTrigger value="reviewed">Reviewed</TabsTrigger>
@@ -208,12 +208,12 @@ export default function FraudDashboard() {
                     {/* Details */}
                       {isFraudFlagDetails(flag.details) && (
                         <div className="text-sm text-muted-foreground">
-                          {flag.details.message && <p>{flag.details.message}</p>}
-                          {flag.details.duplicate_count && (
-                            <p>Duplicate listings found: {flag.details.duplicate_count}</p>
+                          {(flag.details as any).message && <p>{(flag.details as any).message}</p>}
+                          {(flag.details as any).duplicate_count && (
+                            <p>Duplicate listings found: {(flag.details as any).duplicate_count}</p>
                           )}
-                          {flag.details.stock_photo_count && (
-                            <p>Stock photos: {flag.details.stock_photo_count}/{flag.details.total_images}</p>
+                          {(flag.details as any).stock_photo_count && (
+                            <p>Stock photos: {(flag.details as any).stock_photo_count}/{(flag.details as any).total_images}</p>
                           )}
                         </div>
                       )}

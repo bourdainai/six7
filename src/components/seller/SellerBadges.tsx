@@ -89,7 +89,7 @@ export const SellerBadges = ({
         .order("earned_at", { ascending: false });
 
       if (error) throw error;
-      return data as SellerBadge[];
+      return (data || []) as any;
     },
   });
 

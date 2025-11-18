@@ -59,7 +59,7 @@ export const SavedSearchesPanel = ({
       .order("created_at", { ascending: false });
 
       if (!error && data) {
-        setSearches(data as SavedSearch[]);
+        setSearches(data as any);
     }
   };
 
@@ -70,8 +70,8 @@ export const SavedSearchesPanel = ({
       user_id: user.id,
       name: newSearchName.trim(),
       query: currentQuery,
-      filters: currentFilters,
-    });
+      filters: currentFilters as any,
+    } as any);
 
     if (error) {
       toast({

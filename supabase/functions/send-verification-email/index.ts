@@ -54,6 +54,7 @@ serve(async (req) => {
     const { data: tokenData, error: tokenError } = await supabaseClient.auth.admin.generateLink({
       type: 'signup',
       email: user.email!,
+      password: crypto.randomUUID(), // Generate a random password for the link
     });
 
     if (tokenError) {

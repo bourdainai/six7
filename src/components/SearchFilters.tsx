@@ -595,7 +595,10 @@ export const SearchFilters = ({
                 minPrice: localFilters.minPrice,
                 maxPrice: localFilters.maxPrice,
                 condition: localFilters.condition,
-              }}
+                search: localFilters.search,
+                brand: localFilters.brand,
+                size: localFilters.size,
+              } as any}
               onSelectSearch={(query, savedFilters) => {
                 updateFilter("search", query);
                 if (savedFilters) {

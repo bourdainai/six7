@@ -1065,48 +1065,66 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          business_verified: boolean | null
           can_receive_payments: boolean | null
           country: string | null
           created_at: string | null
           email: string | null
+          email_verified: boolean | null
           full_name: string | null
           id: string
+          id_verified: boolean | null
           is_banned: boolean | null
           kyc_status: boolean | null
+          notification_preferences: Json | null
+          phone_verified: boolean | null
           stripe_connect_account_id: string | null
           stripe_onboarding_complete: boolean | null
           trust_score: number | null
           updated_at: string | null
+          verification_level: string | null
         }
         Insert: {
           avatar_url?: string | null
+          business_verified?: boolean | null
           can_receive_payments?: boolean | null
           country?: string | null
           created_at?: string | null
           email?: string | null
+          email_verified?: boolean | null
           full_name?: string | null
           id: string
+          id_verified?: boolean | null
           is_banned?: boolean | null
           kyc_status?: boolean | null
+          notification_preferences?: Json | null
+          phone_verified?: boolean | null
           stripe_connect_account_id?: string | null
           stripe_onboarding_complete?: boolean | null
           trust_score?: number | null
           updated_at?: string | null
+          verification_level?: string | null
         }
         Update: {
           avatar_url?: string | null
+          business_verified?: boolean | null
           can_receive_payments?: boolean | null
           country?: string | null
           created_at?: string | null
           email?: string | null
+          email_verified?: boolean | null
           full_name?: string | null
           id?: string
+          id_verified?: boolean | null
           is_banned?: boolean | null
           kyc_status?: boolean | null
+          notification_preferences?: Json | null
+          phone_verified?: boolean | null
           stripe_connect_account_id?: string | null
           stripe_onboarding_complete?: boolean | null
           trust_score?: number | null
           updated_at?: string | null
+          verification_level?: string | null
         }
         Relationships: []
       }
@@ -1556,7 +1574,9 @@ export type Database = {
           description: string | null
           earned_at: string
           id: string
+          is_active: boolean | null
           seller_id: string
+          updated_at: string | null
         }
         Insert: {
           badge_name: string
@@ -1565,7 +1585,9 @@ export type Database = {
           description?: string | null
           earned_at?: string
           id?: string
+          is_active?: boolean | null
           seller_id: string
+          updated_at?: string | null
         }
         Update: {
           badge_name?: string
@@ -1574,7 +1596,9 @@ export type Database = {
           description?: string | null
           earned_at?: string
           id?: string
+          is_active?: boolean | null
           seller_id?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -1745,6 +1769,53 @@ export type Database = {
           },
         ]
       }
+      seller_verifications: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          notes: string | null
+          seller_id: string
+          status: string
+          updated_at: string
+          verification_data: Json | null
+          verification_type: string
+          verified_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          notes?: string | null
+          seller_id: string
+          status?: string
+          updated_at?: string
+          verification_data?: Json | null
+          verification_type: string
+          verified_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          notes?: string | null
+          seller_id?: string
+          status?: string
+          updated_at?: string
+          verification_data?: Json | null
+          verification_type?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_verifications_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shipping_details: {
         Row: {
           carrier: string | null
@@ -1794,6 +1865,105 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_ticket_replies: {
+        Row: {
+          created_at: string
+          id: string
+          is_staff_reply: boolean | null
+          message: string
+          ticket_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_staff_reply?: boolean | null
+          message: string
+          ticket_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_staff_reply?: boolean | null
+          message?: string
+          ticket_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_ticket_replies_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_ticket_replies_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          assigned_to: string | null
+          category: string
+          created_at: string
+          description: string
+          id: string
+          priority: string | null
+          resolved_at: string | null
+          status: string | null
+          subject: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          category: string
+          created_at?: string
+          description: string
+          id?: string
+          priority?: string | null
+          resolved_at?: string | null
+          status?: string | null
+          subject: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_to?: string | null
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          priority?: string | null
+          resolved_at?: string | null
+          status?: string | null
+          subject?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_tickets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

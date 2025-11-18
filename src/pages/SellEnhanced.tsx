@@ -725,7 +725,7 @@ const SellEnhanced = () => {
                     <Label htmlFor="condition">Condition</Label>
                     <Select
                       value={listingData.condition}
-                      onValueChange={(value) => setListingData({...listingData, condition: value})}
+                      onValueChange={(value) => setListingData({...listingData, condition: value as any})}
                     >
                       <SelectTrigger className="mt-1">
                         <SelectValue placeholder="Select condition" />

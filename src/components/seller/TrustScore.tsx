@@ -38,8 +38,7 @@ export const TrustScore = ({ sellerId, compact = false }: TrustScoreProps) => {
       if (ordersError) throw ordersError;
 
       // Get rating stats
-      const { data: ratings, error: ratingsError } = await supabase
-        .from("ratings")
+      const { data: ratings, error: ratingsError } = await (supabase.from("ratings") as any)
         .select("rating")
         .eq("seller_id", sellerId);
 

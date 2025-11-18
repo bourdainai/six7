@@ -108,7 +108,7 @@ export const PersonalizedFeed = React.memo(() => {
           {recommendations.map((listing) => (
             <ListingCard
               key={listing.id}
-              listing={listing}
+              listing={listing as any}
               onSaveClick={toggleSave}
               isSaved={isSaved(listing.id)}
               isSaving={isSaving}
