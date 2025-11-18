@@ -41,6 +41,7 @@ export const AuthModal = ({ open, onOpenChange, defaultMode = "signin" }: AuthMo
     try {
       if (mode === "signup") {
         await signUp(email, password, fullName);
+        // Note: Supabase automatically sends verification email on signup
         setShowListingOption(true); // Show option to list or do onboarding
       } else {
         await signIn(email, password);
@@ -86,12 +87,12 @@ export const AuthModal = ({ open, onOpenChange, defaultMode = "signin" }: AuthMo
     return (
       <Dialog open={true} onOpenChange={() => {}}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Welcome to 6Seven!</DialogTitle>
-            <DialogDescription>
-              Your account has been created. What would you like to do first?
-            </DialogDescription>
-          </DialogHeader>
+        <DialogHeader>
+          <DialogTitle>Welcome to 6Seven!</DialogTitle>
+          <DialogDescription>
+            Your account has been created. Please check your email to verify your account. What would you like to do first?
+          </DialogDescription>
+        </DialogHeader>
           <div className="space-y-3 mt-4">
             <Button
               onClick={handleStartListing}

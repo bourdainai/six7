@@ -166,6 +166,11 @@ export const Navigation = React.memo(() => {
                         Saved Items
                       </Link>
                     </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/settings/notifications" className="cursor-pointer">
+                        Notification Settings
+                      </Link>
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-destructive">
                       <LogOut className="w-4 h-4 mr-2" />

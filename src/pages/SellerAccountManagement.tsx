@@ -16,6 +16,7 @@ import {
 import PayoutHistory from "@/components/seller/PayoutHistory";
 import PayoutSchedule from "@/components/seller/PayoutSchedule";
 import VerificationRequirements from "@/components/seller/VerificationRequirements";
+import { EmailVerificationStatus } from "@/components/EmailVerificationStatus";
 
 const SellerAccountManagement = () => {
   const { user } = useAuth();
@@ -86,7 +87,8 @@ const SellerAccountManagement = () => {
             <TabsTrigger value="schedule">Payout Schedule</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="account" className="mt-6">
+          <TabsContent value="account" className="mt-6 space-y-6">
+            <EmailVerificationStatus />
             <Card>
               <CardHeader>
                 <CardTitle>Manage Your Payment Account</CardTitle>

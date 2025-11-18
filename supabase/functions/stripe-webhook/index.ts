@@ -137,6 +137,81 @@ serve(async (req) => {
             }
 
             console.log(`Payment succeeded for order: ${payment.order_id}`);
+
+            // Send email notifications
+            try {
+              // Get order details for email
+              const { data: orderDetails } = await supabaseAdmin
+                .from('orders')
+                .select(`
+                  id,
+                  buyer_id,
+                  seller_id,
+                  total_amount,
+                  currency,
+                  order_items(
+                    listing:listings(title)
+                  )
+                `)
+                .eq('id', payment.order_id)
+                .single();
+
+              if (orderDetails) {
+                const itemName = orderItems && orderItems.length > 0 
+                  ? (orderDetails.order_items?.[0]?.listing as any)?.title || 'Item'
+                  : 'Item';
+
+                // Send order confirmation to buyer
+                const buyerEmailResponse = await fetch(
+                  `${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email-notification`,
+                  {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+                    },
+                    body: JSON.stringify({
+                      userId: orderDetails.buyer_id,
+                      type: 'order_confirmation',
+                      subject: 'Order Confirmation',
+                      template: 'order_confirmation',
+                      data: {
+                        orderId: orderDetails.id,
+                        itemName,
+                        total: `${orderDetails.currency} ${orderDetails.total_amount}`,
+                        orderLink: `${Deno.env.get('SITE_URL') || 'https://6seven.ai'}/orders`,
+                      },
+                    }),
+                  }
+                );
+
+                // Send payment received notification to seller
+                const sellerEmailResponse = await fetch(
+                  `${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email-notification`,
+                  {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+                    },
+                    body: JSON.stringify({
+                      userId: orderDetails.seller_id,
+                      type: 'payment_received',
+                      subject: 'Payment Received',
+                      template: 'payment_received',
+                      data: {
+                        amount: `${orderDetails.currency} ${order.seller_amount}`,
+                        orderId: orderDetails.id,
+                        payoutLink: `${Deno.env.get('SITE_URL') || 'https://6seven.ai'}/seller/account`,
+                      },
+                    }),
+                  }
+                );
+              }
+            } catch (emailError) {
+              // Don't fail the webhook if email fails
+              console.error('Error sending email notifications:', emailError);
+            }
           }
         }
         break;

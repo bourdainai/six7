@@ -38,6 +38,7 @@ const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const ReturnPolicy = lazy(() => import("./pages/ReturnPolicy"));
 const CookiePolicy = lazy(() => import("./pages/CookiePolicy"));
 const Help = lazy(() => import("./pages/Help"));
+const NotificationPreferences = lazy(() => import("./pages/NotificationPreferences"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Configure QueryClient with performance optimizations
@@ -96,6 +97,7 @@ const AppRoutes = () => {
           <Route path="/returns" element={<ReturnPolicy />} />
           <Route path="/cookies" element={<CookiePolicy />} />
           <Route path="/help" element={<Help />} />
+          <Route path="/settings/notifications" element={<NotificationPreferences />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -18,6 +18,8 @@ import { AuthModal } from "@/components/auth/AuthModal";
 import { useQuery } from "@tanstack/react-query";
 import type { Database, Json } from "@/integrations/supabase/types";
 import { SEO } from "@/components/SEO";
+import { useEmailVerification } from "@/hooks/useEmailVerification";
+import { useEmailNotification } from "@/hooks/useEmailNotification";
 
 type PackageDimensions = {
   length: number;
@@ -110,6 +112,8 @@ const SellEnhanced = () => {
   
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
+  const { isVerified: emailVerified } = useEmailVerification();
+  const { sendEmail } = useEmailNotification();
 
   // Check seller profile and Stripe Connect status
   const { data: profile } = useQuery({
@@ -221,6 +225,16 @@ const SellEnhanced = () => {
       return;
     }
 
+    // Check email verification
+    if (!emailVerified) {
+      toast({
+        title: "Email verification required",
+        description: "Please verify your email address before publishing listings. Check your inbox for the verification link.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setPublishing(true);
 
     try {
@@ -297,6 +311,24 @@ const SellEnhanced = () => {
       }
 
       setPublishedListingId(listing.id);
+
+      // Send email notification
+      try {
+        sendEmail({
+          type: "listing_published",
+          subject: "Your listing is live!",
+          template: "listing_published",
+          data: {
+            itemName: listingData.title,
+            listingLink: `${window.location.origin}/listing/${listing.id}`,
+          },
+        });
+      } catch (emailError) {
+        // Don't fail the publish if email fails
+        if (import.meta.env.DEV) {
+          console.error("Failed to send listing published email:", emailError);
+        }
+      }
 
       toast({
         title: "Listed Successfully!",

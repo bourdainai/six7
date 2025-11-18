@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useEmailVerification } from "@/hooks/useEmailVerification";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
 
@@ -99,6 +100,7 @@ const Checkout = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { isVerified: emailVerified } = useEmailVerification();
   const [shippingAddress, setShippingAddress] = useState({
     name: "",
     line1: "",
@@ -216,6 +218,16 @@ const Checkout = () => {
       toast({
         title: "Authentication required",
         description: "Please sign in to complete your purchase",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check email verification
+    if (!emailVerified) {
+      toast({
+        title: "Email verification required",
+        description: "Please verify your email address before making purchases. Check your inbox for the verification link.",
         variant: "destructive",
       });
       return;
