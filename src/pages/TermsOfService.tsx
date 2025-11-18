@@ -1,11 +1,17 @@
 import { PageLayout } from "@/components/PageLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SEO } from "@/components/SEO";
 
 const TermsOfService = () => {
   const lastUpdated = "January 2025";
 
   return (
     <PageLayout>
+      <SEO
+        title="Terms of Service - 6Seven"
+        description="Read 6Seven's Terms of Service. Understand your rights and responsibilities when using our marketplace platform."
+        keywords="terms of service, user agreement, marketplace terms, 6Seven terms"
+      />
       <div className="max-w-4xl mx-auto py-12 px-4">
         <Card>
           <CardHeader>

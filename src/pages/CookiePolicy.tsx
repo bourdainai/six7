@@ -1,11 +1,17 @@
 import { PageLayout } from "@/components/PageLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SEO } from "@/components/SEO";
 
 const CookiePolicy = () => {
   const lastUpdated = "January 2025";
 
   return (
     <PageLayout>
+      <SEO
+        title="Cookie Policy - 6Seven"
+        description="Learn about how 6Seven uses cookies and how you can manage your cookie preferences."
+        keywords="cookie policy, cookies, tracking, analytics cookies, 6Seven cookies"
+      />
       <div className="max-w-4xl mx-auto py-12 px-4">
         <Card>
           <CardHeader>

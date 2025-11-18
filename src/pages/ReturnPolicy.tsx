@@ -1,11 +1,17 @@
 import { PageLayout } from "@/components/PageLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SEO } from "@/components/SEO";
 
 const ReturnPolicy = () => {
   const lastUpdated = "January 2025";
 
   return (
     <PageLayout>
+      <SEO
+        title="Return & Refund Policy - 6Seven"
+        description="Learn about 6Seven's return and refund policy. Understand your rights when returning items and getting refunds."
+        keywords="return policy, refund policy, returns, refunds, 6Seven returns"
+      />
       <div className="max-w-4xl mx-auto py-12 px-4">
         <Card>
           <CardHeader>
