@@ -50,15 +50,16 @@ const OnboardingStepPayout = () => {
               <Input 
                 type="text" 
                 placeholder="12345678" 
+                maxLength={17}
                 {...field}
                 onChange={(e) => {
                   // Allow alphanumeric for account numbers (some banks use letters)
-                  const value = e.target.value.replace(/[^a-zA-Z0-9]/g, '');
+                  const value = e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
                   field.onChange(value);
                 }}
               />
             </FormControl>
-            <FormDescription>Your bank account number</FormDescription>
+            <FormDescription>UK account number (6-17 characters, letters and numbers only)</FormDescription>
             <FormMessage />
           </FormItem>
         )}

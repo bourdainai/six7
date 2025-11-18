@@ -4,8 +4,10 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Progress } from "@/components/ui/progress";
 import { Loader2, AlertCircle, CheckCircle2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useMemo } from "react";
 
 const VerificationRequirements = () => {
   const { user } = useAuth();
@@ -87,10 +89,41 @@ const VerificationRequirements = () => {
   const hasRequirements = currentlyDue.length > 0 || eventuallyDue.length > 0 || pastDue.length > 0;
   const isFullyVerified = chargesEnabled && detailsSubmitted && !hasRequirements;
 
+  // Calculate verification progress
+  const verificationProgress = useMemo(() => {
+    if (isFullyVerified) return 100;
+    
+    // Count total requirements
+    const totalRequirements = currentlyDue.length + eventuallyDue.length + pastDue.length;
+    if (totalRequirements === 0) return 100;
+    
+    // Estimate progress based on what's completed
+    // If details are submitted, we're at least 50% done
+    const baseProgress = detailsSubmitted ? 50 : 0;
+    
+    // Calculate remaining progress based on requirements
+    // Past due items are critical (weighted more)
+    const criticalItems = pastDue.length;
+    const importantItems = currentlyDue.length;
+    const futureItems = eventuallyDue.length;
+    
+    // If no critical or important items, we're mostly done
+    if (criticalItems === 0 && importantItems === 0) {
+      return Math.min(90, baseProgress + 40);
+    }
+    
+    // Otherwise, show progress based on what's left
+    const remainingWeight = criticalItems * 3 + importantItems * 2 + futureItems;
+    const maxWeight = totalRequirements * 3; // Assume all were critical at start
+    const completedWeight = maxWeight - remainingWeight;
+    
+    return Math.max(baseProgress, Math.min(95, (completedWeight / maxWeight) * 100));
+  }, [isFullyVerified, detailsSubmitted, currentlyDue.length, eventuallyDue.length, pastDue.length]);
+
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-4">
           <div>
             <CardTitle>Verification Status</CardTitle>
             <CardDescription>
@@ -111,6 +144,15 @@ const VerificationRequirements = () => {
             </Badge>
           )}
         </div>
+        {!isFullyVerified && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Verification Progress</span>
+              <span className="font-medium">{Math.round(verificationProgress)}%</span>
+            </div>
+            <Progress value={verificationProgress} className="h-2" />
+          </div>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         {isFullyVerified ? (

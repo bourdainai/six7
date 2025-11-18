@@ -68,8 +68,18 @@ const OnboardingStepPersonal = () => {
           <FormItem>
             <FormLabel>Phone Number *</FormLabel>
             <FormControl>
-              <Input type="tel" placeholder="+44 20 1234 5678" {...field} />
+              <Input 
+                type="tel" 
+                placeholder="+44 20 1234 5678" 
+                {...field}
+                onChange={(e) => {
+                  // Allow digits, spaces, +, and hyphens
+                  let value = e.target.value.replace(/[^\d+\s-]/g, '');
+                  field.onChange(value);
+                }}
+              />
             </FormControl>
+            <FormDescription>UK format: +44 20 1234 5678 or 020 1234 5678</FormDescription>
             <FormMessage />
           </FormItem>
         )}
@@ -113,8 +123,21 @@ const OnboardingStepPersonal = () => {
               <FormItem>
                 <FormLabel>Postcode *</FormLabel>
                 <FormControl>
-                  <Input placeholder="SW1A 1AA" {...field} />
+                  <Input 
+                    placeholder="SW1A 1AA" 
+                    {...field}
+                    onChange={(e) => {
+                      // Format UK postcode: convert to uppercase and add space if needed
+                      let value = e.target.value.toUpperCase().replace(/[^A-Z0-9\s]/g, '');
+                      // Auto-format: if 5-6 chars without space, add space before last 3 chars
+                      if (value.length > 3 && value.length <= 6 && !value.includes(' ')) {
+                        value = value.slice(0, -3) + ' ' + value.slice(-3);
+                      }
+                      field.onChange(value);
+                    }}
+                  />
                 </FormControl>
+                <FormDescription>UK format: SW1A 1AA</FormDescription>
                 <FormMessage />
               </FormItem>
             )}

@@ -23,18 +23,26 @@ const onboardingSchema = z.object({
     required_error: "Please select a business type",
   }),
   // Personal information - essential only
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
+  firstName: z.string().min(1, "First name is required").max(100, "First name is too long"),
+  lastName: z.string().min(1, "Last name is required").max(100, "Last name is too long"),
   dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date of birth must be in YYYY-MM-DD format"),
-  addressLine1: z.string().min(1, "Address is required"),
-  city: z.string().min(1, "City is required"),
-  postalCode: z.string().min(1, "Postcode is required"),
-  phone: z.string().min(1, "Phone number is required"),
+  addressLine1: z.string().min(1, "Address is required").max(200, "Address is too long"),
+  city: z.string().min(1, "City is required").max(100, "City name is too long"),
+  postalCode: z.string()
+    .min(1, "Postcode is required")
+    .regex(/^[A-Z]{1,2}\d{1,2}[A-Z]?\s?\d[A-Z]{2}$/i, "Invalid UK postcode format (e.g., SW1A 1AA)"),
+  phone: z.string()
+    .min(1, "Phone number is required")
+    .regex(/^(\+44|0)[1-9]\d{8,9}$/, "Invalid UK phone number format (e.g., +44 20 1234 5678 or 020 1234 5678)"),
   // Business information (only if company)
   businessName: z.string().optional(),
   // Bank account information - UK only
-  accountHolderName: z.string().min(1, "Account holder name is required"),
-  accountNumber: z.string().min(1, "Account number is required"),
+  accountHolderName: z.string().min(1, "Account holder name is required").max(100, "Name is too long"),
+  accountNumber: z.string()
+    .min(1, "Account number is required")
+    .min(6, "Account number must be at least 6 characters")
+    .max(17, "Account number must be no more than 17 characters")
+    .regex(/^[A-Z0-9]+$/i, "Account number can only contain letters and numbers"),
   routingNumber: z.string().min(1, "Sort code is required"),
   accountType: z.enum(["checking", "savings"], {
     required_error: "Please select an account type",
@@ -55,6 +63,17 @@ const onboardingSchema = z.object({
 }, {
   message: "Sort code must be in format XX-XX-XX (e.g., 12-34-56)",
   path: ["routingNumber"],
+}).refine((data) => {
+  // Validate date of birth - must be at least 18 years old
+  const dob = new Date(data.dateOfBirth);
+  const today = new Date();
+  const age = today.getFullYear() - dob.getFullYear();
+  const monthDiff = today.getMonth() - dob.getMonth();
+  const actualAge = monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate()) ? age - 1 : age;
+  return actualAge >= 18;
+}, {
+  message: "You must be at least 18 years old to create a seller account",
+  path: ["dateOfBirth"],
 });
 
 export type OnboardingFormData = z.infer<typeof onboardingSchema>;

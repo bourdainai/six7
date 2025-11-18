@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Loader2, Wallet, Clock, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -77,9 +78,25 @@ const PayoutSchedule = () => {
           <CardTitle>Payout Schedule</CardTitle>
           <CardDescription>View your pending balance and payout schedule</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <CardContent className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-lg border p-4">
+              <Skeleton className="h-4 w-32 mb-2" />
+              <Skeleton className="h-8 w-24 mb-1" />
+              <Skeleton className="h-3 w-28" />
+            </div>
+            <div className="rounded-lg border p-4">
+              <Skeleton className="h-4 w-32 mb-2" />
+              <Skeleton className="h-8 w-24 mb-1" />
+              <Skeleton className="h-3 w-28" />
+            </div>
+          </div>
+          <div className="rounded-lg border p-4 bg-muted/50">
+            <Skeleton className="h-5 w-40 mb-3" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-full" />
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -159,8 +176,14 @@ const PayoutSchedule = () => {
         )}
 
         {(!pendingPayouts || pendingPayouts.length === 0) && (
-          <div className="text-center py-4 text-muted-foreground text-sm">
-            No pending payouts
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <div className="rounded-full bg-muted p-3 mb-3">
+              <Clock className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <h4 className="font-medium mb-1">No pending payouts</h4>
+            <p className="text-sm text-muted-foreground">
+              Pending payouts will appear here once orders are processed
+            </p>
           </div>
         )}
       </CardContent>

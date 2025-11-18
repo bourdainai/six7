@@ -5,11 +5,15 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Loader2, Wallet, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 const PayoutHistory = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const { data: payouts, isLoading } = useQuery({
     queryKey: ["payouts", user?.id],
@@ -68,8 +72,16 @@ const PayoutHistory = () => {
           <CardDescription>View your payment history and payout status</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <div className="space-y-3">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="flex items-center gap-4 py-3 border-b last:border-0">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-6 w-20" />
+                <Skeleton className="h-4 w-32" />
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -84,9 +96,21 @@ const PayoutHistory = () => {
           <CardDescription>View your payment history and payout status</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-muted-foreground">
-            <p>No payouts yet</p>
-            <p className="text-sm mt-2">Payouts will appear here once you receive payments from sales</p>
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="rounded-full bg-muted p-4 mb-4">
+              <Wallet className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">No payouts yet</h3>
+            <p className="text-sm text-muted-foreground mb-6 max-w-md">
+              Payouts will appear here once you receive payments from sales. Complete your seller onboarding to start receiving payments.
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => navigate("/seller/onboarding")}
+            >
+              Complete Onboarding
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
           </div>
         </CardContent>
       </Card>
