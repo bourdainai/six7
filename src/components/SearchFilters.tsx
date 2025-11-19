@@ -4,7 +4,7 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Search, SlidersHorizontal, X, Sparkles, Image, History, Star } from "lucide-react";
+import { Search, SlidersHorizontal, X, Sparkles, Image, History, Star, ArrowRight, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "./ui/command";
@@ -45,13 +45,11 @@ export interface FilterState {
 }
 
 const CATEGORIES = [
-  "All Categories",
-  "Tops",
-  "Bottoms",
-  "Dresses",
-  "Outerwear",
-  "Shoes",
-  "Accessories"
+  "Pokémon Singles",
+  "Pokémon Sealed",
+  "Graded Cards",
+  "Raw Cards",
+  "Accessories",
 ];
 
 const CONDITIONS = [
@@ -62,8 +60,6 @@ const CONDITIONS = [
   "good",
   "fair"
 ];
-
-const COMMON_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
 
 export const SearchFilters = ({ 
   onFilterChange, 
@@ -79,8 +75,6 @@ export const SearchFilters = ({
   const [suggestions, setSuggestions] = useState<Array<{ type: string; text: string; icon: string }>>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
-  const [showSavedSearches, setShowSavedSearches] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -97,15 +91,13 @@ export const SearchFilters = ({
       setIsLoadingSuggestions(true);
       try {
         const { data, error } = await supabase.functions.invoke('search-autocomplete', {
-          body: { query, limit: 8 }
+          body: { query, limit: 5 }
         });
 
         if (error) throw error;
         setSuggestions(data.suggestions || []);
       } catch (error) {
-        if (import.meta.env.DEV) {
-          console.error('Autocomplete error:', error);
-        }
+        // Silent fail for autocomplete
       } finally {
         setIsLoadingSuggestions(false);
       }
@@ -136,137 +128,40 @@ export const SearchFilters = ({
     const newFilters = { ...localFilters, [key]: value };
     setLocalFilters(newFilters);
     
-    // If in browse mode, apply filters immediately
     if (searchMode === 'browse') {
       onFilterChange(newFilters);
     }
   };
 
-    interface SemanticSearchResponse {
-      routeTo?: "keyword" | "semantic";
-      results?: ListingSummary[];
-    }
-
-    const handleSemanticSearch = async () => {
-    if (!localFilters.search?.trim()) {
-      toast({
-        title: "Search Required",
-        description: "Please enter a search query",
-        variant: "destructive"
-      });
+  const handleSearch = async () => {
+    if (!localFilters.search?.trim() && searchMode !== 'vibe') {
       return;
     }
 
     setIsSearching(true);
     setShowSuggestions(false);
-    onSearchTypeChange?.('semantic');
 
     try {
-        const { data, error } = await supabase.functions.invoke<SemanticSearchResponse>('semantic-search', {
-        body: { 
-          query: localFilters.search.trim(), 
-          filters: {
-            category: localFilters.category,
-            condition: localFilters.condition,
-            minPrice: localFilters.minPrice,
-            maxPrice: localFilters.maxPrice,
-            brand: localFilters.brand,
-            size: localFilters.size,
-          },
-          limit: 50,
-          forceMode: 'semantic'
-        }
-      });
-
+      if (searchMode === 'semantic') {
+        onSearchTypeChange?.('semantic');
+        const { data, error } = await supabase.functions.invoke('semantic-search', {
+          body: { query: localFilters.search.trim(), limit: 50 }
+        });
         if (error) throw error;
-
-      // Check if we should route to keyword search instead
-      if (data.routeTo === 'keyword') {
-        await handleKeywordSearch();
-        return;
-      }
-
         onSemanticSearch?.(data.results || []);
-      
-      toast({
-        title: "AI Search Complete",
-        description: `Found ${data.results?.length || 0} items matching "${localFilters.search}"`,
-      });
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "Please try again";
-      if (import.meta.env.DEV) {
-        console.error("Search error:", error);
+      } else {
+        // Regular keyword search handled by parent Browse component via onFilterChange
+        onFilterChange(localFilters);
       }
+    } catch (error) {
+      console.error("Search error:", error);
       toast({
-        title: "Search Failed",
-          description: message,
+        title: "Search failed",
+        description: "Please try again.",
         variant: "destructive"
       });
     } finally {
       setIsSearching(false);
-    }
-  };
-
-  const handleKeywordSearch = async () => {
-    if (!localFilters.search?.trim()) {
-      toast({
-        title: "Search Required",
-        description: "Please enter a search query",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsSearching(true);
-    setShowSuggestions(false);
-    onSearchTypeChange?.('semantic');
-
-    try {
-        const { data, error } = await supabase.functions.invoke<SemanticSearchResponse>('keyword-search', {
-        body: { 
-          query: localFilters.search.trim(),
-          filters: {
-            category: localFilters.category,
-            condition: localFilters.condition,
-            minPrice: localFilters.minPrice,
-            maxPrice: localFilters.maxPrice,
-            brand: localFilters.brand,
-            size: localFilters.size,
-          },
-          limit: 50
-        }
-      });
-
-      if (error) throw error;
-
-        onSemanticSearch?.(data.results || []);
-      
-      toast({
-        title: "Search Complete",
-        description: `Found ${data.results?.length || 0} results`,
-      });
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "Please try again";
-      if (import.meta.env.DEV) {
-        console.error("Keyword search error:", error);
-      }
-      toast({
-        title: "Search Failed",
-          description: message,
-        variant: "destructive"
-      });
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const handleSearchModeChange = (mode: 'browse' | 'semantic' | 'vibe') => {
-    setSearchMode(mode);
-    if (mode === 'browse') {
-      onFilterChange(localFilters);
-      onSearchTypeChange?.('browse');
-    } else if (mode === 'vibe') {
-      onVibeSearchClick?.();
     }
   };
 
@@ -285,352 +180,212 @@ export const SearchFilters = ({
     setIsOpen(false);
   };
 
-  const applyFilters = () => {
-    onFilterChange(localFilters);
-    setIsOpen(false);
-  };
-
   const activeFilterCount = Object.entries(localFilters).filter(
     ([key, value]) => key !== 'search' && value && value !== ''
   ).length;
 
   return (
-    <div className="w-full space-y-6 mb-8">
-      {/* Search Mode Pills */}
-      <div className="flex flex-wrap gap-3 justify-center">
-        <button
-          onClick={() => handleSearchModeChange('browse')}
-          className={`px-6 py-2.5 rounded-full font-medium transition-all duration-300 ${
-            searchMode === 'browse'
-              ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30 scale-105'
-              : 'bg-secondary/50 text-secondary-foreground hover:bg-secondary/70 hover:scale-105'
-          }`}
-        >
-          <Search className="inline-block mr-2 h-4 w-4" />
-          Keyword Search
-        </button>
-        <button
-          onClick={() => handleSearchModeChange('semantic')}
-          className={`px-6 py-2.5 rounded-full font-medium transition-all duration-300 ${
-            searchMode === 'semantic'
-              ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30 scale-105'
-              : 'bg-secondary/50 text-secondary-foreground hover:bg-secondary/70 hover:scale-105'
-          }`}
-        >
-          <Sparkles className="inline-block mr-2 h-4 w-4" />
-          AI Search
-        </button>
-        <button
-          onClick={() => handleSearchModeChange('vibe')}
-          className={`px-6 py-2.5 rounded-full font-medium transition-all duration-300 ${
-            searchMode === 'vibe'
-              ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30 scale-105'
-              : 'bg-secondary/50 text-secondary-foreground hover:bg-secondary/70 hover:scale-105'
-          }`}
-        >
-          <Image className="inline-block mr-2 h-4 w-4" />
-          Vibe Search
-        </button>
-      </div>
-
-      {/* Main Search Bar */}
-      <div className="relative max-w-4xl mx-auto">
-        <div className="relative backdrop-blur-xl bg-background/50 rounded-3xl shadow-2xl border border-border/30 hover:shadow-primary/10 transition-all duration-300 overflow-visible">
-          <div className="relative flex-1 group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors z-10" />
-            <Input
-              ref={searchInputRef}
-              placeholder={
-                searchMode === 'semantic' 
-                  ? "Describe what you're looking for..." 
-                  : searchMode === 'vibe'
-                  ? "Search by vibe or mood..."
-                  : "Search listings..."
-              }
-              value={localFilters.search || ""}
-              onChange={(e) => updateFilter("search", e.target.value)}
-              onFocus={() => setShowSuggestions(true)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  if (searchMode === 'semantic') {
-                    handleSemanticSearch();
-                  } else {
-                    handleKeywordSearch();
-                  }
-                }
-                if (e.key === "Escape") {
-                  setShowSuggestions(false);
-                }
+    <div className="w-full max-w-3xl mx-auto mb-8 relative z-20">
+      {/* Magical Search Bar Container */}
+      <div className="relative group">
+        <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 rounded-2xl opacity-20 group-hover:opacity-40 transition duration-500 blur"></div>
+        <div className="relative flex items-center bg-background/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl transition-all duration-300">
+          
+          {/* Search Mode Selector (Subtle) */}
+          <div className="flex items-center pl-2 border-r border-border/50">
+            <Select 
+              value={searchMode} 
+              onValueChange={(val: any) => {
+                setSearchMode(val);
+                if(val === 'vibe') onVibeSearchClick?.();
               }}
-              className="pl-12 pr-56 h-14 bg-transparent backdrop-blur-md border-0 hover:bg-background/10 focus:bg-background/20 transition-all text-base"
-            />
-            
-            {/* Autocomplete Suggestions */}
-            {showSuggestions && suggestions.length > 0 && (
-              <div 
-                ref={suggestionsRef}
-                className="absolute top-full left-0 right-0 mt-2 bg-background/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl overflow-hidden z-50"
-              >
-                <Command>
-                  <CommandList className="max-h-[300px]">
-                    <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
-                      {isLoadingSuggestions ? "Loading suggestions..." : "No suggestions found"}
-                    </CommandEmpty>
-                    <CommandGroup>
-                      {suggestions.map((suggestion, index) => (
-                        <CommandItem
-                          key={`${suggestion.type}-${index}`}
-                          onSelect={() => {
-                            updateFilter("search", suggestion.text);
-                            setShowSuggestions(false);
-                            if (searchMode === 'semantic') {
-                              handleSemanticSearch();
-                            } else {
-                              handleKeywordSearch();
-                            }
-                          }}
-                          className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-accent/50 transition-colors"
-                        >
-                          <span className="text-lg">{suggestion.icon}</span>
-                          <div className="flex-1">
-                            <div className="font-medium">{suggestion.text}</div>
-                            <div className="text-xs text-muted-foreground capitalize">{suggestion.type}</div>
-                          </div>
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </div>
-            )}
-
-            <Button
-              onClick={searchMode === 'semantic' ? handleSemanticSearch : handleKeywordSearch}
-              disabled={isSearching || !localFilters.search?.trim()}
-              className="absolute right-32 top-1/2 -translate-y-1/2 h-10 px-4 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-xl z-10"
             >
-              {isSearching ? (
-                <>
-                  <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin mr-2" />
-                  Searching...
-                </>
-              ) : (
-                <>
-                  {searchMode === 'semantic' ? <Sparkles className="h-4 w-4 mr-2" /> : <Search className="h-4 w-4 mr-2" />}
-                  Search
-                </>
-              )}
-            </Button>
+              <SelectTrigger className="w-[50px] sm:w-[130px] border-0 focus:ring-0 shadow-none bg-transparent hover:bg-secondary/50 rounded-lg transition-colors gap-2">
+                {searchMode === 'browse' && <Search className="h-4 w-4 text-muted-foreground" />}
+                {searchMode === 'semantic' && <Sparkles className="h-4 w-4 text-purple-500" />}
+                {searchMode === 'vibe' && <Image className="h-4 w-4 text-pink-500" />}
+                <span className="hidden sm:inline text-sm font-medium text-muted-foreground">
+                  {searchMode === 'browse' ? 'Keyword' : searchMode === 'semantic' ? 'AI Ask' : 'Vibe'}
+                </span>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="browse">
+                  <div className="flex items-center gap-2">
+                    <Search className="h-4 w-4" /> <span>Keyword</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="semantic">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-purple-500" /> <span>AI Ask</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="vibe">
+                  <div className="flex items-center gap-2">
+                    <Image className="h-4 w-4 text-pink-500" /> <span>Vibe Search</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
+          {/* Main Input */}
+          <Input
+            ref={searchInputRef}
+            placeholder={
+              searchMode === 'semantic' 
+                ? "Ask for anything... (e.g. 'mint charizard under £50')" 
+                : "Search for cards, sets, or sealed product..."
+            }
+            value={localFilters.search}
+            onChange={(e) => updateFilter("search", e.target.value)}
+            onFocus={() => setShowSuggestions(true)}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            className="flex-1 h-14 border-0 focus-visible:ring-0 bg-transparent text-base px-4 shadow-none placeholder:text-muted-foreground/50"
+          />
+
+          {/* Actions Right */}
+          <div className="flex items-center pr-2 gap-1">
+            {/* Filter Trigger */}
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-10 px-4 hover:bg-accent/50 rounded-xl z-10"
-                >
-                  <SlidersHorizontal className="h-4 w-4 mr-2" />
-                  Filters
+                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary/50 relative">
+                  <SlidersHorizontal className="h-4 w-4" />
                   {activeFilterCount > 0 && (
-                    <Badge variant="secondary" className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center">
-                      {activeFilterCount}
-                    </Badge>
+                    <span className="absolute top-2 right-2 h-2 w-2 bg-primary rounded-full" />
                   )}
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-full sm:max-w-md">
+              <SheetContent className="w-[350px] sm:w-[400px] border-l border-border">
                 <SheetHeader>
-                  <SheetTitle>Filter Results</SheetTitle>
-                  <SheetDescription>
-                    Refine your search with these filters
-                  </SheetDescription>
+                  <SheetTitle>Filters</SheetTitle>
+                  <SheetDescription>Narrow down your search results.</SheetDescription>
                 </SheetHeader>
-                <div className="space-y-6 mt-6">
+                
+                <div className="space-y-6 py-6">
                   <div className="space-y-2">
                     <Label>Category</Label>
-                    <Select
-                      value={localFilters.category}
-                      onValueChange={(value) => updateFilter("category", value === "All Categories" ? "" : value)}
+                    <Select 
+                      value={localFilters.category} 
+                      onValueChange={(v) => updateFilter("category", v)}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="All Categories" /></SelectTrigger>
                       <SelectContent>
-                        {CATEGORIES.map((cat) => (
-                          <SelectItem key={cat} value={cat}>
-                            {cat}
-                          </SelectItem>
-                        ))}
+                        <SelectItem value="">All Categories</SelectItem>
+                        {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div className="space-y-2">
                     <Label>Condition</Label>
-                    <Select
-                      value={localFilters.condition}
-                      onValueChange={(value) => updateFilter("condition", value === "All Conditions" ? "" : value)}
+                    <Select 
+                      value={localFilters.condition} 
+                      onValueChange={(v) => updateFilter("condition", v)}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select condition" />
-                      </SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Any Condition" /></SelectTrigger>
                       <SelectContent>
-                        {CONDITIONS.map((cond) => (
-                          <SelectItem key={cond} value={cond}>
-                            {cond === "All Conditions" ? cond : formatCondition(cond)}
-                          </SelectItem>
+                        <SelectItem value="">Any Condition</SelectItem>
+                        {CONDITIONS.map(c => (
+                          <SelectItem key={c} value={c}>{c === "All Conditions" ? "All" : formatCondition(c)}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Price Range</Label>
+                    <Label>Price Range (£)</Label>
                     <div className="flex gap-2">
-                      <Input
-                        type="number"
-                        placeholder="Min"
+                      <Input 
+                        type="number" 
+                        placeholder="Min" 
                         value={localFilters.minPrice}
                         onChange={(e) => updateFilter("minPrice", e.target.value)}
                       />
-                      <Input
-                        type="number"
-                        placeholder="Max"
+                      <Input 
+                        type="number" 
+                        placeholder="Max" 
                         value={localFilters.maxPrice}
                         onChange={(e) => updateFilter("maxPrice", e.target.value)}
                       />
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Brand</Label>
-                    <Input
-                      placeholder="Search by brand"
-                      value={localFilters.brand}
-                      onChange={(e) => updateFilter("brand", e.target.value)}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Size</Label>
-                    <div className="flex flex-wrap gap-2">
-                      {COMMON_SIZES.map((size) => (
-                        <Badge
-                          key={size}
-                          variant={localFilters.size === size ? "default" : "outline"}
-                          className="cursor-pointer"
-                          onClick={() => updateFilter("size", localFilters.size === size ? "" : size)}
-                        >
-                          {size}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-
                   <div className="flex gap-2 pt-4">
-                    <Button
-                      variant="outline"
-                      className="flex-1"
-                      onClick={clearFilters}
-                    >
-                      Clear All
-                    </Button>
-                    <Button
-                      className="flex-1"
-                      onClick={applyFilters}
-                    >
-                      Apply Filters
-                    </Button>
+                    <Button variant="outline" className="flex-1" onClick={clearFilters}>Reset</Button>
+                    <Button className="flex-1" onClick={() => setIsOpen(false)}>Show Results</Button>
                   </div>
                 </div>
               </SheetContent>
             </Sheet>
+
+            {/* Search Button */}
+            <Button 
+              onClick={handleSearch}
+              size="icon"
+              disabled={isSearching}
+              className="h-10 w-10 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
+            >
+              {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+            </Button>
           </div>
         </div>
+
+        {/* Autocomplete Dropdown */}
+        {showSuggestions && suggestions.length > 0 && (
+          <div 
+            ref={suggestionsRef}
+            className="absolute top-full left-0 right-0 mt-2 bg-background/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-2xl overflow-hidden z-50"
+          >
+            <Command>
+              <CommandList>
+                <CommandGroup heading="Suggestions">
+                  {suggestions.map((s, i) => (
+                    <CommandItem 
+                      key={i} 
+                      onSelect={() => {
+                        updateFilter("search", s.text);
+                        setShowSuggestions(false);
+                        handleSearch();
+                      }}
+                      className="cursor-pointer"
+                    >
+                      <span className="mr-2 text-lg">{s.icon}</span>
+                      <span>{s.text}</span>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </div>
+        )}
       </div>
 
-      {/* Search History & Saved Searches */}
-      <div className="flex gap-2 justify-center mt-4">
-        <Popover open={showHistory} onOpenChange={setShowHistory}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2"
-            >
-              <History className="h-4 w-4" />
-              History
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-96 p-0" align="center">
-            <SearchHistoryPanel
-              onSelectSearch={(query) => {
-                updateFilter("search", query);
-                setShowHistory(false);
-                if (searchMode === 'semantic') {
-                  handleSemanticSearch();
-                } else {
-                  handleKeywordSearch();
-                }
-              }}
-            />
-          </PopoverContent>
-        </Popover>
-
-        <Popover open={showSavedSearches} onOpenChange={setShowSavedSearches}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2"
-            >
-              <Star className="h-4 w-4" />
-              Saved
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-96 p-0" align="center">
-            <SavedSearchesPanel
-              currentQuery={localFilters.search}
-              currentFilters={{
-                category: localFilters.category,
-                minPrice: localFilters.minPrice,
-                maxPrice: localFilters.maxPrice,
-                condition: localFilters.condition,
-                search: localFilters.search,
-                brand: localFilters.brand,
-                size: localFilters.size,
-              } as any}
-              onSelectSearch={(query, savedFilters) => {
-                updateFilter("search", query);
-                if (savedFilters) {
-                  setLocalFilters((prev) => ({ ...prev, ...savedFilters }));
-                }
-                setShowSavedSearches(false);
-                if (searchMode === 'semantic') {
-                  handleSemanticSearch();
-                } else {
-                  handleKeywordSearch();
-                }
-              }}
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
-
-      {/* Active Filters Display */}
+      {/* Active Filter Badges */}
       {activeFilterCount > 0 && (
-        <div className="flex flex-wrap gap-2 justify-center">
+        <div className="flex flex-wrap gap-2 mt-4 justify-center animate-in fade-in slide-in-from-top-2">
           {Object.entries(localFilters).map(([key, value]) => {
-            if (key === 'search' || !value) return null;
+            if (!value || key === 'search') return null;
             return (
-              <Badge key={key} variant="secondary" className="px-3 py-1.5">
-                {key}: {value}
-                <X
-                  className="ml-2 h-3 w-3 cursor-pointer hover:text-destructive transition-colors"
+              <Badge key={key} variant="secondary" className="pl-2 pr-1 py-1 bg-secondary/50 hover:bg-secondary/70 transition-colors">
+                <span className="capitalize mr-1 text-muted-foreground">{key}:</span>
+                <span className="font-medium">{value}</span>
+                <button 
                   onClick={() => updateFilter(key as keyof FilterState, "")}
-                />
+                  className="ml-2 hover:bg-background/50 rounded-full p-0.5"
+                >
+                  <X className="h-3 w-3" />
+                </button>
               </Badge>
-            );
+            )
           })}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-6 text-xs text-muted-foreground hover:text-foreground"
+            onClick={clearFilters}
+          >
+            Clear all
+          </Button>
         </div>
       )}
     </div>
