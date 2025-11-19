@@ -13,7 +13,7 @@ import { CookieConsent } from "@/components/CookieConsent";
 
 // Lazy load routes for code splitting
 const Index = lazy(() => import("./pages/Index"));
-const Sell = lazy(() => import("./pages/Sell"));
+const Sell = lazy(() => import("./pages/SellItem"));
 const Browse = lazy(() => import("./pages/Browse"));
 const ListingDetail = lazy(() => import("./pages/ListingDetail"));
 const Checkout = lazy(() => import("./pages/Checkout"));

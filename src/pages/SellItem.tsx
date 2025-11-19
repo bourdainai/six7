@@ -65,7 +65,7 @@ const SUBCATEGORIES: Record<string, string[]> = {
   "Accessories": ["Sleeves", "Toploaders", "Binders", "Playmats"],
 };
 
-const Sell = () => {
+const SellItem = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
@@ -573,4 +573,4 @@ const Sell = () => {
   );
 };
 
-export default Sell;
+export default SellItem;
