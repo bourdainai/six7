@@ -71,7 +71,7 @@ export const AuthModal = ({ open, onOpenChange, defaultMode = "signin" }: AuthMo
   const handleStartListing = () => {
     setShowListingOption(false);
     onOpenChange(false);
-    navigate("/sell-enhanced");
+    navigate("/sell");
   };
 
   const handleDoOnboarding = () => {

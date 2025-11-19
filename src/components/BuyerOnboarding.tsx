@@ -268,7 +268,7 @@ export const BuyerOnboarding = ({ onComplete, onSkip }: BuyerOnboardingProps) =>
                   <Button
                     onClick={() => {
                       onComplete();
-                      navigate("/sell-enhanced");
+                      navigate("/sell");
                     }}
                     className="flex items-center gap-2"
                   >
