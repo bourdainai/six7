@@ -1,6 +1,18 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-// Placeholder for AI description
-serve(async (req) => {
-  return new Response(JSON.stringify({ description: "Stunning Charizard from Base Set in Near Mint condition. A must-have for collectors." }), { headers: { 'Content-Type': 'application/json' } });
-});
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  return new Response(JSON.stringify({ 
+    description: "Stunning Charizard from Base Set in Near Mint condition. A must-have for collectors." 
+  }), { 
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+  });
+});

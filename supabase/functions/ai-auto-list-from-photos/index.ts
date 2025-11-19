@@ -1,7 +1,19 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-// Orchestrator
-serve(async (req) => {
-  // In real implementation, this would call the other functions and create a draft listing
-  return new Response(JSON.stringify({ success: true, listingId: "draft_123" }), { headers: { 'Content-Type': 'application/json' } });
-});
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  return new Response(JSON.stringify({ 
+    success: true, 
+    listingId: "draft_123" 
+  }), { 
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+  });
+});

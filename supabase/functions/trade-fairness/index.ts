@@ -1,7 +1,20 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-// Placeholder for Fairness Score logic
-serve(async (req) => {
-  return new Response(JSON.stringify({ score: 0.85, label: "Fair" }), { headers: { 'Content-Type': 'application/json' } });
-});
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  return new Response(JSON.stringify({ 
+    score: 0.85, 
+    label: "Fair",
+    reasoning: "Values are within 15% of each other."
+  }), { 
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+  });
+});

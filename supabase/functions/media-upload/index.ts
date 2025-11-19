@@ -1,7 +1,17 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-serve(async (req) => {
-  // Placeholder for signed URL generation or direct upload
-  return new Response(JSON.stringify({ uploadUrl: "https://storage.googleapis.com/..." }), { headers: { 'Content-Type': 'application/json' } });
-});
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+  
+  // Placeholder
+  return new Response(JSON.stringify({ uploadUrl: "https://storage.googleapis.com/placeholder-upload-url" }), { 
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+  });
+});
