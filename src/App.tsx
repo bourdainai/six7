@@ -40,6 +40,9 @@ const CookiePolicy = lazy(() => import("./pages/CookiePolicy"));
 const Help = lazy(() => import("./pages/Help"));
 const NotificationPreferences = lazy(() => import("./pages/NotificationPreferences"));
 const SellerVerification = lazy(() => import("./pages/SellerVerification"));
+const Wallet = lazy(() => import("./pages/Wallet"));
+const TradeOffers = lazy(() => import("./pages/TradeOffers"));
+const Feed = lazy(() => import("./pages/Feed"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Configure QueryClient with performance optimizations
@@ -100,6 +103,10 @@ const AppRoutes = () => {
           <Route path="/cookies" element={<CookiePolicy />} />
           <Route path="/help" element={<Help />} />
           <Route path="/settings/notifications" element={<NotificationPreferences />} />
+          {/* Wallet & Trading */}
+          <Route path="/wallet" element={<Wallet />} />
+          <Route path="/trade-offers" element={<TradeOffers />} />
+          <Route path="/feed" element={<Feed />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

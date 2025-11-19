@@ -47,6 +47,7 @@ export const Navigation = React.memo(() => {
   };
 
   const navLinks = [
+    { to: "/feed", label: "Feed" },
     { to: "/browse", label: "Browse" },
     { to: "/bundles", label: "Bundles" },
     { to: "/membership", label: "Membership" },
@@ -57,6 +58,8 @@ export const Navigation = React.memo(() => {
     ? [
         { to: "/messages", label: "Messages" },
         { to: "/orders", label: "Orders" },
+        { to: "/wallet", label: "Wallet" },
+        { to: "/trade-offers", label: "Trades" },
       ]
     : [];
 
@@ -161,6 +164,16 @@ export const Navigation = React.memo(() => {
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
+                      <Link to="/wallet" className="cursor-pointer">
+                        Wallet
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/trade-offers" className="cursor-pointer">
+                        Trade Offers
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
                       <Link to="/saved" className="cursor-pointer">
                         <Heart className="w-4 h-4 mr-2" />
                         Saved Items
@@ -259,6 +272,24 @@ export const Navigation = React.memo(() => {
                           className="block px-4 py-3 text-base font-normal text-foreground hover:bg-soft-neutral transition-colors duration-fast rounded-sm"
                         >
                           Orders
+                        </Link>
+                        
+                        {/* Wallet */}
+                        <Link
+                          to="/wallet"
+                          onClick={handleNavClick}
+                          className="block px-4 py-3 text-base font-normal text-foreground hover:bg-soft-neutral transition-colors duration-fast rounded-sm"
+                        >
+                          Wallet
+                        </Link>
+                        
+                        {/* Trade Offers */}
+                        <Link
+                          to="/trade-offers"
+                          onClick={handleNavClick}
+                          className="block px-4 py-3 text-base font-normal text-foreground hover:bg-soft-neutral transition-colors duration-fast rounded-sm"
+                        >
+                          Trade Offers
                         </Link>
                         
                         {/* Saved Items */}
