@@ -1,215 +1,575 @@
-import { useState } from "react";
-import { Navigation } from "@/components/Navigation";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { PageLayout } from "@/components/PageLayout";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, Sparkles, Check, Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Upload, Check, Loader2, X, AlertCircle, ArrowRight, ExternalLink, Camera, PoundSterling, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { supabase } from "@/integrations/supabase/client";
+import { AuthModal } from "@/components/auth/AuthModal";
+import { useQuery } from "@tanstack/react-query";
+import type { Database, Json } from "@/integrations/supabase/types";
+import { SEO } from "@/components/SEO";
+import { useEmailVerification } from "@/hooks/useEmailVerification";
+import { useEmailNotification } from "@/hooks/useEmailNotification";
+
+type ConditionType = Database["public"]["Enums"]["condition_type"];
+type ListingInsert = Database["public"]["Tables"]["listings"]["Insert"];
+
+interface ListingData {
+  title: string;
+  description: string;
+  category: string;
+  subcategory: string;
+  // Card specific fields
+  set_code: string;
+  card_number: string;
+  rarity: string;
+  condition: ConditionType | "";
+  is_graded: boolean;
+  grading_service: string;
+  grading_score: string;
+  // Generic/Legacy fields (kept for compatibility but hidden/minimized)
+  style_tags: string[];
+  original_rrp: number | null;
+}
+
+interface ShippingData {
+  shipping_cost_uk: number;
+  free_shipping: boolean;
+  estimated_delivery_days: number;
+}
+
+const CATEGORIES = [
+  "Pokémon Singles",
+  "Pokémon Sealed",
+  "Graded Cards",
+  "Raw Cards",
+  "Accessories",
+];
+
+const SUBCATEGORIES: Record<string, string[]> = {
+  "Pokémon Singles": ["Standard Format", "Vintage (WOTC)", "Modern Chase", "Bulk / Lots"],
+  "Pokémon Sealed": ["Booster Boxes", "ETBs", "Booster Packs", "Collection Boxes"],
+  "Graded Cards": ["PSA", "BGS", "CGC", "ACE", "Other"],
+  "Raw Cards": ["Near Mint", "Lightly Played", "Played", "Damaged"],
+  "Accessories": ["Sleeves", "Toploaders", "Binders", "Playmats"],
+};
 
 const Sell = () => {
-  const [analyzing, setAnalyzing] = useState(false);
-  const [analyzed, setAnalyzed] = useState(false);
-  const [images, setImages] = useState<string[]>([]);
+  const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, loading: authLoading } = useAuth();
+  const { isVerified: emailVerified } = useEmailVerification();
+  const { sendEmail } = useEmailNotification();
+
+  // State
+  const [images, setImages] = useState<string[]>([]);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [publishedListingId, setPublishedListingId] = useState<string | null>(null);
+  const [selectedPrice, setSelectedPrice] = useState<number | "">("");
+  
+  const [listingData, setListingData] = useState<ListingData>({
+    title: "",
+    description: "",
+    category: "Pokémon Singles",
+    subcategory: "",
+    set_code: "",
+    card_number: "",
+    rarity: "",
+    condition: "",
+    is_graded: false,
+    grading_service: "",
+    grading_score: "",
+    style_tags: [],
+    original_rrp: null,
+  });
+
+  const [shipping, setShipping] = useState<ShippingData>({
+    shipping_cost_uk: 2.99,
+    free_shipping: false,
+    estimated_delivery_days: 3,
+  });
+
+  // Check seller profile and Stripe Connect status
+  const { data: profile } = useQuery({
+    queryKey: ["profile", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("stripe_connect_account_id, stripe_onboarding_complete, can_receive_payments")
+        .eq("id", user!.id)
+        .single();
+      if (error && error.code !== "PGRST116") throw error;
+      return data;
+    },
+  });
+
+  // Auth check
+  useEffect(() => {
+    if (!authLoading && !user) {
+      setAuthModalOpen(true);
+    }
+  }, [user, authLoading]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files) {
-      const newImages = Array.from(files).map(file => URL.createObjectURL(file));
-      setImages(prev => [...prev, ...newImages]);
-      
-      // Simulate AI analysis
-      setAnalyzing(true);
-      setTimeout(() => {
-        setAnalyzing(false);
-        setAnalyzed(true);
-        toast({
-          title: "AI Analysis Complete",
-          description: "Your item has been analyzed and details have been pre-filled.",
+    if (!files || !user) return;
+
+    const fileArray = Array.from(files);
+    setImageFiles(prev => [...prev, ...fileArray]);
+    
+    const newImages = fileArray.map(file => URL.createObjectURL(file));
+    setImages(prev => [...prev, ...newImages]);
+  };
+
+  const removeImage = (index: number) => {
+    const newImages = [...images];
+    const newFiles = [...imageFiles];
+    newImages.splice(index, 1);
+    newFiles.splice(index, 1);
+    setImages(newImages);
+    setImageFiles(newFiles);
+  };
+
+  const handlePublish = async () => {
+    if (!user || !selectedPrice || !listingData.title || !listingData.category || images.length === 0) {
+      toast({
+        title: "Missing fields",
+        description: "Please add photos, a title, category, and price to list your card.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!emailVerified) {
+      toast({
+        title: "Email verification required",
+        description: "Please verify your email address before listing.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setPublishing(true);
+
+    try {
+      const listingPayload: ListingInsert = {
+        seller_id: user.id,
+        title: listingData.title,
+        description: listingData.description,
+        category: listingData.category,
+        subcategory: listingData.subcategory || null,
+        
+        // Card specific fields mapped to existing columns or generic fields if needed
+        // Assuming migration added these columns: set_code, rarity, condition, grading_service, grading_score
+        set_code: listingData.set_code || null,
+        card_number: listingData.card_number || null,
+        rarity: listingData.rarity || null,
+        condition: listingData.condition || null,
+        grading_service: listingData.is_graded ? listingData.grading_service : null,
+        grading_score: listingData.is_graded ? (parseFloat(listingData.grading_score) || null) : null,
+        
+        seller_price: Number(selectedPrice),
+        status: "active",
+        published_at: new Date().toISOString(),
+        
+        // Shipping
+        shipping_cost_uk: shipping.free_shipping ? 0 : shipping.shipping_cost_uk,
+        shipping_cost_europe: null, // Disabled for now
+        shipping_cost_international: null, // Disabled for now
+        free_shipping: shipping.free_shipping,
+        estimated_delivery_days: shipping.estimated_delivery_days,
+      };
+
+      const { data: listing, error: listingError } = await supabase
+        .from('listings')
+        .insert(listingPayload)
+        .select()
+        .single();
+
+      if (listingError) throw listingError;
+
+      // Upload images
+      for (let i = 0; i < imageFiles.length; i++) {
+        const file = imageFiles[i];
+        const fileName = `${listing.id}/${Date.now()}-${i}.jpg`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('listing-images')
+          .upload(fileName, file);
+
+        if (uploadError) {
+          if (import.meta.env.DEV) console.error("Image upload error:", uploadError);
+          continue;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('listing-images')
+          .getPublicUrl(fileName);
+
+        await supabase.from('listing_images').insert({
+          listing_id: listing.id,
+          image_url: publicUrl,
+          display_order: i
         });
-      }, 2000);
+      }
+
+      setPublishedListingId(listing.id);
+      toast({
+        title: "Listed Successfully!",
+        description: "Your card is now live on the marketplace.",
+      });
+
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to publish listing.";
+      console.error(error);
+      toast({
+        title: "Publishing Failed",
+        description: message,
+        variant: "destructive"
+      });
+    } finally {
+      setPublishing(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-24">
-        <div className="mb-8 space-y-2">
-          <h1 className="text-3xl font-light text-foreground">
-            List Your Item
-          </h1>
-          <p className="text-base text-muted-foreground font-light">
-            Upload photos and let AI handle the rest
+  if (publishedListingId) {
+    return (
+      <PageLayout>
+        <div className="max-w-xl mx-auto text-center py-20 px-4">
+          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Check className="w-10 h-10 text-green-600" />
+          </div>
+          <h1 className="text-3xl font-light text-foreground mb-4">Card Listed!</h1>
+          <p className="text-muted-foreground mb-8">
+            Your listing is live. Good luck with the sale!
           </p>
-        </div>
-
-        <div className="max-w-4xl">
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* Upload Section */}
-            <Card className="p-6">
-              <h2 className="text-xl font-bold mb-4 text-foreground">Photos</h2>
-              
-              <Label
-                htmlFor="image-upload"
-                className="flex flex-col items-center justify-center border-2 border-dashed border-border rounded-xl p-12 cursor-pointer hover:border-primary transition-colors"
-              >
-                {images.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-4 w-full">
-                    {images.map((img, idx) => (
-                      <img key={idx} src={img} alt={`Upload ${idx + 1}`} className="w-full h-32 object-cover rounded-lg" />
-                    ))}
-                  </div>
-                ) : (
-                  <>
-                    <Upload className="w-12 h-12 text-muted-foreground mb-4" />
-                    <span className="text-sm text-muted-foreground">Click to upload photos</span>
-                  </>
-                )}
-              </Label>
-              <Input
-                id="image-upload"
-                type="file"
-                accept="image/*"
-                multiple
-                className="hidden"
-                onChange={handleImageUpload}
-              />
-
-              {analyzing && (
-                <div className="mt-4 p-4 rounded-lg bg-primary/10 border border-primary/20 flex items-center gap-3">
-                  <Loader2 className="w-5 h-5 text-primary animate-spin" />
-                  <span className="text-sm font-medium text-foreground">AI analyzing your item...</span>
-                </div>
-              )}
-
-              {analyzed && (
-                <div className="mt-4 p-4 rounded-lg bg-primary/10 border border-primary/20 flex items-center gap-3">
-                  <Check className="w-5 h-5 text-primary" />
-                  <span className="text-sm font-medium text-foreground">Analysis complete!</span>
-                </div>
-              )}
-            </Card>
-
-            {/* Details Section */}
-            <Card className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-foreground">Details</h2>
-                {analyzed && (
-                  <div className="flex items-center gap-2 text-sm text-primary">
-                    <Sparkles className="w-4 h-4" />
-                    <span>AI Generated</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="title">Title</Label>
-                  <Input
-                    id="title"
-                    placeholder="Item title"
-                    value={analyzed ? "Vintage Leather Jacket - Black, Size M" : ""}
-                    disabled={!analyzed}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="category">Category</Label>
-                  <Input
-                    id="category"
-                    placeholder="Category"
-                    value={analyzed ? "Outerwear > Jackets" : ""}
-                    disabled={!analyzed}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="brand">Brand</Label>
-                    <Input
-                      id="brand"
-                      placeholder="Brand"
-                      value={analyzed ? "Zara" : ""}
-                      disabled={!analyzed}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="size">Size</Label>
-                    <Input
-                      id="size"
-                      placeholder="Size"
-                      value={analyzed ? "M" : ""}
-                      disabled={!analyzed}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Description"
-                    rows={4}
-                    value={analyzed ? "Classic black leather jacket in excellent condition. Minimal wear, all zippers functional. Perfect for casual or dressy occasions." : ""}
-                    disabled={!analyzed}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="condition">Condition</Label>
-                    <Input
-                      id="condition"
-                      placeholder="Condition"
-                      value={analyzed ? "Like New" : ""}
-                      disabled={!analyzed}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="price">Price (€)</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      placeholder="0.00"
-                      value={analyzed ? "85" : ""}
-                      disabled={!analyzed}
-                    />
-                  </div>
-                </div>
-
-                {analyzed && (
-                  <div className="p-4 rounded-lg bg-muted">
-                    <div className="text-sm font-medium mb-2 text-foreground">AI Price Suggestions:</div>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Quick sale (3-7 days):</span>
-                        <span className="font-medium text-foreground">€75</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Fair price (1-2 weeks):</span>
-                        <span className="font-medium text-primary">€85</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Premium (3-4 weeks):</span>
-                        <span className="font-medium text-foreground">€95</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <Button className="w-full" size="lg" disabled={!analyzed}>
-                  Publish Listing
-                </Button>
-              </div>
-            </Card>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button onClick={() => navigate(`/listing/${publishedListingId}`)} size="lg">
+              View Listing <ExternalLink className="ml-2 w-4 h-4" />
+            </Button>
+            <Button variant="outline" size="lg" onClick={() => window.location.reload()}>
+              List Another
+            </Button>
           </div>
         </div>
-      </main>
-    </div>
+      </PageLayout>
+    );
+  }
+
+  return (
+    <PageLayout>
+      <SEO title="List Your Pokémon Card | 6Seven" />
+      <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} defaultMode="signup" />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 pt-6">
+        <div className="mb-8">
+          <h1 className="text-3xl font-light">List Your Card</h1>
+          <p className="text-muted-foreground">Add photos and details to start selling.</p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-8 items-start">
+          
+          {/* Left Column: Photos (Sticky on Desktop) */}
+          <div className="lg:sticky lg:top-24 space-y-4">
+            <div className="bg-background border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/50 transition-colors relative group">
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+              />
+              <div className="flex flex-col items-center justify-center space-y-4">
+                <div className="w-16 h-16 bg-secondary/50 rounded-full flex items-center justify-center">
+                  <Camera className="w-8 h-8 text-foreground/70" />
+                </div>
+                <div>
+                  <p className="font-medium text-lg">Add Photos</p>
+                  <p className="text-sm text-muted-foreground mt-1">Drag & drop or tap to select</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Image Previews */}
+            {images.length > 0 && (
+              <div className="grid grid-cols-3 gap-2">
+                {images.map((url, idx) => (
+                  <div key={idx} className="relative aspect-[3/4] rounded-lg overflow-hidden border border-border group">
+                    <img src={url} alt="Preview" className="w-full h-full object-cover" />
+                    <button
+                      onClick={() => removeImage(idx)}
+                      className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 hover:bg-black/70 transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {images.length === 0 && (
+              <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 flex gap-3">
+                <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-blue-800">
+                  Tip: Clear photos of the front and back of the card help it sell faster.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Right Column: Form Fields */}
+          <div className="space-y-8">
+            
+            {/* Basics */}
+            <section className="space-y-4">
+              <h2 className="text-xl font-medium border-b pb-2">Basics</h2>
+              
+              <div className="space-y-2">
+                <Label>Title</Label>
+                <Input 
+                  placeholder="e.g. Charizard Base Set Unlimited Holo" 
+                  value={listingData.title}
+                  onChange={e => setListingData({...listingData, title: e.target.value})}
+                  className="text-lg"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Category</Label>
+                  <Select 
+                    value={listingData.category}
+                    onValueChange={val => setListingData({...listingData, category: val, subcategory: ""})}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Subcategory</Label>
+                  <Select 
+                    value={listingData.subcategory}
+                    onValueChange={val => setListingData({...listingData, subcategory: val})}
+                    disabled={!listingData.category}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Select type..." /></SelectTrigger>
+                    <SelectContent>
+                      {SUBCATEGORIES[listingData.category]?.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </section>
+
+            {/* Card Details */}
+            <section className="space-y-4">
+              <h2 className="text-xl font-medium border-b pb-2">Card Details</h2>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Set Name / Code</Label>
+                  <Input 
+                    placeholder="e.g. BS 4/102"
+                    value={listingData.set_code}
+                    onChange={e => setListingData({...listingData, set_code: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Rarity</Label>
+                  <Select 
+                    value={listingData.rarity}
+                    onValueChange={val => setListingData({...listingData, rarity: val})}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Select rarity" /></SelectTrigger>
+                    <SelectContent>
+                      {["Common", "Uncommon", "Rare", "Holo Rare", "Ultra Rare", "Secret Rare", "Promo"].map(r => (
+                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Condition</Label>
+                  {listingData.condition && (
+                    <Badge variant="secondary">{listingData.condition.replace(/_/g, ' ')}</Badge>
+                  )}
+                </div>
+                <Select 
+                  value={listingData.condition}
+                  onValueChange={val => setListingData({...listingData, condition: val as ConditionType})}
+                >
+                  <SelectTrigger><SelectValue placeholder="Select condition" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="new_with_tags">Gem Mint / Mint (Sealed)</SelectItem>
+                    <SelectItem value="like_new">Near Mint (NM)</SelectItem>
+                    <SelectItem value="excellent">Lightly Played (LP)</SelectItem>
+                    <SelectItem value="good">Moderately Played (MP)</SelectItem>
+                    <SelectItem value="fair">Heavily Played (HP)</SelectItem>
+                    <SelectItem value="poor">Damaged (DMG)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center space-x-2 pt-2">
+                <Switch 
+                  id="graded" 
+                  checked={listingData.is_graded}
+                  onCheckedChange={val => setListingData({...listingData, is_graded: val})}
+                />
+                <Label htmlFor="graded">This card is professionally graded</Label>
+              </div>
+
+              {listingData.is_graded && (
+                <div className="grid grid-cols-2 gap-4 p-4 bg-secondary/20 rounded-lg">
+                  <div className="space-y-2">
+                    <Label>Grading Company</Label>
+                    <Select 
+                      value={listingData.grading_service}
+                      onValueChange={val => setListingData({...listingData, grading_service: val})}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Service" /></SelectTrigger>
+                      <SelectContent>
+                        {["PSA", "BGS", "CGC", "ACE", "Other"].map(s => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Grade (0-10)</Label>
+                    <Input 
+                      type="number" 
+                      placeholder="10" 
+                      value={listingData.grading_score}
+                      onChange={e => setListingData({...listingData, grading_score: e.target.value})}
+                    />
+                  </div>
+                </div>
+              )}
+            </section>
+
+            {/* Description */}
+            <section className="space-y-4">
+              <h2 className="text-xl font-medium border-b pb-2">Description</h2>
+              <Textarea 
+                placeholder="Any swirls, print lines, or specific details about the card..."
+                rows={4}
+                value={listingData.description}
+                onChange={e => setListingData({...listingData, description: e.target.value})}
+              />
+            </section>
+
+            {/* Pricing */}
+            <section className="space-y-4">
+              <h2 className="text-xl font-medium border-b pb-2">Pricing</h2>
+              <div className="space-y-2">
+                <Label className="text-base">Selling Price (£)</Label>
+                <div className="relative">
+                  <PoundSterling className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input 
+                    type="number" 
+                    step="0.01"
+                    className="pl-10 text-lg"
+                    placeholder="0.00"
+                    value={selectedPrice}
+                    onChange={e => setSelectedPrice(e.target.value ? parseFloat(e.target.value) : "")}
+                  />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  We recommend checking sold listings on eBay or 130point for accurate pricing.
+                </p>
+              </div>
+            </section>
+
+            {/* Shipping */}
+            <section className="space-y-4">
+              <h2 className="text-xl font-medium border-b pb-2">Shipping</h2>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="free-shipping" 
+                    checked={shipping.free_shipping}
+                    onCheckedChange={(checked) => setShipping(prev => ({ ...prev, free_shipping: !!checked }))}
+                  />
+                  <Label htmlFor="free-shipping" className="font-normal cursor-pointer">
+                    I'll pay for shipping (Free for buyer)
+                  </Label>
+                </div>
+
+                {!shipping.free_shipping && (
+                  <div className="space-y-2 pl-6 border-l-2 border-border">
+                    <Label>UK Shipping Cost (£)</Label>
+                    <Input 
+                      type="number" 
+                      step="0.01"
+                      value={shipping.shipping_cost_uk}
+                      onChange={e => setShipping(prev => ({ ...prev, shipping_cost_uk: parseFloat(e.target.value) || 0 }))}
+                      className="max-w-[200px]"
+                    />
+                  </div>
+                )}
+                
+                <div className="space-y-2">
+                  <Label>Estimated Delivery (Days)</Label>
+                  <Input 
+                    type="number"
+                    value={shipping.estimated_delivery_days}
+                    onChange={e => setShipping(prev => ({ ...prev, estimated_delivery_days: parseInt(e.target.value) || 3 }))}
+                    className="max-w-[200px]"
+                  />
+                </div>
+              </div>
+            </section>
+
+            {/* Footer Actions */}
+            <div className="sticky bottom-0 bg-background/95 backdrop-blur pt-4 pb-8 border-t mt-8 flex items-center justify-between">
+              <div className="text-sm text-muted-foreground hidden sm:block">
+                By listing, you agree to our seller terms.
+              </div>
+              <Button 
+                size="lg" 
+                className="w-full sm:w-auto min-w-[200px]"
+                onClick={handlePublish}
+                disabled={publishing}
+              >
+                {publishing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Publishing...
+                  </>
+                ) : (
+                  <>
+                    Publish Listing
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </>
+                )}
+              </Button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </PageLayout>
   );
 };
 

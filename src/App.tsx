@@ -13,7 +13,7 @@ import { CookieConsent } from "@/components/CookieConsent";
 
 // Lazy load routes for code splitting
 const Index = lazy(() => import("./pages/Index"));
-const SellEnhanced = lazy(() => import("./pages/SellEnhanced"));
+const Sell = lazy(() => import("./pages/Sell"));
 const Browse = lazy(() => import("./pages/Browse"));
 const ListingDetail = lazy(() => import("./pages/ListingDetail"));
 const Checkout = lazy(() => import("./pages/Checkout"));
@@ -74,8 +74,7 @@ const AppRoutes = () => {
       <Suspense fallback={<PageLoader />}>
         <Routes location={location}>
           <Route path="/" element={<Index />} />
-          <Route path="/sell" element={<SellEnhanced />} />
-          <Route path="/sell-enhanced" element={<SellEnhanced />} />
+          <Route path="/sell" element={<Sell />} />
           <Route path="/browse" element={<Browse />} />
           <Route path="/listing/:id" element={<ListingDetail />} />
           <Route path="/checkout/:id" element={<Checkout />} />
