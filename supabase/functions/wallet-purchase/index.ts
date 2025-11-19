@@ -1,10 +1,22 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const purchaseSchema = z.object({
+  listingId: z.string().uuid('Invalid listing ID format'),
+  shippingAddress: z.object({
+    line1: z.string().max(100),
+    line2: z.string().max(100).optional(),
+    city: z.string().max(50),
+    postcode: z.string().max(20),
+    country: z.string().max(50)
+  })
+});
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -16,7 +28,8 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { listingId, shippingAddress } = await req.json();
+    const body = await req.json();
+    const { listingId, shippingAddress } = purchaseSchema.parse(body);
     
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) throw new Error('Missing Authorization header');

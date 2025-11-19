@@ -1,11 +1,17 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 // import Stripe from "https://esm.sh/stripe@13.10.0?target=deno"; // Placeholder for Stripe import
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const depositSchema = z.object({
+  amount: z.number().positive('Amount must be positive').max(100000, 'Amount too large'),
+  currency: z.enum(['gbp', 'usd', 'eur']).default('gbp')
+});
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -32,7 +38,8 @@ serve(async (req) => {
     const stripe = Stripe(stripeKey);
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { amount, currency = 'gbp' } = await req.json();
+    const body = await req.json();
+    const { amount, currency } = depositSchema.parse(body);
     
     // Get user from auth header
     const authHeader = req.headers.get('Authorization');
