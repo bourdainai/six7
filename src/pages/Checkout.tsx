@@ -12,6 +12,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useEmailVerification } from "@/hooks/useEmailVerification";
+import { useWallet } from "@/hooks/useWallet";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
 
@@ -95,12 +96,16 @@ const CheckoutForm = ({ orderId, listingTitle, canProceed }: CheckoutFormProps) 
   );
 };
 
+import { useWallet } from "@/hooks/useWallet";
+
 const Checkout = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { isVerified: emailVerified } = useEmailVerification();
+  const { wallet } = useWallet(); // Add wallet hook
+  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'wallet'>('stripe');
+
   const [shippingAddress, setShippingAddress] = useState({
     name: "",
     line1: "",
@@ -188,7 +193,36 @@ const Checkout = () => {
   const buyerProtectionFee = feeData?.buyerProtectionFee || 0;
   const totalPrice = itemPrice + shippingCost + buyerProtectionFee;
 
-    const createCheckoutMutation = useMutation({
+  const walletPurchaseMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("wallet-purchase", {
+        body: {
+          listingId: id,
+          shippingAddress,
+        },
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Purchase successful!",
+        description: "Your order has been placed using your wallet balance.",
+      });
+      navigate(`/orders?success=true&order=${data.orderId}`);
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "An unexpected error occurred";
+      toast({
+        title: "Wallet purchase failed",
+        description: message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const createCheckoutMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: {
@@ -252,7 +286,19 @@ const Checkout = () => {
       return;
     }
 
-    createCheckoutMutation.mutate();
+    if (paymentMethod === 'wallet') {
+      if (!wallet || wallet.balance < totalPrice) {
+        toast({
+          title: "Insufficient balance",
+          description: "Please top up your wallet or choose another payment method",
+          variant: "destructive",
+        });
+        return;
+      }
+      walletPurchaseMutation.mutate();
+    } else {
+      createCheckoutMutation.mutate();
+    }
   };
 
   if (isLoadingListing) {
@@ -393,6 +439,40 @@ const Checkout = () => {
                       £{totalPrice.toFixed(2)}
                     </span>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-sm font-normal text-foreground tracking-tight">Payment Method</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div
+                  className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                    paymentMethod === 'stripe'
+                      ? 'bg-primary/5 border-primary ring-1 ring-primary'
+                      : 'bg-background hover:bg-muted'
+                  }`}
+                  onClick={() => setPaymentMethod('stripe')}
+                >
+                  <div className="font-medium">Card Payment</div>
+                  <div className="text-sm text-muted-foreground">Pay securely via Stripe</div>
+                </div>
+                
+                <div
+                  className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                    paymentMethod === 'wallet'
+                      ? 'bg-primary/5 border-primary ring-1 ring-primary'
+                      : 'bg-background hover:bg-muted'
+                  }`}
+                  onClick={() => setPaymentMethod('wallet')}
+                >
+                  <div className="font-medium">Wallet Balance</div>
+                  <div className="text-sm text-muted-foreground">
+                    Balance: £{wallet?.balance?.toFixed(2) || '0.00'}
+                  </div>
+                  {(wallet?.balance || 0) < totalPrice && (
+                    <div className="text-xs text-destructive mt-1">Insufficient funds</div>
+                  )}
                 </div>
               </div>
             </div>
