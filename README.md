@@ -181,8 +181,6 @@ Comprehensive documentation is available in the `/docs` folder:
 ### Implementation Guides
 - **[6SEVEN_ACP_GUIDE.md](6SEVEN_ACP_GUIDE.md)** - Agentic Commerce Protocol implementation
 - **[6SEVEN_MCP_GUIDE.md](6SEVEN_MCP_GUIDE.md)** - Model Context Protocol setup
-- **[6SEVEN_SCHEMA_MIGRATION.md](6SEVEN_SCHEMA_MIGRATION.md)** - Database migration guide
-- **[6SEVEN_EDGE_FUNCTIONS.md](6SEVEN_EDGE_FUNCTIONS.md)** - Edge functions architecture
 - **[6SEVEN_QUICK_START.md](6SEVEN_QUICK_START.md)** - Developer onboarding
 
 ### Reference Documents

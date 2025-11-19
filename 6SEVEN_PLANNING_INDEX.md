@@ -87,34 +87,6 @@ Quick start and developer onboarding
 
 ---
 
-### [6SEVEN_SCHEMA_MIGRATION.md](6SEVEN_SCHEMA_MIGRATION.md)
-**Purpose:** Database migration guide  
-**Audience:** Backend developers, DBAs  
-**Contains:**
-- All SQL migrations
-- Table creation scripts
-- Index definitions
-- RLS policies
-- Data seeding scripts
-
-**Start here if:** You're setting up the database or running migrations.
-
----
-
-### [6SEVEN_EDGE_FUNCTIONS.md](6SEVEN_EDGE_FUNCTIONS.md)
-**Purpose:** Edge functions architecture  
-**Audience:** Backend developers  
-**Contains:**
-- Function organization structure
-- Input/output schemas
-- Error handling patterns
-- Authentication flows
-- Deployment instructions
-
-**Start here if:** You're building or deploying edge functions.
-
----
-
 ## 📚 Implementation Guides
 
 ### [6SEVEN_ACP_GUIDE.md](6SEVEN_ACP_GUIDE.md)
@@ -203,22 +175,6 @@ Quick start and developer onboarding
 
 ---
 
-## 📖 Reference Documents
-
-### Current Project State
-- **[PHASE1_COMPLETE.md](PHASE1_COMPLETE.md)** - Phase 1 completion notes
-- **[PHASE2_COMPLETE.md](PHASE2_COMPLETE.md)** - Phase 2 completion notes
-- **[PHASE3_COMPLETE.md](PHASE3_COMPLETE.md)** - Phase 3 completion notes
-- **[PHASE4_COMPLETE.md](PHASE4_COMPLETE.md)** - Phase 4 completion notes
-- **[PHASE5_COMPLETE.md](PHASE5_COMPLETE.md)** - Phase 5 completion notes
-
-### Historical Context
-- **[CODE_REVIEW_IMPROVEMENTS.md](CODE_REVIEW_IMPROVEMENTS.md)** - Code quality notes
-- **[MARKETPLACE_IMPROVEMENTS.md](MARKETPLACE_IMPROVEMENTS.md)** - Feature improvement ideas
-- **[REMAINING_WORK_PLAN.md](REMAINING_WORK_PLAN.md)** - Outstanding tasks
-
----
-
 ## 🗺️ Documentation Roadmap
 
 ### By Role
@@ -237,9 +193,7 @@ Quick start and developer onboarding
 #### **Backend Developer**
 1. [6SEVEN_PROJECT_OVERVIEW.md](6SEVEN_PROJECT_OVERVIEW.md)
 2. [6SEVEN_TECHNICAL_BLUEPRINT.md](6SEVEN_TECHNICAL_BLUEPRINT.md)
-3. [6SEVEN_SCHEMA_MIGRATION.md](6SEVEN_SCHEMA_MIGRATION.md)
-4. [6SEVEN_EDGE_FUNCTIONS.md](6SEVEN_EDGE_FUNCTIONS.md)
-5. [STRIPE_SETUP_GUIDE.md](STRIPE_SETUP_GUIDE.md)
+3. [STRIPE_SETUP_GUIDE.md](STRIPE_SETUP_GUIDE.md)
 
 #### **Agent Developer (External)**
 1. [6SEVEN_PROJECT_OVERVIEW.md](6SEVEN_PROJECT_OVERVIEW.md) - Understand marketplace
@@ -251,18 +205,12 @@ Quick start and developer onboarding
 2. [6SEVEN_IMPLEMENTATION_ROADMAP.md](6SEVEN_IMPLEMENTATION_ROADMAP.md)
 3. [6SEVEN_FEATURE_SPECS.md](6SEVEN_FEATURE_SPECS.md)
 
-#### **Product Manager**
-1. [6SEVEN_PROJECT_OVERVIEW.md](6SEVEN_PROJECT_OVERVIEW.md)
-2. [6SEVEN_FEATURE_SPECS.md](6SEVEN_FEATURE_SPECS.md)
-3. [6SEVEN_IMPLEMENTATION_ROADMAP.md](6SEVEN_IMPLEMENTATION_ROADMAP.md)
-
 ---
 
-## 📊 By Implementation Phase
+## 📖 By Implementation Phase
 
 ### Phase 1: Foundation (Weeks 1-2)
 **Relevant Docs:**
-- [6SEVEN_SCHEMA_MIGRATION.md](6SEVEN_SCHEMA_MIGRATION.md)
 - [6SEVEN_TECHNICAL_BLUEPRINT.md](6SEVEN_TECHNICAL_BLUEPRINT.md) - Database section
 - [DATABASE_MIGRATION_GUIDE.md](DATABASE_MIGRATION_GUIDE.md)
 
@@ -277,52 +225,6 @@ Quick start and developer onboarding
 - [6SEVEN_FEATURE_SPECS.md](6SEVEN_FEATURE_SPECS.md) - Section 6
 - [6SEVEN_TECHNICAL_BLUEPRINT.md](6SEVEN_TECHNICAL_BLUEPRINT.md) - Trade functions
 
-### Phase 4: AI Listing (Week 7)
-**Relevant Docs:**
-- [6SEVEN_FEATURE_SPECS.md](6SEVEN_FEATURE_SPECS.md) - Sections 7, 14
-- [6SEVEN_TECHNICAL_BLUEPRINT.md](6SEVEN_TECHNICAL_BLUEPRINT.md) - AI listing functions
-
-### Phase 5: ACP (Week 8)
-**Relevant Docs:**
-- [6SEVEN_ACP_GUIDE.md](6SEVEN_ACP_GUIDE.md) - Complete guide
-- [6SEVEN_FEATURE_SPECS.md](6SEVEN_FEATURE_SPECS.md) - Section 1
-
-### Phase 6: Shipping (Week 9)
-**Relevant Docs:**
-- [6SEVEN_FEATURE_SPECS.md](6SEVEN_FEATURE_SPECS.md) - Section 3
-- [6SEVEN_TECHNICAL_BLUEPRINT.md](6SEVEN_TECHNICAL_BLUEPRINT.md) - Shipping functions
-
-### Phase 7: Media & Feed (Week 10)
-**Relevant Docs:**
-- [6SEVEN_FEATURE_SPECS.md](6SEVEN_FEATURE_SPECS.md) - Sections 5, 9
-- [6SEVEN_TECHNICAL_BLUEPRINT.md](6SEVEN_TECHNICAL_BLUEPRINT.md) - Media functions
-
-### Phase 8: Fake Detection (Week 11)
-**Relevant Docs:**
-- [6SEVEN_FEATURE_SPECS.md](6SEVEN_FEATURE_SPECS.md) - Section 8
-
-### Phase 9: MCP (Week 12)
-**Relevant Docs:**
-- [6SEVEN_MCP_GUIDE.md](6SEVEN_MCP_GUIDE.md) - Complete guide
-- [6SEVEN_FEATURE_SPECS.md](6SEVEN_FEATURE_SPECS.md) - Section 13
-
-### Phase 10: Admin (Week 13)
-**Relevant Docs:**
-- [6SEVEN_FEATURE_SPECS.md](6SEVEN_FEATURE_SPECS.md) - Section 4
-
-### Phase 11: Mobile (Week 14)
-**Relevant Docs:**
-- [6SEVEN_FEATURE_SPECS.md](6SEVEN_FEATURE_SPECS.md) - Section 11
-- [6SEVEN_TECHNICAL_BLUEPRINT.md](6SEVEN_TECHNICAL_BLUEPRINT.md) - Mobile section
-
-### Phase 12: Cloudflare (Week 15)
-**Relevant Docs:**
-- [6SEVEN_FEATURE_SPECS.md](6SEVEN_FEATURE_SPECS.md) - Section 12
-
-### Phase 13: Bundles (Week 16)
-**Relevant Docs:**
-- [6SEVEN_FEATURE_SPECS.md](6SEVEN_FEATURE_SPECS.md) - Section 16
-
 ---
 
 ## 🔍 Finding Information Quickly
@@ -333,7 +235,7 @@ Quick start and developer onboarding
 → [6SEVEN_QUICK_START.md](6SEVEN_QUICK_START.md)
 
 **...understand the database schema?**  
-→ [6SEVEN_SCHEMA_MIGRATION.md](6SEVEN_SCHEMA_MIGRATION.md)
+→ [6SEVEN_TECHNICAL_BLUEPRINT.md](6SEVEN_TECHNICAL_BLUEPRINT.md)
 
 **...implement a specific feature?**  
 → [6SEVEN_FEATURE_SPECS.md](6SEVEN_FEATURE_SPECS.md) + [6SEVEN_TECHNICAL_BLUEPRINT.md](6SEVEN_TECHNICAL_BLUEPRINT.md)
@@ -344,51 +246,11 @@ Quick start and developer onboarding
 **...configure Stripe payments?**  
 → [STRIPE_SETUP_GUIDE.md](STRIPE_SETUP_GUIDE.md)
 
-**...deploy edge functions?**  
-→ [6SEVEN_EDGE_FUNCTIONS.md](6SEVEN_EDGE_FUNCTIONS.md)
-
 **...understand project timeline?**  
 → [6SEVEN_IMPLEMENTATION_ROADMAP.md](6SEVEN_IMPLEMENTATION_ROADMAP.md)
 
 **...understand what 6Seven is?**  
 → [README.md](README.md) + [6SEVEN_PROJECT_OVERVIEW.md](6SEVEN_PROJECT_OVERVIEW.md)
-
----
-
-## 📝 Document Maintenance
-
-### Document Owners
-
-| Document | Owner | Last Updated |
-|----------|-------|--------------|
-| 6SEVEN_PROJECT_OVERVIEW.md | Project Lead | 2025-11-19 |
-| 6SEVEN_FEATURE_SPECS.md | Product Manager | 2025-11-19 |
-| 6SEVEN_TECHNICAL_BLUEPRINT.md | Tech Lead | 2025-11-19 |
-| 6SEVEN_IMPLEMENTATION_ROADMAP.md | Project Manager | 2025-11-19 |
-| 6SEVEN_ACP_GUIDE.md | Backend Lead | 2025-11-19 |
-| 6SEVEN_MCP_GUIDE.md | Backend Lead | 2025-11-19 |
-
-### Update Schedule
-
-- **Strategic docs:** Review after each phase completion
-- **Technical docs:** Update as implementation progresses
-- **Implementation guides:** Update before each phase starts
-
----
-
-## 🤝 Contributing to Documentation
-
-Found outdated information? See a gap?
-
-1. Create an issue describing the problem
-2. Submit a PR with your changes
-3. Tag the document owner for review
-
-**Documentation Guidelines:**
-- Use clear, concise language
-- Include code examples where helpful
-- Update this index when adding new docs
-- Keep examples up-to-date with codebase
 
 ---
 
