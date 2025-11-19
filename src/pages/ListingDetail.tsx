@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { PageLayout } from "@/components/PageLayout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { OfferDialog } from "@/components/OfferDialog";
+import { TradeOfferModal } from "@/components/trade/TradeOfferModal";
 import { CreateBundleDialog } from "@/components/bundles/CreateBundleDialog";
 import { ReportDialog } from "@/components/moderation/ReportDialog";
 import { BundleRecommendation } from "@/components/BundleRecommendation";
@@ -38,6 +39,7 @@ const ListingDetail = () => {
   const { isSaved, toggleSave, isSaving } = useSavedListings();
   const [selectedImage, setSelectedImage] = useState(0);
   const [bundleDialogOpen, setBundleDialogOpen] = useState(false);
+  const [tradeOfferOpen, setTradeOfferOpen] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
 
   const { data: listing, isLoading } = useQuery({
@@ -461,6 +463,16 @@ const ListingDetail = () => {
                 />
                 
                 <Button
+                  onClick={() => setTradeOfferOpen(true)}
+                  variant="secondary"
+                  className="w-full h-12"
+                  size="lg"
+                >
+                  <Package className="mr-2 h-5 w-5" />
+                  Make Trade Offer
+                </Button>
+
+                <Button
                   onClick={handleBuyNow}
                   className="w-full h-12"
                   size="lg"
@@ -495,6 +507,12 @@ const ListingDetail = () => {
         open={bundleDialogOpen}
         onOpenChange={setBundleDialogOpen}
         preselectedListings={[id!]}
+      />
+
+      <TradeOfferModal
+        open={tradeOfferOpen}
+        onOpenChange={setTradeOfferOpen}
+        listingId={id}
       />
 
       <ReportDialog
