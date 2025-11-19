@@ -46,9 +46,9 @@ const Index = () => {
     return (
       <div className="min-h-screen bg-background">
         <SEO
-          title="6Seven - Personalized Marketplace Feed"
-          description="Discover personalized listings tailored to your preferences. Browse fashion, electronics, collectibles, and more on 6Seven's AI-powered marketplace."
-          keywords="personalized shopping, AI recommendations, marketplace feed, buy and sell, fashion, electronics, collectibles"
+          title="6Seven - Personalized Pokémon Card Feed"
+          description="Discover graded and raw Pokémon cards tailored to your tastes. AI ranks listings by set, rarity, condition, and price so you always see the best trades first."
+          keywords="Pokémon cards, pokemon tcg, graded pokemon cards, raw pokemon cards, card marketplace, AI recommendations, trading cards"
         />
         <Navigation />
         <div className="pt-[72px]">
@@ -71,15 +71,15 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <SEO
-        title="6Seven - AI-Native Marketplace | Buy & Sell with AI"
-        description="List items in seconds with AI. Smart pricing, instant matching, and personalized discovery. The next generation of C2C marketplace for fashion, electronics, collectibles, and more."
-        keywords="online marketplace, buy and sell, AI marketplace, resale platform, secondhand goods, fashion marketplace, electronics marketplace, collectibles, C2C marketplace, smart pricing, AI-powered selling, instant matching, personalized shopping, resale AI, 6Seven"
+        title="6Seven - AI-Native Pokémon Card Marketplace"
+        description="List Pokémon cards in seconds with AI. Get instant pricing suggestions from comps, trade offers, and bundles. Built for modern trading behaviour, not generic classifieds."
+        keywords="Pokémon cards, pokemon marketplace, pokemon tcg, graded cards, card trading, card marketplace, AI pricing, trade offers, bundles"
         structuredData={{
           "@context": "https://schema.org",
           "@type": "WebSite",
           "name": "6Seven",
           "url": "https://6seven.ai",
-          "description": "AI-native marketplace for buying and selling items",
+          "description": "AI-native marketplace for buying, selling, and trading Pokémon cards",
           "potentialAction": {
             "@type": "SearchAction",
             "target": "https://6seven.ai/browse?search={search_term_string}",

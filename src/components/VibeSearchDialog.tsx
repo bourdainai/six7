@@ -101,7 +101,7 @@ export const VibeSearchDialog = ({ open, onOpenChange, onResults }: VibeSearchDi
                   <Upload className="w-12 h-12 text-muted-foreground mb-3" />
                   <span className="text-sm text-muted-foreground">Click to upload</span>
                   <span className="text-xs text-muted-foreground mt-1">
-                    Fashion photo, outfit, or aesthetic inspiration
+                    Pokémon card photo or aesthetic inspiration
                   </span>
                 </>
               )}

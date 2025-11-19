@@ -35,9 +35,9 @@ export default function Bundles() {
   return (
     <PageLayout>
       <SEO
-        title="Product Bundles | Save More Buying Multiple Items | 6Seven"
-        description="Shop curated product bundles on 6Seven. Save money by buying multiple items together. Discover fashion bundles, electronics bundles, and more."
-        keywords="product bundles, bundle deals, save money, multiple items, fashion bundles, electronics bundles, bundle shopping, 6Seven bundles"
+        title="Pokémon Card Bundles | Save More on Lots & Playsets | 6Seven"
+        description="Shop curated Pokémon card bundles on 6Seven. Save money on lots, playsets, and sealed bundles built for collectors and players."
+        keywords="pokemon card bundles, pokemon lots, playsets, sealed pokemon bundles, bundle deals, 6Seven bundles"
         url="https://6seven.ai/bundles"
         structuredData={{
           "@context": "https://schema.org",

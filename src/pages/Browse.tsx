@@ -167,22 +167,22 @@ const Browse = () => {
   
   // Build dynamic SEO based on filters
   const seoTitle = searchQuery 
-    ? `Search Results for "${searchQuery}" | 6Seven Marketplace`
+    ? `Search Results for "${searchQuery}" | 6Seven Pokémon Card Marketplace`
     : categoryQuery
-    ? `Shop ${categoryQuery} | 6Seven Marketplace`
-    : "Browse Marketplace | Shop Fashion, Electronics & Collectibles | 6Seven";
+    ? `Shop ${categoryQuery} | 6Seven Pokémon Card Marketplace`
+    : "Browse Pokémon Cards | 6Seven Marketplace";
     
   const seoDescription = searchQuery
-    ? `Find ${searchQuery} on 6Seven. Browse thousands of listings with AI-powered search. Buy and sell with confidence.`
+    ? `Find ${searchQuery} Pokémon cards on 6Seven. Browse graded and raw cards with AI-powered search and pricing comps.`
     : categoryQuery
-    ? `Shop ${categoryQuery} on 6Seven. Discover great deals on quality items with AI-powered pricing and matching.`
-    : "Browse thousands of listings on 6Seven marketplace. Shop fashion, electronics, collectibles, and more. AI-powered search and smart pricing.";
+    ? `Shop ${categoryQuery} Pokémon cards on 6Seven. Discover great deals on singles, sealed product, and graded slabs.`
+    : "Browse thousands of Pokémon card listings on 6Seven. AI-powered search, pricing comps, and trade offers built for card collectors.";
 
   const seoKeywords = searchQuery
-    ? `${searchQuery}, buy ${searchQuery}, sell ${searchQuery}, marketplace, 6Seven`
+    ? `${searchQuery} pokemon cards, buy ${searchQuery}, sell ${searchQuery}, pokemon marketplace, 6Seven`
     : categoryQuery
-    ? `${categoryQuery}, buy ${categoryQuery}, ${categoryQuery} marketplace, 6Seven`
-    : "browse marketplace, shop online, buy and sell, fashion marketplace, electronics marketplace, collectibles, secondhand goods, resale platform";
+    ? `${categoryQuery} pokemon cards, buy ${categoryQuery}, ${categoryQuery} pokemon marketplace, 6Seven`
+    : "pokemon cards, pokemon tcg, graded pokemon cards, raw pokemon cards, card marketplace, trading cards, 6Seven";
 
   return (
     <PageLayout>

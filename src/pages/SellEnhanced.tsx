@@ -58,21 +58,19 @@ interface ShippingData {
 }
 
 const CATEGORIES = [
-  "Outerwear", "Tops", "Bottoms", "Dresses", "Accessories", 
-  "Shoes", "Trading Cards", "Electronics", "Books", "Music"
+  "Pokémon Singles",
+  "Pokémon Sealed",
+  "Graded Cards",
+  "Raw Cards",
+  "Accessories",
 ];
 
 const SUBCATEGORIES: Record<string, string[]> = {
-  "Outerwear": ["Jackets", "Coats", "Blazers", "Cardigans", "Hoodies"],
-  "Tops": ["T-Shirts", "Shirts", "Blouses", "Sweaters", "Tank Tops"],
-  "Bottoms": ["Jeans", "Trousers", "Shorts", "Skirts", "Leggings"],
-  "Dresses": ["Casual", "Formal", "Vintage", "Maxi", "Mini"],
-  "Accessories": ["Bags", "Jewelry", "Belts", "Hats", "Scarves"],
-  "Shoes": ["Sneakers", "Boots", "Heels", "Flats", "Sandals"],
-  "Trading Cards": ["Sports", "Gaming", "Collectibles"],
-  "Electronics": ["Phones", "Laptops", "Gaming", "Audio"],
-  "Books": ["Fiction", "Non-Fiction", "Textbooks", "Comics"],
-  "Music": ["Vinyl", "CDs", "Cassettes", "Instruments"]
+  "Pokémon Singles": ["Standard Format", "Vintage (WOTC)", "Modern Chase", "Bulk / Lots"],
+  "Pokémon Sealed": ["Booster Boxes", "ETBs", "Booster Packs", "Collection Boxes"],
+  "Graded Cards": ["PSA", "BGS", "CGC", "Other Graders"],
+  "Raw Cards": ["Near Mint", "Lightly Played", "Played", "Damaged"],
+  "Accessories": ["Sleeves", "Toploaders", "Binders", "Playmats"],
 };
 
 const SellEnhanced = () => {
@@ -479,9 +477,9 @@ const SellEnhanced = () => {
   return (
     <PageLayout>
       <SEO
-        title="Sell Your Items | List in Seconds with AI | 6Seven"
-        description="Sell your items in seconds with AI-powered listing. Get smart pricing suggestions, instant matching with buyers, and maximize your sales on 6Seven marketplace."
-        keywords="sell online, list items, AI selling, marketplace seller, resale platform, sell fashion, sell electronics, sell collectibles, smart pricing, instant listing, 6Seven seller"
+        title="Sell Pokémon Cards | List in Seconds with AI | 6Seven"
+        description="Sell your Pokémon cards in seconds with AI-powered listing. Get pricing from comps, attract trade offers, and maximize your sales on 6Seven Pokémon card marketplace."
+        keywords="sell pokemon cards, sell graded pokemon cards, list pokemon cards, AI pricing, pokemon marketplace, trading cards, 6Seven seller"
         url="https://6seven.ai/sell"
         structuredData={{
           "@context": "https://schema.org",
@@ -494,9 +492,9 @@ const SellEnhanced = () => {
       <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} defaultMode="signup" />
       
       <div className="mb-6 sm:mb-8 space-y-2">
-        <h1 className="text-2xl sm:text-3xl font-light text-foreground">List Your Item</h1>
+        <h1 className="text-2xl sm:text-3xl font-light text-foreground">List Your Pokémon Card</h1>
         <p className="text-sm sm:text-base text-muted-foreground font-light">
-          Add photos and details to get your item online
+          Add photos and details to get your card online
         </p>
       </div>
 
