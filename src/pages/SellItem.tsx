@@ -173,14 +173,16 @@ const SellItem = () => {
         category: listingData.category,
         subcategory: listingData.subcategory || null,
         
-        // Card specific fields mapped to existing columns or generic fields if needed
-        // Assuming migration added these columns: set_code, rarity, condition, grading_service, grading_score
+        // Card specific fields - store in category_attributes as JSON
         set_code: listingData.set_code || null,
-        card_number: listingData.card_number || null,
-        rarity: listingData.rarity || null,
         condition: listingData.condition || null,
-        grading_service: listingData.is_graded ? listingData.grading_service : null,
-        grading_score: listingData.is_graded ? (parseFloat(listingData.grading_score) || null) : null,
+        category_attributes: {
+          card_number: listingData.card_number || null,
+          rarity: listingData.rarity || null,
+          is_graded: listingData.is_graded || false,
+          grading_service: listingData.is_graded ? listingData.grading_service : null,
+          grading_score: listingData.is_graded ? (parseFloat(listingData.grading_score) || null) : null,
+        },
         
         seller_price: Number(selectedPrice),
         status: "active",
