@@ -24,7 +24,7 @@ const SavedItems = lazy(() => import("./pages/SavedItems"));
 const SellerDashboard = lazy(() => import("./pages/SellerDashboard"));
 const SellerAnalytics = lazy(() => import("./pages/SellerAnalytics"));
 const SellerReputation = lazy(() => import("./pages/SellerReputation"));
-const SellerOnboardingMultiStep = lazy(() => import("./pages/SellerOnboardingMultiStep"));
+const SellerOnboarding = lazy(() => import("./pages/SellerOnboarding"));
 const SellerAccountManagement = lazy(() => import("./pages/SellerAccountManagement"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminAnalytics = lazy(() => import("./pages/AdminAnalytics"));
@@ -86,7 +86,7 @@ const AppRoutes = () => {
           <Route path="/bundles" element={<Bundles />} />
           <Route path="/bundle/:id" element={<BundleDetail />} />
           <Route path="/dashboard/seller" element={<SellerDashboard />} />
-          <Route path="/seller/onboarding" element={<SellerOnboardingMultiStep />} />
+          <Route path="/seller/onboarding" element={<SellerOnboarding />} />
           <Route path="/seller/account" element={<SellerAccountManagement />} />
           <Route path="/seller/analytics" element={<SellerAnalytics />} />
           <Route path="/seller/reputation" element={<SellerReputation />} />

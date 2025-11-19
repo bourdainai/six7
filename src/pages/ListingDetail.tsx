@@ -18,7 +18,6 @@ import { useToast } from "@/hooks/use-toast";
 import { SellerReputation } from "@/components/seller/SellerReputation";
 import { SellerBadges } from "@/components/seller/SellerBadges";
 import { TrustScore } from "@/components/seller/TrustScore";
-import { OutfitBuilder } from "@/components/OutfitBuilder";
 import { useSavedListings } from "@/hooks/useSavedListings";
 import { formatCondition } from "@/lib/format";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
@@ -333,12 +332,12 @@ const ListingDetail = () => {
 
             {/* Shipping Information */}
             <div className="border-t border-divider-gray pt-6">
-              <h3 className="text-sm font-normal text-foreground mb-3 tracking-tight">Shipping & Delivery</h3>
+              <h3 className="text-sm font-normal text-foreground mb-3 tracking-tight">Shipping & Delivery (UK Only)</h3>
               <div className="space-y-3">
                 {listing.free_shipping ? (
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary" className="bg-green-500/10 text-green-500 border-green-500/20">
-                      Free Shipping
+                      Free UK Shipping
                     </Badge>
                     <span className="text-sm text-muted-foreground">
                       Estimated delivery: {listing.estimated_delivery_days || 3} days
@@ -347,16 +346,8 @@ const ListingDetail = () => {
                 ) : (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">UK:</span>
+                      <span className="text-muted-foreground">UK (Royal Mail / Couriers):</span>
                       <span className="font-medium">£{Number(listing.shipping_cost_uk || 0).toFixed(2)}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Europe:</span>
-                      <span className="font-medium">£{Number(listing.shipping_cost_europe || 0).toFixed(2)}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">International:</span>
-                      <span className="font-medium">£{Number(listing.shipping_cost_international || 0).toFixed(2)}</span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-2">
                       Estimated delivery: {listing.estimated_delivery_days || 3} days
@@ -421,10 +412,7 @@ const ListingDetail = () => {
 
             <div className="space-y-3">
               {user && user.id !== listing.seller_id && (
-                <>
-                  <BundleRecommendation listingId={listing.id} />
-                  <OutfitBuilder listingId={listing.id} listingTitle={listing.title} />
-                </>
+                <BundleRecommendation listingId={listing.id} />
               )}
 
               {user && user.id === listing.seller_id && (
