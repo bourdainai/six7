@@ -38,10 +38,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {
+    const redirectUrl = `${window.location.origin}/`;
+    
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
+        emailRedirectTo: redirectUrl,
         data: { full_name: fullName }
       }
     });
@@ -50,7 +53,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     
     toast({
       title: "Account created!",
-      description: "Welcome to 6Seven. Start listing your items.",
+      description: "Welcome to 6Seven. Please check your email to verify your account.",
     });
   };
 
