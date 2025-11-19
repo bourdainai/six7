@@ -96,13 +96,12 @@ const CheckoutForm = ({ orderId, listingTitle, canProceed }: CheckoutFormProps) 
   );
 };
 
-import { useWallet } from "@/hooks/useWallet";
-
 const Checkout = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { isVerified: emailVerified } = useEmailVerification();
   const { wallet } = useWallet(); // Add wallet hook
   const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'wallet'>('stripe');
 

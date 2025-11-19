@@ -493,6 +493,7 @@ export type Database = {
           ai_confidence: Json | null
           ambitious_price: number | null
           brand: string | null
+          card_id: string | null
           category: string | null
           category_attributes: Json | null
           color: string | null
@@ -515,6 +516,7 @@ export type Database = {
           search_vector: unknown
           seller_id: string
           seller_price: number
+          set_code: string | null
           shipping_cost_europe: number | null
           shipping_cost_international: number | null
           shipping_cost_uk: number | null
@@ -525,13 +527,16 @@ export type Database = {
           subcategory: string | null
           suggested_price: number | null
           title: string
+          trade_enabled: boolean | null
           updated_at: string | null
+          video_url: string | null
           views: number | null
         }
         Insert: {
           ai_confidence?: Json | null
           ambitious_price?: number | null
           brand?: string | null
+          card_id?: string | null
           category?: string | null
           category_attributes?: Json | null
           color?: string | null
@@ -554,6 +559,7 @@ export type Database = {
           search_vector?: unknown
           seller_id: string
           seller_price: number
+          set_code?: string | null
           shipping_cost_europe?: number | null
           shipping_cost_international?: number | null
           shipping_cost_uk?: number | null
@@ -564,13 +570,16 @@ export type Database = {
           subcategory?: string | null
           suggested_price?: number | null
           title: string
+          trade_enabled?: boolean | null
           updated_at?: string | null
+          video_url?: string | null
           views?: number | null
         }
         Update: {
           ai_confidence?: Json | null
           ambitious_price?: number | null
           brand?: string | null
+          card_id?: string | null
           category?: string | null
           category_attributes?: Json | null
           color?: string | null
@@ -593,6 +602,7 @@ export type Database = {
           search_vector?: unknown
           seller_id?: string
           seller_price?: number
+          set_code?: string | null
           shipping_cost_europe?: number | null
           shipping_cost_international?: number | null
           shipping_cost_uk?: number | null
@@ -603,7 +613,9 @@ export type Database = {
           subcategory?: string | null
           suggested_price?: number | null
           title?: string
+          trade_enabled?: boolean | null
           updated_at?: string | null
+          video_url?: string | null
           views?: number | null
         }
         Relationships: [
@@ -1061,6 +1073,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pokemon_card_attributes: {
+        Row: {
+          card_id: string
+          created_at: string | null
+          id: string
+          images: Json | null
+          name: string
+          set_name: string
+        }
+        Insert: {
+          card_id: string
+          created_at?: string | null
+          id?: string
+          images?: Json | null
+          name: string
+          set_name: string
+        }
+        Update: {
+          card_id?: string
+          created_at?: string | null
+          id?: string
+          images?: Json | null
+          name?: string
+          set_name?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -1968,6 +2007,62 @@ export type Database = {
           },
         ]
       }
+      trade_offers: {
+        Row: {
+          ai_fairness_score: number | null
+          buyer_id: string
+          cash_amount: number | null
+          created_at: string | null
+          expiry_date: string | null
+          id: string
+          photos: Json | null
+          seller_id: string
+          status: string | null
+          target_listing_id: string
+          trade_item_valuations: Json | null
+          trade_items: Json
+          updated_at: string | null
+        }
+        Insert: {
+          ai_fairness_score?: number | null
+          buyer_id: string
+          cash_amount?: number | null
+          created_at?: string | null
+          expiry_date?: string | null
+          id?: string
+          photos?: Json | null
+          seller_id: string
+          status?: string | null
+          target_listing_id: string
+          trade_item_valuations?: Json | null
+          trade_items?: Json
+          updated_at?: string | null
+        }
+        Update: {
+          ai_fairness_score?: number | null
+          buyer_id?: string
+          cash_amount?: number | null
+          created_at?: string | null
+          expiry_date?: string | null
+          id?: string
+          photos?: Json | null
+          seller_id?: string
+          status?: string | null
+          target_listing_id?: string
+          trade_item_valuations?: Json | null
+          trade_items?: Json
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_offers_target_listing_id_fkey"
+            columns: ["target_listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transaction_fees: {
         Row: {
           buyer_gmv_at_purchase: number | null
@@ -2229,6 +2324,83 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallet_accounts: {
+        Row: {
+          balance: number | null
+          created_at: string | null
+          id: string
+          pending_balance: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          balance?: number | null
+          created_at?: string | null
+          id?: string
+          pending_balance?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          balance?: number | null
+          created_at?: string | null
+          id?: string
+          pending_balance?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wallet_transactions: {
+        Row: {
+          amount: number
+          balance_after: number | null
+          created_at: string | null
+          description: string | null
+          id: string
+          related_order_id: string | null
+          related_user_id: string | null
+          status: string | null
+          stripe_transaction_id: string | null
+          type: string
+          wallet_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          related_order_id?: string | null
+          related_user_id?: string | null
+          status?: string | null
+          stripe_transaction_id?: string | null
+          type: string
+          wallet_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          related_order_id?: string | null
+          related_user_id?: string | null
+          status?: string | null
+          stripe_transaction_id?: string | null
+          type?: string
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallet_accounts"
             referencedColumns: ["id"]
           },
         ]
