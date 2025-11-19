@@ -3,7 +3,7 @@ import { Footer } from "@/components/Footer";
 import { Hero } from "@/components/Hero";
 import { Features } from "@/components/Features";
 import { HowItWorks } from "@/components/HowItWorks";
-import { PersonalizedFeed } from "@/components/PersonalizedFeed";
+import { Feed } from "@/components/Feed";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -52,7 +52,7 @@ const Index = () => {
         />
         <Navigation />
         <div className="pt-[72px]">
-          <PersonalizedFeed />
+          <Feed />
         </div>
         
         {showOnboarding && hasPreferences === false && (
