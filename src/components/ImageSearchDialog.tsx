@@ -86,7 +86,7 @@ export function ImageSearchDialog({
             </div>
             <div className="flex-1 flex flex-col justify-center gap-2">
               <p className="text-sm text-muted-foreground">
-                Search for visually similar fashion items using AI
+                Search for visually similar cards using AI
               </p>
               <Button onClick={handleSearch} disabled={isSearching}>
                 {isSearching ? (

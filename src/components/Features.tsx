@@ -5,12 +5,12 @@ const features = [
   {
     icon: Camera,
     title: "Photo to Listing",
-    description: "Upload photos. AI extracts category, brand, condition and generates descriptions instantly.",
+    description: "Upload photos. AI extracts card name, set, rarity, condition and generates descriptions instantly.",
   },
   {
     icon: Brain,
     title: "Smart Pricing",
-    description: "Market data analysis suggests optimal prices with sell probability curves.",
+    description: "Real-time pricing comps from TCGPlayer, eBay, and Cardmarket suggest optimal prices.",
   },
   {
     icon: Search,
@@ -53,7 +53,7 @@ export const Features = () => {
         <div className="mb-24 overflow-hidden border border-divider-gray">
           <img 
             src={aiFeatureImage} 
-            alt="AI analyzing fashion" 
+            alt="AI analyzing cards" 
             className="w-full h-80 object-cover"
           />
         </div>
