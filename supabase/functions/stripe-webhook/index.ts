@@ -381,9 +381,10 @@ serve(async (req) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Webhook error:', error);
+    // Sanitize error logging to prevent webhook secret exposure
+    console.error('Webhook verification failed');
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
+      JSON.stringify({ error: 'Webhook verification failed' }),
       { status: 400, headers: { 'Content-Type': 'application/json' } }
     );
   }

@@ -1,10 +1,22 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const tradeSchema = z.object({
+  targetListingId: z.string().uuid('Invalid listing ID format'),
+  cashAmount: z.number().min(0, 'Cash amount must be non-negative').max(10000, 'Cash amount too large').optional(),
+  tradeItems: z.array(z.object({
+    listingId: z.string().uuid(),
+    title: z.string().max(200).optional(),
+    value: z.number().positive().optional()
+  })).max(20, 'Maximum 20 items per trade'),
+  photos: z.array(z.string().url()).max(10, 'Maximum 10 photos').optional()
+});
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -16,7 +28,8 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { targetListingId, cashAmount, tradeItems, photos } = await req.json();
+    const body = await req.json();
+    const { targetListingId, cashAmount, tradeItems, photos } = tradeSchema.parse(body);
     
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) throw new Error('Missing Authorization header');
