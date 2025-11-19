@@ -315,7 +315,7 @@ const ListingDetail = () => {
               </div>
             )}
 
-            {(listing.set_code || listing.rarity || listing.condition || listing.grading_service) && (
+            {(listing.set_code || listing.condition) && (
               <div className="grid grid-cols-2 gap-4 border-t border-divider-gray pt-6">
                 {listing.set_code && (
                   <div>
@@ -323,26 +323,11 @@ const ListingDetail = () => {
                     <p className="text-sm text-muted-foreground font-normal">{listing.set_code}</p>
                   </div>
                 )}
-                {listing.rarity && (
-                  <div>
-                    <h3 className="text-sm font-normal text-foreground mb-1 tracking-tight">Rarity</h3>
-                    <p className="text-sm text-muted-foreground font-normal">{listing.rarity}</p>
-                  </div>
-                )}
                 {listing.condition && (
                   <div>
                     <h3 className="text-sm font-normal text-foreground mb-1 tracking-tight">Condition</h3>
                     <p className="text-sm text-muted-foreground font-normal">
                       {formatCondition(listing.condition)}
-                    </p>
-                  </div>
-                )}
-                {listing.grading_service && (
-                  <div>
-                    <h3 className="text-sm font-normal text-foreground mb-1 tracking-tight">Grading</h3>
-                    <p className="text-sm text-muted-foreground font-normal">
-                      {listing.grading_service}
-                      {listing.grading_score && ` ${Number(listing.grading_score).toFixed(1)}`}
                     </p>
                   </div>
                 )}
