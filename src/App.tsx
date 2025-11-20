@@ -47,6 +47,7 @@ const TradeOffers = lazy(() => import("./pages/TradeOffers"));
 const Feed = lazy(() => import("./pages/Feed"));
 const APIKeys = lazy(() => import("./pages/Settings/APIKeys"));
 const MCPDocs = lazy(() => import("./pages/MCPDocs"));
+const Changelog = lazy(() => import("./pages/Changelog"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Configure QueryClient with performance optimizations
@@ -66,47 +67,48 @@ const queryClient = new QueryClient({
 const AppRoutes = () => {
   return (
     <Routes>
-        <Route path="/" element={<Suspense fallback={<PageSkeleton />}><Index /></Suspense>} />
-        <Route path="/sell" element={<Suspense fallback={<PageSkeleton />}><Sell /></Suspense>} />
-        <Route path="/browse" element={<Suspense fallback={<PageSkeleton />}><Browse /></Suspense>} />
-        <Route path="/listing/:id" element={<Suspense fallback={<ListingSkeleton />}><ListingDetail /></Suspense>} />
-        <Route path="/checkout/:id" element={<Suspense fallback={<PageSkeleton />}><Checkout /></Suspense>} />
-        <Route path="/orders" element={<Suspense fallback={<DashboardSkeleton />}><Orders /></Suspense>} />
-        <Route path="/messages" element={<Suspense fallback={<DashboardSkeleton />}><Messages /></Suspense>} />
-        <Route path="/membership" element={<Suspense fallback={<PageSkeleton />}><Membership /></Suspense>} />
-        <Route path="/saved" element={<Suspense fallback={<FeedSkeleton />}><SavedItems /></Suspense>} />
-        <Route path="/bundles" element={<Suspense fallback={<FeedSkeleton />}><Bundles /></Suspense>} />
-        <Route path="/bundle/:id" element={<Suspense fallback={<ListingSkeleton />}><BundleDetail /></Suspense>} />
-        <Route path="/dashboard/seller" element={<Suspense fallback={<DashboardSkeleton />}><SellerDashboard /></Suspense>} />
-        <Route path="/seller/onboarding" element={<Suspense fallback={<PageSkeleton />}><SellerOnboarding /></Suspense>} />
-        <Route path="/seller/account" element={<Suspense fallback={<DashboardSkeleton />}><SellerAccountManagement /></Suspense>} />
-        <Route path="/seller/analytics" element={<Suspense fallback={<DashboardSkeleton />}><SellerAnalytics /></Suspense>} />
-        <Route path="/seller/reputation" element={<Suspense fallback={<DashboardSkeleton />}><SellerReputation /></Suspense>} />
-        <Route path="/seller/automation" element={<Suspense fallback={<DashboardSkeleton />}><AutoRelistRules /></Suspense>} />
-        <Route path="/seller/verification" element={<Suspense fallback={<PageSkeleton />}><SellerVerification /></Suspense>} />
-        <Route path="/admin" element={<Suspense fallback={<DashboardSkeleton />}><AdminDashboard /></Suspense>} />
-        <Route path="/admin/analytics" element={<Suspense fallback={<DashboardSkeleton />}><AdminAnalytics /></Suspense>} />
-        <Route path="/admin/moderation" element={<Suspense fallback={<DashboardSkeleton />}><ModerationDashboard /></Suspense>} />
-        <Route path="/admin/fraud" element={<Suspense fallback={<DashboardSkeleton />}><FraudDashboard /></Suspense>} />
-        
-        {/* Legal & Help Pages */}
-        <Route path="/terms" element={<Suspense fallback={<PageSkeleton />}><TermsOfService /></Suspense>} />
-        <Route path="/privacy" element={<Suspense fallback={<PageSkeleton />}><PrivacyPolicy /></Suspense>} />
-        <Route path="/returns" element={<Suspense fallback={<PageSkeleton />}><ReturnPolicy /></Suspense>} />
-        <Route path="/cookies" element={<Suspense fallback={<PageSkeleton />}><CookiePolicy /></Suspense>} />
-        <Route path="/help" element={<Suspense fallback={<PageSkeleton />}><Help /></Suspense>} />
-        <Route path="/settings/notifications" element={<Suspense fallback={<PageSkeleton />}><NotificationPreferences /></Suspense>} />
-        <Route path="/settings/api-keys" element={<Suspense fallback={<PageSkeleton />}><APIKeys /></Suspense>} />
-        <Route path="/docs/mcp" element={<Suspense fallback={<PageSkeleton />}><MCPDocs /></Suspense>} />
-        
-        {/* Wallet & Trading */}
-        <Route path="/wallet" element={<Suspense fallback={<DashboardSkeleton />}><Wallet /></Suspense>} />
-        <Route path="/trade-offers" element={<Suspense fallback={<DashboardSkeleton />}><TradeOffers /></Suspense>} />
-        <Route path="/feed" element={<Suspense fallback={<FeedSkeleton />}><Feed /></Suspense>} />
-        
-        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-        <Route path="*" element={<Suspense fallback={<PageSkeleton />}><NotFound /></Suspense>} />
-      </Routes>
+      <Route path="/" element={<Suspense fallback={<PageSkeleton />}><Index /></Suspense>} />
+      <Route path="/sell" element={<Suspense fallback={<PageSkeleton />}><Sell /></Suspense>} />
+      <Route path="/browse" element={<Suspense fallback={<PageSkeleton />}><Browse /></Suspense>} />
+      <Route path="/listing/:id" element={<Suspense fallback={<ListingSkeleton />}><ListingDetail /></Suspense>} />
+      <Route path="/checkout/:id" element={<Suspense fallback={<PageSkeleton />}><Checkout /></Suspense>} />
+      <Route path="/orders" element={<Suspense fallback={<DashboardSkeleton />}><Orders /></Suspense>} />
+      <Route path="/messages" element={<Suspense fallback={<DashboardSkeleton />}><Messages /></Suspense>} />
+      <Route path="/membership" element={<Suspense fallback={<PageSkeleton />}><Membership /></Suspense>} />
+      <Route path="/saved" element={<Suspense fallback={<FeedSkeleton />}><SavedItems /></Suspense>} />
+      <Route path="/bundles" element={<Suspense fallback={<FeedSkeleton />}><Bundles /></Suspense>} />
+      <Route path="/bundle/:id" element={<Suspense fallback={<ListingSkeleton />}><BundleDetail /></Suspense>} />
+      <Route path="/dashboard/seller" element={<Suspense fallback={<DashboardSkeleton />}><SellerDashboard /></Suspense>} />
+      <Route path="/seller/onboarding" element={<Suspense fallback={<PageSkeleton />}><SellerOnboarding /></Suspense>} />
+      <Route path="/seller/account" element={<Suspense fallback={<DashboardSkeleton />}><SellerAccountManagement /></Suspense>} />
+      <Route path="/seller/analytics" element={<Suspense fallback={<DashboardSkeleton />}><SellerAnalytics /></Suspense>} />
+      <Route path="/seller/reputation" element={<Suspense fallback={<DashboardSkeleton />}><SellerReputation /></Suspense>} />
+      <Route path="/seller/automation" element={<Suspense fallback={<DashboardSkeleton />}><AutoRelistRules /></Suspense>} />
+      <Route path="/seller/verification" element={<Suspense fallback={<PageSkeleton />}><SellerVerification /></Suspense>} />
+      <Route path="/admin" element={<Suspense fallback={<DashboardSkeleton />}><AdminDashboard /></Suspense>} />
+      <Route path="/admin/analytics" element={<Suspense fallback={<DashboardSkeleton />}><AdminAnalytics /></Suspense>} />
+      <Route path="/admin/moderation" element={<Suspense fallback={<DashboardSkeleton />}><ModerationDashboard /></Suspense>} />
+      <Route path="/admin/fraud" element={<Suspense fallback={<DashboardSkeleton />}><FraudDashboard /></Suspense>} />
+
+      {/* Legal & Help Pages */}
+      <Route path="/terms" element={<Suspense fallback={<PageSkeleton />}><TermsOfService /></Suspense>} />
+      <Route path="/privacy" element={<Suspense fallback={<PageSkeleton />}><PrivacyPolicy /></Suspense>} />
+      <Route path="/returns" element={<Suspense fallback={<PageSkeleton />}><ReturnPolicy /></Suspense>} />
+      <Route path="/cookies" element={<Suspense fallback={<PageSkeleton />}><CookiePolicy /></Suspense>} />
+      <Route path="/help" element={<Suspense fallback={<PageSkeleton />}><Help /></Suspense>} />
+      <Route path="/settings/notifications" element={<Suspense fallback={<PageSkeleton />}><NotificationPreferences /></Suspense>} />
+      <Route path="/settings/api-keys" element={<Suspense fallback={<PageSkeleton />}><APIKeys /></Suspense>} />
+      <Route path="/docs/mcp" element={<Suspense fallback={<PageSkeleton />}><MCPDocs /></Suspense>} />
+
+      {/* Wallet & Trading */}
+      <Route path="/wallet" element={<Suspense fallback={<DashboardSkeleton />}><Wallet /></Suspense>} />
+      <Route path="/trade-offers" element={<Suspense fallback={<DashboardSkeleton />}><TradeOffers /></Suspense>} />
+      <Route path="/feed" element={<Suspense fallback={<FeedSkeleton />}><Feed /></Suspense>} />
+      <Route path="/changelog" element={<Suspense fallback={<PageSkeleton />}><Changelog /></Suspense>} />
+
+      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+      <Route path="*" element={<Suspense fallback={<PageSkeleton />}><NotFound /></Suspense>} />
+    </Routes>
   );
 };
 

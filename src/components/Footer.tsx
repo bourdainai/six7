@@ -153,6 +153,9 @@ export const Footer = () => {
             <Link to="/cookies" className="hover:text-foreground transition-colors">
               Cookies
             </Link>
+            <Link to="/changelog" className="hover:text-foreground transition-colors">
+              Changelog
+            </Link>
           </div>
         </div>
       </div>
