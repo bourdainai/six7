@@ -36,7 +36,7 @@ export const Hero = () => {
               <ArrowRight className="w-4 h-4 ml-2" />
             </Link>
           </Button>
-          <Button asChild variant="outline" size="lg" className="text-base px-8 h-12 font-normal border-zinc-800 text-white hover:bg-zinc-900 hover:text-white">
+          <Button asChild variant="outline" size="lg" className="text-base px-8 h-12 font-normal bg-white text-black hover:bg-zinc-200 border-0">
             <Link to="/browse">
               Browse Items
             </Link>
