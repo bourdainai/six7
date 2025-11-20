@@ -26,17 +26,23 @@ const getListingImages = (listing: ListingSummary): ListingImageSummary[] => {
   return [];
 };
 
+const getFirstImage = (listing: ListingSummary): string | null => {
+  const listingImages = getListingImages(listing);
+  const firstImage = listingImages
+    .slice()
+    .sort(
+      (a, b) =>
+        (a.display_order ?? 0) - (b.display_order ?? 0),
+    )[0];
+  
+  return firstImage?.image_url || null;
+};
+
 export const ListingCard = React.memo(
   ({ listing, onSaveClick, isSaved = false, isSaving = false, showSaveButton = true, className = "" }: ListingCardProps) => {
     const navigate = useNavigate();
 
-    const listingImages = getListingImages(listing);
-    const firstImage = listingImages
-      .slice()
-      .sort(
-        (a, b) =>
-          (a.display_order ?? 0) - (b.display_order ?? 0),
-      )[0];
+    const firstImage = getFirstImage(listing);
 
   return (
     <div className={`group relative ${className}`}>
@@ -47,7 +53,7 @@ export const ListingCard = React.memo(
         <div className="aspect-[3/4] bg-soft-neutral overflow-hidden mb-3 relative border border-divider-gray group-hover:border-foreground transition-all duration-fast">
           {firstImage ? (
             <img
-              src={firstImage.image_url}
+              src={firstImage}
               alt={listing.title}
               className="w-full h-full object-cover group-hover:opacity-95 transition-opacity duration-fast"
               loading="lazy"
