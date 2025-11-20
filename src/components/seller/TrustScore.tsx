@@ -27,7 +27,12 @@ export const TrustScore = ({ sellerId, compact = false }: TrustScoreProps) => {
     },
   });
 
-  const { data: stats } = useQuery({
+  const { data: stats } = useQuery<{
+    totalOrders: number;
+    completedOrders: number;
+    avgRating: number;
+    totalRatings: number;
+  }>({
     queryKey: ["seller-stats", sellerId],
     queryFn: async () => {
       // Get order stats
@@ -38,25 +43,27 @@ export const TrustScore = ({ sellerId, compact = false }: TrustScoreProps) => {
 
       if (ordersError) throw ordersError;
 
-      // Get rating stats
+      // Get rating stats (reviews received by this seller)
       const { data: ratings, error: ratingsError } = await supabase
         .from("ratings")
         .select("rating")
-        .eq("seller_id", sellerId) as unknown as { data: { rating: number }[] | null, error: PostgrestError | null };
+        .eq("reviewee_id", sellerId);
 
       if (ratingsError) throw ratingsError;
 
       const totalOrders = orders?.length || 0;
-      const completedOrders = orders?.filter(o => o.status === "delivered").length || 0;
-      const avgRating = ratings && ratings.length > 0
-        ? ratings.reduce((sum, r) => sum + (r.rating || 0), 0) / ratings.length
-        : 0;
+      const completedOrders = orders?.filter((o) => o.status === "delivered").length || 0;
+      const ratingList = (ratings ?? []) as { rating: number | null }[];
+      const avgRating =
+        ratingList.length > 0
+          ? ratingList.reduce((sum, r) => sum + (r.rating || 0), 0) / ratingList.length
+          : 0;
 
       return {
         totalOrders,
         completedOrders,
         avgRating,
-        totalRatings: ratings?.length || 0,
+        totalRatings: ratingList.length,
       };
     },
   });
