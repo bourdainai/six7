@@ -135,9 +135,11 @@ const Membership = () => {
           "url": "https://6seven.ai/membership"
         }}
       />
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-light text-foreground mb-4">Choose Your Membership</h1>
-          <p className="text-lg text-muted-foreground">
+        <div className="mb-8 space-y-2">
+          <h1 className="text-3xl font-light text-foreground tracking-tight">
+            Choose Your Membership
+          </h1>
+          <p className="text-base text-muted-foreground font-normal tracking-tight">
             Unlock exclusive benefits and grow your business
           </p>
         </div>

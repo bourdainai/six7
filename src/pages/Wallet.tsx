@@ -6,9 +6,9 @@ export default function WalletPage() {
   return (
     <PageLayout>
       <div className="container py-8 space-y-8 max-w-4xl">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">My Wallet</h1>
-          <p className="text-muted-foreground mt-2">
+        <div className="mb-8 space-y-2">
+          <h1 className="text-3xl font-light text-foreground tracking-tight">My Wallet</h1>
+          <p className="text-base text-muted-foreground font-normal tracking-tight">
             Manage your 6Seven balance, deposits, and withdrawals.
           </p>
         </div>
