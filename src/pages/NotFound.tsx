@@ -1,4 +1,5 @@
-import { useLocation, Link } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { PrefetchLink as Link } from "@/components/PrefetchLink";
 import { useEffect } from "react";
 
 const NotFound = () => {

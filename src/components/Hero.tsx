@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { PrefetchLink as Link } from "@/components/PrefetchLink";
 import heroImage from "@/assets/hero-fashion.jpg";
 import { ArrowRight } from "lucide-react";
 
