@@ -56,7 +56,7 @@ const ListingDetail = () => {
 
       if (error) throw error;
 
-      // If listing has a card_id, fetch the Pokemon card image and number
+      // If listing has a card_id, fetch the Pokemon card image and number as fallback
       if (data.card_id) {
         const { data: cardData } = await supabase
           .from("pokemon_card_attributes")
@@ -78,9 +78,9 @@ const ListingDetail = () => {
           data.images = [cardImage, ...(data.images || [])];
         }
         
-        // Store the card number
-        if (cardData?.number) {
-          (data as any).card_number = cardData.number;
+        // Use card number from API as fallback if not stored in listing
+        if (!data.card_number && cardData?.number) {
+          data.card_number = cardData.number;
         }
       }
 
@@ -344,7 +344,7 @@ const ListingDetail = () => {
               </div>
             )}
 
-            {(listing.set_code || (listing as any).card_number || listing.condition) && (
+            {(listing.set_code || listing.card_number || listing.condition) && (
               <div className="grid grid-cols-2 gap-4 border-t border-divider-gray pt-6">
                 {listing.set_code && (
                   <div>
@@ -352,10 +352,10 @@ const ListingDetail = () => {
                     <p className="text-sm text-muted-foreground font-normal">{listing.set_code}</p>
                   </div>
                 )}
-                {(listing as any).card_number && (
+                {listing.card_number && (
                   <div>
                     <h3 className="text-sm font-normal text-foreground mb-1 tracking-tight">Card Number</h3>
-                    <p className="text-sm text-muted-foreground font-normal">{(listing as any).card_number}</p>
+                    <p className="text-sm text-muted-foreground font-normal">{listing.card_number}</p>
                   </div>
                 )}
                 {listing.condition && (

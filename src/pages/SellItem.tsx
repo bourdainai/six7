@@ -349,11 +349,11 @@ const SellItem = () => {
         category: listingData.category,
         subcategory: listingData.subcategory || null,
 
-        // Card specific fields - store in category_attributes as JSON
+        // Card specific fields
         set_code: listingData.set_code || null,
+        card_number: listingData.card_number || null, // Store full card number (e.g., 122/094)
         condition: listingData.condition || null,
         category_attributes: {
-          card_number: listingData.card_number || null,
           rarity: listingData.rarity || null,
           is_graded: listingData.is_graded || false,
           grading_service: listingData.is_graded ? listingData.grading_service : null,
