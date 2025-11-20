@@ -156,6 +156,11 @@ const SellItem = () => {
       original_rrp: cardData.original_rrp
     }));
     
+    // Pre-fill selling price with market price if available
+    if (cardData.original_rrp) {
+      setSelectedPrice(cardData.original_rrp);
+    }
+    
     if (cardData.image_url) {
       setImages([cardData.image_url]);
       // We don't have a File object for remote images, so imageFiles stays empty
