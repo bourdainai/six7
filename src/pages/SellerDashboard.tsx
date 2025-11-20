@@ -390,14 +390,16 @@ const SellerDashboard = () => {
                               size="sm"
                               onClick={() => navigate(`/edit-listing/${listing.id}`)}
                             >
-                              <Edit className="h-4 w-4" />
+                              <Edit className="h-4 w-4 mr-1.5" />
+                              Edit
                             </Button>
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => navigate(`/listing/${listing.id}`)}
                             >
-                              <ExternalLink className="h-4 w-4" />
+                              <ExternalLink className="h-4 w-4 mr-1.5" />
+                              View
                             </Button>
                             <Button
                               variant="outline"
@@ -409,7 +411,8 @@ const SellerDashboard = () => {
                               }}
                               disabled={deleteListingMutation.isPending}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4 mr-1.5" />
+                              Delete
                             </Button>
                           </div>
                         </CardContent>
