@@ -11,7 +11,7 @@ import { CreateBundleDialog } from "@/components/bundles/CreateBundleDialog";
 import { ReportDialog } from "@/components/moderation/ReportDialog";
 import { BundleRecommendation } from "@/components/BundleRecommendation";
 import { AgentFeedbackButtons } from "@/components/AgentFeedbackButtons";
-import { ArrowLeft, ShoppingBag, Package, Flag, Heart } from "lucide-react";
+import { ArrowLeft, ShoppingBag, PackagePlus, Flag, Heart, ArrowLeftRight } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
@@ -438,7 +438,8 @@ const ListingDetail = () => {
               </div>
             </div>
 
-            <div className="space-y-3">
+            {/* Action Buttons Section */}
+            <div className="space-y-2 border-t border-divider-gray pt-6">
               {user && user.id !== listing.seller_id && (
                 <BundleRecommendation listingId={listing.id} />
               )}
@@ -447,10 +448,10 @@ const ListingDetail = () => {
                 <Button
                   onClick={() => setBundleDialogOpen(true)}
                   variant="outline"
-                  className="w-full h-12"
+                  className="w-full h-12 text-base font-medium"
                   size="lg"
                 >
-                  <Package className="mr-2 h-5 w-5" />
+                  <PackagePlus className="mr-2 h-5 w-5" />
                   Create Bundle with This Item
                 </Button>
               )}
@@ -462,7 +463,7 @@ const ListingDetail = () => {
                     onClick={() => toggleSave(listing.id)}
                     variant="outline"
                     size="lg"
-                    className="w-full h-12"
+                    className="w-full h-12 text-base font-medium"
                     disabled={isSaving}
                   >
                     <Heart 
@@ -480,17 +481,17 @@ const ListingDetail = () => {
                 
                 <Button
                   onClick={() => setTradeOfferOpen(true)}
-                  variant="secondary"
-                  className="w-full h-12"
+                  variant="outline"
+                  className="w-full h-12 text-base font-medium"
                   size="lg"
                 >
-                  <Package className="mr-2 h-5 w-5" />
+                  <ArrowLeftRight className="mr-2 h-5 w-5" />
                   Make Trade Offer
                 </Button>
 
                 <Button
                   onClick={handleBuyNow}
-                  className="w-full h-12"
+                  className="w-full h-12 text-base font-medium"
                   size="lg"
                   disabled={listing.status !== "active"}
                 >
@@ -501,10 +502,10 @@ const ListingDetail = () => {
                 <Button
                   onClick={() => setReportDialogOpen(true)}
                   variant="ghost"
-                  size="sm"
-                  className="w-full"
+                  size="lg"
+                  className="w-full h-12 text-base font-medium"
                 >
-                  <Flag className="mr-2 h-4 w-4" />
+                  <Flag className="mr-2 h-5 w-5" />
                   Report Listing
                 </Button>
 

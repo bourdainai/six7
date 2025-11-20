@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { DollarSign } from "lucide-react";
+import { BadgeDollarSign } from "lucide-react";
 
 interface OfferDialogProps {
   listingId: string;
@@ -134,8 +134,8 @@ export const OfferDialog = ({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="w-full">
-          <DollarSign className="mr-2 h-4 w-4" />
+        <Button variant="outline" className="w-full h-12 text-base font-medium" size="lg">
+          <BadgeDollarSign className="mr-2 h-5 w-5" />
           Make Offer
         </Button>
       </DialogTrigger>
