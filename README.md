@@ -2,6 +2,8 @@
 
 <div align="center">
 
+**The job is not to get the job done, it's to do it better than it's ever been done before by anyone.**
+
 **The first UK marketplace bringing real card show trading dynamics online**
 
 Cash + Trade Offers | AI Valuation | Agent-Ready | Wallet Payments

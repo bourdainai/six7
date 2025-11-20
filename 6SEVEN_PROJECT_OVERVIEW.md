@@ -30,6 +30,8 @@ This is the first UK marketplace to bring real card show trading dynamics online
 
 ## High-Level Objective
 
+> **The job is not to get the job done, it's to do it better than it's ever been done before by anyone.**
+
 Build the fully operational AI-native trading marketplace with:
 
 - ✨ Structured product data
