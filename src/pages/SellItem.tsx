@@ -21,6 +21,7 @@ import type { Database, Json } from "@/integrations/supabase/types";
 import { SEO } from "@/components/SEO";
 import { useEmailVerification } from "@/hooks/useEmailVerification";
 import { MagicCardSearch } from "@/components/listing/MagicCardSearch";
+import { AIAnswerEnginesToggle } from "@/components/listings/AIAnswerEnginesToggle";
 
 type ConditionType = Database["public"]["Enums"]["condition_type"];
 type ListingInsert = Database["public"]["Tables"]["listings"]["Insert"];
@@ -78,6 +79,7 @@ const SellItem = () => {
   const [publishing, setPublishing] = useState(false);
   const [publishedListingId, setPublishedListingId] = useState<string | null>(null);
   const [selectedPrice, setSelectedPrice] = useState<number | "">("");
+  const [aiAnswerEnginesEnabled, setAiAnswerEnginesEnabled] = useState(false);
   
   const [listingData, setListingData] = useState<ListingData>({
     title: "",
@@ -216,6 +218,7 @@ const SellItem = () => {
         seller_price: Number(selectedPrice),
         status: "active",
         published_at: new Date().toISOString(),
+        ai_answer_engines_enabled: aiAnswerEnginesEnabled,
         
         // Shipping
         shipping_cost_uk: shipping.free_shipping ? 0 : shipping.shipping_cost_uk,
@@ -611,6 +614,17 @@ const SellItem = () => {
                   />
                 </div>
               </div>
+            </section>
+
+            {/* AI Answer Engines Visibility */}
+            <section className="space-y-4">
+              <h2 className="text-xl font-medium border-b pb-2">AI Agent Visibility</h2>
+              <AIAnswerEnginesToggle
+                enabled={aiAnswerEnginesEnabled}
+                onChange={setAiAnswerEnginesEnabled}
+                showLabel={true}
+                compact={false}
+              />
             </section>
 
             {/* Footer Actions */}
