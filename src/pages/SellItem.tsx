@@ -70,7 +70,6 @@ const SellItem = () => {
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
   const { isVerified: emailVerified } = useEmailVerification();
-  const { sendEmail } = useEmailNotification();
 
   // State
   const [images, setImages] = useState<string[]>([]);
