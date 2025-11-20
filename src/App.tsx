@@ -24,6 +24,7 @@ const Messages = lazy(() => import("./pages/Messages"));
 const Membership = lazy(() => import("./pages/Membership"));
 const SavedItems = lazy(() => import("./pages/SavedItems"));
 const SellerDashboard = lazy(() => import("./pages/SellerDashboard"));
+const EditListing = lazy(() => import("./pages/EditListing"));
 const SellerAnalytics = lazy(() => import("./pages/SellerAnalytics"));
 const SellerReputation = lazy(() => import("./pages/SellerReputation"));
 const SellerOnboarding = lazy(() => import("./pages/SellerOnboarding"));
@@ -79,6 +80,7 @@ const AppRoutes = () => {
       <Route path="/bundles" element={<Suspense fallback={<FeedSkeleton />}><Bundles /></Suspense>} />
       <Route path="/bundle/:id" element={<Suspense fallback={<ListingSkeleton />}><BundleDetail /></Suspense>} />
       <Route path="/dashboard/seller" element={<Suspense fallback={<DashboardSkeleton />}><SellerDashboard /></Suspense>} />
+      <Route path="/edit-listing/:id" element={<Suspense fallback={<PageSkeleton />}><EditListing /></Suspense>} />
       <Route path="/seller/onboarding" element={<Suspense fallback={<PageSkeleton />}><SellerOnboarding /></Suspense>} />
       <Route path="/seller/account" element={<Suspense fallback={<DashboardSkeleton />}><SellerAccountManagement /></Suspense>} />
       <Route path="/seller/analytics" element={<Suspense fallback={<DashboardSkeleton />}><SellerAnalytics /></Suspense>} />
