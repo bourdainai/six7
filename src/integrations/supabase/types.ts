@@ -1162,28 +1162,106 @@ export type Database = {
       }
       pokemon_card_attributes: {
         Row: {
+          artist: string | null
           card_id: string
+          cardmarket_id: string | null
           created_at: string | null
           id: string
           images: Json | null
+          last_searched_at: string | null
           name: string
+          number: string | null
+          popularity_score: number | null
+          rarity: string | null
+          search_vector: unknown
+          set_code: string | null
           set_name: string
+          subtypes: string[] | null
+          supertype: string | null
+          sync_source: Database["public"]["Enums"]["sync_source_type"] | null
+          synced_at: string | null
+          tcgplayer_id: string | null
+          types: string[] | null
+          updated_at: string | null
         }
         Insert: {
+          artist?: string | null
           card_id: string
+          cardmarket_id?: string | null
           created_at?: string | null
           id?: string
           images?: Json | null
+          last_searched_at?: string | null
           name: string
+          number?: string | null
+          popularity_score?: number | null
+          rarity?: string | null
+          search_vector?: unknown
+          set_code?: string | null
           set_name: string
+          subtypes?: string[] | null
+          supertype?: string | null
+          sync_source?: Database["public"]["Enums"]["sync_source_type"] | null
+          synced_at?: string | null
+          tcgplayer_id?: string | null
+          types?: string[] | null
+          updated_at?: string | null
         }
         Update: {
+          artist?: string | null
           card_id?: string
+          cardmarket_id?: string | null
           created_at?: string | null
           id?: string
           images?: Json | null
+          last_searched_at?: string | null
           name?: string
+          number?: string | null
+          popularity_score?: number | null
+          rarity?: string | null
+          search_vector?: unknown
+          set_code?: string | null
           set_name?: string
+          subtypes?: string[] | null
+          supertype?: string | null
+          sync_source?: Database["public"]["Enums"]["sync_source_type"] | null
+          synced_at?: string | null
+          tcgplayer_id?: string | null
+          types?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      popular_sets: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          notes: string | null
+          priority_tier: number | null
+          set_code: string
+          set_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          priority_tier?: number | null
+          set_code: string
+          set_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          priority_tier?: number | null
+          set_code?: string
+          set_name?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -2093,6 +2171,51 @@ export type Database = {
           },
         ]
       }
+      tcg_sync_progress: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          id: string
+          last_page_synced: number | null
+          last_sync_at: string | null
+          priority_tier: number | null
+          set_code: string
+          set_name: string | null
+          sync_status: string | null
+          synced_cards: number | null
+          total_cards: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          last_page_synced?: number | null
+          last_sync_at?: string | null
+          priority_tier?: number | null
+          set_code: string
+          set_name?: string | null
+          sync_status?: string | null
+          synced_cards?: number | null
+          total_cards?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          last_page_synced?: number | null
+          last_sync_at?: string | null
+          priority_tier?: number | null
+          set_code?: string
+          set_name?: string | null
+          sync_status?: string | null
+          synced_cards?: number | null
+          total_cards?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       trade_offers: {
         Row: {
           ai_fairness_score: number | null
@@ -2506,6 +2629,19 @@ export type Database = {
     }
     Functions: {
       ensure_admin_role: { Args: never; Returns: undefined }
+      get_next_set_to_sync: {
+        Args: never
+        Returns: {
+          last_page_synced: number
+          priority_tier: number
+          set_code: string
+          set_name: string
+        }[]
+      }
+      increment_card_popularity: {
+        Args: { card_ids: string[] }
+        Returns: undefined
+      }
       increment_gmv: {
         Args: { p_amount: number; p_user_id: string }
         Returns: undefined
@@ -2531,6 +2667,7 @@ export type Database = {
         | "disputed"
       membership_tier: "free" | "pro" | "enterprise"
       risk_tier: "A" | "B" | "C"
+      sync_source_type: "manual" | "cron" | "on_demand"
       user_role: "buyer" | "seller" | "admin" | "moderator"
     }
     CompositeTypes: {
@@ -2677,6 +2814,7 @@ export const Constants = {
       ],
       membership_tier: ["free", "pro", "enterprise"],
       risk_tier: ["A", "B", "C"],
+      sync_source_type: ["manual", "cron", "on_demand"],
       user_role: ["buyer", "seller", "admin", "moderator"],
     },
   },
