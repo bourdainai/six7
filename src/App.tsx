@@ -48,6 +48,7 @@ const Wallet = lazy(() => import("./pages/Wallet"));
 const TradeOffers = lazy(() => import("./pages/TradeOffers"));
 const Feed = lazy(() => import("./pages/Feed"));
 const APIKeys = lazy(() => import("./pages/Settings/APIKeys"));
+const MCPDocs = lazy(() => import("./pages/MCPDocs"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Configure QueryClient with performance optimizations
@@ -121,6 +122,7 @@ const AppRoutes = () => {
         <Route path="/help" element={<Suspense fallback={<PageSkeleton />}><Help /></Suspense>} />
         <Route path="/settings/notifications" element={<Suspense fallback={<PageSkeleton />}><NotificationPreferences /></Suspense>} />
         <Route path="/settings/api-keys" element={<Suspense fallback={<PageSkeleton />}><APIKeys /></Suspense>} />
+        <Route path="/docs/mcp" element={<Suspense fallback={<PageSkeleton />}><MCPDocs /></Suspense>} />
         
         {/* Wallet & Trading */}
         <Route path="/wallet" element={<Suspense fallback={<DashboardSkeleton />}><Wallet /></Suspense>} />
