@@ -258,9 +258,9 @@ const SellItem = () => {
       // 4. Auto-fetch price if we have enough info
       if (result.title || (result.set_code && result.card_number)) {
         handleGetPriceSuggestion(
-          result.title || prev.title,
-          result.set_code || prev.set_code,
-          result.card_number || prev.card_number
+          result.title || listingData.title,
+          result.set_code || listingData.set_code,
+          result.card_number || listingData.card_number
         );
       }
 
@@ -274,9 +274,6 @@ const SellItem = () => {
     } finally {
       setAnalyzing(false);
     }
-  };
-
-}
   };
 
 const handleGetPriceSuggestion = async (title?: string, setCode?: string, cardNumber?: string) => {
