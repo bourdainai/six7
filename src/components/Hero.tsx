@@ -42,15 +42,15 @@ The only AI-native platform built for the modern collector.
         {/* Stats - ultra-minimal design */}
         <div className="grid grid-cols-3 gap-8 max-w-3xl mx-auto pt-12 border-t border-zinc-900">
           <div>
-            <div className="text-3xl font-light text-white mb-1 tracking-tight">3s</div>
+            <div className="text-3xl font-light text-white mb-1 tracking-tight">10s</div>
             <div className="text-xs uppercase tracking-wider text-zinc-500 font-normal">Avg. list time</div>
           </div>
           <div>
-            <div className="text-3xl font-light text-white mb-1 tracking-tight">2.5x</div>
-            <div className="text-xs uppercase tracking-wider text-zinc-500 font-normal">Faster sales</div>
+            <div className="text-3xl font-light text-white mb-1 tracking-tight">40%</div>
+            <div className="text-xs uppercase tracking-wider text-zinc-500 font-normal">      CHEAPER SALES</div>
           </div>
           <div>
-            <div className="text-3xl font-light text-white mb-1 tracking-tight">98%</div>
+            <div className="text-3xl font-light text-white mb-1 tracking-tight">99.8%</div>
             <div className="text-xs uppercase tracking-wider text-zinc-500 font-normal">AI accuracy</div>
           </div>
         </div>
