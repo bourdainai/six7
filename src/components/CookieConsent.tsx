@@ -76,27 +76,11 @@ export const CookieConsent = () => {
     if (prefs.analytics) {
       // Initialize analytics (e.g., Google Analytics)
       // This would be where you initialize your analytics service
-      if (import.meta.env.DEV) {
-        console.log("Analytics enabled");
-      }
-    } else {
-      // Disable analytics
-      if (import.meta.env.DEV) {
-        console.log("Analytics disabled");
-      }
     }
 
     // Initialize marketing cookies based on preferences
     if (prefs.marketing) {
       // Initialize marketing tracking
-      if (import.meta.env.DEV) {
-        console.log("Marketing cookies enabled");
-      }
-    } else {
-      // Disable marketing tracking
-      if (import.meta.env.DEV) {
-        console.log("Marketing cookies disabled");
-      }
     }
   };
 

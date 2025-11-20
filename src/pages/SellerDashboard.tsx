@@ -1,18 +1,20 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageLayout } from "@/components/PageLayout";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
-import { ExternalLink, Package, DollarSign, ShoppingCart, TrendingUp, Award, Wallet, Clock, AlertCircle, CheckCircle2, Loader2, Trash2, Edit } from "lucide-react";
+import { Package, DollarSign, ShoppingCart, TrendingUp, Award, CheckCircle2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { SellerCopilot } from "@/components/SellerCopilot";
 import { StaleInventoryAlert } from "@/components/StaleInventoryAlert";
 import { AutomationRulesPanel } from "@/components/AutomationRulesPanel";
+import { OnboardingStatusCards } from "@/components/seller/OnboardingStatusCards";
+import { BalanceCards } from "@/components/seller/BalanceCards";
+import { ListingsManagement } from "@/components/seller/ListingsManagement";
 
 const SellerDashboard = () => {
   const { user } = useAuth();
@@ -150,97 +152,11 @@ const SellerDashboard = () => {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
-            {!profile?.stripe_connect_account_id ? (
-              <Card className="border-amber-500 bg-amber-500/5">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 font-normal tracking-tight">
-                    <AlertCircle className="h-5 w-5 text-amber-500" />
-                    Complete Seller Setup
-                  </CardTitle>
-                  <CardDescription className="font-normal">Set up your payment details to start receiving payments from buyers</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground mb-4 font-normal">
-                    You need to complete Stripe Connect onboarding before you can receive payments. This process takes
-                    just a few minutes.
-                  </p>
-                  <Button 
-                    onClick={() => onboardMutation.mutate()} 
-                    disabled={onboardMutation.isPending}
-                    aria-label="Start seller onboarding process"
-                  >
-                    {onboardMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
-                        Starting...
-                      </>
-                    ) : (
-                      "Start Onboarding"
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : !profile?.stripe_onboarding_complete ? (
-              <Card className="border-yellow-500 bg-yellow-500/5">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 font-normal tracking-tight">
-                    <AlertCircle className="h-5 w-5 text-yellow-500" />
-                    Onboarding In Progress
-                  </CardTitle>
-                  <CardDescription className="font-normal">
-                    Your payment account setup is in progress. Complete verification to start receiving payments.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground mb-4 font-normal">
-                    You may need to provide additional information or upload documents to complete verification.
-                  </p>
-                  <div className="flex gap-2">
-                    <Button onClick={() => navigate("/seller/onboarding")} variant="outline">
-                      Continue Onboarding
-                    </Button>
-                    <Button onClick={() => navigate("/seller/account")} variant="outline">
-                      Check Verification Status
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : !profile?.can_receive_payments ? (
-              <Card className="border-yellow-500 bg-yellow-500/5">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 font-normal tracking-tight">
-                    <AlertCircle className="h-5 w-5 text-yellow-500" />
-                    Verification Pending
-                  </CardTitle>
-                  <CardDescription className="font-normal">
-                    Your onboarding is complete, but your account is still being verified by Stripe.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground mb-4 font-normal">
-                    This usually takes a few minutes. You'll be able to receive payments once verification is complete.
-                  </p>
-                  <Button onClick={() => navigate("/seller/account")} variant="outline">
-                    Check Verification Status
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="border-green-500 bg-green-500/5">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 font-normal tracking-tight">
-                    <CheckCircle2 className="h-5 w-5 text-green-500" />
-                    Payment Account Active
-                  </CardTitle>
-                  <CardDescription className="font-normal">Your payment account is set up and ready to receive payments</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button onClick={() => navigate("/seller/account")} variant="outline">
-                    Manage Payment Account
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
+            <OnboardingStatusCards 
+              profile={profile}
+              onStartOnboarding={() => onboardMutation.mutate()}
+              isOnboardingLoading={onboardMutation.isPending}
+            />
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <Card>
@@ -279,83 +195,7 @@ const SellerDashboard = () => {
 
             {/* Balance Cards */}
             {profile?.stripe_onboarding_complete && (
-              <div className="grid gap-4 md:grid-cols-2">
-                {balance ? (
-                  <>
-                    <Card className="border-green-500/20">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-normal flex items-center gap-2 tracking-tight">
-                          <Wallet className="h-4 w-4 text-green-500" />Available Balance
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-light tracking-tight">
-                          {balance.currency === "GBP" ? "£" : balance.currency || "£"}
-                          {(balance.available_balance || 0).toFixed(2)}
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1 font-normal">Ready to withdraw</p>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="mt-3"
-                          onClick={() => navigate("/seller/account")}
-                        >
-                          View Payouts
-                        </Button>
-                      </CardContent>
-                    </Card>
-                    <Card className="border-yellow-500/20">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-normal flex items-center gap-2 tracking-tight">
-                          <Clock className="h-4 w-4 text-yellow-500" />Pending Balance
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-light tracking-tight">
-                          {balance.currency === "GBP" ? "£" : balance.currency || "£"}
-                          {(balance.pending_balance || 0).toFixed(2)}
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1 font-normal">Processing</p>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="mt-3"
-                          onClick={() => navigate("/seller/account")}
-                        >
-                          View Schedule
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  </>
-                ) : (
-                  <>
-                    <Card className="border-green-500/20">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-normal flex items-center gap-2 tracking-tight">
-                          <Wallet className="h-4 w-4 text-green-500" />Available Balance
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <Skeleton className="h-8 w-24 mb-2" />
-                        <Skeleton className="h-4 w-32 mb-3" />
-                        <Skeleton className="h-9 w-full" />
-                      </CardContent>
-                    </Card>
-                    <Card className="border-yellow-500/20">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-normal flex items-center gap-2 tracking-tight">
-                          <Clock className="h-4 w-4 text-yellow-500" />Pending Balance
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <Skeleton className="h-8 w-24 mb-2" />
-                        <Skeleton className="h-4 w-32 mb-3" />
-                        <Skeleton className="h-9 w-full" />
-                      </CardContent>
-                    </Card>
-                  </>
-                )}
-              </div>
+              <BalanceCards balance={balance} />
             )}
 
             <StaleInventoryAlert />
@@ -369,59 +209,11 @@ const SellerDashboard = () => {
                 <CardDescription className="font-normal">Manage all your listings</CardDescription>
               </CardHeader>
               <CardContent>
-                {listings && listings.length > 0 ? (
-                  <div className="space-y-3">
-                    {listings.map((listing) => (
-                      <Card key={listing.id}>
-                        <CardContent className="p-4 flex items-center justify-between gap-4">
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-normal truncate tracking-tight">{listing.title}</h3>
-                            <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
-                              <span className="capitalize">{listing.status}</span>
-                              <span>£{Number(listing.seller_price).toFixed(2)}</span>
-                              {listing.created_at && (
-                                <span>{new Date(listing.created_at).toLocaleDateString()}</span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => navigate(`/edit-listing/${listing.id}`)}
-                            >
-                              <Edit className="h-4 w-4 mr-1.5" />
-                              Edit
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => navigate(`/listing/${listing.id}`)}
-                            >
-                              <ExternalLink className="h-4 w-4 mr-1.5" />
-                              View
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                if (confirm("Are you sure you want to delete this listing?")) {
-                                  deleteListingMutation.mutate(listing.id);
-                                }
-                              }}
-                              disabled={deleteListingMutation.isPending}
-                            >
-                              <Trash2 className="h-4 w-4 mr-1.5" />
-                              Delete
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-center py-8 text-muted-foreground font-normal">No listings yet</p>
-                )}
+                <ListingsManagement 
+                  listings={listings || []}
+                  onDelete={(id) => deleteListingMutation.mutate(id)}
+                  isDeleting={deleteListingMutation.isPending}
+                />
               </CardContent>
             </Card>
           </TabsContent>
