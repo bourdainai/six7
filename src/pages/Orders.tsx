@@ -158,10 +158,10 @@ const Orders = () => {
   return (
     <PageLayout>
         <div className="mb-8 space-y-2">
-          <h1 className="text-3xl font-light text-foreground">
+          <h1 className="text-3xl font-light text-foreground tracking-tight">
             Orders
           </h1>
-          <p className="text-base text-muted-foreground font-light">
+          <p className="text-base text-muted-foreground font-normal tracking-tight">
             Track and manage your purchases and sales
           </p>
         </div>

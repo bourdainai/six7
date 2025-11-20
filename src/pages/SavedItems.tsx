@@ -76,8 +76,8 @@ const SavedItems = () => {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-3xl font-light text-foreground">Saved Items</h1>
-            <p className="text-base text-muted-foreground font-light">
+            <h1 className="text-3xl font-light text-foreground tracking-tight">Saved Items</h1>
+            <p className="text-base text-muted-foreground font-normal tracking-tight">
               {savedListings?.length || 0} {savedListings?.length === 1 ? 'item' : 'items'} saved
             </p>
           </div>

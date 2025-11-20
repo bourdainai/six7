@@ -17,7 +17,12 @@ export default function TradeOffersPage() {
   return (
     <PageLayout>
       <div className="container py-8 max-w-4xl">
-        <h1 className="text-2xl font-bold mb-6">Trade Offers</h1>
+        <div className="mb-8 space-y-2">
+          <h1 className="text-3xl font-light text-foreground tracking-tight">Trade Offers</h1>
+          <p className="text-base text-muted-foreground font-normal tracking-tight">
+            Manage your incoming and outgoing trade proposals
+          </p>
+        </div>
         {isLoading ? (
           <Skeleton className="h-32 w-full" />
         ) : (
