@@ -75,10 +75,21 @@ serve(async (req) => {
       }
     );
 
+    if (response.status === 504 || response.status >= 500) {
+      const errorText = await response.text();
+      console.error("Pokémon API Error (5xx):", response.status, errorText);
+      return new Response(
+        JSON.stringify({
+          error: "External Pokémon card database is temporarily unavailable. Please try again in a minute.",
+        }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Pokémon API Error:", response.status, errorText);
-      throw new Error(`Pokémon API responded with ${response.status}: ${errorText}`);
+      console.error("Pokémon API Error:", response.status, errorText.slice(0, 500));
+      throw new Error(`Pokémon API responded with ${response.status}`);
     }
 
     const data = await response.json();
