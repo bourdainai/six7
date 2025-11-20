@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
-import { ExternalLink, Package, DollarSign, ShoppingCart, TrendingUp, Award, Wallet, Clock, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { ExternalLink, Package, DollarSign, ShoppingCart, TrendingUp, Award, Wallet, Clock, AlertCircle, CheckCircle2, Loader2, Trash2, Edit } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { SellerCopilot } from "@/components/SellerCopilot";
@@ -30,13 +30,27 @@ const SellerDashboard = () => {
     },
   });
 
-  const { data: listings } = useQuery({
+  const { data: listings, refetch: refetchListings } = useQuery({
     queryKey: ["seller-listings", user?.id],
     enabled: !!user,
     queryFn: async () => {
       const { data, error } = await supabase.from("listings").select("*").eq("seller_id", user!.id).order("created_at", { ascending: false });
       if (error) throw error;
       return data;
+    },
+  });
+
+  const deleteListingMutation = useMutation({
+    mutationFn: async (listingId: string) => {
+      const { error } = await supabase.from("listings").delete().eq("id", listingId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Listing Deleted", description: "Your listing has been removed" });
+      refetchListings();
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to delete listing", variant: "destructive" });
     },
   });
 
@@ -130,6 +144,7 @@ const SellerDashboard = () => {
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="listings">My Listings</TabsTrigger>
             <TabsTrigger value="copilot">AI Copilot</TabsTrigger>
             <TabsTrigger value="automation">Automation</TabsTrigger>
           </TabsList>
@@ -345,6 +360,60 @@ const SellerDashboard = () => {
 
             <StaleInventoryAlert />
             <AutomationRulesPanel />
+          </TabsContent>
+
+          <TabsContent value="listings">
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-normal tracking-tight">My Listings</CardTitle>
+                <CardDescription className="font-normal">Manage all your listings</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {listings && listings.length > 0 ? (
+                  <div className="space-y-3">
+                    {listings.map((listing) => (
+                      <Card key={listing.id}>
+                        <CardContent className="p-4 flex items-center justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-normal truncate tracking-tight">{listing.title}</h3>
+                            <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
+                              <span className="capitalize">{listing.status}</span>
+                              <span>£{Number(listing.seller_price).toFixed(2)}</span>
+                              {listing.created_at && (
+                                <span>{new Date(listing.created_at).toLocaleDateString()}</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => navigate(`/listing/${listing.id}`)}
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                if (confirm("Are you sure you want to delete this listing?")) {
+                                  deleteListingMutation.mutate(listing.id);
+                                }
+                              }}
+                              disabled={deleteListingMutation.isPending}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-center py-8 text-muted-foreground font-normal">No listings yet</p>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="copilot">
