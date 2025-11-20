@@ -1,10 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const disputeSummarizerSchema = z.object({
+  dispute_id: z.string().uuid({ message: 'Invalid dispute ID format' }),
+});
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -12,11 +17,8 @@ serve(async (req) => {
   }
 
   try {
-    const { dispute_id } = await req.json();
-    
-    if (!dispute_id) {
-      throw new Error("No dispute_id provided");
-    }
+    const body = await req.json();
+    const { dispute_id } = disputeSummarizerSchema.parse(body);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -171,6 +173,14 @@ Provide objective analysis and recommendation.`
 
   } catch (error) {
     console.error("Error in dispute-auto-summarizer:", error);
+    
+    if (error instanceof z.ZodError) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid request data', details: error.errors, success: false }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
     return new Response(
       JSON.stringify({ 
         error: error instanceof Error ? error.message : "Unknown error occurred",

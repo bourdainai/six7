@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const supabaseAdmin = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
@@ -11,17 +12,18 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const orderDeliveredSchema = z.object({
+  orderId: z.string().uuid({ message: 'Invalid order ID format' }),
+});
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { orderId } = await req.json();
-
-    if (!orderId) {
-      throw new Error('Missing required field: orderId');
-    }
+    const body = await req.json();
+    const { orderId } = orderDeliveredSchema.parse(body);
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -119,6 +121,14 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error('Error in mark-order-delivered:', error);
+    
+    if (error instanceof z.ZodError) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid request data', details: error.errors, success: false }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     return new Response(
       JSON.stringify({ 
         success: false,

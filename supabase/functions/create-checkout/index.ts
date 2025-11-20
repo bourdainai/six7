@@ -1,11 +1,26 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const checkoutSchema = z.object({
+  listingId: z.string().uuid({ message: 'Invalid listing ID format' }),
+  shippingAddress: z.object({
+    name: z.string().min(1).max(200),
+    line1: z.string().min(1).max(200),
+    line2: z.string().max(200).optional(),
+    city: z.string().min(1).max(100),
+    state: z.string().max(100).optional(),
+    postal_code: z.string().min(1).max(20),
+    country: z.string().length(2).regex(/^[A-Z]{2}$/, 'Invalid country code'),
+  }),
+  offerId: z.string().uuid().optional(),
+});
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -13,7 +28,8 @@ serve(async (req) => {
   }
 
   try {
-    const { listingId, shippingAddress, offerId } = await req.json();
+    const body = await req.json();
+    const { listingId, shippingAddress, offerId } = checkoutSchema.parse(body);
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -205,6 +221,14 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error('Error in create-checkout:', error);
+    
+    if (error instanceof z.ZodError) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid request data', details: error.errors }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
