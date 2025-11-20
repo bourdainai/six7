@@ -181,47 +181,86 @@ serve(async (req) => {
 
     // Prepare card data with sync metadata
     const now = new Date().toISOString();
-    const upsertData = cards.map((card: any) => ({
-      card_id: card.id,
-      name: card.name,
-      set_name: card.set.name,
-      set_code: card.set.id,
-      number: card.number,
-      rarity: card.rarity,
-      artist: card.artist,
-      types: card.types || [],
-      subtypes: card.subtypes || [],
-      supertype: card.supertype,
-      images: card.images || {},
-      tcgplayer_id: card.tcgplayer?.url?.split('/').pop(),
-      cardmarket_id: card.cardmarket?.url?.split('/').pop(),
-      tcgplayer_prices: card.tcgplayer?.prices || null,
-      cardmarket_prices: card.cardmarket?.prices || null,
-      last_price_update: card.tcgplayer?.prices || card.cardmarket?.prices ? now : null,
-      synced_at: now,
-      sync_source: isCronJob ? 'cron' : 'manual',
-      updated_at: now,
-    }));
-
-    const { error: upsertError } = await supabase
+    const cardIds = cards.map((card: any) => card.id);
+    
+    // Check which cards already exist
+    const { data: existingCards } = await supabase
       .from('pokemon_card_attributes')
-      .upsert(upsertData, { onConflict: 'card_id' });
-
-    if (upsertError) {
-      console.error('Supabase Upsert Error:', upsertError);
+      .select('card_id')
+      .in('card_id', cardIds);
+    
+    const existingCardIds = new Set(existingCards?.map(c => c.card_id) || []);
+    
+    // Separate new cards from existing cards
+    const newCards = cards.filter((card: any) => !existingCardIds.has(card.id));
+    const existingCardsToUpdate = cards.filter((card: any) => existingCardIds.has(card.id));
+    
+    let insertCount = 0;
+    let updateCount = 0;
+    
+    // Insert NEW cards with all data
+    if (newCards.length > 0) {
+      const insertData = newCards.map((card: any) => ({
+        card_id: card.id,
+        name: card.name,
+        set_name: card.set.name,
+        set_code: card.set.id,
+        number: card.number,
+        rarity: card.rarity,
+        artist: card.artist,
+        types: card.types || [],
+        subtypes: card.subtypes || [],
+        supertype: card.supertype,
+        images: card.images || {},
+        tcgplayer_id: card.tcgplayer?.url?.split('/').pop(),
+        cardmarket_id: card.cardmarket?.url?.split('/').pop(),
+        tcgplayer_prices: card.tcgplayer?.prices || null,
+        cardmarket_prices: card.cardmarket?.prices || null,
+        last_price_update: card.tcgplayer?.prices || card.cardmarket?.prices ? now : null,
+        synced_at: now,
+        sync_source: isCronJob ? 'cron' : 'manual',
+        updated_at: now,
+      }));
       
-      // Update sync status to failed
-      await supabase
-        .from('tcg_sync_progress')
-        .update({ 
-          sync_status: 'failed',
-          error_message: upsertError.message,
-          updated_at: new Date().toISOString()
-        })
-        .eq('set_code', targetSetCode);
-
-      throw upsertError;
+      const { error: insertError } = await supabase
+        .from('pokemon_card_attributes')
+        .insert(insertData);
+      
+      if (insertError) {
+        console.error('Insert Error:', insertError);
+        throw insertError;
+      }
+      
+      insertCount = newCards.length;
+      console.log(`✅ Inserted ${insertCount} new cards`);
     }
+    
+    // Update EXISTING cards - ONLY price fields
+    if (existingCardsToUpdate.length > 0) {
+      for (const card of existingCardsToUpdate) {
+        const hasPrices = card.tcgplayer?.prices || card.cardmarket?.prices;
+        
+        const { error: updateError } = await supabase
+          .from('pokemon_card_attributes')
+          .update({
+            tcgplayer_prices: card.tcgplayer?.prices || null,
+            cardmarket_prices: card.cardmarket?.prices || null,
+            last_price_update: hasPrices ? now : null,
+            updated_at: now,
+          })
+          .eq('card_id', card.id);
+        
+        if (updateError) {
+          console.error(`Update Error for ${card.id}:`, updateError);
+          // Continue with other updates even if one fails
+        } else {
+          updateCount++;
+        }
+      }
+      
+      console.log(`✅ Updated prices for ${updateCount} existing cards`);
+    }
+
 
     // Calculate if sync is complete
     const totalPages = Math.ceil((tcgData.totalCount || 0) / 250);
@@ -250,10 +289,12 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ 
-        message: `Synced ${cards.length} cards`,
+        message: `Synced ${cards.length} cards (${insertCount} new, ${updateCount} price updates)`,
         setCode: targetSetCode,
         setName: targetSetName,
-        count: cards.length,
+        newCards: insertCount,
+        priceUpdates: updateCount,
+        totalProcessed: cards.length,
         totalCount: tcgData.totalCount,
         page: page,
         totalPages: totalPages,
