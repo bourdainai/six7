@@ -51,7 +51,7 @@ export function WalletTransactions() {
                     {tx.amount > 0 ? '+' : ''}£{Math.abs(tx.amount).toFixed(2)}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Badge variant={getStatusColor(tx.status) as any}>
+                    <Badge variant={getStatusColor(tx.status) as "default" | "secondary" | "destructive" | "outline"}>
                       {tx.status}
                     </Badge>
                   </TableCell>

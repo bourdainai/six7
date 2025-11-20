@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import type { PostgrestError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -38,9 +39,10 @@ export const TrustScore = ({ sellerId, compact = false }: TrustScoreProps) => {
       if (ordersError) throw ordersError;
 
       // Get rating stats
-      const { data: ratings, error: ratingsError } = await (supabase.from("ratings") as any)
+      const { data: ratings, error: ratingsError } = await supabase
+        .from("ratings")
         .select("rating")
-        .eq("seller_id", sellerId);
+        .eq("seller_id", sellerId) as unknown as { data: { rating: number }[] | null, error: PostgrestError | null };
 
       if (ratingsError) throw ratingsError;
 

@@ -7,12 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { 
-  CheckCircle2, 
-  Mail, 
-  Phone, 
-  CreditCard, 
-  Building2, 
+import {
+  CheckCircle2,
+  Mail,
+  Phone,
+  CreditCard,
+  Building2,
   Shield,
   AlertCircle,
   Loader2,
@@ -29,7 +29,7 @@ interface Verification {
   status: string;
   verified_at: string | null;
   expires_at: string | null;
-  verification_data: Record<string, any>;
+  verification_data: Record<string, unknown>;
   notes: string | null;
 }
 
@@ -239,20 +239,18 @@ const SellerVerification = () => {
                       className="flex items-start justify-between p-4 border rounded-lg"
                     >
                       <div className="flex items-start gap-3 flex-1">
-                        <div className={`p-2 rounded-lg ${
-                          status === "verified" 
-                            ? "bg-green-500/10" 
+                        <div className={`p-2 rounded-lg ${status === "verified"
+                            ? "bg-green-500/10"
                             : status === "pending"
-                            ? "bg-yellow-500/10"
-                            : "bg-muted"
-                        }`}>
-                          <Icon className={`h-5 w-5 ${
-                            status === "verified"
+                              ? "bg-yellow-500/10"
+                              : "bg-muted"
+                          }`}>
+                          <Icon className={`h-5 w-5 ${status === "verified"
                               ? "text-green-500"
                               : status === "pending"
-                              ? "text-yellow-500"
-                              : "text-muted-foreground"
-                          }`} />
+                                ? "text-yellow-500"
+                                : "text-muted-foreground"
+                            }`} />
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">

@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import type { ListingSummary } from "@/types/listings";
 import { supabase } from "@/integrations/supabase/client";
 import { FeedCard } from "./FeedCard";
 import { Loader2 } from "lucide-react";
@@ -40,10 +41,9 @@ export function VerticalFeed() {
 
   return (
     <div className="snap-y snap-mandatory h-screen w-full overflow-y-scroll bg-background">
-      {listings.map((listing: any) => (
+      {listings.map((listing: ListingSummary) => (
         <FeedCard key={listing.id} listing={listing} />
       ))}
     </div>
   );
 }
-

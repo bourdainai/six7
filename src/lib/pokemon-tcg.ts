@@ -62,7 +62,7 @@ export interface PokemonCard {
         market: number;
         directLow?: number;
       };
-      [key: string]: any;
+      [key: string]: unknown;
     };
   };
   cardmarket?: {

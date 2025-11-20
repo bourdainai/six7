@@ -7,13 +7,93 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 
+interface PokemonCard {
+  id: string;
+  name: string;
+  number: string;
+  rarity?: string;
+  artist?: string;
+  set: {
+    id: string;
+    name: string;
+    ptcgoCode?: string;
+    printedTotal?: number;
+  };
+  tcgplayer?: {
+    prices?: {
+      holofoil?: { market?: number };
+      normal?: { market?: number };
+    };
+  };
+  cardmarket?: {
+    prices?: {
+      averageSellPrice?: number;
+    };
+  };
+  images?: {
+    large?: string;
+    small?: string;
+  };
+}
+
+export interface MagicCardData {
+  title: string;
+  description: string;
+  category: string;
+  set_code: string;
+  card_number: string;
+  rarity?: string;
+  original_rrp: number | null;
+  image_url?: string;
+}
+
+interface PokemonCard {
+  id: string;
+  name: string;
+  number: string;
+  rarity?: string;
+  artist?: string;
+  set: {
+    id: string;
+    name: string;
+    ptcgoCode?: string;
+    printedTotal?: number;
+  };
+  tcgplayer?: {
+    prices?: {
+      holofoil?: { market?: number };
+      normal?: { market?: number };
+    };
+  };
+  cardmarket?: {
+    prices?: {
+      averageSellPrice?: number;
+    };
+  };
+  images?: {
+    large?: string;
+    small?: string;
+  };
+}
+
+export interface MagicCardData {
+  title: string;
+  description: string;
+  category: string;
+  set_code: string;
+  card_number: string;
+  rarity?: string;
+  original_rrp: number | null;
+  image_url?: string;
+}
+
 interface MagicCardSearchProps {
-  onSelect: (cardData: any) => void;
+  onSelect: (cardData: MagicCardData) => void;
 }
 
 export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<any[]>([]);
+  const [results, setResults] = useState<PokemonCard[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -53,7 +133,7 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
     }
   };
 
-  const handleSelect = (card: any) => {
+  const handleSelect = (card: PokemonCard) => {
     // Transform API data to our listing format
     const cardData = {
       title: `${card.name} - ${card.set.name}`,
@@ -65,7 +145,7 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
       original_rrp: card.tcgplayer?.prices?.holofoil?.market || card.tcgplayer?.prices?.normal?.market || card.cardmarket?.prices?.averageSellPrice || null,
       image_url: card.images?.large || card.images?.small
     };
-    
+
     onSelect(cardData);
     setQuery(""); // Reset search
     setResults([]);
@@ -88,9 +168,9 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
             className="border-0 shadow-none focus-visible:ring-0 bg-transparent text-lg h-12"
           />
           {query && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => { setQuery(""); setResults([]); }}
               className="h-8 w-8 p-0 mr-1 rounded-full"
             >
@@ -105,15 +185,15 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
       {results.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 animate-in fade-in slide-in-from-top-2">
           {results.map((card) => (
-            <Card 
+            <Card
               key={card.id}
               className="overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary transition-all group"
               onClick={() => handleSelect(card)}
             >
               <div className="aspect-[2.5/3.5] relative bg-muted">
-                <img 
-                  src={card.images?.small} 
-                  alt={card.name} 
+                <img
+                  src={card.images?.small}
+                  alt={card.name}
                   className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300"
                   loading="lazy"
                 />

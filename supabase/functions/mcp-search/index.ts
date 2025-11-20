@@ -17,7 +17,7 @@ const searchSchema = z.object({
 
 serve(async (req) => {
   const startTime = Date.now();
-  
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -32,9 +32,9 @@ serve(async (req) => {
           id: null,
           error: { code: -32000, message: authResult.error },
         }),
-        { 
-          status: authResult.statusCode || 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: authResult.statusCode || 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
     }
@@ -163,7 +163,7 @@ serve(async (req) => {
     );
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    
+
     if (error instanceof z.ZodError) {
       return new Response(
         JSON.stringify({
@@ -180,7 +180,9 @@ serve(async (req) => {
       if (authResult.success && authResult.apiKey) {
         await logApiKeyUsage(authResult.apiKey.id, '/mcp/search', req.method, 500, responseTime);
       }
-    } catch {}
+    } catch (e) {
+      console.error('Error logging API usage:', e);
+    }
 
     return new Response(
       JSON.stringify({
@@ -188,9 +190,9 @@ serve(async (req) => {
         id: null,
         error: { code: -32603, message: 'Internal error', data: error instanceof Error ? error.message : 'Unknown error' },
       }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
   }

@@ -29,7 +29,7 @@ export const useTradeOffers = () => {
   });
 
   const createOffer = useMutation({
-    mutationFn: async (payload: any) => {
+    mutationFn: async (payload: { target_listing_id: string; trade_items?: { listing_id: string; valuation?: number }[]; cash_amount?: number; photos?: string[] }) => {
       const { data, error } = await supabase.functions.invoke('trade-create', {
         body: payload,
       });

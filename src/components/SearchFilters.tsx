@@ -54,8 +54,8 @@ const CONDITIONS = [
   "fair"
 ];
 
-export const SearchFilters = ({ 
-  onFilterChange, 
+export const SearchFilters = ({
+  onFilterChange,
   activeFilters,
   onSemanticSearch,
   onSearchTypeChange,
@@ -120,7 +120,7 @@ export const SearchFilters = ({
   const updateFilter = (key: keyof FilterState, value: string) => {
     const newFilters = { ...localFilters, [key]: value };
     setLocalFilters(newFilters);
-    
+
     if (searchMode === 'browse') {
       onFilterChange(newFilters);
     }
@@ -183,14 +183,14 @@ export const SearchFilters = ({
       <div className="relative group">
         <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 rounded-2xl opacity-20 group-hover:opacity-40 transition duration-500 blur"></div>
         <div className="relative flex items-center bg-background/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl transition-all duration-300">
-          
+
           {/* Search Mode Selector (Subtle) */}
           <div className="flex items-center pl-2 border-r border-border/50">
-            <Select 
-              value={searchMode} 
-              onValueChange={(val: any) => {
+            <Select
+              value={searchMode}
+              onValueChange={(val: 'browse' | 'semantic' | 'vibe') => {
                 setSearchMode(val);
-                if(val === 'vibe') onVibeSearchClick?.();
+                if (val === 'vibe') onVibeSearchClick?.();
               }}
             >
               <SelectTrigger className="w-[50px] sm:w-[130px] border-0 focus:ring-0 shadow-none bg-transparent hover:bg-secondary/50 rounded-lg transition-colors gap-2">
@@ -225,8 +225,8 @@ export const SearchFilters = ({
           <Input
             ref={searchInputRef}
             placeholder={
-              searchMode === 'semantic' 
-                ? "Ask for anything... (e.g. 'mint charizard under £50')" 
+              searchMode === 'semantic'
+                ? "Ask for anything... (e.g. 'mint charizard under £50')"
                 : "Search for cards, sets, or sealed product..."
             }
             value={localFilters.search}
@@ -253,12 +253,12 @@ export const SearchFilters = ({
                   <SheetTitle>Filters</SheetTitle>
                   <SheetDescription>Narrow down your search results.</SheetDescription>
                 </SheetHeader>
-                
+
                 <div className="space-y-6 py-6">
                   <div className="space-y-2">
                     <Label>Category</Label>
-                    <Select 
-                      value={localFilters.category || "all"} 
+                    <Select
+                      value={localFilters.category || "all"}
                       onValueChange={(v) => updateFilter("category", v === "all" ? "" : v)}
                     >
                       <SelectTrigger><SelectValue placeholder="All Categories" /></SelectTrigger>
@@ -271,8 +271,8 @@ export const SearchFilters = ({
 
                   <div className="space-y-2">
                     <Label>Condition</Label>
-                    <Select 
-                      value={localFilters.condition || "all"} 
+                    <Select
+                      value={localFilters.condition || "all"}
                       onValueChange={(v) => updateFilter("condition", v === "all" ? "" : v)}
                     >
                       <SelectTrigger><SelectValue placeholder="Any Condition" /></SelectTrigger>
@@ -288,15 +288,15 @@ export const SearchFilters = ({
                   <div className="space-y-2">
                     <Label>Price Range (£)</Label>
                     <div className="flex gap-2">
-                      <Input 
-                        type="number" 
-                        placeholder="Min" 
+                      <Input
+                        type="number"
+                        placeholder="Min"
                         value={localFilters.minPrice}
                         onChange={(e) => updateFilter("minPrice", e.target.value)}
                       />
-                      <Input 
-                        type="number" 
-                        placeholder="Max" 
+                      <Input
+                        type="number"
+                        placeholder="Max"
                         value={localFilters.maxPrice}
                         onChange={(e) => updateFilter("maxPrice", e.target.value)}
                       />
@@ -312,7 +312,7 @@ export const SearchFilters = ({
             </Sheet>
 
             {/* Search Button */}
-            <Button 
+            <Button
               onClick={handleSearch}
               size="icon"
               disabled={isSearching}
@@ -325,7 +325,7 @@ export const SearchFilters = ({
 
         {/* Autocomplete Dropdown */}
         {showSuggestions && suggestions.length > 0 && (
-          <div 
+          <div
             ref={suggestionsRef}
             className="absolute top-full left-0 right-0 mt-2 bg-background/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-2xl overflow-hidden z-50"
           >
@@ -333,8 +333,8 @@ export const SearchFilters = ({
               <CommandList>
                 <CommandGroup heading="Suggestions">
                   {suggestions.map((s, i) => (
-                    <CommandItem 
-                      key={i} 
+                    <CommandItem
+                      key={i}
                       onSelect={() => {
                         updateFilter("search", s.text);
                         setShowSuggestions(false);
@@ -362,7 +362,7 @@ export const SearchFilters = ({
               <Badge key={key} variant="secondary" className="pl-2 pr-1 py-1 bg-secondary/50 hover:bg-secondary/70 transition-colors">
                 <span className="capitalize mr-1 text-muted-foreground">{key}:</span>
                 <span className="font-medium">{value}</span>
-                <button 
+                <button
                   onClick={() => updateFilter(key as keyof FilterState, "")}
                   className="ml-2 hover:bg-background/50 rounded-full p-0.5"
                 >
@@ -371,9 +371,9 @@ export const SearchFilters = ({
               </Badge>
             )
           })}
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             className="h-6 text-xs text-muted-foreground hover:text-foreground"
             onClick={clearFilters}
           >

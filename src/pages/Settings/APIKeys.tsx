@@ -12,6 +12,11 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { SEO } from "@/components/SEO";
+import type { Database } from "@/integrations/supabase/types";
+
+type ApiKey = Database["public"]["Tables"]["api_keys"]["Row"] & {
+  daily_usage?: number;
+}
 
 export default function APIKeysPage() {
   const { user } = useAuth();
@@ -183,7 +188,7 @@ export default function APIKeysPage() {
         {/* Existing Keys */}
         <div className="space-y-4">
           <h2 className="text-2xl font-semibold">Your API Keys</h2>
-          
+
           {keys && keys.length === 0 && (
             <Card>
               <CardContent className="py-8 text-center text-muted-foreground">
@@ -192,7 +197,7 @@ export default function APIKeysPage() {
             </Card>
           )}
 
-          {keys?.map((key: any) => {
+          {keys?.map((key: ApiKey) => {
             const revealedKey = revealedKeys[key.id];
             const isRevealed = !!revealedKey;
 
@@ -210,7 +215,7 @@ export default function APIKeysPage() {
                           <Badge variant="destructive">Expired</Badge>
                         )}
                       </div>
-                      
+
                       <div className="text-sm text-muted-foreground space-y-1">
                         <p>Scopes: {key.scopes?.join(", ") || "None"}</p>
                         <p>Created: {new Date(key.created_at).toLocaleDateString()}</p>

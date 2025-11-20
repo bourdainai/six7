@@ -14,7 +14,7 @@ const evaluatePriceSchema = z.object({
 
 serve(async (req) => {
   const startTime = Date.now();
-  
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -93,7 +93,7 @@ serve(async (req) => {
     const prices = (comps || []).map((c: any) => parseFloat(c.price || 0)).filter(p => p > 0);
     const avgPrice = prices.length > 0 ? prices.reduce((a, b) => a + b, 0) / prices.length : 0;
     const sortedPrices = [...prices].sort((a, b) => a - b);
-    const medianPrice = sortedPrices.length > 0 
+    const medianPrice = sortedPrices.length > 0
       ? sortedPrices[Math.floor(sortedPrices.length / 2)]
       : 0;
     const lowPrice = sortedPrices[0] || 0;
@@ -140,7 +140,7 @@ serve(async (req) => {
     );
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    
+
     if (error instanceof z.ZodError) {
       return new Response(
         JSON.stringify({
@@ -157,7 +157,9 @@ serve(async (req) => {
       if (authResult.success && authResult.apiKey) {
         await logApiKeyUsage(authResult.apiKey.id, '/mcp/evaluate-price', req.method, 500, responseTime);
       }
-    } catch {}
+    } catch (e) {
+      console.error('Error logging API usage:', e);
+    }
 
     return new Response(
       JSON.stringify({

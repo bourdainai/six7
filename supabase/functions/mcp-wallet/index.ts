@@ -11,7 +11,7 @@ const walletSchema = z.object({
 
 serve(async (req) => {
   const startTime = Date.now();
-  
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -72,11 +72,14 @@ serve(async (req) => {
     const parsedParams = walletSchema.parse(params || {});
 
     // Get or create wallet
-    let { data: wallet, error: walletError } = await supabase
+    // Get or create wallet
+    const { data: initialWallet, error: walletError } = await supabase
       .from('wallet_accounts')
       .select('*')
       .eq('user_id', apiKey.user_id)
       .single();
+
+    let wallet = initialWallet;
 
     if (walletError && walletError.code === 'PGRST116') {
       // Wallet doesn't exist, create it
@@ -85,7 +88,7 @@ serve(async (req) => {
         .insert({ user_id: apiKey.user_id, balance: 0 })
         .select()
         .single();
-      
+
       if (createError) throw createError;
       wallet = newWallet;
     } else if (walletError) {
@@ -193,7 +196,7 @@ serve(async (req) => {
     throw new Error('Invalid operation or missing amount');
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    
+
     if (error instanceof z.ZodError) {
       return new Response(
         JSON.stringify({
@@ -210,7 +213,9 @@ serve(async (req) => {
       if (authResult.success && authResult.apiKey) {
         await logApiKeyUsage(authResult.apiKey.id, '/mcp/wallet', req.method, 500, responseTime);
       }
-    } catch {}
+    } catch (e) {
+      console.error('Error logging API usage:', e);
+    }
 
     return new Response(
       JSON.stringify({

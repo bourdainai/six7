@@ -59,6 +59,48 @@ const VerificationRequirements = () => {
     return requirementMap[requirement] || requirement.replace(/\./g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
+  const currentlyDue = requirements?.currently_due || [];
+  const eventuallyDue = requirements?.eventually_due || [];
+  const pastDue = requirements?.past_due || [];
+  const disabledReason = requirements?.disabled_reason;
+  const chargesEnabled = requirements?.charges_enabled;
+  const detailsSubmitted = requirements?.details_submitted;
+
+  const hasRequirements = currentlyDue.length > 0 || eventuallyDue.length > 0 || pastDue.length > 0;
+  const isFullyVerified = chargesEnabled && detailsSubmitted && !hasRequirements;
+
+  // Calculate verification progress
+  const verificationProgress = useMemo(() => {
+    if (!requirements) return 0;
+    if (isFullyVerified) return 100;
+
+    // Count total requirements
+    const totalRequirements = currentlyDue.length + eventuallyDue.length + pastDue.length;
+    if (totalRequirements === 0) return 100;
+
+    // Estimate progress based on what's completed
+    // If details are submitted, we're at least 50% done
+    const baseProgress = detailsSubmitted ? 50 : 0;
+
+    // Calculate remaining progress based on requirements
+    // Past due items are critical (weighted more)
+    const criticalItems = pastDue.length;
+    const importantItems = currentlyDue.length;
+    const futureItems = eventuallyDue.length;
+
+    // If no critical or important items, we're mostly done
+    if (criticalItems === 0 && importantItems === 0) {
+      return Math.min(90, baseProgress + 40);
+    }
+
+    // Otherwise, show progress based on what's left
+    const remainingWeight = criticalItems * 3 + importantItems * 2 + futureItems;
+    const maxWeight = totalRequirements * 3; // Assume all were critical at start
+    const completedWeight = maxWeight - remainingWeight;
+
+    return Math.max(baseProgress, Math.min(95, (completedWeight / maxWeight) * 100));
+  }, [requirements, isFullyVerified, detailsSubmitted, currentlyDue.length, eventuallyDue.length, pastDue.length]);
+
   if (isLoading) {
     return (
       <Card>
@@ -78,47 +120,6 @@ const VerificationRequirements = () => {
   if (!requirements) {
     return null;
   }
-
-  const currentlyDue = requirements.currently_due || [];
-  const eventuallyDue = requirements.eventually_due || [];
-  const pastDue = requirements.past_due || [];
-  const disabledReason = requirements.disabled_reason;
-  const chargesEnabled = requirements.charges_enabled;
-  const detailsSubmitted = requirements.details_submitted;
-
-  const hasRequirements = currentlyDue.length > 0 || eventuallyDue.length > 0 || pastDue.length > 0;
-  const isFullyVerified = chargesEnabled && detailsSubmitted && !hasRequirements;
-
-  // Calculate verification progress
-  const verificationProgress = useMemo(() => {
-    if (isFullyVerified) return 100;
-    
-    // Count total requirements
-    const totalRequirements = currentlyDue.length + eventuallyDue.length + pastDue.length;
-    if (totalRequirements === 0) return 100;
-    
-    // Estimate progress based on what's completed
-    // If details are submitted, we're at least 50% done
-    const baseProgress = detailsSubmitted ? 50 : 0;
-    
-    // Calculate remaining progress based on requirements
-    // Past due items are critical (weighted more)
-    const criticalItems = pastDue.length;
-    const importantItems = currentlyDue.length;
-    const futureItems = eventuallyDue.length;
-    
-    // If no critical or important items, we're mostly done
-    if (criticalItems === 0 && importantItems === 0) {
-      return Math.min(90, baseProgress + 40);
-    }
-    
-    // Otherwise, show progress based on what's left
-    const remainingWeight = criticalItems * 3 + importantItems * 2 + futureItems;
-    const maxWeight = totalRequirements * 3; // Assume all were critical at start
-    const completedWeight = maxWeight - remainingWeight;
-    
-    return Math.max(baseProgress, Math.min(95, (completedWeight / maxWeight) * 100));
-  }, [isFullyVerified, detailsSubmitted, currentlyDue.length, eventuallyDue.length, pastDue.length]);
 
   return (
     <Card>

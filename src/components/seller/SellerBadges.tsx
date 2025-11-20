@@ -2,16 +2,16 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { 
-  CheckCircle2, 
-  Star, 
-  Truck, 
-  Award, 
-  Shield, 
-  Sparkles, 
-  Building2, 
-  Mail, 
-  Phone, 
+import {
+  CheckCircle2,
+  Star,
+  Truck,
+  Award,
+  Shield,
+  Sparkles,
+  Building2,
+  Mail,
+  Phone,
   CreditCard,
   Zap
 } from "lucide-react";
@@ -72,11 +72,11 @@ const badgeColors: Record<string, string> = {
   stripe_verified: "bg-green-500/10 text-green-500 border-green-500/20",
 };
 
-export const SellerBadges = ({ 
-  sellerId, 
-  showVerifications = true, 
+export const SellerBadges = ({
+  sellerId,
+  showVerifications = true,
   size = "md",
-  className = "" 
+  className = ""
 }: SellerBadgesProps) => {
   const { data: badges, isLoading: badgesLoading } = useQuery({
     queryKey: ["seller-badges", sellerId],
@@ -89,7 +89,7 @@ export const SellerBadges = ({
         .order("earned_at", { ascending: false });
 
       if (error) throw error;
-      return (data || []) as any;
+      return (data || []) as unknown as SellerBadge[];
     },
   });
 

@@ -3,8 +3,10 @@ import { Heart, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useRef, useEffect } from "react";
 
+import type { ListingSummary } from "@/types/listings";
+
 interface FeedCardProps {
-  listing: any;
+  listing: ListingSummary;
 }
 
 export function FeedCard({ listing }: FeedCardProps) {

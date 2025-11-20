@@ -14,10 +14,23 @@ interface MCPAgentDashboardProps {
   apiKey: string;
 }
 
+interface TestResultItem {
+  id: string;
+  title: string;
+  price: number;
+  condition: string;
+}
+
+interface TestResult {
+  total: number;
+  results: TestResultItem[];
+  execution_time_ms: number;
+}
+
 export const MCPAgentDashboard: React.FC<MCPAgentDashboardProps> = ({ apiKey }) => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
-  const [testResult, setTestResult] = useState<any>(null);
+  const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [testing, setTesting] = useState(false);
 
   const mcpClient = React.useMemo(() => createMCPClient(apiKey), [apiKey]);
@@ -165,7 +178,7 @@ export const MCPAgentDashboard: React.FC<MCPAgentDashboardProps> = ({ apiKey }) 
                   <Badge>{testResult.total} found</Badge>
                 </div>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {testResult.results.map((result: any) => (
+                  {testResult.results.map((result: TestResultItem) => (
                     <div key={result.id} className="p-2 bg-background rounded text-sm">
                       <div className="font-medium">{result.title}</div>
                       <div className="text-muted-foreground">£{result.price.toFixed(2)} • {result.condition}</div>

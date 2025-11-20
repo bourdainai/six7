@@ -3,6 +3,14 @@ import { useTradeOffers } from "@/hooks/useTradeOffers";
 import { TradeOfferCard } from "@/components/trade/TradeOfferCard";
 import { Skeleton } from "@/components/ui/skeleton";
 
+import type { Database } from "@/integrations/supabase/types";
+
+type TradeOfferWithDetails = Database["public"]["Tables"]["trade_offers"]["Row"] & {
+  target_listing: Database["public"]["Tables"]["listings"]["Row"];
+  buyer: Database["public"]["Tables"]["profiles"]["Row"];
+  seller: Database["public"]["Tables"]["profiles"]["Row"];
+}
+
 export default function TradeOffersPage() {
   const { offers, isLoading } = useTradeOffers();
 
@@ -17,8 +25,8 @@ export default function TradeOffersPage() {
             {offers?.length === 0 ? (
               <p className="text-muted-foreground">No active offers.</p>
             ) : (
-              offers?.map((offer: any) => (
-                <TradeOfferCard key={offer.id} offer={offer} />
+              offers?.map((offer) => (
+                <TradeOfferCard key={offer.id} offer={offer as unknown as TradeOfferWithDetails} />
               ))
             )}
           </div>

@@ -2,9 +2,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
-export function QuickListModal({ open, onOpenChange }: any) {
+interface QuickListModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function QuickListModal({ open, onOpenChange }: QuickListModalProps) {
   const [step, setStep] = useState('upload'); // upload, analyzing, review
-  
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>

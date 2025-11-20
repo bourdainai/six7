@@ -22,6 +22,7 @@ interface FraudFlagDetails {
   duplicate_count?: number;
   stock_photo_count?: number;
   total_images?: number;
+  [key: string]: Json | undefined;
 }
 
 type FraudFlagWithRelations = FraudFlagRow & {
@@ -32,16 +33,16 @@ type FraudFlagWithRelations = FraudFlagRow & {
 
 type FlagStatusFilter = "pending" | "reviewed" | "confirmed" | "dismissed" | "all";
 
-const isFraudFlagDetails = (details: Json | null): details is any => {
+const isFraudFlagDetails = (details: Json | null): details is FraudFlagDetails => {
   return !!details && typeof details === "object" && !Array.isArray(details);
 };
 
 export default function FraudDashboard() {
   const navigate = useNavigate();
-    const [selectedStatus, setSelectedStatus] = useState<FlagStatusFilter>("pending");
+  const [selectedStatus, setSelectedStatus] = useState<FlagStatusFilter>("pending");
 
   // Fetch fraud flags
-    const { data: flags, isLoading, refetch } = useQuery<FraudFlagWithRelations[]>({
+  const { data: flags, isLoading, refetch } = useQuery<FraudFlagWithRelations[]>({
     queryKey: ["fraud-flags", selectedStatus],
     queryFn: async () => {
       const query = supabase
@@ -60,7 +61,7 @@ export default function FraudDashboard() {
 
       const { data, error } = await query;
       if (error) throw error;
-        return data as FraudFlagWithRelations[];
+      return data as FraudFlagWithRelations[];
     }
   });
 
@@ -122,172 +123,172 @@ export default function FraudDashboard() {
           </p>
         </div>
 
-      {/* Stats Overview */}
-      <div className="grid gap-4 md:grid-cols-4 mb-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Review</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{pendingCount}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Confirmed Fraud</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">{confirmedCount}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Flags</CardTitle>
-            <Shield className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{flags?.length || 0}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Dismissed</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {flags?.filter(f => f.status === "dismissed").length || 0}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+        {/* Stats Overview */}
+        <div className="grid gap-4 md:grid-cols-4 mb-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Pending Review</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{pendingCount}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Confirmed Fraud</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-red-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">{confirmedCount}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Flags</CardTitle>
+              <Shield className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{flags?.length || 0}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Dismissed</CardTitle>
+              <CheckCircle className="h-4 w-4 text-green-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                {flags?.filter(f => f.status === "dismissed").length || 0}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-      {/* Flags List */}
-      <Tabs value={selectedStatus} onValueChange={(value) => setSelectedStatus(value as FlagStatusFilter)}>
-        <TabsList>
-          <TabsTrigger value="pending">Pending</TabsTrigger>
-          <TabsTrigger value="reviewed">Reviewed</TabsTrigger>
-          <TabsTrigger value="confirmed">Confirmed</TabsTrigger>
-          <TabsTrigger value="dismissed">Dismissed</TabsTrigger>
-          <TabsTrigger value="all">All</TabsTrigger>
-        </TabsList>
+        {/* Flags List */}
+        <Tabs value={selectedStatus} onValueChange={(value) => setSelectedStatus(value as FlagStatusFilter)}>
+          <TabsList>
+            <TabsTrigger value="pending">Pending</TabsTrigger>
+            <TabsTrigger value="reviewed">Reviewed</TabsTrigger>
+            <TabsTrigger value="confirmed">Confirmed</TabsTrigger>
+            <TabsTrigger value="dismissed">Dismissed</TabsTrigger>
+            <TabsTrigger value="all">All</TabsTrigger>
+          </TabsList>
 
           <TabsContent value={selectedStatus} className="mt-6">
-          <div className="space-y-4">
-            {flags?.map((flag) => (
-              <Card key={flag.id}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        {getFlagTypeLabel(flag.flag_type)}
-                        <RiskScoreIndicator score={flag.risk_score} type="risk" size="sm" />
-                      </CardTitle>
-                      <CardDescription>
-                        {flag.profiles?.full_name || flag.profiles?.email || "Unknown User"}
-                        {flag.profiles?.trust_score && (
-                          <span className="ml-2">
-                            <RiskScoreIndicator score={flag.profiles.trust_score} type="trust" size="sm" />
-                          </span>
-                        )}
-                      </CardDescription>
+            <div className="space-y-4">
+              {flags?.map((flag) => (
+                <Card key={flag.id}>
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          {getFlagTypeLabel(flag.flag_type)}
+                          <RiskScoreIndicator score={flag.risk_score} type="risk" size="sm" />
+                        </CardTitle>
+                        <CardDescription>
+                          {flag.profiles?.full_name || flag.profiles?.email || "Unknown User"}
+                          {flag.profiles?.trust_score && (
+                            <span className="ml-2">
+                              <RiskScoreIndicator score={flag.profiles.trust_score} type="trust" size="sm" />
+                            </span>
+                          )}
+                        </CardDescription>
+                      </div>
+                      <Badge variant={
+                        flag.status === "confirmed" ? "destructive" :
+                          flag.status === "dismissed" ? "secondary" :
+                            "default"
+                      }>
+                        {flag.status}
+                      </Badge>
                     </div>
-                    <Badge variant={
-                      flag.status === "confirmed" ? "destructive" :
-                      flag.status === "dismissed" ? "secondary" :
-                      "default"
-                    }>
-                      {flag.status}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {/* Details */}
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {/* Details */}
                       {isFraudFlagDetails(flag.details) && (
                         <div className="text-sm text-muted-foreground">
-                          {(flag.details as any).message && <p>{(flag.details as any).message}</p>}
-                          {(flag.details as any).duplicate_count && (
-                            <p>Duplicate listings found: {(flag.details as any).duplicate_count}</p>
+                          {flag.details.message && <p>{flag.details.message}</p>}
+                          {flag.details.duplicate_count && (
+                            <p>Duplicate listings found: {flag.details.duplicate_count}</p>
                           )}
-                          {(flag.details as any).stock_photo_count && (
-                            <p>Stock photos: {(flag.details as any).stock_photo_count}/{(flag.details as any).total_images}</p>
+                          {flag.details.stock_photo_count && (
+                            <p>Stock photos: {flag.details.stock_photo_count}/{flag.details.total_images}</p>
                           )}
                         </div>
                       )}
 
-                    {/* Linked Items */}
-                    <div className="flex flex-wrap gap-2 text-sm">
-                      {flag.listings && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate(`/listing/${flag.listing_id}`)}
-                        >
-                          View Listing: {flag.listings.title}
-                        </Button>
-                      )}
-                      {flag.orders && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate(`/orders`)}
-                        >
-                          View Order
-                        </Button>
-                      )}
-                    </div>
-
-                    {/* Actions */}
-                    {flag.status === "pending" && (
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleUpdateStatus(flag.id, "confirmed")}
-                        >
-                          Confirm Fraud
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleUpdateStatus(flag.id, "dismissed")}
-                        >
-                          Dismiss
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => handleUpdateStatus(flag.id, "reviewed")}
-                        >
-                          Mark Reviewed
-                        </Button>
+                      {/* Linked Items */}
+                      <div className="flex flex-wrap gap-2 text-sm">
+                        {flag.listings && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate(`/listing/${flag.listing_id}`)}
+                          >
+                            View Listing: {flag.listings.title}
+                          </Button>
+                        )}
+                        {flag.orders && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate(`/orders`)}
+                          >
+                            View Order
+                          </Button>
+                        )}
                       </div>
-                    )}
 
-                    {/* Timestamp */}
-                    <p className="text-xs text-muted-foreground">
-                      Created: {new Date(flag.created_at).toLocaleString()}
-                      {flag.reviewed_at && ` • Reviewed: ${new Date(flag.reviewed_at).toLocaleString()}`}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                      {/* Actions */}
+                      {flag.status === "pending" && (
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleUpdateStatus(flag.id, "confirmed")}
+                          >
+                            Confirm Fraud
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleUpdateStatus(flag.id, "dismissed")}
+                          >
+                            Dismiss
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => handleUpdateStatus(flag.id, "reviewed")}
+                          >
+                            Mark Reviewed
+                          </Button>
+                        </div>
+                      )}
 
-            {flags?.length === 0 && (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <Shield className="h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">No flags found for this status</p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </TabsContent>
-      </Tabs>
+                      {/* Timestamp */}
+                      <p className="text-xs text-muted-foreground">
+                        Created: {new Date(flag.created_at).toLocaleString()}
+                        {flag.reviewed_at && ` • Reviewed: ${new Date(flag.reviewed_at).toLocaleString()}`}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+
+              {flags?.length === 0 && (
+                <Card>
+                  <CardContent className="flex flex-col items-center justify-center py-12">
+                    <Shield className="h-12 w-12 text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground">No flags found for this status</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

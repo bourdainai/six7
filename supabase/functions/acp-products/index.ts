@@ -15,7 +15,7 @@ const querySchema = z.object({
 
 serve(async (req) => {
   const startTime = Date.now();
-  
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -26,9 +26,9 @@ serve(async (req) => {
     if (!authResult.success) {
       return new Response(
         JSON.stringify({ error: authResult.error }),
-        { 
-          status: authResult.statusCode || 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: authResult.statusCode || 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
     }
@@ -39,19 +39,19 @@ serve(async (req) => {
     const rateLimitResult = await checkRateLimit(apiKey.id, '/acp/products', req.method);
     if (!rateLimitResult.allowed) {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'Rate limit exceeded',
-          retry_after: rateLimitResult.retryAfter 
+          retry_after: rateLimitResult.retryAfter
         }),
-        { 
+        {
           status: 429,
-          headers: { 
-            ...corsHeaders, 
+          headers: {
+            ...corsHeaders,
             'Content-Type': 'application/json',
             'Retry-After': rateLimitResult.retryAfter?.toString() || '3600',
             'X-RateLimit-Limit': apiKey.rate_limit_per_hour.toString(),
             'X-RateLimit-Remaining': '0',
-          } 
+          }
         }
       );
     }
@@ -200,23 +200,25 @@ serve(async (req) => {
     );
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    
+
     // Try to log error if we have API key context
     try {
       const authResult = await validateApiKey(req, ['acp_read']);
       if (authResult.success && authResult.apiKey) {
         await logApiKeyUsage(authResult.apiKey.id, '/acp/products', req.method, 500, responseTime);
       }
-    } catch {}
+    } catch (e) {
+      console.error('Error logging API usage:', e);
+    }
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: 'Internal server error',
         details: error instanceof Error ? error.message : 'Unknown error',
       }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
   }

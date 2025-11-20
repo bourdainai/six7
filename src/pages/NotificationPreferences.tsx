@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { Database, Json } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { PageLayout } from "@/components/PageLayout";
@@ -47,7 +48,7 @@ const NotificationPreferences = () => {
     },
   });
 
-  const preferences: NotificationPreferences = (profile?.notification_preferences as any) || {
+  const preferences: NotificationPreferences = (profile?.notification_preferences as unknown as NotificationPreferences) || {
     email_enabled: true,
     push_enabled: true,
     email_order_confirmation: true,
@@ -68,7 +69,7 @@ const NotificationPreferences = () => {
       const { error } = await supabase
         .from("profiles")
         .update({
-          notification_preferences: newPreferences as any,
+          notification_preferences: newPreferences as unknown as Json,
         })
         .eq("id", user!.id);
 
@@ -152,7 +153,7 @@ const NotificationPreferences = () => {
             {/* Individual Email Types */}
             <div className="space-y-4">
               <h3 className="text-sm font-semibold">Email Types</h3>
-              
+
               <div className="flex items-center justify-between p-3 border rounded-lg">
                 <div className="flex-1">
                   <Label htmlFor="order-confirmation" className="text-sm font-medium">

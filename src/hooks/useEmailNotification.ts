@@ -3,12 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 interface SendEmailNotificationParams {
-  type: 'order_confirmation' | 'payment_received' | 'shipping_update' | 'new_message' | 
-        'price_drop' | 'offer_update' | 'review_request' | 'order_delivered' | 
-        'payout_completed' | 'listing_published' | 'dispute_created' | 'account_verification';
+  type: 'order_confirmation' | 'payment_received' | 'shipping_update' | 'new_message' |
+  'price_drop' | 'offer_update' | 'review_request' | 'order_delivered' |
+  'payout_completed' | 'listing_published' | 'dispute_created' | 'account_verification';
   subject: string;
   template: string;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
   userId?: string;
 }
 

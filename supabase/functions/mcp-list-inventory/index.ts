@@ -10,7 +10,7 @@ const listInventorySchema = z.object({
 
 serve(async (req) => {
   const startTime = Date.now();
-  
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -132,7 +132,7 @@ serve(async (req) => {
     );
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    
+
     if (error instanceof z.ZodError) {
       return new Response(
         JSON.stringify({
@@ -149,7 +149,9 @@ serve(async (req) => {
       if (authResult.success && authResult.apiKey) {
         await logApiKeyUsage(authResult.apiKey.id, '/mcp/list-inventory', req.method, 500, responseTime);
       }
-    } catch {}
+    } catch (e) {
+      console.error('Error logging API usage:', e);
+    }
 
     return new Response(
       JSON.stringify({

@@ -148,7 +148,17 @@ const SellItem = () => {
     setImageFiles(newFiles);
   };
 
-  const handleMagicSearchSelect = (cardData: any) => {
+  interface MagicCardData {
+    title: string;
+    description: string;
+    set_code: string;
+    card_number: string;
+    rarity: string;
+    original_rrp: number | null;
+    image_url?: string;
+  }
+
+  const handleMagicSearchSelect = (cardData: MagicCardData) => {
     setListingData(prev => ({
       ...prev,
       title: cardData.title,
@@ -276,584 +286,584 @@ const SellItem = () => {
     }
   };
 
-const handleGetPriceSuggestion = async (title?: string, setCode?: string, cardNumber?: string) => {
-  const t = title || listingData.title;
-  const s = setCode || listingData.set_code;
-  const c = cardNumber || listingData.card_number; // Note: card_number is in category_attributes in submit, but we need it here. 
-  // Actually listingData has card_number at top level in our state interface, so that's fine.
+  const handleGetPriceSuggestion = async (title?: string, setCode?: string, cardNumber?: string) => {
+    const t = title || listingData.title;
+    const s = setCode || listingData.set_code;
+    const c = cardNumber || listingData.card_number; // Note: card_number is in category_attributes in submit, but we need it here. 
+    // Actually listingData has card_number at top level in our state interface, so that's fine.
 
-  if (!t && !s) {
-    toast({ title: "Need more info", description: "Please enter a title or set code first.", variant: "destructive" });
-    return;
-  }
+    if (!t && !s) {
+      toast({ title: "Need more info", description: "Please enter a title or set code first.", variant: "destructive" });
+      return;
+    }
 
-  setGettingPrice(true);
-  setSuggestedPrice(null);
+    setGettingPrice(true);
+    setSuggestedPrice(null);
 
-  try {
-    const { data, error } = await supabase.functions.invoke('ai-price-suggestion', {
-      body: { card_name: t, set_code: s, card_number: c }
-    });
-
-    if (error) throw error;
-    if (!data.success) throw new Error(data.error || "Could not find price");
-
-    if (data.suggestedPrice) {
-      setSuggestedPrice({
-        price: data.suggestedPrice,
-        low: data.range?.low || data.suggestedPrice * 0.8,
-        high: data.range?.high || data.suggestedPrice * 1.2
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-price-suggestion', {
+        body: { card_name: t, set_code: s, card_number: c }
       });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error || "Could not find price");
+
+      if (data.suggestedPrice) {
+        setSuggestedPrice({
+          price: data.suggestedPrice,
+          low: data.range?.low || data.suggestedPrice * 0.8,
+          high: data.range?.high || data.suggestedPrice * 1.2
+        });
+        toast({
+          title: "Price Found!",
+          description: `Market price is $${data.suggestedPrice} (USD).`,
+        });
+      } else {
+        toast({ title: "No price data", description: "Card found but no market price available.", variant: "destructive" });
+      }
+
+    } catch (error) {
+      console.error("Price error:", error);
+      toast({ title: "Pricing Failed", description: "Could not fetch price suggestion.", variant: "destructive" });
+    } finally {
+      setGettingPrice(false);
+    }
+  };
+
+  const handlePublish = async () => {
+    if (!user || !selectedPrice || !listingData.title || !listingData.category || images.length === 0) {
       toast({
-        title: "Price Found!",
-        description: `Market price is $${data.suggestedPrice} (USD).`,
+        title: "Missing fields",
+        description: "Please add photos, a title, category, and price to list your card.",
+        variant: "destructive"
       });
-    } else {
-      toast({ title: "No price data", description: "Card found but no market price available.", variant: "destructive" });
+      return;
     }
 
-  } catch (error) {
-    console.error("Price error:", error);
-    toast({ title: "Pricing Failed", description: "Could not fetch price suggestion.", variant: "destructive" });
-  } finally {
-    setGettingPrice(false);
-  }
-};
-
-const handlePublish = async () => {
-  if (!user || !selectedPrice || !listingData.title || !listingData.category || images.length === 0) {
-    toast({
-      title: "Missing fields",
-      description: "Please add photos, a title, category, and price to list your card.",
-      variant: "destructive"
-    });
-    return;
-  }
-
-  if (!emailVerified) {
-    toast({
-      title: "Email verification required",
-      description: "Please verify your email address before listing.",
-      variant: "destructive"
-    });
-    return;
-  }
-
-  setPublishing(true);
-
-  try {
-    const listingPayload: ListingInsert = {
-      seller_id: user.id,
-      title: listingData.title,
-      description: listingData.description,
-      category: listingData.category,
-      subcategory: listingData.subcategory || null,
-
-      // Card specific fields - store in category_attributes as JSON
-      set_code: listingData.set_code || null,
-      condition: listingData.condition || null,
-      category_attributes: {
-        card_number: listingData.card_number || null,
-        rarity: listingData.rarity || null,
-        is_graded: listingData.is_graded || false,
-        grading_service: listingData.is_graded ? listingData.grading_service : null,
-        grading_score: listingData.is_graded ? (parseFloat(listingData.grading_score) || null) : null,
-      },
-
-      seller_price: Number(selectedPrice),
-      status: "active",
-      published_at: new Date().toISOString(),
-      ai_answer_engines_enabled: aiAnswerEnginesEnabled,
-
-      // Shipping
-      shipping_cost_uk: shipping.free_shipping ? 0 : shipping.shipping_cost_uk,
-      shipping_cost_europe: null, // Disabled for now
-      shipping_cost_international: null, // Disabled for now
-      free_shipping: shipping.free_shipping,
-      estimated_delivery_days: shipping.estimated_delivery_days,
-    };
-
-    const { data: listing, error: listingError } = await supabase
-      .from('listings')
-      .insert(listingPayload)
-      .select()
-      .single();
-
-    if (listingError) throw listingError;
-
-    // Upload images
-    // If images contains URLs that are not local blobs (from Magic Search), we need to fetch and convert them or handle differently
-    // For now, let's assume we only upload local files from imageFiles
-    // If a user selected a Magic Search image, we might need to "save" that remote URL to our bucket or just use it directly.
-    // Simplest approach: If imageFiles is empty but images has content (Magic Search), download it and upload to storage.
-
-    let filesToUpload = [...imageFiles];
-
-    if (filesToUpload.length === 0 && images.length > 0 && images[0].startsWith('http')) {
-      // Magic search result
-      try {
-        const response = await fetch(images[0]);
-        const blob = await response.blob();
-        const file = new File([blob], "magic-card.jpg", { type: "image/jpeg" });
-        filesToUpload = [file];
-      } catch (e) {
-        console.error("Failed to fetch magic image", e);
-      }
+    if (!emailVerified) {
+      toast({
+        title: "Email verification required",
+        description: "Please verify your email address before listing.",
+        variant: "destructive"
+      });
+      return;
     }
 
-    for (let i = 0; i < filesToUpload.length; i++) {
-      const file = filesToUpload[i];
-      const fileName = `${listing.id}/${Date.now()}-${i}.jpg`;
+    setPublishing(true);
 
-      const { error: uploadError } = await supabase.storage
-        .from('listing-images')
-        .upload(fileName, file);
+    try {
+      const listingPayload: ListingInsert = {
+        seller_id: user.id,
+        title: listingData.title,
+        description: listingData.description,
+        category: listingData.category,
+        subcategory: listingData.subcategory || null,
 
-      if (uploadError) {
-        if (import.meta.env.DEV) console.error("Image upload error:", uploadError);
-        continue;
+        // Card specific fields - store in category_attributes as JSON
+        set_code: listingData.set_code || null,
+        condition: listingData.condition || null,
+        category_attributes: {
+          card_number: listingData.card_number || null,
+          rarity: listingData.rarity || null,
+          is_graded: listingData.is_graded || false,
+          grading_service: listingData.is_graded ? listingData.grading_service : null,
+          grading_score: listingData.is_graded ? (parseFloat(listingData.grading_score) || null) : null,
+        },
+
+        seller_price: Number(selectedPrice),
+        status: "active",
+        published_at: new Date().toISOString(),
+        ai_answer_engines_enabled: aiAnswerEnginesEnabled,
+
+        // Shipping
+        shipping_cost_uk: shipping.free_shipping ? 0 : shipping.shipping_cost_uk,
+        shipping_cost_europe: null, // Disabled for now
+        shipping_cost_international: null, // Disabled for now
+        free_shipping: shipping.free_shipping,
+        estimated_delivery_days: shipping.estimated_delivery_days,
+      };
+
+      const { data: listing, error: listingError } = await supabase
+        .from('listings')
+        .insert(listingPayload)
+        .select()
+        .single();
+
+      if (listingError) throw listingError;
+
+      // Upload images
+      // If images contains URLs that are not local blobs (from Magic Search), we need to fetch and convert them or handle differently
+      // For now, let's assume we only upload local files from imageFiles
+      // If a user selected a Magic Search image, we might need to "save" that remote URL to our bucket or just use it directly.
+      // Simplest approach: If imageFiles is empty but images has content (Magic Search), download it and upload to storage.
+
+      let filesToUpload = [...imageFiles];
+
+      if (filesToUpload.length === 0 && images.length > 0 && images[0].startsWith('http')) {
+        // Magic search result
+        try {
+          const response = await fetch(images[0]);
+          const blob = await response.blob();
+          const file = new File([blob], "magic-card.jpg", { type: "image/jpeg" });
+          filesToUpload = [file];
+        } catch (e) {
+          console.error("Failed to fetch magic image", e);
+        }
       }
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('listing-images')
-        .getPublicUrl(fileName);
+      for (let i = 0; i < filesToUpload.length; i++) {
+        const file = filesToUpload[i];
+        const fileName = `${listing.id}/${Date.now()}-${i}.jpg`;
 
-      await supabase.from('listing_images').insert({
-        listing_id: listing.id,
-        image_url: publicUrl,
-        display_order: i
+        const { error: uploadError } = await supabase.storage
+          .from('listing-images')
+          .upload(fileName, file);
+
+        if (uploadError) {
+          if (import.meta.env.DEV) console.error("Image upload error:", uploadError);
+          continue;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('listing-images')
+          .getPublicUrl(fileName);
+
+        await supabase.from('listing_images').insert({
+          listing_id: listing.id,
+          image_url: publicUrl,
+          display_order: i
+        });
+      }
+
+      setPublishedListingId(listing.id);
+      toast({
+        title: "Listed Successfully!",
+        description: "Your card is now live on the marketplace.",
       });
+
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to publish listing.";
+      console.error(error);
+      toast({
+        title: "Publishing Failed",
+        description: message,
+        variant: "destructive"
+      });
+    } finally {
+      setPublishing(false);
     }
+  };
 
-    setPublishedListingId(listing.id);
-    toast({
-      title: "Listed Successfully!",
-      description: "Your card is now live on the marketplace.",
-    });
-
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to publish listing.";
-    console.error(error);
-    toast({
-      title: "Publishing Failed",
-      description: message,
-      variant: "destructive"
-    });
-  } finally {
-    setPublishing(false);
+  if (publishedListingId) {
+    return (
+      <PageLayout>
+        <div className="max-w-xl mx-auto text-center py-20 px-4">
+          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Check className="w-10 h-10 text-green-600" />
+          </div>
+          <h1 className="text-3xl font-light text-foreground mb-4">Card Listed!</h1>
+          <p className="text-muted-foreground mb-8">
+            Your listing is live. Good luck with the sale!
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button onClick={() => navigate(`/listing/${publishedListingId}`)} size="lg">
+              View Listing <ExternalLink className="ml-2 w-4 h-4" />
+            </Button>
+            <Button variant="outline" size="lg" onClick={() => window.location.reload()}>
+              List Another
+            </Button>
+          </div>
+        </div>
+      </PageLayout>
+    );
   }
-};
 
-if (publishedListingId) {
   return (
     <PageLayout>
-      <div className="max-w-xl mx-auto text-center py-20 px-4">
-        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-          <Check className="w-10 h-10 text-green-600" />
+      <SEO title="List Your Pokémon Card | 6Seven" />
+      <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} defaultMode="signup" />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 pt-6">
+        <div className="mb-8">
+          <h1 className="text-3xl font-light">List Your Card</h1>
+          <p className="text-muted-foreground">Add photos and details to start selling.</p>
         </div>
-        <h1 className="text-3xl font-light text-foreground mb-4">Card Listed!</h1>
-        <p className="text-muted-foreground mb-8">
-          Your listing is live. Good luck with the sale!
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button onClick={() => navigate(`/listing/${publishedListingId}`)} size="lg">
-            View Listing <ExternalLink className="ml-2 w-4 h-4" />
-          </Button>
-          <Button variant="outline" size="lg" onClick={() => window.location.reload()}>
-            List Another
-          </Button>
+
+        {/* Magic Search Section */}
+        <div className="mb-10">
+          <MagicCardSearch onSelect={handleMagicSearchSelect} />
         </div>
-      </div>
-    </PageLayout>
-  );
-}
 
-return (
-  <PageLayout>
-    <SEO title="List Your Pokémon Card | 6Seven" />
-    <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} defaultMode="signup" />
+        <div className="grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-8 items-start">
 
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 pt-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-light">List Your Card</h1>
-        <p className="text-muted-foreground">Add photos and details to start selling.</p>
-      </div>
-
-      {/* Magic Search Section */}
-      <div className="mb-10">
-        <MagicCardSearch onSelect={handleMagicSearchSelect} />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-8 items-start">
-
-        {/* Left Column: Photos (Sticky on Desktop) */}
-        <div className="lg:sticky lg:top-24 space-y-4">
-          <div className="bg-background border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/50 transition-colors relative group">
-            <input
-              type="file"
-              multiple
-              accept="image/*"
-              onChange={handleImageUpload}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-            />
-            <div className="flex flex-col items-center justify-center space-y-4">
-              <div className="w-16 h-16 bg-secondary/50 rounded-full flex items-center justify-center">
-                <Camera className="w-8 h-8 text-foreground/70" />
-              </div>
-              <div>
-                <p className="font-medium text-lg">Add Photos</p>
-                <p className="text-sm text-muted-foreground mt-1">Drag & drop or tap to select</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Image Previews */}
-          {images.length > 0 && (
-            <div className="grid grid-cols-3 gap-2">
-              {images.map((url, idx) => (
-                <div key={idx} className="relative aspect-[3/4] rounded-lg overflow-hidden border border-border group">
-                  <img src={url} alt="Preview" className="w-full h-full object-cover" />
-                  <button
-                    onClick={() => removeImage(idx)}
-                    className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 hover:bg-black/70 transition-colors"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
+          {/* Left Column: Photos (Sticky on Desktop) */}
+          <div className="lg:sticky lg:top-24 space-y-4">
+            <div className="bg-background border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/50 transition-colors relative group">
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+              />
+              <div className="flex flex-col items-center justify-center space-y-4">
+                <div className="w-16 h-16 bg-secondary/50 rounded-full flex items-center justify-center">
+                  <Camera className="w-8 h-8 text-foreground/70" />
                 </div>
-              ))}
+                <div>
+                  <p className="font-medium text-lg">Add Photos</p>
+                  <p className="text-sm text-muted-foreground mt-1">Drag & drop or tap to select</p>
+                </div>
+              </div>
             </div>
-          )}
 
-          {images.length === 0 && (
-            <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 flex gap-3">
-              <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-blue-800">
-                Tip: Clear photos of the front and back of the card help it sell faster.
-              </p>
-            </div>
+            {/* Image Previews */}
+            {images.length > 0 && (
+              <div className="grid grid-cols-3 gap-2">
+                {images.map((url, idx) => (
+                  <div key={idx} className="relative aspect-[3/4] rounded-lg overflow-hidden border border-border group">
+                    <img src={url} alt="Preview" className="w-full h-full object-cover" />
+                    <button
+                      onClick={() => removeImage(idx)}
+                      className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 hover:bg-black/70 transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {images.length === 0 && (
+              <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 flex gap-3">
+                <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-blue-800">
+                  Tip: Clear photos of the front and back of the card help it sell faster.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {images.length > 0 && (
+            <Button
+              onClick={handleAutoFill}
+              disabled={analyzing}
+              className="w-full mt-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-0"
+            >
+              {analyzing ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Analyzing Card...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Auto-Fill Details from Photos
+                </>
+              )}
+            </Button>
           )}
         </div>
 
-        {images.length > 0 && (
-          <Button
-            onClick={handleAutoFill}
-            disabled={analyzing}
-            className="w-full mt-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-0"
-          >
-            {analyzing ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Analyzing Card...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4 mr-2" />
-                Auto-Fill Details from Photos
-              </>
-            )}
-          </Button>
-        )}
-      </div>
+        {/* Right Column: Form Fields */}
+        <div className="space-y-8">
 
-      {/* Right Column: Form Fields */}
-      <div className="space-y-8">
-
-        {/* Basics */}
-        <section className="space-y-4">
-          <h2 className="text-xl font-medium border-b pb-2">Basics</h2>
-
-          <div className="space-y-2">
-            <Label>Title</Label>
-            <Input
-              placeholder="e.g. Charizard Base Set Unlimited Holo"
-              value={listingData.title}
-              onChange={e => setListingData({ ...listingData, title: e.target.value })}
-              className="text-lg"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Category</Label>
-              <Select
-                value={listingData.category}
-                onValueChange={val => setListingData({ ...listingData, category: val, subcategory: "" })}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Basics */}
+          <section className="space-y-4">
+            <h2 className="text-xl font-medium border-b pb-2">Basics</h2>
 
             <div className="space-y-2">
-              <Label>Subcategory</Label>
-              <Select
-                value={listingData.subcategory}
-                onValueChange={val => setListingData({ ...listingData, subcategory: val })}
-                disabled={!listingData.category}
-              >
-                <SelectTrigger><SelectValue placeholder="Select type..." /></SelectTrigger>
-                <SelectContent>
-                  {SUBCATEGORIES[listingData.category]?.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </section>
-
-        {/* Card Details */}
-        <section className="space-y-4">
-          <h2 className="text-xl font-medium border-b pb-2">Card Details</h2>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Set Name / Code</Label>
+              <Label>Title</Label>
               <Input
-                placeholder="e.g. BS 4/102"
-                value={listingData.set_code}
-                onChange={e => setListingData({ ...listingData, set_code: e.target.value })}
+                placeholder="e.g. Charizard Base Set Unlimited Holo"
+                value={listingData.title}
+                onChange={e => setListingData({ ...listingData, title: e.target.value })}
+                className="text-lg"
               />
             </div>
-            <div className="space-y-2">
-              <Label>Rarity</Label>
-              <Select
-                value={listingData.rarity}
-                onValueChange={val => setListingData({ ...listingData, rarity: val })}
-              >
-                <SelectTrigger><SelectValue placeholder="Select rarity" /></SelectTrigger>
-                <SelectContent>
-                  {[
-                    "Common",
-                    "Uncommon",
-                    "Rare",
-                    "Rare Holo",
-                    "Ultra Rare",
-                    "Secret Rare",
-                    "Special Illustration Rare",
-                    "Illustration Rare",
-                    "Hyper Rare",
-                    "Double Rare",
-                    "Radiant Rare",
-                    "Amazing Rare",
-                    "Rainbow Rare",
-                    "Shiny Rare",
-                    "ACE SPEC",
-                    "Promo"
-                  ].map(r => (
-                    <SelectItem key={r} value={r}>{r}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Condition</Label>
-              {listingData.condition && (
-                <Badge variant="secondary">{listingData.condition.replace(/_/g, ' ')}</Badge>
-              )}
-            </div>
-            <Select
-              value={listingData.condition}
-              onValueChange={val => setListingData({ ...listingData, condition: val as ConditionType })}
-            >
-              <SelectTrigger><SelectValue placeholder="Select condition" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="new_with_tags">Gem Mint / Mint (Sealed)</SelectItem>
-                <SelectItem value="like_new">Near Mint (NM)</SelectItem>
-                <SelectItem value="excellent">Lightly Played (LP)</SelectItem>
-                <SelectItem value="good">Moderately Played (MP)</SelectItem>
-                <SelectItem value="fair">Heavily Played (HP)</SelectItem>
-                <SelectItem value="poor">Damaged (DMG)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex items-center space-x-2 pt-2">
-            <Switch
-              id="graded"
-              checked={listingData.is_graded}
-              onCheckedChange={val => setListingData({ ...listingData, is_graded: val })}
-            />
-            <Label htmlFor="graded">This card is professionally graded</Label>
-          </div>
-
-          {listingData.is_graded && (
-            <div className="grid grid-cols-2 gap-4 p-4 bg-secondary/20 rounded-lg">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Grading Company</Label>
+                <Label>Category</Label>
                 <Select
-                  value={listingData.grading_service}
-                  onValueChange={val => setListingData({ ...listingData, grading_service: val })}
+                  value={listingData.category}
+                  onValueChange={val => setListingData({ ...listingData, category: val, subcategory: "" })}
                 >
-                  <SelectTrigger><SelectValue placeholder="Service" /></SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {["PSA", "BGS", "CGC", "ACE", "Other"].map(s => (
-                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Subcategory</Label>
+                <Select
+                  value={listingData.subcategory}
+                  onValueChange={val => setListingData({ ...listingData, subcategory: val })}
+                  disabled={!listingData.category}
+                >
+                  <SelectTrigger><SelectValue placeholder="Select type..." /></SelectTrigger>
+                  <SelectContent>
+                    {SUBCATEGORIES[listingData.category]?.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </section>
+
+          {/* Card Details */}
+          <section className="space-y-4">
+            <h2 className="text-xl font-medium border-b pb-2">Card Details</h2>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Set Name / Code</Label>
+                <Input
+                  placeholder="e.g. BS 4/102"
+                  value={listingData.set_code}
+                  onChange={e => setListingData({ ...listingData, set_code: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Rarity</Label>
+                <Select
+                  value={listingData.rarity}
+                  onValueChange={val => setListingData({ ...listingData, rarity: val })}
+                >
+                  <SelectTrigger><SelectValue placeholder="Select rarity" /></SelectTrigger>
+                  <SelectContent>
+                    {[
+                      "Common",
+                      "Uncommon",
+                      "Rare",
+                      "Rare Holo",
+                      "Ultra Rare",
+                      "Secret Rare",
+                      "Special Illustration Rare",
+                      "Illustration Rare",
+                      "Hyper Rare",
+                      "Double Rare",
+                      "Radiant Rare",
+                      "Amazing Rare",
+                      "Rainbow Rare",
+                      "Shiny Rare",
+                      "ACE SPEC",
+                      "Promo"
+                    ].map(r => (
+                      <SelectItem key={r} value={r}>{r}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label>Grade (0-10)</Label>
-                <Input
-                  type="number"
-                  placeholder="10"
-                  value={listingData.grading_score}
-                  onChange={e => setListingData({ ...listingData, grading_score: e.target.value })}
-                />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Condition</Label>
+                {listingData.condition && (
+                  <Badge variant="secondary">{listingData.condition.replace(/_/g, ' ')}</Badge>
+                )}
               </div>
-            </div>
-          )}
-        </section>
-
-        {/* Description */}
-        <section className="space-y-4">
-          <h2 className="text-xl font-medium border-b pb-2">Description</h2>
-          <Textarea
-            placeholder="Any swirls, print lines, or specific details about the card..."
-            rows={4}
-            value={listingData.description}
-            onChange={e => setListingData({ ...listingData, description: e.target.value })}
-          />
-        </section>
-
-        {/* Pricing */}
-        <section className="space-y-4">
-          <h2 className="text-xl font-medium border-b pb-2">Pricing</h2>
-          <div className="space-y-2">
-            <Label className="text-base">Selling Price (£)</Label>
-            <div className="relative">
-              <PoundSterling className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                type="number"
-                step="0.01"
-                className="pl-10 text-lg"
-                placeholder="0.00"
-                value={selectedPrice}
-                onChange={e => setSelectedPrice(e.target.value ? parseFloat(e.target.value) : "")}
-              />
-            </div>
-            <p className="text-sm text-muted-foreground">
-              We recommend checking sold listings on eBay or 130point for accurate pricing.
-            </p>
-
-            <div className="pt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleGetPriceSuggestion()}
-                disabled={gettingPrice}
-                className="w-full sm:w-auto"
+              <Select
+                value={listingData.condition}
+                onValueChange={val => setListingData({ ...listingData, condition: val as ConditionType })}
               >
-                {gettingPrice ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2 text-yellow-500" />}
-                Get Price Suggestion
-              </Button>
-
-              {suggestedPrice && (
-                <div className="mt-3 p-3 bg-green-50 border border-green-100 rounded-lg animate-in fade-in slide-in-from-top-2">
-                  <p className="text-sm font-medium text-green-800 mb-2">
-                    Market Price: ${suggestedPrice.price.toFixed(2)}
-                  </p>
-                  <p className="text-xs text-green-600 mb-3">
-                    Range: ${suggestedPrice.low.toFixed(2)} - ${suggestedPrice.high.toFixed(2)}
-                  </p>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="w-full bg-green-100 hover:bg-green-200 text-green-800 border-green-200"
-                    onClick={() => setSelectedPrice(suggestedPrice.price)}
-                  >
-                    Apply Price (${suggestedPrice.price})
-                  </Button>
-                </div>
-              )}
+                <SelectTrigger><SelectValue placeholder="Select condition" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="new_with_tags">Gem Mint / Mint (Sealed)</SelectItem>
+                  <SelectItem value="like_new">Near Mint (NM)</SelectItem>
+                  <SelectItem value="excellent">Lightly Played (LP)</SelectItem>
+                  <SelectItem value="good">Moderately Played (MP)</SelectItem>
+                  <SelectItem value="fair">Heavily Played (HP)</SelectItem>
+                  <SelectItem value="poor">Damaged (DMG)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          </div>
-        </section>
 
-        {/* Shipping */}
-        <section className="space-y-4">
-          <h2 className="text-xl font-medium border-b pb-2">Shipping</h2>
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="free-shipping"
-                checked={shipping.free_shipping}
-                onCheckedChange={(checked) => setShipping(prev => ({ ...prev, free_shipping: !!checked }))}
+            <div className="flex items-center space-x-2 pt-2">
+              <Switch
+                id="graded"
+                checked={listingData.is_graded}
+                onCheckedChange={val => setListingData({ ...listingData, is_graded: val })}
               />
-              <Label htmlFor="free-shipping" className="font-normal cursor-pointer">
-                I'll pay for shipping (Free for buyer)
-              </Label>
+              <Label htmlFor="graded">This card is professionally graded</Label>
             </div>
 
-            {!shipping.free_shipping && (
-              <div className="space-y-2 pl-6 border-l-2 border-border">
-                <Label>UK Shipping Cost (£)</Label>
+            {listingData.is_graded && (
+              <div className="grid grid-cols-2 gap-4 p-4 bg-secondary/20 rounded-lg">
+                <div className="space-y-2">
+                  <Label>Grading Company</Label>
+                  <Select
+                    value={listingData.grading_service}
+                    onValueChange={val => setListingData({ ...listingData, grading_service: val })}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Service" /></SelectTrigger>
+                    <SelectContent>
+                      {["PSA", "BGS", "CGC", "ACE", "Other"].map(s => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Grade (0-10)</Label>
+                  <Input
+                    type="number"
+                    placeholder="10"
+                    value={listingData.grading_score}
+                    onChange={e => setListingData({ ...listingData, grading_score: e.target.value })}
+                  />
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* Description */}
+          <section className="space-y-4">
+            <h2 className="text-xl font-medium border-b pb-2">Description</h2>
+            <Textarea
+              placeholder="Any swirls, print lines, or specific details about the card..."
+              rows={4}
+              value={listingData.description}
+              onChange={e => setListingData({ ...listingData, description: e.target.value })}
+            />
+          </section>
+
+          {/* Pricing */}
+          <section className="space-y-4">
+            <h2 className="text-xl font-medium border-b pb-2">Pricing</h2>
+            <div className="space-y-2">
+              <Label className="text-base">Selling Price (£)</Label>
+              <div className="relative">
+                <PoundSterling className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   type="number"
                   step="0.01"
-                  value={shipping.shipping_cost_uk}
-                  onChange={e => setShipping(prev => ({ ...prev, shipping_cost_uk: parseFloat(e.target.value) || 0 }))}
+                  className="pl-10 text-lg"
+                  placeholder="0.00"
+                  value={selectedPrice}
+                  onChange={e => setSelectedPrice(e.target.value ? parseFloat(e.target.value) : "")}
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                We recommend checking sold listings on eBay or 130point for accurate pricing.
+              </p>
+
+              <div className="pt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleGetPriceSuggestion()}
+                  disabled={gettingPrice}
+                  className="w-full sm:w-auto"
+                >
+                  {gettingPrice ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2 text-yellow-500" />}
+                  Get Price Suggestion
+                </Button>
+
+                {suggestedPrice && (
+                  <div className="mt-3 p-3 bg-green-50 border border-green-100 rounded-lg animate-in fade-in slide-in-from-top-2">
+                    <p className="text-sm font-medium text-green-800 mb-2">
+                      Market Price: ${suggestedPrice.price.toFixed(2)}
+                    </p>
+                    <p className="text-xs text-green-600 mb-3">
+                      Range: ${suggestedPrice.low.toFixed(2)} - ${suggestedPrice.high.toFixed(2)}
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="w-full bg-green-100 hover:bg-green-200 text-green-800 border-green-200"
+                      onClick={() => setSelectedPrice(suggestedPrice.price)}
+                    >
+                      Apply Price (${suggestedPrice.price})
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+
+          {/* Shipping */}
+          <section className="space-y-4">
+            <h2 className="text-xl font-medium border-b pb-2">Shipping</h2>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="free-shipping"
+                  checked={shipping.free_shipping}
+                  onCheckedChange={(checked) => setShipping(prev => ({ ...prev, free_shipping: !!checked }))}
+                />
+                <Label htmlFor="free-shipping" className="font-normal cursor-pointer">
+                  I'll pay for shipping (Free for buyer)
+                </Label>
+              </div>
+
+              {!shipping.free_shipping && (
+                <div className="space-y-2 pl-6 border-l-2 border-border">
+                  <Label>UK Shipping Cost (£)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={shipping.shipping_cost_uk}
+                    onChange={e => setShipping(prev => ({ ...prev, shipping_cost_uk: parseFloat(e.target.value) || 0 }))}
+                    className="max-w-[200px]"
+                  />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label>Estimated Delivery (Days)</Label>
+                <Input
+                  type="number"
+                  value={shipping.estimated_delivery_days}
+                  onChange={e => setShipping(prev => ({ ...prev, estimated_delivery_days: parseInt(e.target.value) || 3 }))}
                   className="max-w-[200px]"
                 />
               </div>
-            )}
-
-            <div className="space-y-2">
-              <Label>Estimated Delivery (Days)</Label>
-              <Input
-                type="number"
-                value={shipping.estimated_delivery_days}
-                onChange={e => setShipping(prev => ({ ...prev, estimated_delivery_days: parseInt(e.target.value) || 3 }))}
-                className="max-w-[200px]"
-              />
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* AI Answer Engines Visibility */}
-        <section className="space-y-4">
-          <h2 className="text-xl font-medium border-b pb-2">AI Agent Visibility</h2>
-          <AIAnswerEnginesToggle
-            enabled={aiAnswerEnginesEnabled}
-            onChange={setAiAnswerEnginesEnabled}
-            showLabel={true}
-            compact={false}
-          />
-        </section>
+          {/* AI Answer Engines Visibility */}
+          <section className="space-y-4">
+            <h2 className="text-xl font-medium border-b pb-2">AI Agent Visibility</h2>
+            <AIAnswerEnginesToggle
+              enabled={aiAnswerEnginesEnabled}
+              onChange={setAiAnswerEnginesEnabled}
+              showLabel={true}
+              compact={false}
+            />
+          </section>
 
-        {/* Footer Actions */}
-        <div className="sticky bottom-0 bg-background/95 backdrop-blur pt-4 pb-8 border-t mt-8 flex items-center justify-between">
-          <div className="text-sm text-muted-foreground hidden sm:block">
-            By listing, you agree to our seller terms.
+          {/* Footer Actions */}
+          <div className="sticky bottom-0 bg-background/95 backdrop-blur pt-4 pb-8 border-t mt-8 flex items-center justify-between">
+            <div className="text-sm text-muted-foreground hidden sm:block">
+              By listing, you agree to our seller terms.
+            </div>
+            <Button
+              size="lg"
+              className="w-full sm:w-auto min-w-[200px]"
+              onClick={handlePublish}
+              disabled={publishing}
+            >
+              {publishing ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Publishing...
+                </>
+              ) : (
+                <>
+                  Publish Listing
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </>
+              )}
+            </Button>
           </div>
-          <Button
-            size="lg"
-            className="w-full sm:w-auto min-w-[200px]"
-            onClick={handlePublish}
-            disabled={publishing}
-          >
-            {publishing ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Publishing...
-              </>
-            ) : (
-              <>
-                Publish Listing
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </>
-            )}
-          </Button>
+
         </div>
-
       </div>
-    </div>
-  </PageLayout>
-);
+    </PageLayout>
+  );
 };
 
 export default SellItem;

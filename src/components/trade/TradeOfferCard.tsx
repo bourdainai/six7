@@ -3,7 +3,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useTradeOffers } from "@/hooks/useTradeOffers";
 
-export function TradeOfferCard({ offer }: any) {
+import type { Database } from "@/integrations/supabase/types";
+
+type TradeOfferWithDetails = Database["public"]["Tables"]["trade_offers"]["Row"] & {
+  target_listing: Database["public"]["Tables"]["listings"]["Row"] | null;
+};
+
+interface TradeOfferCardProps {
+  offer: TradeOfferWithDetails;
+}
+
+export function TradeOfferCard({ offer }: TradeOfferCardProps) {
   const { acceptOffer, rejectOffer } = useTradeOffers();
 
   return (

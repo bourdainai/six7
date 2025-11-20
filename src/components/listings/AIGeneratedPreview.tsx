@@ -1,7 +1,16 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-export function AIGeneratedPreview({ listing, onConfirm }: any) {
+interface AIGeneratedPreviewProps {
+  listing: {
+    title: string;
+    description: string;
+    price: number;
+  };
+  onConfirm: () => void;
+}
+
+export function AIGeneratedPreview({ listing, onConfirm }: AIGeneratedPreviewProps) {
   return (
     <div className="space-y-4">
       <h3 className="font-medium">AI Generated Listing</h3>

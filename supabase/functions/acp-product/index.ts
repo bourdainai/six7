@@ -4,7 +4,7 @@ import { validateApiKey, checkRateLimit, logApiKeyUsage, corsHeaders } from "../
 
 serve(async (req) => {
   const startTime = Date.now();
-  
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -15,9 +15,9 @@ serve(async (req) => {
     if (!authResult.success) {
       return new Response(
         JSON.stringify({ error: authResult.error }),
-        { 
-          status: authResult.statusCode || 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: authResult.statusCode || 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
     }
@@ -28,17 +28,17 @@ serve(async (req) => {
     const rateLimitResult = await checkRateLimit(apiKey.id, '/acp/product', req.method);
     if (!rateLimitResult.allowed) {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'Rate limit exceeded',
-          retry_after: rateLimitResult.retryAfter 
+          retry_after: rateLimitResult.retryAfter
         }),
-        { 
+        {
           status: 429,
-          headers: { 
-            ...corsHeaders, 
+          headers: {
+            ...corsHeaders,
             'Content-Type': 'application/json',
             'Retry-After': rateLimitResult.retryAfter?.toString() || '3600',
-          } 
+          }
         }
       );
     }
@@ -90,7 +90,7 @@ serve(async (req) => {
 
     if (listingError || !listing) {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'Product not found or not available via ACP',
           details: 'This listing may not be enabled for AI agents, or it does not exist.'
         }),
@@ -195,22 +195,24 @@ serve(async (req) => {
     );
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    
+
     try {
       const authResult = await validateApiKey(req, ['acp_read']);
       if (authResult.success && authResult.apiKey) {
         await logApiKeyUsage(authResult.apiKey.id, '/acp/product', req.method, 500, responseTime);
       }
-    } catch {}
+    } catch (e) {
+      console.error('Error logging API usage:', e);
+    }
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: 'Internal server error',
         details: error instanceof Error ? error.message : 'Unknown error',
       }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
   }

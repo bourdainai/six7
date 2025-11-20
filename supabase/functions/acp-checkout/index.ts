@@ -24,7 +24,7 @@ const checkoutSchema = z.object({
 
 serve(async (req) => {
   const startTime = Date.now();
-  
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -35,9 +35,9 @@ serve(async (req) => {
     if (!authResult.success) {
       return new Response(
         JSON.stringify({ error: authResult.error }),
-        { 
-          status: authResult.statusCode || 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: authResult.statusCode || 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
     }
@@ -121,12 +121,12 @@ serve(async (req) => {
         .select('balance')
         .eq('user_id', apiKey.user_id)
         .single();
-      
+
       walletBalance = parseFloat(wallet?.balance || 0);
-      
+
       if (payment_method === 'wallet' && walletBalance < totalAmount) {
         return new Response(
-          JSON.stringify({ 
+          JSON.stringify({
             error: 'Insufficient wallet balance',
             required: totalAmount,
             available: walletBalance,
@@ -143,7 +143,7 @@ serve(async (req) => {
         apiVersion: '2023-10-16',
       });
 
-      const stripeAmount = payment_method === 'split' 
+      const stripeAmount = payment_method === 'split'
         ? Math.max(0, totalAmount - walletBalance)
         : totalAmount;
 
@@ -212,7 +212,7 @@ serve(async (req) => {
     );
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    
+
     if (error instanceof z.ZodError) {
       return new Response(
         JSON.stringify({ error: 'Invalid request data', details: error.errors }),
@@ -225,16 +225,18 @@ serve(async (req) => {
       if (authResult.success && authResult.apiKey) {
         await logApiKeyUsage(authResult.apiKey.id, '/acp/checkout', req.method, 500, responseTime);
       }
-    } catch {}
+    } catch (e) {
+      console.error('Error logging API usage:', e);
+    }
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: 'Internal server error',
         details: error instanceof Error ? error.message : 'Unknown error',
       }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
   }

@@ -1,4 +1,5 @@
 import React from "react";
+import type { ListingSummary } from "@/types/listings";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./auth/AuthProvider";
@@ -28,7 +29,7 @@ export const Feed = React.memo(() => {
         .eq('status', 'active')
         .order('created_at', { ascending: false })
         .limit(50); // Fetch top 50 newest items
-      
+
       if (error) throw error;
       return data || [];
     },
@@ -89,7 +90,7 @@ export const Feed = React.memo(() => {
         {listings.map((listing) => (
           <ListingCard
             key={listing.id}
-            listing={listing as any}
+            listing={listing as unknown as ListingSummary}
             onSaveClick={toggleSave}
             isSaved={isSaved(listing.id)}
             isSaving={isSaving}

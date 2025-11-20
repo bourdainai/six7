@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import type { Json } from "@/integrations/supabase/types";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -58,8 +59,8 @@ export const SavedSearchesPanel = ({
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
-      if (!error && data) {
-        setSearches(data as any);
+    if (!error && data) {
+      setSearches(data as unknown as SavedSearch[]);
     }
   };
 
@@ -70,8 +71,8 @@ export const SavedSearchesPanel = ({
       user_id: user.id,
       name: newSearchName.trim(),
       query: currentQuery,
-      filters: currentFilters as any,
-    } as any);
+      filters: currentFilters as unknown as Json,
+    });
 
     if (error) {
       toast({
@@ -153,11 +154,11 @@ export const SavedSearchesPanel = ({
             </div>
           ) : (
             searches.map((search) => (
-                <div
-                  key={search.id}
-                  className="group flex items-center justify-between p-2 hover:bg-accent rounded-md transition-colors cursor-pointer"
-                  onClick={() => onSelectSearch(search.query, search.filters ?? currentFilters)}
-                >
+              <div
+                key={search.id}
+                className="group flex items-center justify-between p-2 hover:bg-accent rounded-md transition-colors cursor-pointer"
+                onClick={() => onSelectSearch(search.query, search.filters ?? currentFilters)}
+              >
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{search.name}</p>
                   <p className="text-xs text-muted-foreground truncate">

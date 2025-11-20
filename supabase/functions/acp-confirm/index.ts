@@ -9,7 +9,7 @@ const confirmSchema = z.object({
 
 serve(async (req) => {
   const startTime = Date.now();
-  
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -140,7 +140,7 @@ serve(async (req) => {
         title: 'New Order Received',
         message: `Order #${order.id} has been placed`,
       },
-    }).catch(() => {});
+    }).catch(() => { });
 
     const responseTime = Date.now() - startTime;
     await logApiKeyUsage(apiKey.id, '/acp/confirm', req.method, 200, responseTime);
@@ -162,7 +162,7 @@ serve(async (req) => {
     );
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    
+
     if (error instanceof z.ZodError) {
       return new Response(
         JSON.stringify({ error: 'Invalid request data', details: error.errors }),
@@ -175,10 +175,12 @@ serve(async (req) => {
       if (authResult.success && authResult.apiKey) {
         await logApiKeyUsage(authResult.apiKey.id, '/acp/confirm', req.method, 500, responseTime);
       }
-    } catch {}
+    } catch (e) {
+      console.error('Error logging API usage:', e);
+    }
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: 'Internal server error',
         details: error instanceof Error ? error.message : 'Unknown error',
       }),

@@ -16,6 +16,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SEO } from "@/components/SEO";
 import { format } from "date-fns";
+import type { Database } from "@/integrations/supabase/types";
 
 interface FAQItem {
   id: string;
@@ -481,7 +482,7 @@ const Help = () => {
                 <CardContent>
                   {userTickets && userTickets.length > 0 ? (
                     <div className="space-y-4">
-                      {userTickets.map((ticket: any) => (
+                      {userTickets.map((ticket: Database["public"]["Tables"]["support_tickets"]["Row"]) => (
                         <div
                           key={ticket.id}
                           className="border rounded-lg p-4 space-y-2"
@@ -493,10 +494,10 @@ const Help = () => {
                                 {getStatusBadge(ticket.status)}
                               </div>
                               <p className="text-sm text-muted-foreground">
-                                {ticket.message ? (
+                                {ticket.description ? (
                                   <>
-                                    {ticket.message.substring(0, 150)}
-                                    {ticket.message.length > 150 && "..."}
+                                    {ticket.description.substring(0, 150)}
+                                    {ticket.description.length > 150 && "..."}
                                   </>
                                 ) : (
                                   "No message"

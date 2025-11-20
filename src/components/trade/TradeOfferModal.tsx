@@ -7,7 +7,13 @@ import { useTradeOffers } from "@/hooks/useTradeOffers";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
-export function TradeOfferModal({ open, onOpenChange, listingId }: any) {
+interface TradeOfferModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  listingId: string;
+}
+
+export function TradeOfferModal({ open, onOpenChange, listingId }: TradeOfferModalProps) {
   const [cashAmount, setCashAmount] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
@@ -59,9 +65,9 @@ export function TradeOfferModal({ open, onOpenChange, listingId }: any) {
       }
 
       await createOffer.mutateAsync({
-        targetListingId: listingId,
-        cashAmount: amount,
-        tradeItems: [], // For now we only support cash + uploaded photos
+        target_listing_id: listingId,
+        cash_amount: amount,
+        trade_items: [], // For now we only support cash + uploaded photos
         photos: uploadedUrls,
       });
 

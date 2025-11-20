@@ -9,7 +9,7 @@ const getListingSchema = z.object({
 
 serve(async (req) => {
   const startTime = Date.now();
-  
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -94,8 +94,8 @@ serve(async (req) => {
         JSON.stringify({
           jsonrpc: '2.0',
           id: id || null,
-          error: { 
-            code: -32004, 
+          error: {
+            code: -32004,
             message: 'Listing not found or not available via MCP',
             data: 'This listing may not be enabled for AI agents, or it does not exist.'
           },
@@ -166,7 +166,7 @@ serve(async (req) => {
     );
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    
+
     if (error instanceof z.ZodError) {
       return new Response(
         JSON.stringify({
@@ -183,7 +183,9 @@ serve(async (req) => {
       if (authResult.success && authResult.apiKey) {
         await logApiKeyUsage(authResult.apiKey.id, '/mcp/get-listing', req.method, 500, responseTime);
       }
-    } catch {}
+    } catch (e) {
+      console.error('Error logging API usage:', e);
+    }
 
     return new Response(
       JSON.stringify({

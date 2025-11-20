@@ -4,24 +4,24 @@ export interface MCPRequest {
   jsonrpc: '2.0';
   id: string | number | null;
   method: string;
-  params?: any;
+  params?: Record<string, unknown>;
 }
 
-export interface MCPResponse<T = any> {
+export interface MCPResponse<T = unknown> {
   jsonrpc: '2.0';
   id: string | number | null;
   result?: T;
   error?: {
     code: number;
     message: string;
-    data?: any;
+    data?: unknown;
   };
 }
 
 export interface MCPTool {
   name: string;
   description: string;
-  inputSchema: any;
+  inputSchema: Record<string, unknown>;
 }
 
 export interface MCPServerInfo {
@@ -51,7 +51,7 @@ export class MCPClient {
 
   private async call<T>(
     method: string,
-    params?: any
+    params?: Record<string, unknown>
   ): Promise<T> {
     const id = this.generateId();
     const request: MCPRequest = {
@@ -114,7 +114,7 @@ export class MCPClient {
   async listTools(): Promise<{
     tools: MCPTool[];
     server: MCPServerInfo;
-    capabilities: any;
+    capabilities: Record<string, unknown>;
   }> {
     return this.call('tools/list', {});
   }
@@ -287,7 +287,7 @@ export class MCPClient {
       description: string;
       price: number;
       condition: string;
-      card_detected: any;
+      card_detected: Record<string, unknown>;
     };
     confidence_score: number;
     warnings: string[];
@@ -403,7 +403,7 @@ export class MCPClient {
     authentic: boolean;
     authenticity_score: number;
     confidence: number;
-    details: any;
+    details: Record<string, unknown>;
     recommendations: string[];
     execution_time_ms: number;
   }> {
