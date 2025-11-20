@@ -14,8 +14,6 @@ serve(async (req) => {
 
   try {
     const apiKey = Deno.env.get('POKEMON_TCG_API_KEY');
-    // Note: Even without a key, the API allows some requests, but rate limits are stricter.
-    // We proceed either way, but log a warning if missing.
     if (!apiKey) {
       console.warn("POKEMON_TCG_API_KEY is not set. Rate limits will be restricted.");
     }
@@ -26,29 +24,43 @@ serve(async (req) => {
       throw new Error("Query parameter is required");
     }
 
-    // Construct search query for the API
-    // We'll search by name or number. The API syntax is quite specific.
-    // Example: name:charizard* OR number:4
-    
-    // Simple heuristic: if it looks like "name number" (e.g. "charizard 4"), split it.
+    const trimmedQuery = query.trim();
     let apiQuery = "";
-    const parts = query.trim().split(/\s+/);
-    
-    if (parts.length > 1) {
-        // Assume last part might be a number if it's digits, otherwise just name search
-        const lastPart = parts[parts.length - 1];
-        const namePart = parts.slice(0, -1).join(" ");
-        
-        // Check if last part looks like a card number (digits or simple alphanumeric)
-        if (/^\d+$/.test(lastPart) || /^[a-zA-Z0-9]+$/.test(lastPart)) {
-             apiQuery = `name:"${namePart}*" number:"${lastPart}"`;
-        } else {
-             apiQuery = `name:"${query}*"`;
-        }
+
+    // Regex patterns
+    const numberSlashTotal = /^(\d+|[a-zA-Z0-9]+)\/(\d+|[a-zA-Z0-9]+)$/; // e.g. "179/131" or "TG01/TG30"
+    const justNumber = /^(\d+)$/; // e.g. "179"
+
+    const slashMatch = trimmedQuery.match(numberSlashTotal);
+    const numberMatch = trimmedQuery.match(justNumber);
+
+    if (slashMatch) {
+      // Case: "179/131" -> Search specifically for number:179
+      // Ideally, we'd also filter by set printedTotal, but the API doesn't support searching by set.printedTotal directly in the query string easily without fetching all sets.
+      // Best approach: Search exact number match. The API results will likely contain the right one.
+      // We can also try to match set ptcgoCode if the user typed "SWSH01 179" but here they typed "179/131".
+      const cardNumber = slashMatch[1];
+      // We prioritize the exact number. 
+      apiQuery = `number:"${cardNumber}"`;
+      console.log(`Detected number/total format. Searching for number: ${cardNumber}`);
+    } else if (numberMatch) {
+        // Case: "179" -> Could be a card number. Prioritize number search.
+        apiQuery = `number:"${trimmedQuery}"`;
     } else {
-        // Single term: search name mostly, but maybe exact number match if short?
-        // Safer to just wildcard search name for single terms to start.
-        apiQuery = `name:"${query}*"`;
+        // Fallback to existing logic for name/mixed
+        const parts = trimmedQuery.split(/\s+/);
+        if (parts.length > 1) {
+            const lastPart = parts[parts.length - 1];
+            const namePart = parts.slice(0, -1).join(" ");
+            
+            if (/^\d+$/.test(lastPart) || /^[a-zA-Z0-9]+$/.test(lastPart)) {
+                 apiQuery = `name:"${namePart}*" number:"${lastPart}"`;
+            } else {
+                 apiQuery = `name:"${trimmedQuery}*"`;
+            }
+        } else {
+            apiQuery = `name:"${trimmedQuery}*"`;
+        }
     }
 
     console.log(`Searching Pokémon TCG API with query: ${apiQuery}`);
@@ -83,7 +95,9 @@ serve(async (req) => {
         series: card.set.series,
         ptcgoCode: card.set.ptcgoCode,
         releaseDate: card.set.releaseDate,
-        images: card.set.images
+        images: card.set.images,
+        printedTotal: card.set.printedTotal,
+        total: card.set.total
       },
       number: card.number,
       artist: card.artist,
@@ -112,4 +126,3 @@ serve(async (req) => {
     );
   }
 });
-
