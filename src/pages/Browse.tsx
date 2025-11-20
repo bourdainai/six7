@@ -10,6 +10,7 @@ import { ListingCard } from "@/components/ListingCard";
 import type { ListingSummary } from "@/types/listings";
 import { SEO } from "@/components/SEO";
 import { useLocation } from "react-router-dom";
+import { Search } from "lucide-react";
 
 const Browse = () => {
   const [filters, setFilters] = useState<FilterState>({

@@ -4,18 +4,11 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Search, SlidersHorizontal, X, Sparkles, Image, History, Star, ArrowRight, Loader2 } from "lucide-react";
+import { Search, SlidersHorizontal, X, Sparkles, Image, ArrowRight, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "./ui/command";
+import { Command, CommandGroup, CommandItem, CommandList } from "./ui/command";
 import { formatCondition } from "@/lib/format";
-import { SearchHistoryPanel } from "@/components/SearchHistoryPanel";
-import { SavedSearchesPanel } from "@/components/SavedSearchesPanel";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "./ui/popover";
 import {
   Sheet,
   SheetContent,
