@@ -46,12 +46,12 @@ export const ShowcaseSection = () => {
                             From vintage grails to modern chase cards, authenticated and ready for your collection.
                         </p>
                         <div className="flex flex-wrap gap-4">
-                            <Button asChild size="lg" className="bg-white text-black hover:bg-gray-200 hover:scale-105 transition-all duration-200 px-8 h-14 text-lg border-0">
+                            <Button asChild size="lg" className="bg-white text-black hover:bg-zinc-100 hover:scale-105 transition-all duration-200 px-8 h-14 text-lg border-0 shadow-lg">
                                 <Link to="/browse">
                                     Explore the Vault <ArrowRight className="ml-2 h-5 w-5" />
                                 </Link>
                             </Button>
-                            <Button asChild size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10 hover:scale-105 transition-all duration-200 px-8 h-14 text-lg">
+                            <Button asChild size="lg" className="bg-white text-black hover:bg-zinc-100 hover:scale-105 transition-all duration-200 px-8 h-14 text-lg border-0 shadow-lg">
                                 <Link to="/sell">Start Selling</Link>
                             </Button>
                         </div>
