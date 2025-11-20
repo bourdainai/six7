@@ -37,7 +37,8 @@ export function FeedCard({ listing }: FeedCardProps) {
     return () => observer.disconnect();
   }, []);
 
-  const primaryImage = listing.listing_images?.[0]?.image_url;
+  // Get primary image - prioritize first listing image
+  const primaryImage = listing.listing_images?.[0]?.image_url || listing.images?.[0]?.image_url;
   const hasVideo = !!listing.video_url;
 
   return (

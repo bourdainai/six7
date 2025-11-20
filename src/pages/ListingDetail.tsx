@@ -55,6 +55,30 @@ const ListingDetail = () => {
         .single();
 
       if (error) throw error;
+
+      // If listing has a card_id, fetch the Pokemon card image
+      if (data.card_id) {
+        const { data: cardData } = await supabase
+          .from("pokemon_card_attributes")
+          .select("images")
+          .eq("card_id", data.card_id)
+          .single();
+
+        if (cardData?.images) {
+          const images = typeof cardData.images === 'string' 
+            ? JSON.parse(cardData.images) 
+            : cardData.images;
+          
+          // Prepend the Pokemon card image to the listing images
+          const cardImage = {
+            image_url: images.large || images.small,
+            display_order: -1, // Show first
+          };
+          
+          data.images = [cardImage, ...(data.images || [])];
+        }
+      }
+
       return data;
     },
     staleTime: 1000 * 60 * 2, // 2 minutes
