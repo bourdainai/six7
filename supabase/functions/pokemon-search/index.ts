@@ -121,22 +121,24 @@ serve(async (req) => {
           }
         }
 
-        // Transform local database results to match API format
-        localResults = localCards.map((card: any) => ({
-          id: card.card_id,
-          name: card.name,
-          supertype: card.supertype,
-          subtypes: card.subtypes || [],
-          set: {
-            id: card.set_code,
-            name: card.set_name,
-            ptcgoCode: card.set_code,
-          },
-          number: card.number,
-          artist: card.artist,
-          rarity: card.rarity,
-          images: card.images || {},
-        }));
+      // Transform local database results to match API format
+      localResults = localCards.map((card: any) => ({
+        id: card.card_id,
+        name: card.name,
+        supertype: card.supertype,
+        subtypes: card.subtypes || [],
+        set: {
+          id: card.set_code,
+          name: card.set_name,
+          ptcgoCode: card.set_code,
+        },
+        number: card.number,
+        artist: card.artist,
+        rarity: card.rarity,
+        images: card.images || {},
+        tcgplayer: card.tcgplayer_prices || {},
+        cardmarket: card.cardmarket_prices || {},
+      }));
 
         console.log(`Found ${localResults.length} cards locally`);
       }
@@ -235,6 +237,9 @@ serve(async (req) => {
         images: card.images || {},
         tcgplayer_id: card.tcgplayer?.url?.split('/').pop(),
         cardmarket_id: card.cardmarket?.url?.split('/').pop(),
+        tcgplayer_prices: card.tcgplayer?.prices || null,
+        cardmarket_prices: card.cardmarket?.prices || null,
+        last_price_update: card.tcgplayer?.prices || card.cardmarket?.prices ? new Date().toISOString() : null,
         synced_at: new Date().toISOString(),
         sync_source: 'on_demand',
         popularity_score: 1, // Initial score for newly cached cards
