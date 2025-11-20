@@ -258,12 +258,12 @@ export const SearchFilters = ({
                   <div className="space-y-2">
                     <Label>Category</Label>
                     <Select 
-                      value={localFilters.category} 
-                      onValueChange={(v) => updateFilter("category", v)}
+                      value={localFilters.category || "all"} 
+                      onValueChange={(v) => updateFilter("category", v === "all" ? "" : v)}
                     >
                       <SelectTrigger><SelectValue placeholder="All Categories" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All Categories</SelectItem>
+                        <SelectItem value="all">All Categories</SelectItem>
                         {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                       </SelectContent>
                     </Select>
@@ -272,12 +272,12 @@ export const SearchFilters = ({
                   <div className="space-y-2">
                     <Label>Condition</Label>
                     <Select 
-                      value={localFilters.condition} 
-                      onValueChange={(v) => updateFilter("condition", v)}
+                      value={localFilters.condition || "all"} 
+                      onValueChange={(v) => updateFilter("condition", v === "all" ? "" : v)}
                     >
                       <SelectTrigger><SelectValue placeholder="Any Condition" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Any Condition</SelectItem>
+                        <SelectItem value="all">Any Condition</SelectItem>
                         {CONDITIONS.map(c => (
                           <SelectItem key={c} value={c}>{c === "All Conditions" ? "All" : formatCondition(c)}</SelectItem>
                         ))}
