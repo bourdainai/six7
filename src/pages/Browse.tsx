@@ -33,21 +33,60 @@ const Browse = () => {
   const itemsPerPage = 24;
 
   const { data: listings, isLoading } = useQuery<ListingSummary[]>({
-    queryKey: ["active-listings", page],
+    queryKey: ["active-listings", page, filters, sortBy],
     queryFn: async () => {
       const from = (page - 1) * itemsPerPage;
       const to = from + itemsPerPage - 1;
 
-      const { data, error } = await supabase
+      let query = supabase
         .from("listings")
         .select(`
           *,
           images:listing_images(image_url, display_order),
           seller:profiles!seller_id(id, full_name, trust_score)
         `, { count: 'exact' })
-        .eq("status", "active")
-        .order("created_at", { ascending: false })
-        .range(from, to);
+        .eq("status", "active");
+
+      // Server-side filtering
+      if (filters.category) {
+        query = query.eq("category", filters.category);
+      }
+      if (filters.condition) {
+        query = query.eq("condition", filters.condition as any);
+      }
+      if (filters.minPrice) {
+        query = query.gte("seller_price", Number(filters.minPrice));
+      }
+      if (filters.maxPrice) {
+        query = query.lte("seller_price", Number(filters.maxPrice));
+      }
+      if (filters.brand) {
+        query = query.ilike("brand", `%${filters.brand}%`);
+      }
+      if (filters.search) {
+        query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%,brand.ilike.%${filters.search}%`);
+      }
+
+      // Server-side sorting
+      switch (sortBy) {
+        case 'price_low':
+          query = query.order("seller_price", { ascending: true });
+          break;
+        case 'price_high':
+          query = query.order("seller_price", { ascending: false });
+          break;
+        case 'popular':
+          query = query.order("views", { ascending: false, nullsFirst: false });
+          break;
+        case 'newest':
+        default:
+          query = query.order("created_at", { ascending: false });
+          break;
+      }
+
+      query = query.range(from, to);
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return data as ListingSummary[];
@@ -55,67 +94,15 @@ const Browse = () => {
     staleTime: 1000 * 60, // 1 minute
   });
 
-  // Client-side filtering and sorting
+  // For semantic/vibe search results, use those directly
   const filteredListings = useMemo((): ListingSummary[] => {
     if (searchMode !== 'browse' && semanticResults) {
       return semanticResults;
     }
 
-    if (!listings) return [];
-
-    const filtered = listings.filter((listing) => {
-      // Search filter
-      if (filters.search) {
-        const searchLower = filters.search.toLowerCase();
-        const matchesSearch =
-          listing.title?.toLowerCase().includes(searchLower) ||
-          listing.description?.toLowerCase().includes(searchLower) ||
-          listing.brand?.toLowerCase().includes(searchLower);
-        if (!matchesSearch) return false;
-      }
-
-      // Category filter
-      if (filters.category && listing.category !== filters.category) {
-        return false;
-      }
-
-      // Condition filter
-      if (filters.condition && listing.condition !== filters.condition) {
-        return false;
-      }
-
-      // Price filters
-      if (filters.minPrice && listing.seller_price < Number(filters.minPrice)) {
-        return false;
-      }
-      if (filters.maxPrice && listing.seller_price > Number(filters.maxPrice)) {
-        return false;
-      }
-
-      return true;
-    });
-
-    // Apply sorting
-    switch (sortBy) {
-      case 'price_low':
-        filtered.sort((a, b) => a.seller_price - b.seller_price);
-        break;
-      case 'price_high':
-        filtered.sort((a, b) => b.seller_price - a.seller_price);
-        break;
-      case 'newest':
-        filtered.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
-        break;
-      case 'popular':
-        filtered.sort((a, b) => (b.views || 0) - (a.views || 0));
-        break;
-      case 'relevance':
-      default:
-        break;
-    }
-
-    return filtered;
-  }, [listings, filters, semanticResults, searchMode, sortBy]);
+    // Server-side filtering handles everything, just return listings
+    return listings || [];
+  }, [listings, semanticResults, searchMode]);
 
   const handleSemanticResults = (results: ListingSummary[]) => {
     setSemanticResults(results);

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React from "react";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,9 +12,9 @@ import { useNotifications, type NotificationRecord } from "@/hooks/useNotificati
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 
-export const NotificationCenter = () => {
+export const NotificationCenter = React.forwardRef<HTMLButtonElement>((props, ref) => {
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = React.useState(false);
   const navigate = useNavigate();
 
   const handleNotificationClick = (notification: NotificationRecord) => {
@@ -45,7 +45,7 @@ export const NotificationCenter = () => {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
+        <Button ref={ref} variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
             <Badge 
@@ -115,4 +115,6 @@ export const NotificationCenter = () => {
       </PopoverContent>
     </Popover>
   );
-};
+});
+
+NotificationCenter.displayName = "NotificationCenter";
