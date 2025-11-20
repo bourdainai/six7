@@ -304,7 +304,7 @@ const Checkout = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navigation />
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-[72px]">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-soft-neutral w-1/2"></div>
           <div className="h-64 bg-soft-neutral"></div>
@@ -357,7 +357,7 @@ const Checkout = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-24">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-[72px]">
         <button
           onClick={() => navigate(`/listing/${id}`)}
           className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors"

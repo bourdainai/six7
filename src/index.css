@@ -20,6 +20,50 @@
   /* Prevent content jumps */
   body {
     overflow-x: hidden;
+    /* Reserve space for scrollbar to prevent layout shift */
+    scrollbar-gutter: stable;
+  }
+  
+  /* Lock navigation bar to prevent any shifts */
+  nav[class*="fixed"] {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    height: 72px !important;
+    min-height: 72px !important;
+    max-height: 72px !important;
+    z-index: 50 !important;
+    contain: layout style paint !important;
+    will-change: auto !important;
+  }
+  
+  /* Lock navigation container */
+  nav[class*="fixed"] > div {
+    height: 72px !important;
+    min-height: 72px !important;
+    max-height: 72px !important;
+    contain: layout !important;
+  }
+  
+  /* Lock logo container */
+  nav[class*="fixed"] a[href="/"] {
+    height: 56px !important;
+    min-height: 56px !important;
+    max-height: 56px !important;
+    contain: layout !important;
+  }
+  
+  /* Lock logo image */
+  nav[class*="fixed"] img[alt="6Seven"] {
+    height: 56px !important;
+    min-height: 56px !important;
+    max-height: 56px !important;
+    width: auto !important;
+    contain: layout !important;
+    position: relative !important;
+    display: block !important;
   }
   
   /* Consistent container spacing */

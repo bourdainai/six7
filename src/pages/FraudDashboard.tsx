@@ -112,7 +112,7 @@ export default function FraudDashboard() {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-[72px]">
         <div className="mb-8 space-y-2">
           <h1 className="text-3xl font-light text-foreground">
             Fraud Detection Dashboard

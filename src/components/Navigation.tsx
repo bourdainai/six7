@@ -65,9 +65,38 @@ export const Navigation = React.memo(() => {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-divider-gray">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-[72px] flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 group relative h-14 flex-shrink-0" onClick={handleNavClick}>
+      <nav 
+        className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-divider-gray"
+        style={{
+          width: '100%',
+          height: '72px',
+          contain: 'layout style paint',
+          willChange: 'auto',
+        }}
+      >
+        <div 
+          className="max-w-7xl mx-auto px-4 sm:px-6 h-[72px] flex items-center justify-between"
+          style={{
+            width: '100%',
+            maxWidth: '1280px',
+            height: '72px',
+            minHeight: '72px',
+            maxHeight: '72px',
+            contain: 'layout',
+          }}
+        >
+          <Link 
+            to="/" 
+            className="flex items-center gap-2 group relative flex-shrink-0"
+            onClick={handleNavClick}
+            style={{
+              height: '56px',
+              minHeight: '56px',
+              maxHeight: '56px',
+              width: 'auto',
+              contain: 'layout',
+            }}
+          >
             <img 
               src={logo} 
               alt="6Seven" 
@@ -75,16 +104,18 @@ export const Navigation = React.memo(() => {
               style={{ 
                 width: 'auto',
                 height: '56px',
+                minHeight: '56px',
                 maxHeight: '56px',
                 display: 'block',
                 position: 'relative',
-                flexShrink: 0
+                flexShrink: 0,
+                contain: 'layout',
               }}
             />
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center gap-8">
+          <div className="hidden lg:flex items-center gap-8" style={{ contain: 'layout' }}>
             {navLinks.map((link) => (
               <Link
                 key={link.to}
@@ -193,7 +224,7 @@ export const Navigation = React.memo(() => {
                 </DropdownMenu>
               </>
             ) : (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3" style={{ contain: 'layout' }}>
                 <Button 
                   variant="ghost" 
                   size="sm" 
@@ -214,7 +245,7 @@ export const Navigation = React.memo(() => {
           </div>
 
           {/* Mobile Navigation */}
-          <div className="flex lg:hidden items-center gap-2">
+          <div className="flex lg:hidden items-center gap-2" style={{ contain: 'layout' }}>
             {user && <NotificationCenter />}
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>

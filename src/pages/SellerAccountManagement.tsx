@@ -69,7 +69,7 @@ const SellerAccountManagement = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-24">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-[72px]">
         <Button
           variant="ghost"
           onClick={() => navigate("/dashboard/seller")}

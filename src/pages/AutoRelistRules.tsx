@@ -144,7 +144,7 @@ export default function AutoRelistRules() {
     return (
       <div className="min-h-screen bg-background">
         <Navigation />
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-24">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-[72px]">
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
@@ -156,7 +156,7 @@ export default function AutoRelistRules() {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-24">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-[72px]">
         <div className="mb-8">
           <h1 className="text-3xl font-light text-foreground mb-2">Auto-Relist Rules</h1>
           <p className="text-base text-muted-foreground font-light">
