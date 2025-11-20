@@ -57,7 +57,7 @@ export function FeedCard({ listing }: FeedCardProps) {
         <img
           src={primaryImage}
           alt={listing.title}
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-contain"
         />
       ) : (
         <div className="absolute inset-0 w-full h-full bg-muted" />
