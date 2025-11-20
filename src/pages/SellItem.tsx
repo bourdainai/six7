@@ -20,7 +20,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { Database, Json } from "@/integrations/supabase/types";
 import { SEO } from "@/components/SEO";
 import { useEmailVerification } from "@/hooks/useEmailVerification";
-import { useEmailNotification } from "@/hooks/useEmailNotification";
+import { MagicCardSearch } from "@/components/listing/MagicCardSearch";
 
 type ConditionType = Database["public"]["Enums"]["condition_type"];
 type ListingInsert = Database["public"]["Tables"]["listings"]["Insert"];
@@ -144,6 +144,31 @@ const SellItem = () => {
     setImageFiles(newFiles);
   };
 
+  const handleMagicSearchSelect = (cardData: any) => {
+    setListingData(prev => ({
+      ...prev,
+      title: cardData.title,
+      description: cardData.description,
+      category: "Pokémon Singles",
+      subcategory: "Standard Format", // Default, user can change
+      set_code: cardData.set_code,
+      card_number: cardData.card_number,
+      rarity: cardData.rarity,
+      original_rrp: cardData.original_rrp
+    }));
+    
+    if (cardData.image_url) {
+      setImages([cardData.image_url]);
+      // We don't have a File object for remote images, so imageFiles stays empty
+      // The publish logic needs to handle this case (uploading from URL or skipping if already URL)
+    }
+    
+    toast({
+      title: "Card Details Found!",
+      description: "We've auto-filled the details for you.",
+    });
+  };
+
   const handlePublish = async () => {
     if (!user || !selectedPrice || !listingData.title || !listingData.category || images.length === 0) {
       toast({
@@ -204,9 +229,28 @@ const SellItem = () => {
 
       if (listingError) throw listingError;
 
-      // Upload images
-      for (let i = 0; i < imageFiles.length; i++) {
-        const file = imageFiles[i];
+        // Upload images
+      // If images contains URLs that are not local blobs (from Magic Search), we need to fetch and convert them or handle differently
+      // For now, let's assume we only upload local files from imageFiles
+      // If a user selected a Magic Search image, we might need to "save" that remote URL to our bucket or just use it directly.
+      // Simplest approach: If imageFiles is empty but images has content (Magic Search), download it and upload to storage.
+      
+      let filesToUpload = [...imageFiles];
+      
+      if (filesToUpload.length === 0 && images.length > 0 && images[0].startsWith('http')) {
+         // Magic search result
+         try {
+             const response = await fetch(images[0]);
+             const blob = await response.blob();
+             const file = new File([blob], "magic-card.jpg", { type: "image/jpeg" });
+             filesToUpload = [file];
+         } catch (e) {
+             console.error("Failed to fetch magic image", e);
+         }
+      }
+
+      for (let i = 0; i < filesToUpload.length; i++) {
+        const file = filesToUpload[i];
         const fileName = `${listing.id}/${Date.now()}-${i}.jpg`;
         
         const { error: uploadError } = await supabase.storage
@@ -281,6 +325,11 @@ const SellItem = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-light">List Your Card</h1>
           <p className="text-muted-foreground">Add photos and details to start selling.</p>
+        </div>
+
+        {/* Magic Search Section */}
+        <div className="mb-10">
+          <MagicCardSearch onSelect={handleMagicSearchSelect} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-8 items-start">
