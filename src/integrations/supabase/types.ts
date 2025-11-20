@@ -1165,9 +1165,11 @@ export type Database = {
           artist: string | null
           card_id: string
           cardmarket_id: string | null
+          cardmarket_prices: Json | null
           created_at: string | null
           id: string
           images: Json | null
+          last_price_update: string | null
           last_searched_at: string | null
           name: string
           number: string | null
@@ -1181,6 +1183,7 @@ export type Database = {
           sync_source: Database["public"]["Enums"]["sync_source_type"] | null
           synced_at: string | null
           tcgplayer_id: string | null
+          tcgplayer_prices: Json | null
           types: string[] | null
           updated_at: string | null
         }
@@ -1188,9 +1191,11 @@ export type Database = {
           artist?: string | null
           card_id: string
           cardmarket_id?: string | null
+          cardmarket_prices?: Json | null
           created_at?: string | null
           id?: string
           images?: Json | null
+          last_price_update?: string | null
           last_searched_at?: string | null
           name: string
           number?: string | null
@@ -1204,6 +1209,7 @@ export type Database = {
           sync_source?: Database["public"]["Enums"]["sync_source_type"] | null
           synced_at?: string | null
           tcgplayer_id?: string | null
+          tcgplayer_prices?: Json | null
           types?: string[] | null
           updated_at?: string | null
         }
@@ -1211,9 +1217,11 @@ export type Database = {
           artist?: string | null
           card_id?: string
           cardmarket_id?: string | null
+          cardmarket_prices?: Json | null
           created_at?: string | null
           id?: string
           images?: Json | null
+          last_price_update?: string | null
           last_searched_at?: string | null
           name?: string
           number?: string | null
@@ -1227,6 +1235,7 @@ export type Database = {
           sync_source?: Database["public"]["Enums"]["sync_source_type"] | null
           synced_at?: string | null
           tcgplayer_id?: string | null
+          tcgplayer_prices?: Json | null
           types?: string[] | null
           updated_at?: string | null
         }
