@@ -14,6 +14,89 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_key_usage_logs: {
+        Row: {
+          api_key_id: string
+          created_at: string | null
+          endpoint: string
+          id: string
+          method: string
+          response_time_ms: number | null
+          status_code: number | null
+        }
+        Insert: {
+          api_key_id: string
+          created_at?: string | null
+          endpoint: string
+          id?: string
+          method: string
+          response_time_ms?: number | null
+          status_code?: number | null
+        }
+        Update: {
+          api_key_id?: string
+          created_at?: string | null
+          endpoint?: string
+          id?: string
+          method?: string
+          response_time_ms?: number | null
+          status_code?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_key_usage_logs_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      api_keys: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          key_hash: string
+          label: string | null
+          last_used_at: string | null
+          rate_limit_per_day: number | null
+          rate_limit_per_hour: number | null
+          scopes: string[] | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          key_hash: string
+          label?: string | null
+          last_used_at?: string | null
+          rate_limit_per_day?: number | null
+          rate_limit_per_hour?: number | null
+          scopes?: string[] | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          key_hash?: string
+          label?: string | null
+          last_used_at?: string | null
+          rate_limit_per_day?: number | null
+          rate_limit_per_hour?: number | null
+          scopes?: string[] | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       bundle_items: {
         Row: {
           bundle_id: string
@@ -490,6 +573,7 @@ export type Database = {
       }
       listings: {
         Row: {
+          ai_answer_engines_enabled: boolean | null
           ai_confidence: Json | null
           ambitious_price: number | null
           brand: string | null
@@ -533,6 +617,7 @@ export type Database = {
           views: number | null
         }
         Insert: {
+          ai_answer_engines_enabled?: boolean | null
           ai_confidence?: Json | null
           ambitious_price?: number | null
           brand?: string | null
@@ -576,6 +661,7 @@ export type Database = {
           views?: number | null
         }
         Update: {
+          ai_answer_engines_enabled?: boolean | null
           ai_confidence?: Json | null
           ambitious_price?: number | null
           brand?: string | null
