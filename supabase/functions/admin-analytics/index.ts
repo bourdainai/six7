@@ -1,10 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.81.1";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const analyticsSchema = z.object({
+  period: z.enum(['7d', '30d', '90d', '1y']).optional().default('30d'),
+});
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -39,7 +44,8 @@ serve(async (req) => {
       throw new Error("Unauthorized: Admin access required");
     }
 
-    const { period = "30d" } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const { period } = analyticsSchema.parse(body);
     
     // Calculate date range
     const now = new Date();
@@ -249,6 +255,14 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error("Admin analytics error:", error);
+    
+    if (error instanceof z.ZodError) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid request data', details: error.errors }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
       { 

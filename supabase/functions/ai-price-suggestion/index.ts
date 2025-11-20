@@ -1,9 +1,16 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const priceSuggestionSchema = z.object({
+  card_name: z.string().min(1).max(200),
+  set_code: z.string().max(20).optional(),
+  card_number: z.string().max(20).optional(),
+});
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -11,11 +18,8 @@ serve(async (req) => {
   }
 
   try {
-    const { card_name, set_code, card_number } = await req.json();
-
-    if (!card_name && !set_code) {
-      throw new Error('Card name or set code required');
-    }
+    const body = await req.json();
+    const { card_name, set_code, card_number } = priceSuggestionSchema.parse(body);
 
     console.log(`Searching for: ${card_name} (${set_code} ${card_number})`);
 
@@ -119,6 +123,14 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error:', error);
+    
+    if (error instanceof z.ZodError) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid request data', details: error.errors }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

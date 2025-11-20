@@ -1,10 +1,21 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const feeCalculationSchema = z.object({
+  buyerId: z.string().uuid({ message: 'Invalid buyer ID format' }),
+  sellerId: z.string().uuid({ message: 'Invalid seller ID format' }),
+  itemPrice: z.number().positive().max(1000000, 'Item price too large'),
+  instantPayout: z.boolean().optional().default(false),
+  protectionAddon: z.boolean().optional().default(false),
+  shippingCost: z.number().min(0).max(1000, 'Shipping cost too large').optional().default(0),
+  wholesaleShippingCost: z.number().min(0).max(1000, 'Wholesale shipping cost too large').optional().default(0),
+});
 
 interface FeeCalculationRequest {
   buyerId: string;
@@ -44,15 +55,16 @@ serve(async (req) => {
   );
 
   try {
+    const body = await req.json();
     const { 
       buyerId, 
       sellerId, 
       itemPrice, 
-      instantPayout = false,
-      protectionAddon = false,
-      shippingCost = 0,
-      wholesaleShippingCost = 0
-    }: FeeCalculationRequest = await req.json();
+      instantPayout,
+      protectionAddon,
+      shippingCost,
+      wholesaleShippingCost
+    } = feeCalculationSchema.parse(body);
 
     console.log("[CALCULATE-FEES] Starting calculation", { 
       buyerId, 
@@ -205,6 +217,14 @@ serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error("[CALCULATE-FEES] ERROR", { message: errorMessage });
+    
+    if (error instanceof z.ZodError) {
+      return new Response(JSON.stringify({ error: 'Invalid request data', details: error.errors }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
+    
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
