@@ -90,8 +90,8 @@ export default {
         'smooth': '300ms',
       },
       borderRadius: {
-        lg: "2px",
-        md: "1px",
+        lg: "0px",
+        md: "0px",
         sm: "0px",
         none: "0px",
       },
@@ -130,5 +130,5 @@ export default {
       },
     },
   },
-    plugins: [tailwindcssAnimate],
+  plugins: [tailwindcssAnimate],
 } satisfies Config;

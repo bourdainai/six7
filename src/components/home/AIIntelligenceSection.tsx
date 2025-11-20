@@ -14,14 +14,14 @@ export const AIIntelligenceSection = () => {
 
                     {/* Text Content */}
                     <div className="lg:w-1/2 space-y-8">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-sm font-medium">
-                            <Scan className="w-4 h-4" />
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-cyan-950 border border-cyan-500/50 text-cyan-400 text-xs font-mono uppercase tracking-wider">
+                            <Scan className="w-3 h-3" />
                             <span>Computer Vision Engine v2.0</span>
                         </div>
 
                         <h2 className="text-4xl md:text-6xl font-bold text-white tracking-tight leading-tight">
                             List in Seconds.<br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600">
+                            <span className="text-cyan-400">
                                 Priced with Intelligence.
                             </span>
                         </h2>
@@ -33,7 +33,7 @@ export const AIIntelligenceSection = () => {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4">
                             <div className="flex items-start gap-4">
-                                <div className="p-3 rounded-lg bg-zinc-900 border border-zinc-800 text-cyan-400">
+                                <div className="p-3 bg-zinc-900 border border-zinc-800 text-cyan-400">
                                     <Zap className="w-6 h-6" />
                                 </div>
                                 <div>
@@ -42,7 +42,7 @@ export const AIIntelligenceSection = () => {
                                 </div>
                             </div>
                             <div className="flex items-start gap-4">
-                                <div className="p-3 rounded-lg bg-zinc-900 border border-zinc-800 text-purple-400">
+                                <div className="p-3 bg-zinc-900 border border-zinc-800 text-purple-400">
                                     <BarChart3 className="w-6 h-6" />
                                 </div>
                                 <div>
@@ -52,26 +52,30 @@ export const AIIntelligenceSection = () => {
                             </div>
                         </div>
 
-                        <Button asChild size="lg" className="bg-cyan-500 hover:bg-cyan-600 text-black font-semibold rounded-full px-8">
+                        <Button asChild size="lg" className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold px-8 border-0">
                             <Link to="/sell">Try AI Listing Demo</Link>
                         </Button>
                     </div>
 
                     {/* Visual Content */}
                     <div className="lg:w-1/2 relative">
-                        <div className="relative z-10 rounded-2xl overflow-hidden border border-white/10 shadow-2xl shadow-cyan-500/10 bg-zinc-900/50 backdrop-blur-sm">
+                        <div className="relative z-10 border border-zinc-800 bg-zinc-900/50 backdrop-blur-sm">
+                            <div className="absolute inset-0 bg-[url('/assets/grid.svg')] opacity-20 pointer-events-none" />
                             <img
                                 src="/assets/home/ai_hud.png"
                                 alt="AI Vision Interface"
-                                className="w-full h-auto opacity-90 hover:opacity-100 transition-opacity duration-500"
+                                className="w-full h-auto opacity-80 hover:opacity-100 transition-opacity duration-500 mix-blend-screen"
                             />
 
                             {/* Animated Scanning Line */}
-                            <div className="absolute top-0 left-0 w-full h-1 bg-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.8)] animate-scan" />
-                        </div>
+                            <div className="absolute top-0 left-0 w-full h-0.5 bg-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.8)] animate-scan" />
 
-                        {/* Background Glow */}
-                        <div className="absolute -inset-4 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 blur-3xl -z-10 rounded-full opacity-50" />
+                            {/* Corner Accents */}
+                            <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-cyan-500" />
+                            <div className="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-cyan-500" />
+                            <div className="absolute bottom-0 left-0 w-4 h-4 border-l-2 border-b-2 border-cyan-500" />
+                            <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-cyan-500" />
+                        </div>
                     </div>
 
                 </div>

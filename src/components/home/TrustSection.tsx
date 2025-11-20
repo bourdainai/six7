@@ -7,7 +7,7 @@ export const TrustSection = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
 
                     <div className="space-y-4">
-                        <div className="mx-auto w-16 h-16 rounded-full bg-white border border-zinc-200 flex items-center justify-center text-zinc-900 shadow-sm">
+                        <div className="mx-auto w-16 h-16 bg-white border border-zinc-200 flex items-center justify-center text-zinc-900 shadow-sm">
                             <UserCheck className="w-8 h-8" />
                         </div>
                         <h3 className="text-xl font-bold text-zinc-900">Verified Sellers</h3>
@@ -17,7 +17,7 @@ export const TrustSection = () => {
                     </div>
 
                     <div className="space-y-4">
-                        <div className="mx-auto w-16 h-16 rounded-full bg-white border border-zinc-200 flex items-center justify-center text-zinc-900 shadow-sm">
+                        <div className="mx-auto w-16 h-16 bg-white border border-zinc-200 flex items-center justify-center text-zinc-900 shadow-sm">
                             <ShieldCheck className="w-8 h-8" />
                         </div>
                         <h3 className="text-xl font-bold text-zinc-900">Authenticity Guarantee</h3>
@@ -27,7 +27,7 @@ export const TrustSection = () => {
                     </div>
 
                     <div className="space-y-4">
-                        <div className="mx-auto w-16 h-16 rounded-full bg-white border border-zinc-200 flex items-center justify-center text-zinc-900 shadow-sm">
+                        <div className="mx-auto w-16 h-16 bg-white border border-zinc-200 flex items-center justify-center text-zinc-900 shadow-sm">
                             <Lock className="w-8 h-8" />
                         </div>
                         <h3 className="text-xl font-bold text-zinc-900">Secure Payments</h3>
