@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { PrefetchLink as Link } from "@/components/PrefetchLink";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { AuthModal } from "@/components/auth/AuthModal";

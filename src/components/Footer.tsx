@@ -1,4 +1,4 @@
-import { PrefetchLink as Link } from "@/components/PrefetchLink";
+import { Link } from "react-router-dom";
 import { Facebook, Twitter, Instagram, Mail } from "lucide-react";
 
 export const Footer = () => {

@@ -1,12 +1,10 @@
-import "./styles/view-transitions.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { Suspense, lazy, useEffect } from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Suspense, lazy } from "react";
 import { AuthProvider } from "@/components/auth/AuthProvider";
-import { PageTransition } from "@/components/PageTransition";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { HelmetProvider } from "react-helmet-async";
 import { CookieConsent } from "@/components/CookieConsent";
@@ -64,33 +62,10 @@ const queryClient = new QueryClient({
   },
 });
 
-// Routes component that uses location for transitions
+// Routes component
 const AppRoutes = () => {
-  const location = useLocation();
-
-  // Preload critical routes on mount
-  useEffect(() => {
-    // Use standard import() to trigger loading for critical paths
-    const preloadCriticalRoutes = async () => {
-      try {
-        // We don't await these, just trigger them
-        import("./pages/Index");
-        import("./pages/Browse");
-        import("./pages/SellItem");
-        import("./pages/Feed");
-      } catch (error) {
-        console.error("Failed to preload critical routes:", error);
-      }
-    };
-
-    // Delay slightly to prioritize initial render
-    const timer = setTimeout(preloadCriticalRoutes, 2000);
-    return () => clearTimeout(timer);
-  }, []);
-  
   return (
-    <PageTransition>
-      <Routes location={location}>
+    <Routes>
         <Route path="/" element={<Suspense fallback={<PageSkeleton />}><Index /></Suspense>} />
         <Route path="/sell" element={<Suspense fallback={<PageSkeleton />}><Sell /></Suspense>} />
         <Route path="/browse" element={<Suspense fallback={<PageSkeleton />}><Browse /></Suspense>} />
@@ -132,7 +107,6 @@ const AppRoutes = () => {
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<Suspense fallback={<PageSkeleton />}><NotFound /></Suspense>} />
       </Routes>
-    </PageTransition>
   );
 };
 

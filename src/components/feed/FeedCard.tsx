@@ -1,4 +1,4 @@
-import { PrefetchLink as Link } from "@/components/PrefetchLink";
+import { Link } from "react-router-dom";
 import { Heart, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useRef, useEffect } from "react";

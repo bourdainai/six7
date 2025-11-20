@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { PrefetchLink as Link } from "@/components/PrefetchLink";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
