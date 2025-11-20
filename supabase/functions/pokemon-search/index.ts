@@ -104,8 +104,8 @@ serve(async (req) => {
 
       // Add ranking: prioritize by popularity_score, then last_searched_at
       dbQuery = dbQuery
-        .order('popularity_score', { ascending: false, nullsLast: true })
-        .order('last_searched_at', { ascending: false, nullsFirst: false });
+        .order('popularity_score', { ascending: false })
+        .order('last_searched_at', { ascending: false });
 
       const { data: localCards, error: localError } = await dbQuery;
 
@@ -115,7 +115,10 @@ serve(async (req) => {
         // Update popularity_score and last_searched_at for found cards
         const cardIds = localCards.map(c => c.card_id);
         if (cardIds.length > 0) {
-          await supabase.rpc('increment_card_popularity', { card_ids: cardIds }).catch(console.error);
+          const { error: rpcError } = await supabase.rpc('increment_card_popularity', { card_ids: cardIds });
+          if (rpcError) {
+            console.error('Error incrementing card popularity:', rpcError);
+          }
         }
 
         // Transform local database results to match API format
