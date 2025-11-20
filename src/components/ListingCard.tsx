@@ -50,16 +50,16 @@ export const ListingCard = React.memo(
         onClick={() => navigate(`/listing/${listing.id}`)}
         className="text-left w-full"
       >
-        <div className="aspect-[3/4] bg-soft-neutral overflow-hidden mb-3 relative border border-divider-gray group-hover:border-foreground transition-all duration-fast">
+        <div className="aspect-[5/7] bg-soft-neutral overflow-hidden mb-3 relative border border-divider-gray group-hover:border-foreground transition-all duration-fast">
           {firstImage ? (
             <img
               src={firstImage}
               alt={listing.title}
-              className="w-full h-full object-cover group-hover:opacity-95 transition-opacity duration-fast"
+              className="w-full h-full object-contain group-hover:opacity-95 transition-opacity duration-fast"
               loading="lazy"
               decoding="async"
               width="400"
-              height="533"
+              height="560"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-muted-foreground">

@@ -239,16 +239,16 @@ const ListingDetail = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Images */}
           <div className="space-y-4">
-            <div className="aspect-[3/4] bg-soft-neutral border border-divider-gray overflow-hidden relative">
+            <div className="aspect-[5/7] bg-soft-neutral border border-divider-gray overflow-hidden relative">
               {images.length > 0 ? (
                 <img
                   src={images[selectedImage]?.image_url}
                   alt={listing.title}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                   loading="eager"
                   decoding="async"
                   width="800"
-                  height="1067"
+                  height="1120"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-muted-foreground">
@@ -263,18 +263,18 @@ const ListingDetail = () => {
                   <button
                     key={idx}
                     onClick={() => setSelectedImage(idx)}
-                    className={`aspect-square bg-soft-neutral overflow-hidden border transition-all duration-fast ${
+                    className={`aspect-[5/7] bg-soft-neutral overflow-hidden border transition-all duration-fast ${
                       selectedImage === idx ? "border-foreground" : "border-divider-gray"
                     }`}
                   >
                     <img
                       src={img.image_url}
                       alt={`${listing.title} ${idx + 1}`}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                       loading="lazy"
                       decoding="async"
                       width="200"
-                      height="200"
+                      height="280"
                     />
                   </button>
                 ))}
