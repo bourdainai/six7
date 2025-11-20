@@ -1,10 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const POKEMON_API_URL = "https://api.pokemontcg.io/v2";
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -18,42 +20,123 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Verify admin authentication
+    // Check if this is a cron job (no auth required) or admin request
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Missing Authorization header');
+    const isCronJob = !authHeader || authHeader.includes('cron-secret');
+    
+    let isAdmin = false;
+    if (authHeader && !isCronJob) {
+      const { data: { user }, error: userError } = await supabase.auth.getUser(
+        authHeader.replace('Bearer ', '')
+      );
+      
+      if (!userError && user) {
+        const { data: roles } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'admin')
+          .single();
+        
+        isAdmin = !!roles;
+      }
     }
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
-    if (userError || !user) {
-      throw new Error('Invalid user token');
-    }
-
-    // Check if user has admin role
-    const { data: roles } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('role', 'admin')
-      .single();
-
-    if (!roles) {
+    // Allow cron jobs or admin requests
+    if (!isCronJob && !isAdmin) {
       return new Response(
-        JSON.stringify({ error: 'Unauthorized - Admin access required' }),
+        JSON.stringify({ error: 'Unauthorized - Admin access or cron secret required' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Parse request body to see if we have specific parameters
-    // e.g. specific set to sync, or page number
-    const { setCode, page = 1 } = await req.json().catch(() => ({}));
+    // Parse request body
+    const body = await req.json().catch(() => ({}));
+    const { 
+      setCode, 
+      page = 1, 
+      priorityTier = null,
+      autoSelectSet = false // If true, automatically select next set to sync based on priority
+    } = body;
 
-    console.log(`Syncing TCG data. Set: ${setCode || 'All'}, Page: ${page}`);
+    // Auto-select set based on priority if requested (for cron jobs)
+    let targetSetCode = setCode;
+    let targetSetName = '';
+    
+    if (autoSelectSet && !setCode) {
+      // Find next set to sync based on priority
+      const { data: nextSet } = await supabase
+        .from('tcg_sync_progress')
+        .select('set_code, set_name, priority_tier, sync_status, last_page_synced')
+        .in('sync_status', ['pending', 'in_progress'])
+        .order('priority_tier', { ascending: true })
+        .order('last_sync_at', { ascending: true, nullsFirst: true })
+        .limit(1)
+        .single();
 
-    const apiUrl = new URL('https://api.pokemontcg.io/v2/cards');
-    if (setCode) {
-      apiUrl.searchParams.append('q', `set.id:${setCode}`);
+      if (nextSet) {
+        targetSetCode = nextSet.set_code;
+        targetSetName = nextSet.set_name || '';
+        console.log(`Auto-selected set: ${targetSetCode} (Tier ${nextSet.priority_tier})`);
+      } else {
+        // Check popular_sets for new sets to sync
+        const { data: popularSet } = await supabase
+          .from('popular_sets')
+          .select('set_code, set_name, priority_tier')
+          .eq('is_active', true)
+          .order('priority_tier', { ascending: true })
+          .limit(1)
+          .single();
+
+        if (popularSet) {
+          // Check if sync progress exists
+          const { data: existingProgress } = await supabase
+            .from('tcg_sync_progress')
+            .select('*')
+            .eq('set_code', popularSet.set_code)
+            .single();
+
+          if (!existingProgress) {
+            // Create new sync progress entry
+            await supabase
+              .from('tcg_sync_progress')
+              .insert({
+                set_code: popularSet.set_code,
+                set_name: popularSet.set_name,
+                priority_tier: popularSet.priority_tier,
+                sync_status: 'pending',
+                last_page_synced: 0,
+                synced_cards: 0
+              });
+
+            targetSetCode = popularSet.set_code;
+            targetSetName = popularSet.set_name;
+            console.log(`Created sync progress for new set: ${targetSetCode}`);
+          }
+        }
+      }
     }
+
+    if (!targetSetCode) {
+      return new Response(
+        JSON.stringify({ error: 'No set specified and no sets available for auto-sync' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Update sync status to in_progress
+    await supabase
+      .from('tcg_sync_progress')
+      .update({ 
+        sync_status: 'in_progress',
+        updated_at: new Date().toISOString()
+      })
+      .eq('set_code', targetSetCode);
+
+    console.log(`Syncing TCG data. Set: ${targetSetCode}, Page: ${page}`);
+
+    const apiUrl = new URL(`${POKEMON_API_URL}/cards`);
+    apiUrl.searchParams.append('q', `set.id:${targetSetCode}`);
     apiUrl.searchParams.append('page', page.toString());
     apiUrl.searchParams.append('pageSize', '250');
 
@@ -64,19 +147,40 @@ serve(async (req) => {
     });
 
     if (!tcgResponse.ok) {
+      // Update sync status to failed
+      await supabase
+        .from('tcg_sync_progress')
+        .update({ 
+          sync_status: 'failed',
+          error_message: `API Error: ${tcgResponse.statusText}`,
+          updated_at: new Date().toISOString()
+        })
+        .eq('set_code', targetSetCode);
+
       throw new Error(`TCG API Error: ${tcgResponse.statusText}`);
     }
 
     const tcgData = await tcgResponse.json();
-    const cards = tcgData.data;
+    const cards = tcgData.data || [];
 
-    if (!cards || cards.length === 0) {
+    if (cards.length === 0) {
+      // Mark as completed if no more cards
+      await supabase
+        .from('tcg_sync_progress')
+        .update({ 
+          sync_status: 'completed',
+          updated_at: new Date().toISOString()
+        })
+        .eq('set_code', targetSetCode);
+
       return new Response(
-        JSON.stringify({ message: 'No cards found to sync' }),
+        JSON.stringify({ message: 'No more cards found to sync', setCode: targetSetCode }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    // Prepare card data with sync metadata
+    const now = new Date().toISOString();
     const upsertData = cards.map((card: any) => ({
       card_id: card.id,
       name: card.name,
@@ -85,29 +189,73 @@ serve(async (req) => {
       number: card.number,
       rarity: card.rarity,
       artist: card.artist,
-      types: card.types,
-      subtypes: card.subtypes,
+      types: card.types || [],
+      subtypes: card.subtypes || [],
       supertype: card.supertype,
-      images: card.images,
-      tcgplayer_id: card.tcgplayer?.url?.split('/').pop(), // Basic extraction
-      updated_at: new Date().toISOString(),
+      images: card.images || {},
+      tcgplayer_id: card.tcgplayer?.url?.split('/').pop(),
+      cardmarket_id: card.cardmarket?.url?.split('/').pop(),
+      synced_at: now,
+      sync_source: isCronJob ? 'cron' : 'manual',
+      updated_at: now,
     }));
 
-    const { error } = await supabase
+    const { error: upsertError } = await supabase
       .from('pokemon_card_attributes')
       .upsert(upsertData, { onConflict: 'card_id' });
 
-    if (error) {
-      console.error('Supabase Upsert Error:', error);
-      throw error;
+    if (upsertError) {
+      console.error('Supabase Upsert Error:', upsertError);
+      
+      // Update sync status to failed
+      await supabase
+        .from('tcg_sync_progress')
+        .update({ 
+          sync_status: 'failed',
+          error_message: upsertError.message,
+          updated_at: new Date().toISOString()
+        })
+        .eq('set_code', targetSetCode);
+
+      throw upsertError;
     }
+
+    // Calculate if sync is complete
+    const totalPages = Math.ceil((tcgData.totalCount || 0) / 250);
+    const isComplete = page >= totalPages;
+
+    // Update sync progress
+    const { data: currentProgress } = await supabase
+      .from('tcg_sync_progress')
+      .select('synced_cards')
+      .eq('set_code', targetSetCode)
+      .single();
+
+    const newSyncedCount = (currentProgress?.synced_cards || 0) + cards.length;
+
+    await supabase
+      .from('tcg_sync_progress')
+      .update({ 
+        last_page_synced: page,
+        total_cards: tcgData.totalCount || 0,
+        synced_cards: newSyncedCount,
+        last_sync_at: now,
+        sync_status: isComplete ? 'completed' : 'in_progress',
+        updated_at: now
+      })
+      .eq('set_code', targetSetCode);
 
     return new Response(
       JSON.stringify({ 
         message: `Synced ${cards.length} cards`,
-        count: tcgData.count,
+        setCode: targetSetCode,
+        setName: targetSetName,
+        count: cards.length,
         totalCount: tcgData.totalCount,
-        page: page 
+        page: page,
+        totalPages: totalPages,
+        syncedCards: newSyncedCount,
+        isComplete: isComplete
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -120,4 +268,3 @@ serve(async (req) => {
     );
   }
 });
-

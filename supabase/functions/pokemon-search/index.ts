@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,16 +8,44 @@ const corsHeaders = {
 
 const POKEMON_API_URL = "https://api.pokemontcg.io/v2";
 
+interface SearchResult {
+  id: string;
+  name: string;
+  supertype?: string;
+  subtypes?: string[];
+  set: {
+    id: string;
+    name: string;
+    series?: string;
+    ptcgoCode?: string;
+    releaseDate?: string;
+    images?: any;
+    printedTotal?: number;
+    total?: number;
+  };
+  number: string;
+  artist?: string;
+  rarity?: string;
+  flavorText?: string;
+  images?: {
+    small?: string;
+    large?: string;
+  };
+  tcgplayer?: any;
+  cardmarket?: any;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     const apiKey = Deno.env.get('POKEMON_TCG_API_KEY');
-    if (!apiKey) {
-      console.warn("POKEMON_TCG_API_KEY is not set. Rate limits will be restricted.");
-    }
+    
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     const { query, page = 1, pageSize = 20 } = await req.json();
 
@@ -25,45 +54,138 @@ serve(async (req) => {
     }
 
     const trimmedQuery = query.trim();
-    let apiQuery = "";
+    let localResults: SearchResult[] = [];
+    let searchSource = 'local';
 
-    // Regex patterns
-    const numberSlashTotal = /^(\d+|[a-zA-Z0-9]+)\/(\d+|[a-zA-Z0-9]+)$/; // e.g. "179/131" or "TG01/TG30"
-    const justNumber = /^(\d+)$/; // e.g. "179"
+    // Parse query to determine search strategy
+    const numberSlashTotal = /^(\d+|[a-zA-Z0-9]+)\/(\d+|[a-zA-Z0-9]+)$/;
+    const justNumber = /^(\d+)$/;
+    const setCodeNumber = /^([a-zA-Z0-9]+)\s+(\d+|[a-zA-Z0-9]+)$/; // e.g. "SWSH01 179"
+    const nameNumber = /^(.+?)\s+(\d+)$/; // e.g. "Charizard 4"
 
     const slashMatch = trimmedQuery.match(numberSlashTotal);
     const numberMatch = trimmedQuery.match(justNumber);
+    const setCodeMatch = trimmedQuery.match(setCodeNumber);
+    const nameNumberMatch = trimmedQuery.match(nameNumber);
 
-    if (slashMatch) {
-      // Case: "179/131" -> Search specifically for number:179
-      // Ideally, we'd also filter by set printedTotal, but the API doesn't support searching by set.printedTotal directly in the query string easily without fetching all sets.
-      // Best approach: Search exact number match. The API results will likely contain the right one.
-      // We can also try to match set ptcgoCode if the user typed "SWSH01 179" but here they typed "179/131".
-      const cardNumber = slashMatch[1];
-      // We prioritize the exact number. 
-      apiQuery = `number:"${cardNumber}"`;
-      console.log(`Detected number/total format. Searching for number: ${cardNumber}`);
-    } else if (numberMatch) {
-        // Case: "179" -> Could be a card number. Prioritize number search.
-        apiQuery = `number:"${trimmedQuery}"`;
-    } else {
-        // Fallback to existing logic for name/mixed
-        const parts = trimmedQuery.split(/\s+/);
-        if (parts.length > 1) {
-            const lastPart = parts[parts.length - 1];
-            const namePart = parts.slice(0, -1).join(" ");
-            
-            if (/^\d+$/.test(lastPart) || /^[a-zA-Z0-9]+$/.test(lastPart)) {
-                 apiQuery = `name:"${namePart}*" number:"${lastPart}"`;
-            } else {
-                 apiQuery = `name:"${trimmedQuery}*"`;
-            }
-        } else {
-            apiQuery = `name:"${trimmedQuery}*"`;
+    // Try local database search first
+    try {
+      let dbQuery = supabase
+        .from('pokemon_card_attributes')
+        .select('*')
+        .limit(pageSize);
+
+      if (slashMatch) {
+        // Case: "179/131" -> Search by number
+        const cardNumber = slashMatch[1];
+        dbQuery = dbQuery.eq('number', cardNumber);
+        console.log(`Local search: number="${cardNumber}"`);
+      } else if (setCodeMatch) {
+        // Case: "SWSH01 179" -> Search by set_code + number
+        const [, setCode, cardNumber] = setCodeMatch;
+        dbQuery = dbQuery.eq('set_code', setCode).eq('number', cardNumber);
+        console.log(`Local search: set_code="${setCode}", number="${cardNumber}"`);
+      } else if (nameNumberMatch) {
+        // Case: "Charizard 4" -> Search by name + number
+        const [, namePart, cardNumber] = nameNumberMatch;
+        dbQuery = dbQuery
+          .ilike('name', `%${namePart}%`)
+          .eq('number', cardNumber);
+        console.log(`Local search: name~"${namePart}", number="${cardNumber}"`);
+      } else if (numberMatch) {
+        // Case: "179" -> Search by number only
+        dbQuery = dbQuery.eq('number', trimmedQuery);
+        console.log(`Local search: number="${trimmedQuery}"`);
+      } else {
+        // Case: Name search -> Use ILIKE for name matching
+        dbQuery = dbQuery.ilike('name', `%${trimmedQuery}%`);
+        console.log(`Local search: name~"${trimmedQuery}"`);
+      }
+
+      // Add ranking: prioritize by popularity_score, then last_searched_at
+      dbQuery = dbQuery
+        .order('popularity_score', { ascending: false, nullsLast: true })
+        .order('last_searched_at', { ascending: false, nullsFirst: false });
+
+      const { data: localCards, error: localError } = await dbQuery;
+
+      if (localError) {
+        console.error('Local search error:', localError);
+      } else if (localCards && localCards.length > 0) {
+        // Update popularity_score and last_searched_at for found cards
+        const cardIds = localCards.map(c => c.card_id);
+        if (cardIds.length > 0) {
+          await supabase.rpc('increment_card_popularity', { card_ids: cardIds }).catch(console.error);
         }
+
+        // Transform local database results to match API format
+        localResults = localCards.map((card: any) => ({
+          id: card.card_id,
+          name: card.name,
+          supertype: card.supertype,
+          subtypes: card.subtypes || [],
+          set: {
+            id: card.set_code,
+            name: card.set_name,
+            ptcgoCode: card.set_code,
+          },
+          number: card.number,
+          artist: card.artist,
+          rarity: card.rarity,
+          images: card.images || {},
+        }));
+
+        console.log(`Found ${localResults.length} cards locally`);
+      }
+    } catch (localError) {
+      console.error('Local database search failed:', localError);
     }
 
-    console.log(`Searching Pokémon TCG API with query: ${apiQuery}`);
+    // If we found local results, return them immediately
+    if (localResults.length > 0) {
+      return new Response(
+        JSON.stringify({
+          data: localResults,
+          count: localResults.length,
+          totalCount: localResults.length,
+          page: 1,
+          source: 'local'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Fallback to external API if no local results
+    console.log('No local results found, querying external API...');
+    searchSource = 'api';
+
+    if (!apiKey) {
+      console.warn("POKEMON_TCG_API_KEY is not set. Rate limits will be restricted.");
+    }
+
+    let apiQuery = "";
+
+    if (slashMatch) {
+      const cardNumber = slashMatch[1];
+      apiQuery = `number:"${cardNumber}"`;
+      console.log(`API search: number="${cardNumber}"`);
+    } else if (numberMatch) {
+      apiQuery = `number:"${trimmedQuery}"`;
+    } else {
+      const parts = trimmedQuery.split(/\s+/);
+      if (parts.length > 1) {
+        const lastPart = parts[parts.length - 1];
+        const namePart = parts.slice(0, -1).join(" ");
+        
+        if (/^\d+$/.test(lastPart) || /^[a-zA-Z0-9]+$/.test(lastPart)) {
+          apiQuery = `name:"${namePart}*" number:"${lastPart}"`;
+        } else {
+          apiQuery = `name:"${trimmedQuery}*"`;
+        }
+      } else {
+        apiQuery = `name:"${trimmedQuery}*"`;
+      }
+    }
 
     const response = await fetch(
       `${POKEMON_API_URL}/cards?q=${encodeURIComponent(apiQuery)}&page=${page}&pageSize=${pageSize}&orderBy=-set.releaseDate`,
@@ -93,6 +215,40 @@ serve(async (req) => {
     }
 
     const data = await response.json();
+
+    // Cache API results to database
+    if (data.data && data.data.length > 0) {
+      const cardsToCache = data.data.map((card: any) => ({
+        card_id: card.id,
+        name: card.name,
+        set_name: card.set.name,
+        set_code: card.set.id,
+        number: card.number,
+        rarity: card.rarity,
+        artist: card.artist,
+        types: card.types || [],
+        subtypes: card.subtypes || [],
+        supertype: card.supertype,
+        images: card.images || {},
+        tcgplayer_id: card.tcgplayer?.url?.split('/').pop(),
+        cardmarket_id: card.cardmarket?.url?.split('/').pop(),
+        synced_at: new Date().toISOString(),
+        sync_source: 'on_demand',
+        popularity_score: 1, // Initial score for newly cached cards
+        last_searched_at: new Date().toISOString(),
+      }));
+
+      // Upsert cards to cache them
+      const { error: cacheError } = await supabase
+        .from('pokemon_card_attributes')
+        .upsert(cardsToCache, { onConflict: 'card_id' });
+
+      if (cacheError) {
+        console.error('Error caching cards:', cacheError);
+      } else {
+        console.log(`Cached ${cardsToCache.length} cards from API`);
+      }
+    }
 
     // Return simplified data structure for our frontend
     const cards = data.data.map((card: any) => ({
@@ -124,7 +280,8 @@ serve(async (req) => {
         data: cards, 
         count: data.count,
         totalCount: data.totalCount,
-        page: data.page
+        page: data.page,
+        source: 'api'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
