@@ -1,15 +1,19 @@
+import "./styles/view-transitions.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { AuthProvider } from "@/components/auth/AuthProvider";
-import { Loader2 } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { HelmetProvider } from "react-helmet-async";
 import { CookieConsent } from "@/components/CookieConsent";
+import { PageSkeleton } from "@/components/skeletons/PageSkeleton";
+import { ListingSkeleton } from "@/components/skeletons/ListingSkeleton";
+import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
+import { FeedSkeleton } from "@/components/skeletons/FeedSkeleton";
 
 // Lazy load routes for code splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -58,58 +62,72 @@ const queryClient = new QueryClient({
   },
 });
 
-// Lightweight loading fallback - just a small spinner, not full screen
-const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-[60vh]">
-    <Loader2 className="h-6 w-6 animate-spin text-primary" />
-  </div>
-);
-
 // Routes component that uses location for transitions
 const AppRoutes = () => {
   const location = useLocation();
+
+  // Preload critical routes on mount
+  useEffect(() => {
+    // Use standard import() to trigger loading for critical paths
+    const preloadCriticalRoutes = async () => {
+      try {
+        // We don't await these, just trigger them
+        import("./pages/Index");
+        import("./pages/Browse");
+        import("./pages/SellItem");
+        import("./pages/Feed");
+      } catch (error) {
+        console.error("Failed to preload critical routes:", error);
+      }
+    };
+
+    // Delay slightly to prioritize initial render
+    const timer = setTimeout(preloadCriticalRoutes, 2000);
+    return () => clearTimeout(timer);
+  }, []);
   
   return (
     <PageTransition>
-      <Suspense fallback={<PageLoader />}>
-        <Routes location={location}>
-          <Route path="/" element={<Index />} />
-          <Route path="/sell" element={<Sell />} />
-          <Route path="/browse" element={<Browse />} />
-          <Route path="/listing/:id" element={<ListingDetail />} />
-          <Route path="/checkout/:id" element={<Checkout />} />
-              <Route path="/orders" element={<Orders />} />
-              <Route path="/messages" element={<Messages />} />
-              <Route path="/membership" element={<Membership />} />
-              <Route path="/saved" element={<SavedItems />} />
-          <Route path="/bundles" element={<Bundles />} />
-          <Route path="/bundle/:id" element={<BundleDetail />} />
-          <Route path="/dashboard/seller" element={<SellerDashboard />} />
-          <Route path="/seller/onboarding" element={<SellerOnboarding />} />
-          <Route path="/seller/account" element={<SellerAccountManagement />} />
-          <Route path="/seller/analytics" element={<SellerAnalytics />} />
-          <Route path="/seller/reputation" element={<SellerReputation />} />
-          <Route path="/seller/automation" element={<AutoRelistRules />} />
-          <Route path="/seller/verification" element={<SellerVerification />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/analytics" element={<AdminAnalytics />} />
-          <Route path="/admin/moderation" element={<ModerationDashboard />} />
-          <Route path="/admin/fraud" element={<FraudDashboard />} />
-          {/* Legal & Help Pages */}
-          <Route path="/terms" element={<TermsOfService />} />
-          <Route path="/privacy" element={<PrivacyPolicy />} />
-          <Route path="/returns" element={<ReturnPolicy />} />
-          <Route path="/cookies" element={<CookiePolicy />} />
-          <Route path="/help" element={<Help />} />
-          <Route path="/settings/notifications" element={<NotificationPreferences />} />
-          {/* Wallet & Trading */}
-          <Route path="/wallet" element={<Wallet />} />
-          <Route path="/trade-offers" element={<TradeOffers />} />
-          <Route path="/feed" element={<Feed />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Suspense>
+      <Routes location={location}>
+        <Route path="/" element={<Suspense fallback={<PageSkeleton />}><Index /></Suspense>} />
+        <Route path="/sell" element={<Suspense fallback={<PageSkeleton />}><Sell /></Suspense>} />
+        <Route path="/browse" element={<Suspense fallback={<PageSkeleton />}><Browse /></Suspense>} />
+        <Route path="/listing/:id" element={<Suspense fallback={<ListingSkeleton />}><ListingDetail /></Suspense>} />
+        <Route path="/checkout/:id" element={<Suspense fallback={<PageSkeleton />}><Checkout /></Suspense>} />
+        <Route path="/orders" element={<Suspense fallback={<DashboardSkeleton />}><Orders /></Suspense>} />
+        <Route path="/messages" element={<Suspense fallback={<DashboardSkeleton />}><Messages /></Suspense>} />
+        <Route path="/membership" element={<Suspense fallback={<PageSkeleton />}><Membership /></Suspense>} />
+        <Route path="/saved" element={<Suspense fallback={<FeedSkeleton />}><SavedItems /></Suspense>} />
+        <Route path="/bundles" element={<Suspense fallback={<FeedSkeleton />}><Bundles /></Suspense>} />
+        <Route path="/bundle/:id" element={<Suspense fallback={<ListingSkeleton />}><BundleDetail /></Suspense>} />
+        <Route path="/dashboard/seller" element={<Suspense fallback={<DashboardSkeleton />}><SellerDashboard /></Suspense>} />
+        <Route path="/seller/onboarding" element={<Suspense fallback={<PageSkeleton />}><SellerOnboarding /></Suspense>} />
+        <Route path="/seller/account" element={<Suspense fallback={<DashboardSkeleton />}><SellerAccountManagement /></Suspense>} />
+        <Route path="/seller/analytics" element={<Suspense fallback={<DashboardSkeleton />}><SellerAnalytics /></Suspense>} />
+        <Route path="/seller/reputation" element={<Suspense fallback={<DashboardSkeleton />}><SellerReputation /></Suspense>} />
+        <Route path="/seller/automation" element={<Suspense fallback={<DashboardSkeleton />}><AutoRelistRules /></Suspense>} />
+        <Route path="/seller/verification" element={<Suspense fallback={<PageSkeleton />}><SellerVerification /></Suspense>} />
+        <Route path="/admin" element={<Suspense fallback={<DashboardSkeleton />}><AdminDashboard /></Suspense>} />
+        <Route path="/admin/analytics" element={<Suspense fallback={<DashboardSkeleton />}><AdminAnalytics /></Suspense>} />
+        <Route path="/admin/moderation" element={<Suspense fallback={<DashboardSkeleton />}><ModerationDashboard /></Suspense>} />
+        <Route path="/admin/fraud" element={<Suspense fallback={<DashboardSkeleton />}><FraudDashboard /></Suspense>} />
+        
+        {/* Legal & Help Pages */}
+        <Route path="/terms" element={<Suspense fallback={<PageSkeleton />}><TermsOfService /></Suspense>} />
+        <Route path="/privacy" element={<Suspense fallback={<PageSkeleton />}><PrivacyPolicy /></Suspense>} />
+        <Route path="/returns" element={<Suspense fallback={<PageSkeleton />}><ReturnPolicy /></Suspense>} />
+        <Route path="/cookies" element={<Suspense fallback={<PageSkeleton />}><CookiePolicy /></Suspense>} />
+        <Route path="/help" element={<Suspense fallback={<PageSkeleton />}><Help /></Suspense>} />
+        <Route path="/settings/notifications" element={<Suspense fallback={<PageSkeleton />}><NotificationPreferences /></Suspense>} />
+        
+        {/* Wallet & Trading */}
+        <Route path="/wallet" element={<Suspense fallback={<DashboardSkeleton />}><Wallet /></Suspense>} />
+        <Route path="/trade-offers" element={<Suspense fallback={<DashboardSkeleton />}><TradeOffers /></Suspense>} />
+        <Route path="/feed" element={<Suspense fallback={<FeedSkeleton />}><Feed /></Suspense>} />
+        
+        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+        <Route path="*" element={<Suspense fallback={<PageSkeleton />}><NotFound /></Suspense>} />
+      </Routes>
     </PageTransition>
   );
 };
