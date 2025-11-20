@@ -454,7 +454,24 @@ const SellItem = () => {
                   >
                     <SelectTrigger><SelectValue placeholder="Select rarity" /></SelectTrigger>
                     <SelectContent>
-                      {["Common", "Uncommon", "Rare", "Holo Rare", "Ultra Rare", "Secret Rare", "Promo"].map(r => (
+                      {[
+                        "Common",
+                        "Uncommon", 
+                        "Rare",
+                        "Rare Holo",
+                        "Ultra Rare",
+                        "Secret Rare",
+                        "Special Illustration Rare",
+                        "Illustration Rare",
+                        "Hyper Rare",
+                        "Double Rare",
+                        "Radiant Rare",
+                        "Amazing Rare",
+                        "Rainbow Rare",
+                        "Shiny Rare",
+                        "ACE SPEC",
+                        "Promo"
+                      ].map(r => (
                         <SelectItem key={r} value={r}>{r}</SelectItem>
                       ))}
                     </SelectContent>
