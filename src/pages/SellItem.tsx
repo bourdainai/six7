@@ -20,7 +20,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { Database, Json } from "@/integrations/supabase/types";
 import { SEO } from "@/components/SEO";
 import { useEmailVerification } from "@/hooks/useEmailVerification";
-import { MagicCardSearch } from "@/components/listing/MagicCardSearch";
+import { MagicCardSearch, type MagicCardData } from "@/components/listing/MagicCardSearch";
 import { AIAnswerEnginesToggle } from "@/components/listings/AIAnswerEnginesToggle";
 
 type ConditionType = Database["public"]["Enums"]["condition_type"];
@@ -147,16 +147,6 @@ const SellItem = () => {
     setImages(newImages);
     setImageFiles(newFiles);
   };
-
-  interface MagicCardData {
-    title: string;
-    description: string;
-    set_code: string;
-    card_number: string;
-    rarity: string;
-    original_rrp: number | null;
-    image_url?: string;
-  }
 
   const handleMagicSearchSelect = (cardData: MagicCardData) => {
     setListingData(prev => ({

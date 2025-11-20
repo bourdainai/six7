@@ -5,7 +5,10 @@ import { ArrowRight } from "lucide-react";
 
 export const Hero = () => {
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-zinc-950 pt-20">
+      <section
+        className="relative min-h-screen flex items-center justify-center overflow-hidden bg-zinc-950 pt-20"
+        data-homepage-version="pokemon-hero-v1"
+      >
       {/* Premium Background Effect */}
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-zinc-900 via-zinc-950 to-zinc-950 opacity-80" />
