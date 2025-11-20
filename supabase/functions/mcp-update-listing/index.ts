@@ -3,9 +3,18 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { validateApiKey, checkRateLimit, logApiKeyUsage, corsHeaders } from "../_shared/auth-middleware.ts";
 
-const listInventorySchema = z.object({
-  status: z.enum(['active', 'inactive', 'sold', 'all']).default('all'),
-  limit: z.number().int().min(1).max(100).default(50),
+const updateListingSchema = z.object({
+  listing_id: z.string().uuid(),
+  updates: z.object({
+    price: z.number().min(0.01).optional(),
+    description: z.string().optional(),
+    condition: z.string().optional(),
+    trade_enabled: z.boolean().optional(),
+    status: z.enum(['active', 'inactive', 'sold']).optional(),
+    ai_answer_engines_enabled: z.boolean().optional(),
+  }).refine(data => Object.keys(data).length > 0, {
+    message: "At least one field must be provided for update",
+  }),
 });
 
 serve(async (req) => {
@@ -29,7 +38,7 @@ serve(async (req) => {
     }
 
     const apiKey = authResult.apiKey!;
-    const rateLimitResult = await checkRateLimit(apiKey.id, '/mcp/list-inventory', req.method);
+    const rateLimitResult = await checkRateLimit(apiKey.id, '/mcp/update-listing', req.method);
     if (!rateLimitResult.allowed) {
       return new Response(
         JSON.stringify({
@@ -48,7 +57,7 @@ serve(async (req) => {
     const body = await req.json();
     const { jsonrpc, id, method, params } = body;
 
-    if (jsonrpc !== '2.0' || method !== 'list_inventory') {
+    if (jsonrpc !== '2.0' || method !== 'update_listing') {
       return new Response(
         JSON.stringify({
           jsonrpc: '2.0',
@@ -59,67 +68,74 @@ serve(async (req) => {
       );
     }
 
-    const { status, limit } = listInventorySchema.parse(params || {});
+    const { listing_id, updates } = updateListingSchema.parse(params || {});
 
-    // Build query
-    let query = supabase
+    // Verify listing ownership
+    const { data: listing, error: listingError } = await supabase
       .from('listings')
-      .select(`
-        id,
-        title,
-        seller_price,
-        status,
-        views,
-        saves,
-        created_at,
-        updated_at,
-        ai_answer_engines_enabled,
-        listing_images(image_url, display_order)
-      `)
-      .eq('seller_id', apiKey.user_id)
-      .order('created_at', { ascending: false })
-      .limit(limit);
+      .select('id, seller_id')
+      .eq('id', listing_id)
+      .single();
 
-    if (status !== 'all') {
-      query = query.eq('status', status);
+    if (listingError || !listing) {
+      return new Response(
+        JSON.stringify({
+          jsonrpc: '2.0',
+          id: id || null,
+          error: { code: -32004, message: 'Listing not found' },
+        }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    const { data: listings, error, count } = await query;
-
-    if (error) {
-      throw error;
+    if (listing.seller_id !== apiKey.user_id) {
+      return new Response(
+        JSON.stringify({
+          jsonrpc: '2.0',
+          id: id || null,
+          error: { code: -32003, message: 'Unauthorized - you do not own this listing' },
+        }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Format results
-    const inventory = (listings || []).map((listing: any) => {
-      const images = (listing.listing_images || [])
-        .sort((a: any, b: any) => a.display_order - b.display_order)
-        .map((img: any) => img.image_url);
+    // Prepare update payload
+    const updatePayload: any = {
+      updated_at: new Date().toISOString(),
+    };
 
-      return {
-        id: listing.id,
-        title: listing.title,
-        price: parseFloat(listing.seller_price || 0),
-        status: listing.status,
-        views: listing.views || 0,
-        saves: listing.saves || 0,
-        ai_answer_engines_enabled: listing.ai_answer_engines_enabled || false,
-        images: images.slice(0, 1), // First image only
-        created_at: listing.created_at,
-        updated_at: listing.updated_at,
-      };
-    });
+    if (updates.price !== undefined) updatePayload.seller_price = updates.price;
+    if (updates.description !== undefined) updatePayload.description = updates.description;
+    if (updates.condition !== undefined) updatePayload.condition = updates.condition;
+    if (updates.trade_enabled !== undefined) updatePayload.trade_enabled = updates.trade_enabled;
+    if (updates.status !== undefined) updatePayload.status = updates.status;
+    if (updates.ai_answer_engines_enabled !== undefined) {
+      updatePayload.ai_answer_engines_enabled = updates.ai_answer_engines_enabled;
+    }
+
+    // Update listing
+    const { data: updatedListing, error: updateError } = await supabase
+      .from('listings')
+      .update(updatePayload)
+      .eq('id', listing_id)
+      .select()
+      .single();
+
+    if (updateError || !updatedListing) {
+      throw new Error(`Failed to update listing: ${updateError?.message}`);
+    }
 
     const responseTime = Date.now() - startTime;
-    await logApiKeyUsage(apiKey.id, '/mcp/list-inventory', req.method, 200, responseTime);
+    await logApiKeyUsage(apiKey.id, '/mcp/update-listing', req.method, 200, responseTime);
 
     return new Response(
       JSON.stringify({
         jsonrpc: '2.0',
         id: id || null,
         result: {
-          items: inventory,
-          total: count || inventory.length,
+          listing_id: listing_id,
+          updated_fields: Object.keys(updates),
+          updated_at: updatedListing.updated_at,
           execution_time_ms: responseTime,
         },
       }),
@@ -147,7 +163,7 @@ serve(async (req) => {
     try {
       const authResult = await validateApiKey(req, ['mcp_listing']);
       if (authResult.success && authResult.apiKey) {
-        await logApiKeyUsage(authResult.apiKey.id, '/mcp/list-inventory', req.method, 500, responseTime);
+        await logApiKeyUsage(authResult.apiKey.id, '/mcp/update-listing', req.method, 500, responseTime);
       }
     } catch {}
 
@@ -161,3 +177,4 @@ serve(async (req) => {
     );
   }
 });
+

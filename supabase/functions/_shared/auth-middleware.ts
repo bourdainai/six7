@@ -53,22 +53,6 @@ export async function validateApiKey(
     };
   }
 
-  // Fetch all API keys for the user (we need to check against hashes)
-  // Note: In production, we'd want to optimize this with a lookup table
-  // For now, we'll fetch active keys and check hashes
-  const { data: apiKeys, error: fetchError } = await supabase
-    .from('api_keys')
-    .select('*')
-    .eq('is_active', true);
-
-  if (fetchError || !apiKeys) {
-    return {
-      success: false,
-      error: 'Failed to validate API key',
-      statusCode: 500,
-    };
-  }
-
   // Hash the provided API key for comparison
   const encoder = new TextEncoder();
   const data = encoder.encode(apiKey);
@@ -76,10 +60,17 @@ export async function validateApiKey(
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   const providedHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
-  // Find matching key by comparing hashes
-  const matchedKey = apiKeys.find(key => key.key_hash === providedHash);
+  // Fetch API key by hash (more efficient - direct lookup)
+  // Since we hash with SHA-256, we can query directly
+  // Note: In production, consider adding an index on key_hash for faster lookups
+  const { data: matchedKey, error: fetchError } = await supabase
+    .from('api_keys')
+    .select('*')
+    .eq('key_hash', providedHash)
+    .eq('is_active', true)
+    .single();
 
-  if (!matchedKey) {
+  if (fetchError || !matchedKey) {
     return {
       success: false,
       error: 'Invalid API key',

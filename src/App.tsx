@@ -47,6 +47,7 @@ const SellerVerification = lazy(() => import("./pages/SellerVerification"));
 const Wallet = lazy(() => import("./pages/Wallet"));
 const TradeOffers = lazy(() => import("./pages/TradeOffers"));
 const Feed = lazy(() => import("./pages/Feed"));
+const APIKeys = lazy(() => import("./pages/Settings/APIKeys"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Configure QueryClient with performance optimizations
@@ -119,6 +120,7 @@ const AppRoutes = () => {
         <Route path="/cookies" element={<Suspense fallback={<PageSkeleton />}><CookiePolicy /></Suspense>} />
         <Route path="/help" element={<Suspense fallback={<PageSkeleton />}><Help /></Suspense>} />
         <Route path="/settings/notifications" element={<Suspense fallback={<PageSkeleton />}><NotificationPreferences /></Suspense>} />
+        <Route path="/settings/api-keys" element={<Suspense fallback={<PageSkeleton />}><APIKeys /></Suspense>} />
         
         {/* Wallet & Trading */}
         <Route path="/wallet" element={<Suspense fallback={<DashboardSkeleton />}><Wallet /></Suspense>} />

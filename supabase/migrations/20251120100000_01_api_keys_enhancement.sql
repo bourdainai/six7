@@ -21,6 +21,9 @@ CREATE INDEX IF NOT EXISTS idx_api_key_usage_logs_api_key_id ON api_key_usage_lo
 CREATE INDEX IF NOT EXISTS idx_api_key_usage_logs_created_at ON api_key_usage_logs(created_at);
 CREATE INDEX IF NOT EXISTS idx_api_key_usage_logs_api_key_created ON api_key_usage_logs(api_key_id, created_at);
 
+-- Create index on key_hash for fast API key lookups
+CREATE INDEX IF NOT EXISTS idx_api_keys_key_hash ON api_keys(key_hash) WHERE is_active = true;
+
 -- Enable RLS on usage logs
 ALTER TABLE api_key_usage_logs ENABLE ROW LEVEL SECURITY;
 
