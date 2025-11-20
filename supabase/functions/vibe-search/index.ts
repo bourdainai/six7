@@ -100,6 +100,17 @@ serve(async (req) => {
     const embeddingData = await embeddingResponse.json();
     const queryEmbedding = embeddingData.data[0].embedding;
 
+    // Validate embedding format to prevent SQL injection
+    if (!Array.isArray(queryEmbedding) || 
+        !queryEmbedding.every(v => typeof v === 'number' && isFinite(v))) {
+      throw new Error('Invalid embedding format');
+    }
+
+    // Validate embedding dimension (OpenAI text-embedding-3-small uses 1536 dimensions)
+    if (queryEmbedding.length !== 1536) {
+      throw new Error(`Invalid embedding dimension: expected 1536, got ${queryEmbedding.length}`);
+    }
+
     // Build vector similarity search
     let sqlQuery = `
       SELECT 
