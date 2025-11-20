@@ -578,6 +578,7 @@ export type Database = {
           ambitious_price: number | null
           brand: string | null
           card_id: string | null
+          card_number: string | null
           category: string | null
           category_attributes: Json | null
           color: string | null
@@ -622,6 +623,7 @@ export type Database = {
           ambitious_price?: number | null
           brand?: string | null
           card_id?: string | null
+          card_number?: string | null
           category?: string | null
           category_attributes?: Json | null
           color?: string | null
@@ -666,6 +668,7 @@ export type Database = {
           ambitious_price?: number | null
           brand?: string | null
           card_id?: string | null
+          card_number?: string | null
           category?: string | null
           category_attributes?: Json | null
           color?: string | null

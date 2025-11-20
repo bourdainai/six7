@@ -13,5 +13,4 @@ export interface ListingSummary extends ListingRow {
   listing_images?: ListingImageSummary[] | null;
   seller?: ListingSellerSummary | null;
   similarityScore?: number;
-  card_number?: string;
 }
