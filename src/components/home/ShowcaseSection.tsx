@@ -36,20 +36,22 @@ export const ShowcaseSection = () => {
             <div className="container relative z-20 mx-auto px-6">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                     <div className="space-y-8">
-                        <h2 className="text-5xl md:text-7xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white via-gray-200 to-gray-500">
-                            The World's Most Desirable Cards.
+                        <h2 className="text-5xl md:text-7xl font-bold tracking-tighter">
+                            <span className="bg-gradient-to-r from-white via-cyan-200 to-white bg-clip-text text-transparent animate-gradient">
+                                The World's Most Desirable Cards.
+                            </span>
                         </h2>
                         <p className="text-xl text-gray-400 max-w-xl leading-relaxed">
                             Access a curated marketplace of high-end Pokémon TCG assets.
                             From vintage grails to modern chase cards, authenticated and ready for your collection.
                         </p>
                         <div className="flex flex-wrap gap-4">
-                            <Button asChild size="lg" className="bg-white text-black hover:bg-gray-200 px-8 h-14 text-lg border-0">
+                            <Button asChild size="lg" className="bg-white text-black hover:bg-gray-200 hover:scale-105 transition-all duration-200 px-8 h-14 text-lg border-0">
                                 <Link to="/browse">
                                     Explore the Vault <ArrowRight className="ml-2 h-5 w-5" />
                                 </Link>
                             </Button>
-                            <Button asChild size="lg" className="bg-white text-black hover:bg-gray-200 px-8 h-14 text-lg border-0">
+                            <Button asChild size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10 hover:scale-105 transition-all duration-200 px-8 h-14 text-lg">
                                 <Link to="/sell">Start Selling</Link>
                             </Button>
                         </div>

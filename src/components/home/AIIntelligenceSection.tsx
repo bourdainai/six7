@@ -32,8 +32,8 @@ export const AIIntelligenceSection = () => {
                         </p>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4">
-                            <div className="flex items-start gap-4">
-                                <div className="p-3 bg-zinc-900 border border-zinc-800 text-cyan-400">
+                            <div className="flex items-start gap-4 group hover:-translate-y-1 transition-all duration-300">
+                                <div className="p-3 bg-zinc-900 border border-zinc-800 text-cyan-400 group-hover:border-cyan-500/50 group-hover:shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all duration-300">
                                     <Zap className="w-6 h-6" />
                                 </div>
                                 <div>
@@ -41,8 +41,8 @@ export const AIIntelligenceSection = () => {
                                     <p className="text-sm text-zinc-500">Identifies over 15,000+ cards automatically.</p>
                                 </div>
                             </div>
-                            <div className="flex items-start gap-4">
-                                <div className="p-3 bg-zinc-900 border border-zinc-800 text-purple-400">
+                            <div className="flex items-start gap-4 group hover:-translate-y-1 transition-all duration-300">
+                                <div className="p-3 bg-zinc-900 border border-zinc-800 text-purple-400 group-hover:border-purple-500/50 group-hover:shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all duration-300">
                                     <BarChart3 className="w-6 h-6" />
                                 </div>
                                 <div>
@@ -52,29 +52,29 @@ export const AIIntelligenceSection = () => {
                             </div>
                         </div>
 
-                        <Button asChild size="lg" className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold px-8 border-0">
+                        <Button asChild size="lg" className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold px-8 border-0 hover:scale-105 hover:shadow-[0_0_25px_rgba(6,182,212,0.4)] transition-all duration-200">
                             <Link to="/sell">Try AI Listing Demo</Link>
                         </Button>
                     </div>
 
                     {/* Visual Content */}
                     <div className="lg:w-1/2 relative">
-                        <div className="relative z-10 border border-zinc-800 bg-zinc-900/50 backdrop-blur-sm">
+                        <div className="relative z-10 border border-zinc-800 bg-zinc-900/50 backdrop-blur-sm group">
                             <div className="absolute inset-0 bg-[url('/assets/grid.svg')] opacity-20 pointer-events-none" />
                             <img
                                 src="/assets/home/ai_hud.png"
                                 alt="AI Vision Interface"
-                                className="w-full h-auto opacity-80 hover:opacity-100 transition-opacity duration-500 mix-blend-screen"
+                                className="w-full h-auto opacity-80 group-hover:opacity-100 transition-opacity duration-500 mix-blend-screen"
                             />
 
                             {/* Animated Scanning Line */}
                             <div className="absolute top-0 left-0 w-full h-0.5 bg-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.8)] animate-scan" />
 
-                            {/* Corner Accents */}
-                            <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-cyan-500" />
-                            <div className="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-cyan-500" />
-                            <div className="absolute bottom-0 left-0 w-4 h-4 border-l-2 border-b-2 border-cyan-500" />
-                            <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-cyan-500" />
+                            {/* Corner Accents with Glow */}
+                            <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.6)]" />
+                            <div className="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.6)]" />
+                            <div className="absolute bottom-0 left-0 w-4 h-4 border-l-2 border-b-2 border-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.6)]" />
+                            <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.6)]" />
                         </div>
                     </div>
 
