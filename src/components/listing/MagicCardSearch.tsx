@@ -89,13 +89,15 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
       let error;
 
       if (hasSlash) {
-        // Full number search with slash: "143/190" - ONLY match display_number to prevent mismatches
-        const normalizedInput = trimmedQuery.toLowerCase().replace(/\s/g, "");
+        // Full number search with slash: "167/190"
+        const normalizedInput = trimmedQuery.replace(/\s/g, "");
         const [numPart, totalPart] = normalizedInput.split('/');
+        
+        console.log("📊 Parsed:", { numPart, totalPart, normalizedInput });
         
         const queries = [];
         
-        // Search only display_number for exact match
+        // Search display_number with full format (e.g., "167/190")
         queries.push(
           supabase
             .from("pokemon_card_attributes")
@@ -104,20 +106,51 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
             .limit(12)
         );
         
-        // If the number part doesn't have leading zeros, also try with them
-        if (numPart && totalPart && numPart.length < 3) {
-          const paddedNumber = numPart.padStart(3, '0') + '/' + totalPart;
+        // If we have both parts, search by number + printed_total
+        if (numPart && totalPart) {
+          const totalNum = parseInt(totalPart);
+          
+          // Try exact number match with printed_total
+          queries.push(
+            supabase
+              .from("pokemon_card_attributes")
+              .select("*")
+              .eq("display_number", numPart)
+              .eq("printed_total", totalNum)
+              .limit(12)
+          );
+          
+          // Try with leading zeros (001, 002, etc.)
+          const paddedNumber = numPart.padStart(3, '0');
           queries.push(
             supabase
               .from("pokemon_card_attributes")
               .select("*")
               .eq("display_number", paddedNumber)
+              .eq("printed_total", totalNum)
+              .limit(12)
+          );
+          
+          // Also try the full padded format
+          const paddedFull = paddedNumber + '/' + totalPart;
+          queries.push(
+            supabase
+              .from("pokemon_card_attributes")
+              .select("*")
+              .eq("display_number", paddedFull)
               .limit(12)
           );
         }
         
         // Execute searches
+        console.log("🔎 Executing", queries.length, "queries");
         const results = await Promise.all(queries);
+        
+        // Log each result
+        results.forEach((r, i) => {
+          console.log(`Query ${i}:`, r.data?.length || 0, "results", r.error || "");
+        });
+        
         const allCards = results.flatMap(r => r.data || []);
         
         // Remove duplicates by card_id
@@ -129,16 +162,18 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
         error = results.find(r => r.error)?.error;
         console.log("🎯 Full number search:", dbCards?.length || 0, "cards found");
       } else if (/^\d+$/.test(trimmedQuery)) {
-        // Partial number search: "88" - returns cards with that number from all sets
-        const { data: dbCards, error } = await supabase
+        // Partial number search: "88"
+        const result = await supabase
           .from("pokemon_card_attributes")
           .select("*")
           .eq("number", trimmedQuery)
           .limit(12);
         
+        dbCards = result.data;
+        error = result.error;
         console.log("🔢 Number search:", dbCards?.length || 0, "cards found");
       } else {
-        // Name search globally (all languages)
+        // Name search globally
         const result = await supabase
           .from("pokemon_card_attributes")
           .select("*")
@@ -161,7 +196,7 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
       const cardmarketPrices = card.cardmarket_prices as any;
       const displayNumber = (card as any).display_number || card.number || '';
 
-      // Normalize TCGdex image URLs: they need quality + extension to be real images
+      // Normalize TCGdex image URLs
       let smallImage: string | undefined;
       let largeImage: string | undefined;
 
@@ -174,7 +209,6 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
           null;
 
         if (typeof baseUrl === "string") {
-          // If the URL already has an extension, keep it as-is
           if (/\.(png|webp|jpg|jpeg)$/i.test(baseUrl)) {
             smallImage = baseUrl;
             largeImage = baseUrl;
@@ -212,14 +246,12 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
       setResults(transformedCards);
     } catch (error) {
       console.error("Card search error:", error);
-      // Don't toast on every debounce error, just log
     } finally {
       setIsSearching(false);
     }
   };
 
   const handleSelect = (card: PokemonCard) => {
-    // Extract market price from available sources
     let marketPrice = null;
     
     if (card.tcgplayer?.prices) {
@@ -234,7 +266,6 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
       marketPrice = card.cardmarket.prices.averageSellPrice;
     }
 
-    // Transform data to our listing format
     const cardData: MagicCardData = {
       title: `${card.name} - ${card.set.name}`,
       description: `Authentic ${card.name} from the ${card.set.name} set.\n\nCard Number: ${card.number}\nRarity: ${card.rarity || 'Unknown'}\nArtist: ${card.artist || 'Unknown'}`,
@@ -262,7 +293,7 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
           </div>
           <Input
             ref={searchInputRef}
-            placeholder="Magic Search: Type full number (4/102) or card name (Charizard)"
+            placeholder="Magic Search: Type full number (167/190) or card name (Charizard)"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="border-0 shadow-none focus-visible:ring-0 bg-transparent text-lg h-12"
@@ -297,9 +328,8 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
                   className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300"
                   loading="lazy"
                   onError={(e) => {
-                    // Fallback to placeholder if image fails to load
                     e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 140"%3E%3Crect fill="%23f3f4f6" width="100" height="140"/%3E%3Ctext x="50" y="70" font-family="Arial" font-size="12" fill="%239ca3af" text-anchor="middle"%3ENo Image%3C/text%3E%3C/svg%3E';
-                    e.currentTarget.onerror = null; // Prevent infinite loop
+                    e.currentTarget.onerror = null;
                   }}
                 />
               </div>
@@ -328,4 +358,3 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
     </div>
   );
 };
-
