@@ -125,15 +125,6 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
               .or(`search_number.eq.${paddedNumber},display_number.eq.${paddedNumber}`)
               .limit(12)
           );
-
-          // And search alt_numbers by the non-slashed part as well (e.g. "143")
-          queries.push(
-            supabase
-              .from("pokemon_card_attributes")
-              .select("*")
-              .contains("metadata", { alt_numbers: [numPart] })
-              .limit(12)
-          );
         }
         
         // Execute searches
@@ -149,29 +140,13 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
         error = results.find(r => r.error)?.error;
         console.log("🎯 Full number search:", dbCards?.length || 0, "cards found");
       } else if (/^\d+$/.test(trimmedQuery)) {
-        // Partial number search: "88" - returns cards with that number from all sets (all languages)
-        const numberQueries = [
-          supabase
-            .from("pokemon_card_attributes")
-            .select("*")
-            .eq("number", trimmedQuery)
-            .limit(12),
-          supabase
-            .from("pokemon_card_attributes")
-            .select("*")
-            .contains("metadata", { alt_numbers: [trimmedQuery] })
-            .limit(12),
-        ];
-
-        const numberResults = await Promise.all(numberQueries);
-        const numberCards = numberResults.flatMap(r => r.data || []);
-
-        const uniqueNumberCards = Array.from(
-          new Map(numberCards.map(card => [card.card_id, card])).values()
-        );
-
-        dbCards = uniqueNumberCards.slice(0, 12);
-        error = numberResults.find(r => r.error)?.error;
+        // Partial number search: "88" - returns cards with that number from all sets
+        const { data: dbCards, error } = await supabase
+          .from("pokemon_card_attributes")
+          .select("*")
+          .eq("number", trimmedQuery)
+          .limit(12);
+        
         console.log("🔢 Number search:", dbCards?.length || 0, "cards found");
       } else {
         // Name search globally (all languages)
