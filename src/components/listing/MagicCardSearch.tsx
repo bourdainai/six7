@@ -102,7 +102,16 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
           supabase
             .from("pokemon_card_attributes")
             .select("*")
-            .eq("search_number", normalizedInput)
+            .or(`search_number.eq.${normalizedInput},display_number.eq.${normalizedInput}`)
+            .limit(12)
+        );
+
+        // Also search any alternative numbers stored in metadata.alt_numbers
+        queries.push(
+          supabase
+            .from("pokemon_card_attributes")
+            .select("*")
+            .contains("metadata->alt_numbers", [normalizedInput])
             .limit(12)
         );
         
@@ -113,7 +122,16 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
             supabase
               .from("pokemon_card_attributes")
               .select("*")
-              .eq("search_number", paddedNumber)
+              .or(`search_number.eq.${paddedNumber},display_number.eq.${paddedNumber}`)
+              .limit(12)
+          );
+
+          // And search alt_numbers by the non-slashed part as well (e.g. "143")
+          queries.push(
+            supabase
+              .from("pokemon_card_attributes")
+              .select("*")
+              .contains("metadata->alt_numbers", [numPart])
               .limit(12)
           );
         }
@@ -132,13 +150,28 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
         console.log("🎯 Full number search:", dbCards?.length || 0, "cards found");
       } else if (/^\d+$/.test(trimmedQuery)) {
         // Partial number search: "88" - returns cards with that number from all sets (all languages)
-        const result = await supabase
-          .from("pokemon_card_attributes")
-          .select("*")
-          .eq("number", trimmedQuery)
-          .limit(12);
-        dbCards = result.data;
-        error = result.error;
+        const numberQueries = [
+          supabase
+            .from("pokemon_card_attributes")
+            .select("*")
+            .eq("number", trimmedQuery)
+            .limit(12),
+          supabase
+            .from("pokemon_card_attributes")
+            .select("*")
+            .contains("metadata->alt_numbers", [trimmedQuery])
+            .limit(12),
+        ];
+
+        const numberResults = await Promise.all(numberQueries);
+        const numberCards = numberResults.flatMap(r => r.data || []);
+
+        const uniqueNumberCards = Array.from(
+          new Map(numberCards.map(card => [card.card_id, card])).values()
+        );
+
+        dbCards = uniqueNumberCards.slice(0, 12);
+        error = numberResults.find(r => r.error)?.error;
         console.log("🔢 Number search:", dbCards?.length || 0, "cards found");
       } else {
         // Name search globally (all languages)
