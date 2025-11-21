@@ -1173,6 +1173,7 @@ export type Database = {
           cardmarket_id: string | null
           cardmarket_prices: Json | null
           created_at: string | null
+          display_number: string | null
           id: string
           images: Json | null
           last_price_update: string | null
@@ -1180,7 +1181,9 @@ export type Database = {
           name: string
           number: string | null
           popularity_score: number | null
+          printed_total: number | null
           rarity: string | null
+          search_number: string | null
           search_vector: unknown
           set_code: string | null
           set_name: string
@@ -1199,6 +1202,7 @@ export type Database = {
           cardmarket_id?: string | null
           cardmarket_prices?: Json | null
           created_at?: string | null
+          display_number?: string | null
           id?: string
           images?: Json | null
           last_price_update?: string | null
@@ -1206,7 +1210,9 @@ export type Database = {
           name: string
           number?: string | null
           popularity_score?: number | null
+          printed_total?: number | null
           rarity?: string | null
+          search_number?: string | null
           search_vector?: unknown
           set_code?: string | null
           set_name: string
@@ -1225,6 +1231,7 @@ export type Database = {
           cardmarket_id?: string | null
           cardmarket_prices?: Json | null
           created_at?: string | null
+          display_number?: string | null
           id?: string
           images?: Json | null
           last_price_update?: string | null
@@ -1232,7 +1239,9 @@ export type Database = {
           name?: string
           number?: string | null
           popularity_score?: number | null
+          printed_total?: number | null
           rarity?: string | null
+          search_number?: string | null
           search_vector?: unknown
           set_code?: string | null
           set_name?: string

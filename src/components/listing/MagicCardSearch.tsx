@@ -6,6 +6,7 @@ import { Search, Loader2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface PokemonCard {
   id: string;
@@ -53,6 +54,8 @@ interface MagicCardSearchProps {
 }
 
 export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
+  const [selectedSet, setSelectedSet] = useState<string>("");
+  const [availableSets, setAvailableSets] = useState<Array<{ code: string; name: string }>>([]);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<PokemonCard[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -60,9 +63,27 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
+  // Load available sets on mount
+  useEffect(() => {
+    const loadSets = async () => {
+      const { data } = await supabase
+        .from("pokemon_card_attributes")
+        .select("set_code, set_name")
+        .order("set_name");
+      
+      if (data) {
+        const uniqueSets = Array.from(
+          new Map(data.map(s => [s.set_code, { code: s.set_code!, name: s.set_name }])).values()
+        );
+        setAvailableSets(uniqueSets);
+      }
+    };
+    loadSets();
+  }, []);
+
   useEffect(() => {
     const debounce = setTimeout(() => {
-      if (query.trim().length >= 2) {
+      if (selectedSet && query.trim().length >= 1) {
         handleSearch(query);
       } else {
         setResults([]);
@@ -71,56 +92,52 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
     }, 500);
 
     return () => clearTimeout(debounce);
-  }, [query]);
+  }, [query, selectedSet]);
 
   const handleSearch = async (searchQuery: string) => {
-    if (!searchQuery.trim()) return;
+    if (!searchQuery.trim() || !selectedSet) return;
 
     setIsSearching(true);
     setHasSearched(true);
 
     try {
       const trimmedQuery = searchQuery.trim();
-      // Check if query looks like a card number (digits, optionally with one "/")
-      const isCardNumber = /^\d+(?:\/\d+)?$/.test(trimmedQuery);
+      const hasSlash = trimmedQuery.includes("/");
 
-      console.log("🔍 Search query:", trimmedQuery, "isCardNumber:", isCardNumber);
+      console.log("🔍 Searching in set:", selectedSet, "query:", trimmedQuery);
 
       let dbCards;
       let error;
 
-      if (isCardNumber) {
-        // Extract card number from formats like "003/142" or "3"
-        let cardNumber = trimmedQuery;
-        
-        if (trimmedQuery.includes("/")) {
-          // Extract first part: "003/142" → "003"
-          cardNumber = trimmedQuery.split("/")[0];
-        }
-        
-        // Normalize by removing leading zeros: "003" → "3"
-        const normalizedNumber = parseInt(cardNumber, 10).toString();
-        
-        console.log("🔢 Extracted card number:", normalizedNumber);
-        
-        // Search for exact match on normalized number
+      if (hasSlash) {
+        // Full number search: "25/198" - exact match on display_number within set
+        const normalizedInput = trimmedQuery.toLowerCase().replace(/\s/g, "");
         const result = await supabase
           .from("pokemon_card_attributes")
           .select("*")
-          .eq("number", normalizedNumber)
+          .eq("set_code", selectedSet)
+          .eq("search_number", normalizedInput)
           .limit(12);
         dbCards = result.data;
         error = result.error;
-        console.log(
-          "🎯 Card number search results:",
-          dbCards?.length || 0,
-          "cards found"
-        );
-      } else {
-        // Search by name using full-text search
+        console.log("🎯 Full number search:", dbCards?.length || 0, "cards found");
+      } else if (/^\d+$/.test(trimmedQuery)) {
+        // Partial number search: "25" - match on number field within set
         const result = await supabase
           .from("pokemon_card_attributes")
           .select("*")
+          .eq("set_code", selectedSet)
+          .eq("number", trimmedQuery)
+          .limit(12);
+        dbCards = result.data;
+        error = result.error;
+        console.log("🔢 Number search:", dbCards?.length || 0, "cards found");
+      } else {
+        // Name search within set
+        const result = await supabase
+          .from("pokemon_card_attributes")
+          .select("*")
+          .eq("set_code", selectedSet)
           .textSearch("search_vector", trimmedQuery, {
             type: "websearch",
             config: "english",
@@ -128,11 +145,7 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
           .limit(12);
         dbCards = result.data;
         error = result.error;
-        console.log(
-          "📝 Name search results:",
-          dbCards?.length || 0,
-          "cards found"
-        );
+        console.log("📝 Name search:", dbCards?.length || 0, "cards found");
       }
 
       if (error) throw error;
@@ -142,11 +155,12 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
         const images = card.images as any;
         const tcgplayerPrices = card.tcgplayer_prices as any;
         const cardmarketPrices = card.cardmarket_prices as any;
+        const displayNumber = (card as any).display_number || card.number || '';
 
         return {
           id: card.card_id,
           name: card.name,
-          number: card.number || '',
+          number: displayNumber,
           rarity: card.rarity || undefined,
           artist: card.artist || undefined,
           set: {
@@ -212,32 +226,55 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
 
   return (
     <div className="w-full space-y-4">
-      <div className="relative group">
-        <div className="absolute -inset-0.5 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 rounded-xl opacity-30 group-hover:opacity-50 transition duration-500 blur"></div>
-        <div className="relative bg-background rounded-xl border shadow-sm p-1 flex items-center gap-2">
-          <div className="pl-3 text-muted-foreground">
-            {isSearching ? <Loader2 className="h-5 w-5 animate-spin" /> : <Search className="h-5 w-5" />}
-          </div>
-          <Input
-            ref={searchInputRef}
-            placeholder="Magic Search: Type card name (e.g. 'Charizard 4')"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="border-0 shadow-none focus-visible:ring-0 bg-transparent text-lg h-12"
-          />
-          {query && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => { setQuery(""); setResults([]); }}
-              className="h-8 w-8 p-0 mr-1 rounded-full"
-            >
-              <span className="sr-only">Clear</span>
-              ×
-            </Button>
-          )}
-        </div>
+      {/* Step 1: Set Selection */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium">Step 1: Select Set</label>
+        <Select value={selectedSet} onValueChange={setSelectedSet}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Choose a Pokémon set first..." />
+          </SelectTrigger>
+          <SelectContent>
+            {availableSets.map((set) => (
+              <SelectItem key={set.code} value={set.code}>
+                {set.name} ({set.code})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
+
+      {/* Step 2: Card Number Search */}
+      {selectedSet && (
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Step 2: Enter Card Number</label>
+          <div className="relative group">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 rounded-xl opacity-30 group-hover:opacity-50 transition duration-500 blur"></div>
+            <div className="relative bg-background rounded-xl border shadow-sm p-1 flex items-center gap-2">
+              <div className="pl-3 text-muted-foreground">
+                {isSearching ? <Loader2 className="h-5 w-5 animate-spin" /> : <Search className="h-5 w-5" />}
+              </div>
+              <Input
+                ref={searchInputRef}
+                placeholder="Type full number (25/198) or card number (25)"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="border-0 shadow-none focus-visible:ring-0 bg-transparent text-lg h-12"
+              />
+              {query && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => { setQuery(""); setResults([]); }}
+                  className="h-8 w-8 p-0 mr-1 rounded-full"
+                >
+                  <span className="sr-only">Clear</span>
+                  ×
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Results Grid */}
       {results.length > 0 && (
@@ -272,10 +309,17 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
         </div>
       )}
 
-      {hasSearched && !isSearching && results.length === 0 && query.length >= 2 && (
+      {hasSearched && !isSearching && results.length === 0 && query.length >= 1 && selectedSet && (
         <div className="text-center py-8 text-muted-foreground bg-muted/30 rounded-xl border border-dashed">
           <Sparkles className="h-8 w-8 mx-auto mb-2 opacity-50" />
-          <p>No cards found. Try typing just the Pokémon name.</p>
+          <p>No cards found in this set. Check the card number or try a different set.</p>
+        </div>
+      )}
+      
+      {!selectedSet && (
+        <div className="text-center py-8 text-muted-foreground bg-muted/30 rounded-xl border border-dashed">
+          <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
+          <p>Please select a set first to search for cards</p>
         </div>
       )}
     </div>
