@@ -89,29 +89,18 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
       let error;
 
       if (hasSlash) {
-        // Full number search with slash: "088/182" or "88/182"
-        // Normalize: lowercase, remove spaces, pad the number part if needed
+        // Full number search with slash: "143/190" - ONLY match display_number to prevent mismatches
         const normalizedInput = trimmedQuery.toLowerCase().replace(/\s/g, "");
         const [numPart, totalPart] = normalizedInput.split('/');
         
-        // Try both with and without leading zeros
         const queries = [];
         
-        // Try exact match first (all languages)
+        // Search only display_number for exact match
         queries.push(
           supabase
             .from("pokemon_card_attributes")
             .select("*")
-            .or(`search_number.eq.${normalizedInput},display_number.eq.${normalizedInput}`)
-            .limit(12)
-        );
-
-        // Also search any alternative numbers stored in metadata.alt_numbers
-        queries.push(
-          supabase
-            .from("pokemon_card_attributes")
-            .select("*")
-            .contains("metadata", { alt_numbers: [normalizedInput] })
+            .eq("display_number", normalizedInput)
             .limit(12)
         );
         
@@ -122,7 +111,7 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
             supabase
               .from("pokemon_card_attributes")
               .select("*")
-              .or(`search_number.eq.${paddedNumber},display_number.eq.${paddedNumber}`)
+              .eq("display_number", paddedNumber)
               .limit(12)
           );
         }
