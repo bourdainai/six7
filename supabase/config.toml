@@ -137,3 +137,6 @@ verify_jwt = false
 
 [functions.import-missing-sv4a-cards]
 verify_jwt = false
+
+[functions.import-pokemon-tcg-sv4a]
+verify_jwt = false
