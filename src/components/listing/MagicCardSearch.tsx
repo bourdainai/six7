@@ -35,6 +35,10 @@ interface PokemonCard {
     large?: string;
     small?: string;
   };
+  metadata?: {
+    image_ok?: boolean;
+    requires_user_upload?: boolean;
+  };
 }
 
 export interface MagicCardData {
@@ -205,6 +209,7 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
       const tcgplayerPrices = card.tcgplayer_prices as any;
       const cardmarketPrices = card.cardmarket_prices as any;
       const displayNumber = (card as any).display_number || card.number || '';
+      const metadata = card.metadata as any;
 
       // Normalize TCGdex image URLs
       let smallImage: string | undefined;
@@ -249,6 +254,10 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
         images: smallImage || largeImage ? {
           large: largeImage || smallImage,
           small: smallImage || largeImage
+        } : undefined,
+        metadata: metadata ? {
+          image_ok: metadata.image_ok,
+          requires_user_upload: metadata.requires_user_upload
         } : undefined
       };
       });
@@ -337,37 +346,54 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
       {/* Results Grid */}
       {results.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 animate-in fade-in slide-in-from-top-2">
-          {results.map((card) => (
-            <Card
-              key={card.id}
-              className="overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary transition-all group"
-              onClick={() => handleSelect(card)}
-            >
-              <div className="aspect-[2.5/3.5] relative bg-muted">
-                <img
-                  src={card.images?.small || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 140"%3E%3Crect fill="%23f3f4f6" width="100" height="140"/%3E%3Ctext x="50" y="70" font-family="Arial" font-size="12" fill="%239ca3af" text-anchor="middle"%3ENo Image%3C/text%3E%3C/svg%3E'}
-                  alt={card.name}
-                  className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300"
-                  loading="lazy"
-                  onError={(e) => {
-                    e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 140"%3E%3Crect fill="%23f3f4f6" width="100" height="140"/%3E%3Ctext x="50" y="70" font-family="Arial" font-size="12" fill="%239ca3af" text-anchor="middle"%3ENo Image%3C/text%3E%3C/svg%3E';
-                    e.currentTarget.onerror = null;
-                  }}
-                />
-              </div>
-              <div className="p-3 bg-background/95 backdrop-blur-sm border-t">
-                <h4 className="font-medium text-sm truncate" title={card.name}>{card.name}</h4>
-                <div className="flex justify-between items-center mt-1">
-                  <span className="text-xs text-muted-foreground truncate max-w-[60%]">
-                    {card.set.name}
-                  </span>
-                  <Badge variant="secondary" className="text-[10px] h-5 px-1">
-                    {card.number}
-                  </Badge>
+          {results.map((card) => {
+            const imageHealthy = card.metadata?.image_ok !== false;
+            const needsUpload = card.metadata?.requires_user_upload;
+            const showImage = card.images?.small && imageHealthy;
+            
+            return (
+              <Card
+                key={card.id}
+                className="overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary transition-all group"
+                onClick={() => handleSelect(card)}
+              >
+                <div className="aspect-[2.5/3.5] relative bg-muted">
+                  {showImage ? (
+                    <img
+                      src={card.images.small}
+                      alt={card.name}
+                      className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
+                      onError={(e) => {
+                        e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 140"%3E%3Crect fill="%23f3f4f6" width="100" height="140"/%3E%3Ctext x="50" y="70" font-family="Arial" font-size="12" fill="%239ca3af" text-anchor="middle"%3ENo Image%3C/text%3E%3C/svg%3E';
+                        e.currentTarget.onerror = null;
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center p-4 text-muted-foreground">
+                      <svg className="w-12 h-12 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span className="text-xs text-center">
+                        {needsUpload ? "Upload your photos" : "No stock image"}
+                      </span>
+                    </div>
+                  )}
                 </div>
-              </div>
-            </Card>
-          ))}
+                <div className="p-3 bg-background/95 backdrop-blur-sm border-t">
+                  <h4 className="font-medium text-sm truncate" title={card.name}>{card.name}</h4>
+                  <div className="flex justify-between items-center mt-1">
+                    <span className="text-xs text-muted-foreground truncate max-w-[60%]">
+                      {card.set.name}
+                    </span>
+                    <Badge variant="secondary" className="text-[10px] h-5 px-1">
+                      {card.number}
+                    </Badge>
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
         </div>
       )}
 
