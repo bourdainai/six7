@@ -17,11 +17,13 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { setCode } = await req.json();
-    console.log(`🔍 Scraping Pokellector for set: ${setCode}`);
+    const { setCode, setId } = await req.json();
+    console.log(`🔍 Scraping TCGCollector for set: ${setCode} (ID: ${setId})`);
 
-    // Fetch the set page from Pokellector
-    const url = `http://jp.pokellector.com/sets/${setCode}`;
+    // Fetch the set page from TCGCollector
+    const url = setId 
+      ? `https://www.tcgcollector.com/sets/${setId}/${setCode.toLowerCase().replace(/\s+/g, '-')}`
+      : `http://jp.pokellector.com/sets/${setCode}`;
     console.log(`Fetching: ${url}`);
     
     const response = await fetch(url, {
@@ -41,43 +43,43 @@ serve(async (req) => {
       throw new Error('Failed to parse HTML');
     }
 
-    // Extract set name
-    const setNameElement = doc.querySelector('h1');
-    const setName = setNameElement?.textContent?.trim() || setCode;
+    console.log('Parsing card data...');
 
-    // Extract all cards from the list
-    const cardElements = doc.querySelectorAll('.card-item, .pokemon-card');
+    // Extract set name from page
+    const titleElement = doc.querySelector('h1, .set-title');
+    const setName = titleElement?.textContent?.trim() || setCode;
+
+    // Extract cards from grid items
+    const cardElements = doc.querySelectorAll('.card-image-grid-item, .card-search-result-item');
     const cards: any[] = [];
 
+    console.log(`Found ${cardElements.length} card elements`);
+
     cardElements.forEach((element: any) => {
-      const numberElement = element.querySelector('.card-number, .number');
-      const nameElement = element.querySelector('.card-name, .name');
-      const imageElement = element.querySelector('img');
-      const rarityElement = element.querySelector('.rarity');
+      const link = element.querySelector('a');
+      if (!link) return;
 
-      if (numberElement && nameElement) {
-        const number = numberElement.textContent?.trim();
-        const name = nameElement.textContent?.trim();
-        const imageUrl = imageElement?.getAttribute('src');
-        const rarity = rarityElement?.textContent?.trim();
+      const titleAttr = link.getAttribute('title');
+      if (!titleAttr) return;
 
-        cards.push({
-          card_id: `pokellector_${setCode}_${number}`.toLowerCase(),
-          name,
-          set_code: setCode,
-          set_name: setName,
-          number,
-          display_number: number,
-          search_number: number?.replace(/\D/g, ''),
-          rarity: rarity || null,
-          images: imageUrl ? {
-            small: imageUrl,
-            large: imageUrl.replace('/sm/', '/lg/')
-          } : null,
-          sync_source: 'pokellector',
-          synced_at: new Date().toISOString()
-        });
-      }
+      // Parse title like "Oddish (Shiny Treasure ex 001/190)"
+      const match = titleAttr.match(/^(.+?)\s*\(.*?(\d+)\/(\d+)\)$/);
+      if (!match) return;
+
+      const [_, name, cardNum, totalCards] = match;
+
+      cards.push({
+        card_id: `tcgcollector_${setCode}_${cardNum}`.toLowerCase(),
+        name: name.trim(),
+        set_code: setCode,
+        set_name: setName,
+        number: cardNum,
+        search_number: cardNum,
+        rarity: null,
+        images: null,
+        sync_source: 'tcgcollector',
+        synced_at: new Date().toISOString()
+      });
     });
 
     console.log(`✅ Scraped ${cards.length} cards from ${setName}`);
