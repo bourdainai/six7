@@ -138,7 +138,7 @@ serve(async (req) => {
     const apiUrl = new URL(`${POKEMON_API_URL}/cards`);
     apiUrl.searchParams.append('q', `set.id:${targetSetCode}`);
     apiUrl.searchParams.append('page', page.toString());
-    apiUrl.searchParams.append('pageSize', '250');
+    apiUrl.searchParams.append('pageSize', '2000');
 
     const tcgResponse = await fetch(apiUrl.toString(), {
       headers: {
@@ -263,7 +263,7 @@ serve(async (req) => {
 
 
     // Calculate if sync is complete
-    const totalPages = Math.ceil((tcgData.totalCount || 0) / 250);
+    const totalPages = Math.ceil((tcgData.totalCount || 0) / 2000);
     const isComplete = page >= totalPages;
 
     // Update sync progress
