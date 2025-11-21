@@ -143,3 +143,6 @@ verify_jwt = false
 
 [functions.import-github-pokemon-data]
 verify_jwt = false
+
+[functions.import-tcgdex-github]
+verify_jwt = false
