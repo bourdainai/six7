@@ -65,8 +65,8 @@ const ListingDetail = () => {
       let data, error;
       
       if (isShortId) {
-        // Query by short ID (first 8 chars of UUID) - case insensitive
-        const result = await query.ilike("id", `${extractedId}%`).limit(1);
+        // Query by short ID (first 8 chars of UUID) - cast UUID to text for pattern matching
+        const result = await query.ilike("id::text", `${extractedId}%`).limit(1);
         error = result.error;
         data = result.data?.[0];
         if (!data && !error) {
