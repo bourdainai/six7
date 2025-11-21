@@ -65,21 +65,21 @@ const ListingDetail = () => {
       let data, error;
       
       if (isShortId) {
-        // Query by short ID (first 8 chars of UUID) - cast UUID to text for pattern matching
-        const result = await query.ilike("id::text", `${extractedId}%`).limit(1);
+        // Query by short ID using the generated short_id column
+        const result = await query.eq("short_id", extractedId).maybeSingle();
         error = result.error;
-        data = result.data?.[0];
+        data = result.data;
         if (!data && !error) {
           throw new Error("Listing not found");
         }
       } else {
         // Query by full UUID
-        const result = await query.eq("id", extractedId).single();
+        const result = await query.eq("id", extractedId).maybeSingle();
         error = result.error;
         data = result.data;
       }
-
-      if (error) throw error;
+ 
+       if (error) throw error;
 
       // If listing has a card_id, fetch the Pokemon card image and number as fallback
       if (data.card_id) {
