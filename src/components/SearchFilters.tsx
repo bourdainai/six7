@@ -185,7 +185,7 @@ export const SearchFilters = ({
         <div className="relative flex items-center bg-background/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl transition-all duration-300">
 
           {/* Search Mode Selector (Subtle) */}
-          <div className="flex items-center pl-2 border-r border-border/50">
+          <div className="flex items-center pl-1 sm:pl-2 border-r border-border/50">
             <Select
               value={searchMode}
               onValueChange={(val: 'browse' | 'semantic' | 'vibe') => {
@@ -193,7 +193,7 @@ export const SearchFilters = ({
                 if (val === 'vibe') onVibeSearchClick?.();
               }}
             >
-              <SelectTrigger className="w-[50px] sm:w-[130px] border-0 focus:ring-0 shadow-none bg-transparent hover:bg-secondary/50 rounded-lg transition-colors gap-2">
+              <SelectTrigger className="w-[36px] sm:w-[130px] border-0 focus:ring-0 shadow-none bg-transparent hover:bg-secondary/50 rounded-lg transition-colors gap-2">
                 {searchMode === 'browse' && <Search className="h-4 w-4 text-muted-foreground" />}
                 {searchMode === 'semantic' && <Sparkles className="h-4 w-4 text-purple-500" />}
                 {searchMode === 'vibe' && <Image className="h-4 w-4 text-pink-500" />}
@@ -226,14 +226,14 @@ export const SearchFilters = ({
             ref={searchInputRef}
             placeholder={
               searchMode === 'semantic'
-                ? "Ask for anything... (e.g. 'mint charizard under £50')"
-                : "Search for cards, sets, or sealed product..."
+                ? "Ask AI anything..."
+                : "Search for cards, sets, or other..."
             }
             value={localFilters.search}
             onChange={(e) => updateFilter("search", e.target.value)}
             onFocus={() => setShowSuggestions(true)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            className="flex-1 h-14 border-0 focus-visible:ring-0 bg-transparent text-base px-4 shadow-none placeholder:text-muted-foreground/50"
+            className="flex-1 h-14 border-0 focus-visible:ring-0 bg-transparent text-base px-2 sm:px-4 shadow-none placeholder:text-muted-foreground/50"
           />
 
           {/* Actions Right */}

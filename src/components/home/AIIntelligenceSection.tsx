@@ -4,13 +4,13 @@ import { Scan, Zap, BarChart3 } from "lucide-react";
 
 export const AIIntelligenceSection = () => {
     return (
-        <section className="relative py-32 bg-zinc-950 overflow-hidden">
+        <section className="relative py-16 md:py-32 bg-zinc-950 overflow-hidden">
             {/* Decorative Elements */}
             <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent" />
             <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent" />
 
-            <div className="container mx-auto px-6 relative z-10">
-                <div className="flex flex-col lg:flex-row items-center gap-16">
+            <div className="container mx-auto px-4 sm:px-6 relative z-10">
+                <div className="flex flex-col lg:flex-row items-center gap-12 md:gap-16">
 
                     {/* Text Content */}
                     <div className="lg:w-1/2 space-y-8">

@@ -4,9 +4,9 @@ import { ArrowRight, Repeat, Package } from "lucide-react";
 
 export const MarketplaceSection = () => {
     return (
-        <section className="py-32 bg-white text-black">
-            <div className="container mx-auto px-6">
-                <div className="text-center mb-20">
+        <section className="py-16 md:py-32 bg-white text-black">
+            <div className="container mx-auto px-4 sm:px-6">
+                <div className="text-center mb-12 md:mb-20">
                     <h2 className="text-4xl md:text-6xl font-bold tracking-tighter mb-6">
                         The Liquid Marketplace.
                     </h2>
