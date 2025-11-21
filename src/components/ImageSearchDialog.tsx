@@ -8,6 +8,7 @@ import { Camera, Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import type { ListingSummary } from "@/types/listings";
+import { generateListingUrl } from "@/lib/listing-url";
 
 interface ImageSearchDialogProps {
   open: boolean;
@@ -130,7 +131,12 @@ export function ImageSearchDialog({
                     className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
                     onClick={() => {
                       onOpenChange(false);
-                      navigate(`/listing/${listing.id}`);
+                      const url = generateListingUrl(
+                        listing.id,
+                        listing.title,
+                        listing.seller?.full_name
+                      );
+                      navigate(url);
                     }}
                   >
                     <div className="aspect-square bg-muted overflow-hidden">

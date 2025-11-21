@@ -12,7 +12,7 @@ import { ReportDialog } from "@/components/moderation/ReportDialog";
 import { BundleRecommendation } from "@/components/BundleRecommendation";
 import { AgentFeedbackButtons } from "@/components/AgentFeedbackButtons";
 import { ArrowLeft, ShoppingBag, PackagePlus, Flag, Heart, ArrowLeftRight } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 import { SellerReputation } from "@/components/seller/SellerReputation";
@@ -22,6 +22,7 @@ import { useSavedListings } from "@/hooks/useSavedListings";
 import { formatCondition } from "@/lib/format";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
 import { SEO } from "@/components/SEO";
+import { extractListingId, isOldFormatUrl, generateListingUrl } from "@/lib/listing-url";
 
 type PackageDimensions = {
   length: number;
@@ -31,7 +32,7 @@ type PackageDimensions = {
 };
 
 const ListingDetail = () => {
-  const { id } = useParams();
+  const { id: rawId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -40,19 +41,36 @@ const ListingDetail = () => {
   const [bundleDialogOpen, setBundleDialogOpen] = useState(false);
   const [tradeOfferOpen, setTradeOfferOpen] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  
+  // Extract actual listing ID from URL (supports both old and new formats)
+  const extractedId = rawId ? extractListingId(rawId) : null;
 
   const { data: listing, isLoading } = useQuery({
-    queryKey: ["listing", id],
+    queryKey: ["listing", extractedId],
+    enabled: !!extractedId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      if (!extractedId) throw new Error("No listing ID");
+      
+      // Check if it's a short ID or full UUID
+      const isShortId = extractedId.length === 8;
+      
+      let query = supabase
         .from("listings")
         .select(`
           *,
           seller:profiles!seller_id(id, full_name, avatar_url, trust_score),
           images:listing_images(image_url, display_order)
-        `)
-        .eq("id", id)
-        .single();
+        `);
+      
+      if (isShortId) {
+        // Query by short ID (first 8 chars of UUID)
+        query = query.like("id", `${extractedId}%`);
+      } else {
+        // Query by full UUID
+        query = query.eq("id", extractedId);
+      }
+      
+      const { data, error } = await query.single();
 
       if (error) throw error;
 
@@ -88,6 +106,18 @@ const ListingDetail = () => {
     },
     staleTime: 1000 * 60 * 2, // 2 minutes
   });
+  
+  // Redirect old UUID format to new SEO-friendly format
+  useEffect(() => {
+    if (listing && rawId && isOldFormatUrl(rawId)) {
+      const newUrl = generateListingUrl(
+        listing.id,
+        listing.title,
+        listing.seller?.full_name
+      );
+      navigate(newUrl, { replace: true });
+    }
+  }, [listing, rawId, navigate]);
 
   const handleBuyNow = () => {
     if (!user) {
@@ -108,7 +138,7 @@ const ListingDetail = () => {
       return;
     }
 
-    navigate(`/checkout/${id}`);
+    navigate(`/checkout/${listing?.id}`);
   };
 
   if (isLoading) {
@@ -152,7 +182,8 @@ const ListingDetail = () => {
 
   const images = listing.images?.sort((a, b) => a.display_order - b.display_order) || [];
   const mainImage = images[0]?.image_url || "";
-  const listingUrl = `https://6seven.ai/listing/${id}`;
+  const seoUrl = generateListingUrl(listing.id, listing.title, listing.seller?.full_name);
+  const listingUrl = `https://6seven.io${seoUrl}`;
   
   // Build product structured data
   interface ProductStructuredData {
@@ -534,19 +565,19 @@ const ListingDetail = () => {
       <CreateBundleDialog
         open={bundleDialogOpen}
         onOpenChange={setBundleDialogOpen}
-        preselectedListings={[id!]}
+        preselectedListings={[listing.id]}
       />
 
       <TradeOfferModal
         open={tradeOfferOpen}
         onOpenChange={setTradeOfferOpen}
-        listingId={id}
+        listingId={listing.id}
       />
 
       <ReportDialog
         open={reportDialogOpen}
         onOpenChange={setReportDialogOpen}
-        reportedListingId={id}
+        reportedListingId={listing.id}
       />
     </PageLayout>
   );

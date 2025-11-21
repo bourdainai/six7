@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Heart, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useRef, useEffect } from "react";
+import { generateListingUrl } from "@/lib/listing-url";
 
 import type { ListingSummary } from "@/types/listings";
 
@@ -12,6 +13,12 @@ interface FeedCardProps {
 export function FeedCard({ listing }: FeedCardProps) {
   const [isLiked, setIsLiked] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  
+  const listingUrl = generateListingUrl(
+    listing.id,
+    listing.title,
+    listing.seller?.full_name
+  );
 
   // Auto-play video when in view
   useEffect(() => {
@@ -83,7 +90,7 @@ export function FeedCard({ listing }: FeedCardProps) {
         {/* Bottom Info */}
         <div className="space-y-3">
           <div className="flex items-end justify-between gap-4">
-            <Link to={`/listing/${listing.id}`} className="flex-1 min-w-0">
+            <Link to={listingUrl} className="flex-1 min-w-0">
               <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2 line-clamp-2">
                 {listing.title}
               </h2>
