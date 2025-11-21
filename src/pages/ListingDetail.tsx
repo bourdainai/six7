@@ -60,8 +60,7 @@ const ListingDetail = () => {
           *,
           seller:profiles!seller_id(id, full_name, avatar_url, trust_score),
           images:listing_images(image_url, display_order)
-        `)
-        .eq("status", "active");
+        `);
       
       let data, error;
       
