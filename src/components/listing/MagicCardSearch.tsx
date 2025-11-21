@@ -163,33 +163,57 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
 
       // Transform database results to match PokemonCard interface
       const transformedCards: PokemonCard[] = (dbCards || []).map(card => {
-        const images = card.images as any;
-        const tcgplayerPrices = card.tcgplayer_prices as any;
-        const cardmarketPrices = card.cardmarket_prices as any;
-        const displayNumber = (card as any).display_number || card.number || '';
+      const images = card.images as any;
+      const tcgplayerPrices = card.tcgplayer_prices as any;
+      const cardmarketPrices = card.cardmarket_prices as any;
+      const displayNumber = (card as any).display_number || card.number || '';
 
-        return {
-          id: card.card_id,
-          name: card.name,
-          number: displayNumber,
-          rarity: card.rarity || undefined,
-          artist: card.artist || undefined,
-          set: {
-            id: card.set_code || '',
-            name: card.set_name,
-            ptcgoCode: card.set_code || undefined,
-          },
-          tcgplayer: tcgplayerPrices ? {
-            prices: tcgplayerPrices
-          } : undefined,
-          cardmarket: cardmarketPrices ? {
-            prices: cardmarketPrices
-          } : undefined,
-          images: images ? {
-            large: images.large,
-            small: images.small
-          } : undefined
-        };
+      // Normalize TCGdex image URLs: they need quality + extension to be real images
+      let smallImage: string | undefined;
+      let largeImage: string | undefined;
+
+      if (images) {
+        const baseUrl =
+          images.small ||
+          images.large ||
+          images.tcgdex ||
+          images.base ||
+          null;
+
+        if (typeof baseUrl === "string") {
+          // If the URL already has an extension, keep it as-is
+          if (/\.(png|webp|jpg|jpeg)$/i.test(baseUrl)) {
+            smallImage = baseUrl;
+            largeImage = baseUrl;
+          } else {
+            smallImage = `${baseUrl}/low.webp`;
+            largeImage = `${baseUrl}/high.webp`;
+          }
+        }
+      }
+
+      return {
+        id: card.card_id,
+        name: card.name,
+        number: displayNumber,
+        rarity: card.rarity || undefined,
+        artist: card.artist || undefined,
+        set: {
+          id: card.set_code || '',
+          name: card.set_name,
+          ptcgoCode: card.set_code || undefined,
+        },
+        tcgplayer: tcgplayerPrices ? {
+          prices: tcgplayerPrices
+        } : undefined,
+        cardmarket: cardmarketPrices ? {
+          prices: cardmarketPrices
+        } : undefined,
+        images: smallImage || largeImage ? {
+          large: largeImage || smallImage,
+          small: smallImage || largeImage
+        } : undefined
+      };
       });
 
       setResults(transformedCards);
