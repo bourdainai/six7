@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { formatCondition, formatStatus } from "@/lib/format";
 import { SellerReputation } from "@/components/seller/SellerReputation";
 import type { ListingImageSummary, ListingSummary } from "@/types/listings";
+import { generateListingUrl } from "@/lib/listing-url";
 
 interface ListingCardProps {
   listing: ListingSummary;
@@ -41,13 +42,19 @@ const getFirstImage = (listing: ListingSummary): string | null => {
 export const ListingCard = React.memo(
   ({ listing, onSaveClick, isSaved = false, isSaving = false, showSaveButton = true, className = "" }: ListingCardProps) => {
     const navigate = useNavigate();
-
+    
+    const listingUrl = generateListingUrl(
+      listing.id,
+      listing.title,
+      listing.seller?.full_name
+    );
+    
     const firstImage = getFirstImage(listing);
 
   return (
     <div className={`group relative ${className}`}>
       <button
-        onClick={() => navigate(`/listing/${listing.id}`)}
+        onClick={() => navigate(listingUrl)}
         className="text-left w-full"
       >
         <div className="aspect-[5/7] bg-soft-neutral overflow-hidden mb-3 relative border border-divider-gray group-hover:border-foreground transition-all duration-fast">

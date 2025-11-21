@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Trash2, Edit } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { generateListingUrl } from "@/lib/listing-url";
 
 interface Listing {
   id: string;
@@ -53,7 +54,14 @@ export const ListingsManagement = ({ listings, onDelete, isDeleting }: ListingsM
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => navigate(`/listing/${listing.id}`)}
+                onClick={() => {
+                  const url = generateListingUrl(
+                    listing.id,
+                    listing.title,
+                    null
+                  );
+                  navigate(url);
+                }}
               >
                 <ExternalLink className="h-4 w-4 mr-1.5" />
                 View
