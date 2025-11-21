@@ -81,46 +81,74 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
 
     try {
       const trimmedQuery = searchQuery.trim();
-      // Check if query looks like a card number (contains digits and possibly /)
-      const isCardNumber = /^\d+[\/\d]*$/.test(trimmedQuery);
-      
-      console.log('🔍 Search query:', trimmedQuery, 'isCardNumber:', isCardNumber);
-      
+      // Check if query looks like a card number (digits, optionally with one "/")
+      const isCardNumber = /^\d+(?:\/\d+)?$/.test(trimmedQuery);
+
+      console.log("🔍 Search query:", trimmedQuery, "isCardNumber:", isCardNumber);
+
       let dbCards;
       let error;
 
       if (isCardNumber) {
-        // Handle leading zeros: "003/142" should match "3/142" in database
-        // Strip leading zeros from each part of the number
-        const normalizedNumber = trimmedQuery
-          .split('/')
-          .map(part => parseInt(part, 10).toString())
-          .join('/');
-        
-        console.log('🔢 Normalized number:', normalizedNumber);
-        
-        // Search by card number - try exact match and prefix match with normalized number
+        let orFilters: string[] = [];
+
+        if (trimmedQuery.includes("/")) {
+          const [rawCardPart] = trimmedQuery.split("/");
+          const parsedCardNum = parseInt(rawCardPart, 10);
+          const normalizedCardPart = Number.isNaN(parsedCardNum)
+            ? rawCardPart
+            : parsedCardNum.toString();
+
+          // Match against exact full number, raw first part, and normalized first part
+          orFilters = [
+            `number.eq.${trimmedQuery}`,
+            `number.eq.${rawCardPart}`,
+          ];
+
+          if (normalizedCardPart !== rawCardPart) {
+            orFilters.push(`number.eq.${normalizedCardPart}`);
+          }
+        } else {
+          const parsedCardNum = parseInt(trimmedQuery, 10);
+          const normalized = Number.isNaN(parsedCardNum)
+            ? trimmedQuery
+            : parsedCardNum.toString();
+
+          orFilters = [`number.eq.${trimmedQuery}`];
+          if (normalized !== trimmedQuery) {
+            orFilters.push(`number.eq.${normalized}`);
+          }
+        }
+
         const result = await supabase
-          .from('pokemon_card_attributes')
-          .select('*')
-          .or(`number.eq.${normalizedNumber},number.ilike.${normalizedNumber}%`)
+          .from("pokemon_card_attributes")
+          .select("*")
+          .or(orFilters.join(","))
           .limit(12);
         dbCards = result.data;
         error = result.error;
-        console.log('🎯 Card number search results:', dbCards?.length || 0, 'cards found');
+        console.log(
+          "🎯 Card number search results:",
+          dbCards?.length || 0,
+          "cards found"
+        );
       } else {
         // Search by name using full-text search
         const result = await supabase
-          .from('pokemon_card_attributes')
-          .select('*')
-          .textSearch('search_vector', trimmedQuery, {
-            type: 'websearch',
-            config: 'english'
+          .from("pokemon_card_attributes")
+          .select("*")
+          .textSearch("search_vector", trimmedQuery, {
+            type: "websearch",
+            config: "english",
           })
           .limit(12);
         dbCards = result.data;
         error = result.error;
-        console.log('📝 Name search results:', dbCards?.length || 0, 'cards found');
+        console.log(
+          "📝 Name search results:",
+          dbCards?.length || 0,
+          "cards found"
+        );
       }
 
       if (error) throw error;
