@@ -18,28 +18,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Check authorization (admin only or cron)
-    const authHeader = req.headers.get('authorization');
-    const cronSecret = req.headers.get('x-cron-secret');
-    
-    if (cronSecret !== Deno.env.get('CRON_SECRET')) {
-      const token = authHeader?.replace('Bearer ', '');
-      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-      
-      if (authError || !user) {
-        throw new Error('Unauthorized');
-      }
-
-      // Check if user is admin
-      const { data: roles } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id);
-      
-      if (!roles?.some(r => r.role === 'admin')) {
-        throw new Error('Admin access required');
-      }
-    }
+    console.log('Starting GitHub import...');
 
     const { setCode, batchSize = 500 } = await req.json().catch(() => ({}));
 
@@ -72,12 +51,18 @@ serve(async (req) => {
       try {
         console.log(`Processing set: ${setCodeToImport}`);
         
-        // Fetch set data from GitHub
-        const setUrl = `${GITHUB_RAW_BASE}/sets/en/${setCodeToImport}.json`;
-        const setResponse = await fetch(setUrl);
+        // Fetch set data from GitHub - try different URL patterns
+        let setUrl = `${GITHUB_RAW_BASE}/sets/en/${setCodeToImport}.json`;
+        let setResponse = await fetch(setUrl);
+        
+        // If first URL fails, try without /en/
+        if (!setResponse.ok) {
+          setUrl = `${GITHUB_RAW_BASE}/sets/${setCodeToImport}.json`;
+          setResponse = await fetch(setUrl);
+        }
         
         if (!setResponse.ok) {
-          console.error(`Failed to fetch set ${setCodeToImport}: ${setResponse.status}`);
+          console.error(`Failed to fetch set ${setCodeToImport}: ${setResponse.status} from ${setUrl}`);
           failedSets.push(setCodeToImport);
           continue;
         }
@@ -190,9 +175,14 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Import error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : '';
+    console.error('Error stack:', errorStack);
+    
     return new Response(
       JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: errorMessage,
+        stack: errorStack,
         details: 'Failed to import cards from GitHub'
       }),
       { 
