@@ -140,3 +140,6 @@ verify_jwt = false
 
 [functions.import-pokemon-tcg-sv4a]
 verify_jwt = false
+
+[functions.import-github-pokemon-data]
+verify_jwt = false
