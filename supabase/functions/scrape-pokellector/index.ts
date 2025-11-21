@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
 
+// Cache-busting: 2025-11-21T23:12:00Z
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -74,10 +75,9 @@ serve(async (req) => {
         set_code: setCode,
         set_name: setName,
         number: cardNum,
-        search_number: cardNum,
         rarity: null,
         images: null,
-        sync_source: 'tcgcollector',
+        sync_source: 'on_demand',
         synced_at: new Date().toISOString()
       });
     });
