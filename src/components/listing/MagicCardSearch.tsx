@@ -80,15 +80,34 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
     setHasSearched(true);
 
     try {
-      // Query our local database using full-text search
-      const { data: dbCards, error } = await supabase
-        .from('pokemon_card_attributes')
-        .select('*')
-        .textSearch('search_vector', searchQuery, {
-          type: 'websearch',
-          config: 'english'
-        })
-        .limit(12);
+      // Check if query looks like a card number (contains digits and possibly /)
+      const isCardNumber = /^\d+[\/\d]*$/.test(searchQuery.trim());
+      
+      let dbCards;
+      let error;
+
+      if (isCardNumber) {
+        // Search by card number - support both "11" and "11/15" formats
+        const result = await supabase
+          .from('pokemon_card_attributes')
+          .select('*')
+          .or(`number.ilike.${searchQuery}%,number.ilike.%/${searchQuery}`)
+          .limit(12);
+        dbCards = result.data;
+        error = result.error;
+      } else {
+        // Search by name using full-text search
+        const result = await supabase
+          .from('pokemon_card_attributes')
+          .select('*')
+          .textSearch('search_vector', searchQuery, {
+            type: 'websearch',
+            config: 'english'
+          })
+          .limit(12);
+        dbCards = result.data;
+        error = result.error;
+      }
 
       if (error) throw error;
 
