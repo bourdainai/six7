@@ -97,12 +97,13 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
         // Try both with and without leading zeros
         const queries = [];
         
-        // Try exact match first
+        // Try exact match first (Japanese cards only)
         queries.push(
           supabase
             .from("pokemon_card_attributes")
             .select("*")
             .eq("search_number", normalizedInput)
+            .eq("metadata->>language", "ja")
             .limit(12)
         );
         
@@ -114,6 +115,7 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
               .from("pokemon_card_attributes")
               .select("*")
               .eq("search_number", paddedNumber)
+              .eq("metadata->>language", "ja")
               .limit(12)
           );
         }
@@ -131,17 +133,18 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
         error = results.find(r => r.error)?.error;
         console.log("🎯 Full number search:", dbCards?.length || 0, "cards found");
       } else if (/^\d+$/.test(trimmedQuery)) {
-        // Partial number search: "88" - returns cards with that number from all sets
+        // Partial number search: "88" - returns cards with that number from all sets (Japanese only)
         const result = await supabase
           .from("pokemon_card_attributes")
           .select("*")
           .eq("number", trimmedQuery)
+          .eq("metadata->>language", "ja")
           .limit(12);
         dbCards = result.data;
         error = result.error;
         console.log("🔢 Number search:", dbCards?.length || 0, "cards found");
       } else {
-        // Name search globally
+        // Name search globally (Japanese only)
         const result = await supabase
           .from("pokemon_card_attributes")
           .select("*")
@@ -149,6 +152,7 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
             type: "websearch",
             config: "english",
           })
+          .eq("metadata->>language", "ja")
           .limit(12);
         dbCards = result.data;
         error = result.error;
@@ -275,6 +279,11 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
                   alt={card.name}
                   className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300"
                   loading="lazy"
+                  onError={(e) => {
+                    // Fallback to placeholder if image fails to load
+                    e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 140"%3E%3Crect fill="%23f3f4f6" width="100" height="140"/%3E%3Ctext x="50" y="70" font-family="Arial" font-size="12" fill="%239ca3af" text-anchor="middle"%3ENo Image%3C/text%3E%3C/svg%3E';
+                    e.currentTarget.onerror = null; // Prevent infinite loop
+                  }}
                 />
               </div>
               <div className="p-3 bg-background/95 backdrop-blur-sm border-t">
