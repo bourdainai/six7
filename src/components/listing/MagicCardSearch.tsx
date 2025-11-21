@@ -97,13 +97,12 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
         // Try both with and without leading zeros
         const queries = [];
         
-        // Try exact match first (Japanese cards only)
+        // Try exact match first (all languages)
         queries.push(
           supabase
             .from("pokemon_card_attributes")
             .select("*")
             .eq("search_number", normalizedInput)
-            .eq("metadata->>language", "ja")
             .limit(12)
         );
         
@@ -115,7 +114,6 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
               .from("pokemon_card_attributes")
               .select("*")
               .eq("search_number", paddedNumber)
-              .eq("metadata->>language", "ja")
               .limit(12)
           );
         }
@@ -133,18 +131,17 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
         error = results.find(r => r.error)?.error;
         console.log("🎯 Full number search:", dbCards?.length || 0, "cards found");
       } else if (/^\d+$/.test(trimmedQuery)) {
-        // Partial number search: "88" - returns cards with that number from all sets (Japanese only)
+        // Partial number search: "88" - returns cards with that number from all sets (all languages)
         const result = await supabase
           .from("pokemon_card_attributes")
           .select("*")
           .eq("number", trimmedQuery)
-          .eq("metadata->>language", "ja")
           .limit(12);
         dbCards = result.data;
         error = result.error;
         console.log("🔢 Number search:", dbCards?.length || 0, "cards found");
       } else {
-        // Name search globally (Japanese only)
+        // Name search globally (all languages)
         const result = await supabase
           .from("pokemon_card_attributes")
           .select("*")
@@ -152,7 +149,6 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
             type: "websearch",
             config: "english",
           })
-          .eq("metadata->>language", "ja")
           .limit(12);
         dbCards = result.data;
         error = result.error;
