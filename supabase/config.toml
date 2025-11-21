@@ -131,3 +131,6 @@ verify_jwt = false
 
 [functions.sync-justtcg-data]
 verify_jwt = false
+
+[functions.import-tcgdex-data]
+verify_jwt = false
