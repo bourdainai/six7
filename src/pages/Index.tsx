@@ -99,15 +99,15 @@ const Index = () => {
       <TrustSection />
 
       {/* CTA Section */}
-      <section className="py-32 px-6 bg-black text-white">
+      <section className="py-16 md:py-32 px-4 sm:px-6 bg-black text-white">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-5xl md:text-6xl font-light mb-6 leading-tight tracking-tight">
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-light mb-4 md:mb-6 leading-tight tracking-tight">
             Ready to start?
           </h2>
-          <p className="text-lg text-white/80 mb-10 font-normal tracking-tight">
+          <p className="text-base md:text-lg text-white/80 mb-8 md:mb-10 font-normal tracking-tight">
             Join the marketplace where selling is effortless and buying is intelligent.
           </p>
-          <Button asChild size="lg" variant="secondary" className="text-base px-8 h-12 font-normal bg-white text-black hover:bg-gray-200">
+          <Button asChild size="lg" variant="secondary" className="text-base px-6 md:px-8 h-11 md:h-12 font-normal bg-white text-black hover:bg-gray-200">
             <Link to="/sell">Get Started</Link>
           </Button>
         </div>

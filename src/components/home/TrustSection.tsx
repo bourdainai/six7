@@ -2,9 +2,9 @@ import { ShieldCheck, Lock, UserCheck } from "lucide-react";
 
 export const TrustSection = () => {
     return (
-        <section className="py-24 bg-zinc-50 border-t border-zinc-200">
-            <div className="container mx-auto px-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
+        <section className="py-12 md:py-24 bg-zinc-50 border-t border-zinc-200">
+            <div className="container mx-auto px-4 sm:px-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 text-center">
 
                     <div className="space-y-4">
                         <div className="mx-auto w-16 h-16 bg-white border border-zinc-200 flex items-center justify-center text-zinc-900 shadow-sm">
