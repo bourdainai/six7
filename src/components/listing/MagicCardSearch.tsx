@@ -111,7 +111,7 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
           supabase
             .from("pokemon_card_attributes")
             .select("*")
-            .contains("metadata->alt_numbers", [normalizedInput])
+            .contains("metadata", { alt_numbers: [normalizedInput] })
             .limit(12)
         );
         
@@ -131,7 +131,7 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
             supabase
               .from("pokemon_card_attributes")
               .select("*")
-              .contains("metadata->alt_numbers", [numPart])
+              .contains("metadata", { alt_numbers: [numPart] })
               .limit(12)
           );
         }
@@ -159,7 +159,7 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
           supabase
             .from("pokemon_card_attributes")
             .select("*")
-            .contains("metadata->alt_numbers", [trimmedQuery])
+            .contains("metadata", { alt_numbers: [trimmedQuery] })
             .limit(12),
         ];
 
