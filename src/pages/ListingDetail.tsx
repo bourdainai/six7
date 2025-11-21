@@ -62,15 +62,22 @@ const ListingDetail = () => {
           images:listing_images(image_url, display_order)
         `);
       
+      let data, error;
+      
       if (isShortId) {
         // Query by short ID (first 8 chars of UUID)
-        query = query.like("id", `${extractedId}%`);
+        const result = await query.like("id", `${extractedId}%`).limit(1);
+        error = result.error;
+        data = result.data?.[0];
+        if (!data && !error) {
+          throw new Error("Listing not found");
+        }
       } else {
         // Query by full UUID
-        query = query.eq("id", extractedId);
+        const result = await query.eq("id", extractedId).single();
+        error = result.error;
+        data = result.data;
       }
-      
-      const { data, error } = await query.single();
 
       if (error) throw error;
 
