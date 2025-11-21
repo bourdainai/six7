@@ -6,6 +6,22 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper function to map set codes to their series paths in TCGdex
+function getSeriesFromSetCode(setCode: string): string {
+  if (setCode.startsWith('SV')) return 'sv';
+  if (setCode.startsWith('S')) return 'swsh';
+  if (setCode.startsWith('SM')) return 'sm';
+  if (setCode.startsWith('XY')) return 'xy';
+  if (setCode.startsWith('BW')) return 'bw';
+  if (setCode.startsWith('neo')) return 'neo';
+  if (setCode.startsWith('E')) return 'ecard';
+  if (setCode.startsWith('PCG')) return 'dp';
+  if (setCode.startsWith('PMCG')) return 'base';
+  if (setCode === 'VS1') return 'base';
+  if (setCode === 'web1') return 'base';
+  return setCode.toLowerCase();
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -77,6 +93,10 @@ serve(async (req) => {
                 return null;
               }
               
+              // Construct image URL if not provided by API
+              const imageUrl = cardData.image || 
+                `https://assets.tcgdex.net/${language}/${getSeriesFromSetCode(set.id)}/${set.id}/${cardData.localId}`;
+              
               // Map TCGdex data to our schema
               const mappedCard = {
                 card_id: `tcgdex_${language}_${cardData.id}`,
@@ -91,9 +111,9 @@ serve(async (req) => {
                 subtypes: cardData.stage ? [cardData.stage] : null,
                 artist: cardData.illustrator || null,
                 images: {
-                  small: cardData.image,
-                  large: cardData.image,
-                  tcgdex: cardData.image
+                  small: imageUrl,
+                  large: imageUrl,
+                  tcgdex: imageUrl
                 },
                 tcgplayer_prices: cardData.pricing?.tcgplayer ? {
                   updated: cardData.pricing.tcgplayer.updated,
