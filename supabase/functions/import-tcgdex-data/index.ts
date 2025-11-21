@@ -84,8 +84,7 @@ serve(async (req) => {
                 set_name: setData.name,
                 set_code: set.id,
                 number: cardData.localId,
-                display_number: cardData.localId,
-                search_number: cardData.localId?.toString().padStart(3, '0'),
+                // display_number and search_number are generated columns, don't insert them
                 rarity: cardData.rarity || null,
                 types: cardData.types || null,
                 supertype: cardData.category || null,
