@@ -119,3 +119,9 @@ verify_jwt = false
 
 [functions.pokemon-search]
 verify_jwt = false
+
+[functions.sync-tcg-data]
+verify_jwt = false
+
+[functions.sync-justtcg-data]
+verify_jwt = false

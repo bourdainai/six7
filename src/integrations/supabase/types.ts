@@ -2196,6 +2196,7 @@ export type Database = {
           priority_tier: number | null
           set_code: string
           set_name: string | null
+          sync_source: Database["public"]["Enums"]["sync_source_type"] | null
           sync_status: string | null
           synced_cards: number | null
           total_cards: number | null
@@ -2210,6 +2211,7 @@ export type Database = {
           priority_tier?: number | null
           set_code: string
           set_name?: string | null
+          sync_source?: Database["public"]["Enums"]["sync_source_type"] | null
           sync_status?: string | null
           synced_cards?: number | null
           total_cards?: number | null
@@ -2224,6 +2226,7 @@ export type Database = {
           priority_tier?: number | null
           set_code?: string
           set_name?: string | null
+          sync_source?: Database["public"]["Enums"]["sync_source_type"] | null
           sync_status?: string | null
           synced_cards?: number | null
           total_cards?: number | null
@@ -2682,7 +2685,7 @@ export type Database = {
         | "disputed"
       membership_tier: "free" | "pro" | "enterprise"
       risk_tier: "A" | "B" | "C"
-      sync_source_type: "manual" | "cron" | "on_demand"
+      sync_source_type: "manual" | "cron" | "on_demand" | "justtcg"
       user_role: "buyer" | "seller" | "admin" | "moderator"
     }
     CompositeTypes: {
@@ -2829,7 +2832,7 @@ export const Constants = {
       ],
       membership_tier: ["free", "pro", "enterprise"],
       risk_tier: ["A", "B", "C"],
-      sync_source_type: ["manual", "cron", "on_demand"],
+      sync_source_type: ["manual", "cron", "on_demand", "justtcg"],
       user_role: ["buyer", "seller", "admin", "moderator"],
     },
   },
