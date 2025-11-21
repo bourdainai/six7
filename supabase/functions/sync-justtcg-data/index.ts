@@ -58,7 +58,7 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const { 
       setId,
-      mode = 'full', // 'full' = all data, 'prices' = only price updates
+      mode = 'prices', // Default to price-only mode now
       limit = 2000
     } = body;
 

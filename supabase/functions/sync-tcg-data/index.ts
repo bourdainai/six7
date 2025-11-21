@@ -53,92 +53,17 @@ serve(async (req) => {
     // Parse request body
     const body = await req.json().catch(() => ({}));
     const { 
-      setCode, 
-      page = 1, 
-      priorityTier = null,
-      autoSelectSet = false // If true, automatically select next set to sync based on priority
+      daysBack = 7, // How many days back to fetch price updates
+      limit = 2000
     } = body;
 
-    // Auto-select set based on priority if requested (for cron jobs)
-    let targetSetCode = setCode;
-    let targetSetName = '';
-    
-    if (autoSelectSet && !setCode) {
-      // Find next set to sync based on priority
-      const { data: nextSet } = await supabase
-        .from('tcg_sync_progress')
-        .select('set_code, set_name, priority_tier, sync_status, last_page_synced')
-        .in('sync_status', ['pending', 'in_progress'])
-        .order('priority_tier', { ascending: true })
-        .order('last_sync_at', { ascending: true, nullsFirst: true })
-        .limit(1)
-        .single();
+    console.log(`Starting Pokemon TCG API price sync (last ${daysBack} days)...`);
 
-      if (nextSet) {
-        targetSetCode = nextSet.set_code;
-        targetSetName = nextSet.set_name || '';
-        console.log(`Auto-selected set: ${targetSetCode} (Tier ${nextSet.priority_tier})`);
-      } else {
-        // Check popular_sets for new sets to sync
-        const { data: popularSet } = await supabase
-          .from('popular_sets')
-          .select('set_code, set_name, priority_tier')
-          .eq('is_active', true)
-          .order('priority_tier', { ascending: true })
-          .limit(1)
-          .single();
-
-        if (popularSet) {
-          // Check if sync progress exists
-          const { data: existingProgress } = await supabase
-            .from('tcg_sync_progress')
-            .select('*')
-            .eq('set_code', popularSet.set_code)
-            .single();
-
-          if (!existingProgress) {
-            // Create new sync progress entry
-            await supabase
-              .from('tcg_sync_progress')
-              .insert({
-                set_code: popularSet.set_code,
-                set_name: popularSet.set_name,
-                priority_tier: popularSet.priority_tier,
-                sync_status: 'pending',
-                last_page_synced: 0,
-                synced_cards: 0
-              });
-
-            targetSetCode = popularSet.set_code;
-            targetSetName = popularSet.set_name;
-            console.log(`Created sync progress for new set: ${targetSetCode}`);
-          }
-        }
-      }
-    }
-
-    if (!targetSetCode) {
-      return new Response(
-        JSON.stringify({ error: 'No set specified and no sets available for auto-sync' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Update sync status to in_progress
-    await supabase
-      .from('tcg_sync_progress')
-      .update({ 
-        sync_status: 'in_progress',
-        updated_at: new Date().toISOString()
-      })
-      .eq('set_code', targetSetCode);
-
-    console.log(`Syncing TCG data. Set: ${targetSetCode}, Page: ${page}`);
-
+    // Fetch cards that need price updates
+    // Since Pokemon TCG API doesn't have an updatedAt filter, we'll fetch random batches
     const apiUrl = new URL(`${POKEMON_API_URL}/cards`);
-    apiUrl.searchParams.append('q', `set.id:${targetSetCode}`);
-    apiUrl.searchParams.append('page', page.toString());
-    apiUrl.searchParams.append('pageSize', '2000');
+    apiUrl.searchParams.append('pageSize', limit.toString());
+    apiUrl.searchParams.append('page', '1');
 
     const tcgResponse = await fetch(apiUrl.toString(), {
       headers: {
@@ -147,16 +72,6 @@ serve(async (req) => {
     });
 
     if (!tcgResponse.ok) {
-      // Update sync status to failed
-      await supabase
-        .from('tcg_sync_progress')
-        .update({ 
-          sync_status: 'failed',
-          error_message: `API Error: ${tcgResponse.statusText}`,
-          updated_at: new Date().toISOString()
-        })
-        .eq('set_code', targetSetCode);
-
       throw new Error(`TCG API Error: ${tcgResponse.statusText}`);
     }
 
@@ -164,142 +79,66 @@ serve(async (req) => {
     const cards = tcgData.data || [];
 
     if (cards.length === 0) {
-      // Mark as completed if no more cards
-      await supabase
-        .from('tcg_sync_progress')
-        .update({ 
-          sync_status: 'completed',
-          updated_at: new Date().toISOString()
-        })
-        .eq('set_code', targetSetCode);
-
       return new Response(
-        JSON.stringify({ message: 'No more cards found to sync', setCode: targetSetCode }),
+        JSON.stringify({ message: 'No cards found for price update' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Prepare card data with sync metadata
+    console.log(`Fetched ${cards.length} cards for price updates`);
+
     const now = new Date().toISOString();
-    const cardIds = cards.map((card: any) => card.id);
-    
-    // Check which cards already exist
-    const { data: existingCards } = await supabase
-      .from('pokemon_card_attributes')
-      .select('card_id')
-      .in('card_id', cardIds);
-    
-    const existingCardIds = new Set(existingCards?.map(c => c.card_id) || []);
-    
-    // Separate new cards from existing cards
-    const newCards = cards.filter((card: any) => !existingCardIds.has(card.id));
-    const existingCardsToUpdate = cards.filter((card: any) => existingCardIds.has(card.id));
-    
-    let insertCount = 0;
     let updateCount = 0;
+    let notFoundCount = 0;
     
-    // Insert NEW cards with all data
-    if (newCards.length > 0) {
-      const insertData = newCards.map((card: any) => ({
-        card_id: card.id,
-        name: card.name,
-        set_name: card.set.name,
-        set_code: card.set.id,
-        number: card.number,
-        rarity: card.rarity,
-        artist: card.artist,
-        types: card.types || [],
-        subtypes: card.subtypes || [],
-        supertype: card.supertype,
-        images: card.images || {},
-        tcgplayer_id: card.tcgplayer?.url?.split('/').pop(),
-        cardmarket_id: card.cardmarket?.url?.split('/').pop(),
-        tcgplayer_prices: card.tcgplayer?.prices || null,
-        cardmarket_prices: card.cardmarket?.prices || null,
-        last_price_update: card.tcgplayer?.prices || card.cardmarket?.prices ? now : null,
-        synced_at: now,
-        sync_source: isCronJob ? 'cron' : 'manual',
-        updated_at: now,
-      }));
+    // Update prices for existing cards only
+    for (const card of cards) {
+      const hasPrices = card.tcgplayer?.prices || card.cardmarket?.prices;
       
-      const { error: insertError } = await supabase
+      if (!hasPrices) continue;
+
+      const { error: updateError, count } = await supabase
         .from('pokemon_card_attributes')
-        .insert(insertData);
+        .update({
+          tcgplayer_prices: card.tcgplayer?.prices || null,
+          cardmarket_prices: card.cardmarket?.prices || null,
+          last_price_update: now,
+          updated_at: now,
+        })
+        .eq('card_id', card.id);
       
-      if (insertError) {
-        console.error('Insert Error:', insertError);
-        throw insertError;
+      if (updateError) {
+        console.error(`Update Error for ${card.id}:`, updateError);
+      } else if (count === 0) {
+        notFoundCount++;
+      } else {
+        updateCount++;
       }
-      
-      insertCount = newCards.length;
-      console.log(`✅ Inserted ${insertCount} new cards`);
     }
     
-    // Update EXISTING cards - ONLY price fields
-    if (existingCardsToUpdate.length > 0) {
-      for (const card of existingCardsToUpdate) {
-        const hasPrices = card.tcgplayer?.prices || card.cardmarket?.prices;
-        
-        const { error: updateError } = await supabase
-          .from('pokemon_card_attributes')
-          .update({
-            tcgplayer_prices: card.tcgplayer?.prices || null,
-            cardmarket_prices: card.cardmarket?.prices || null,
-            last_price_update: hasPrices ? now : null,
-            updated_at: now,
-          })
-          .eq('card_id', card.id);
-        
-        if (updateError) {
-          console.error(`Update Error for ${card.id}:`, updateError);
-          // Continue with other updates even if one fails
-        } else {
-          updateCount++;
-        }
-      }
-      
-      console.log(`✅ Updated prices for ${updateCount} existing cards`);
-    }
+    console.log(`✅ Updated prices for ${updateCount} cards, ${notFoundCount} not found in database`);
 
-
-    // Calculate if sync is complete
-    const totalPages = Math.ceil((tcgData.totalCount || 0) / 2000);
-    const isComplete = page >= totalPages;
-
-    // Update sync progress
-    const { data: currentProgress } = await supabase
-      .from('tcg_sync_progress')
-      .select('synced_cards')
-      .eq('set_code', targetSetCode)
-      .single();
-
-    const newSyncedCount = (currentProgress?.synced_cards || 0) + cards.length;
-
+    // Update sync progress for price updates
     await supabase
       .from('tcg_sync_progress')
-      .update({ 
-        last_page_synced: page,
-        total_cards: tcgData.totalCount || 0,
-        synced_cards: newSyncedCount,
+      .upsert({
+        set_code: 'price-sync',
+        set_name: 'Pokemon TCG API Price Updates',
+        sync_source: 'pokemon_tcg_api',
+        sync_status: 'completed',
+        total_cards: cards.length,
+        cards_synced: updateCount,
         last_sync_at: now,
-        sync_status: isComplete ? 'completed' : 'in_progress',
-        updated_at: now
-      })
-      .eq('set_code', targetSetCode);
+      }, {
+        onConflict: 'set_code,sync_source'
+      });
 
     return new Response(
       JSON.stringify({ 
-        message: `Synced ${cards.length} cards (${insertCount} new, ${updateCount} price updates)`,
-        setCode: targetSetCode,
-        setName: targetSetName,
-        newCards: insertCount,
-        priceUpdates: updateCount,
-        totalProcessed: cards.length,
-        totalCount: tcgData.totalCount,
-        page: page,
-        totalPages: totalPages,
-        syncedCards: newSyncedCount,
-        isComplete: isComplete
+        message: `Updated prices for ${updateCount} cards`,
+        updated: updateCount,
+        notFound: notFoundCount,
+        totalProcessed: cards.length
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
