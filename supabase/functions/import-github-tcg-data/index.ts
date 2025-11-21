@@ -20,68 +20,91 @@ serve(async (req) => {
 
     console.log('Starting GitHub import...');
 
-    const { setCode, batchSize = 500 } = await req.json().catch(() => ({}));
+    const { setCode, batchSize = 100, maxSets = 10 } = await req.json().catch(() => ({}));
 
-    console.log(`Starting GitHub import${setCode ? ` for set: ${setCode}` : ' for all sets'}`);
-
-    // Fetch list of all sets from GitHub
-    let setsToProcess: string[] = [];
+    // Step 1: Fetch all sets from GitHub
+    console.log('Fetching sets list from GitHub...');
+    const setsUrl = `${GITHUB_RAW_BASE}/sets/en.json`;
+    const setsResponse = await fetch(setsUrl);
     
+    if (!setsResponse.ok) {
+      throw new Error(`Failed to fetch sets list: ${setsResponse.status}`);
+    }
+
+    const allSets = await setsResponse.json();
+    console.log(`Found ${allSets.length} total sets in repository`);
+
+    // Step 2: Filter sets to process
+    let setsToProcess = allSets;
     if (setCode) {
-      setsToProcess = [setCode];
+      setsToProcess = allSets.filter((s: any) => s.id === setCode);
+      console.log(`Filtering for single set: ${setCode}`);
     } else {
-      // Fetch the sets directory listing to get all set codes
-      // We'll need to fetch a known index or use a predefined list
-      // For now, let's use the popular_sets table as a starting point
-      const { data: popularSets } = await supabase
-        .from('popular_sets')
+      // Limit to maxSets per run to avoid timeouts
+      // Get sets that haven't been synced yet from GitHub
+      const { data: syncedSets } = await supabase
+        .from('tcg_sync_progress')
         .select('set_code')
-        .eq('is_active', true);
+        .eq('sync_source', 'github')
+        .eq('sync_status', 'completed');
+
+      const syncedSetIds = new Set(syncedSets?.map(s => s.set_code) || []);
+      const unsyncedSets = allSets.filter((s: any) => !syncedSetIds.has(s.id));
       
-      setsToProcess = popularSets?.map(s => s.set_code) || [];
-      
-      console.log(`Found ${setsToProcess.length} sets to process from popular_sets table`);
+      setsToProcess = unsyncedSets.slice(0, maxSets);
+      console.log(`Processing ${setsToProcess.length} unsynced sets (max: ${maxSets}, total unsynced: ${unsyncedSets.length})`);
     }
 
     let totalImported = 0;
     let totalSkipped = 0;
+    let totalErrors = 0;
     const failedSets: string[] = [];
+    const successSets: string[] = [];
 
-    for (const setCodeToImport of setsToProcess) {
+    // Step 3: Process each set
+    for (const set of setsToProcess) {
       try {
-        console.log(`Processing set: ${setCodeToImport}`);
-        
-        // Fetch set data from GitHub - try different URL patterns
-        let setUrl = `${GITHUB_RAW_BASE}/sets/en/${setCodeToImport}.json`;
-        let setResponse = await fetch(setUrl);
-        
-        // If first URL fails, try without /en/
-        if (!setResponse.ok) {
-          setUrl = `${GITHUB_RAW_BASE}/sets/${setCodeToImport}.json`;
-          setResponse = await fetch(setUrl);
-        }
-        
-        if (!setResponse.ok) {
-          console.error(`Failed to fetch set ${setCodeToImport}: ${setResponse.status} from ${setUrl}`);
-          failedSets.push(setCodeToImport);
+        const setId = set.id;
+        const setName = set.name;
+        const totalCards = set.total || 0;
+
+        console.log(`\n=== Processing Set: ${setName} (${setId}) - ${totalCards} cards ===`);
+
+        // Check if already synced from GitHub
+        const { data: existingProgress } = await supabase
+          .from('tcg_sync_progress')
+          .select('*')
+          .eq('set_code', setId)
+          .eq('sync_source', 'github')
+          .single();
+
+        if (existingProgress?.sync_status === 'completed') {
+          console.log(`Set ${setId} already fully synced from GitHub, skipping...`);
+          totalSkipped += totalCards;
           continue;
         }
 
-        const setData = await setResponse.json();
-        const cards = setData.cards || [];
+        // Fetch the full set JSON which contains all cards
+        const setDataUrl = `${GITHUB_RAW_BASE}/cards/en/${setId}.json`;
+        console.log(`Fetching cards from: ${setDataUrl}`);
         
-        console.log(`Found ${cards.length} cards in set ${setCodeToImport}`);
+        const setDataResponse = await fetch(setDataUrl);
+        
+        if (!setDataResponse.ok) {
+          console.error(`Failed to fetch set ${setId}: ${setDataResponse.status}`);
+          failedSets.push(setId);
+          continue;
+        }
 
-        // Check if set already has cards from github source
-        const { data: existingCards, error: checkError } = await supabase
+        const cards = await setDataResponse.json();
+        console.log(`Found ${cards.length} cards in set ${setId}`);
+
+        // Check which cards already exist
+        const cardIds = cards.map((card: any) => card.id);
+        const { data: existingCards } = await supabase
           .from('pokemon_card_attributes')
           .select('card_id')
-          .eq('set_code', setCodeToImport)
-          .eq('sync_source', 'github');
-
-        if (checkError) {
-          console.error(`Error checking existing cards: ${checkError.message}`);
-        }
+          .in('card_id', cardIds);
 
         const existingCardIds = new Set(existingCards?.map(c => c.card_id) || []);
         const newCards = cards.filter((card: any) => !existingCardIds.has(card.id));
@@ -90,31 +113,57 @@ serve(async (req) => {
         totalSkipped += existingCardIds.size;
 
         // Process cards in batches
+        let importedForSet = 0;
         for (let i = 0; i < newCards.length; i += batchSize) {
           const batch = newCards.slice(i, i + batchSize);
           
-          const cardsToInsert = batch.map((card: any) => ({
-            card_id: card.id,
-            name: card.name,
-            set_code: setCodeToImport,
-            set_name: setData.name || card.set?.name || '',
-            number: card.number,
-            supertype: card.supertype,
-            subtypes: card.subtypes || [],
-            types: card.types || [],
-            rarity: card.rarity,
-            artist: card.artist,
-            images: {
-              small: card.images?.small,
-              large: card.images?.large
-            },
-            tcgplayer_id: card.tcgplayer?.productId?.toString(),
-            cardmarket_id: card.cardmarket?.productId?.toString(),
-            sync_source: 'github',
-            synced_at: new Date().toISOString(),
-          }));
+          const cardsToInsert = batch.map((card: any) => {
+            // Map ALL GitHub data to our schema
+            const mappedCard: any = {
+              card_id: card.id,
+              name: card.name,
+              set_code: setId,
+              set_name: setName,
+              number: card.number,
+              supertype: card.supertype,
+              subtypes: card.subtypes || [],
+              types: card.types || [],
+              rarity: card.rarity,
+              artist: card.artist,
+              sync_source: 'github',
+              synced_at: new Date().toISOString(),
+            };
 
-          const { error: insertError } = await supabase
+            // Images
+            if (card.images) {
+              mappedCard.images = {
+                small: card.images.small,
+                large: card.images.large
+              };
+            }
+
+            // TCGPlayer data
+            if (card.tcgplayer) {
+              mappedCard.tcgplayer_id = card.tcgplayer.url?.split('/').pop() || null;
+              if (card.tcgplayer.prices) {
+                mappedCard.tcgplayer_prices = card.tcgplayer.prices;
+                mappedCard.last_price_update = new Date().toISOString();
+              }
+            }
+
+            // Cardmarket data
+            if (card.cardmarket) {
+              mappedCard.cardmarket_id = card.cardmarket.url?.split('/').pop() || null;
+              if (card.cardmarket.prices) {
+                mappedCard.cardmarket_prices = card.cardmarket.prices;
+                mappedCard.last_price_update = new Date().toISOString();
+              }
+            }
+
+            return mappedCard;
+          });
+
+          const { error: insertError, count } = await supabase
             .from('pokemon_card_attributes')
             .upsert(cardsToInsert, {
               onConflict: 'card_id',
@@ -122,10 +171,12 @@ serve(async (req) => {
             });
 
           if (insertError) {
-            console.error(`Error inserting batch for set ${setCodeToImport}:`, insertError);
+            console.error(`Error inserting batch for set ${setId}:`, insertError);
+            totalErrors += batch.length;
           } else {
-            totalImported += cardsToInsert.length;
-            console.log(`Imported batch of ${cardsToInsert.length} cards`);
+            importedForSet += batch.length;
+            totalImported += batch.length;
+            console.log(`Imported batch ${i / batchSize + 1}: ${batch.length} cards`);
           }
         }
 
@@ -133,22 +184,24 @@ serve(async (req) => {
         await supabase
           .from('tcg_sync_progress')
           .upsert({
-            set_code: setCodeToImport,
-            set_name: setData.name,
+            set_code: setId,
+            set_name: setName,
             sync_source: 'github',
             sync_status: 'completed',
-            total_cards: cards.length,
-            cards_synced: newCards.length,
+            total_cards: totalCards,
+            cards_synced: importedForSet,
             last_sync_at: new Date().toISOString(),
           }, {
             onConflict: 'set_code,sync_source'
           });
 
-        console.log(`Completed set ${setCodeToImport}`);
+        successSets.push(setId);
+        console.log(`✅ Completed set ${setId}: ${importedForSet} cards imported`);
         
       } catch (setError) {
-        console.error(`Error processing set ${setCodeToImport}:`, setError);
-        failedSets.push(setCodeToImport);
+        console.error(`Error processing set ${set.id}:`, setError);
+        failedSets.push(set.id);
+        totalErrors++;
       }
     }
 
@@ -156,14 +209,22 @@ serve(async (req) => {
       success: true,
       message: `GitHub import completed`,
       stats: {
-        setsProcessed: setsToProcess.length - failedSets.length,
+        setsProcessed: successSets.length,
+        setsAttempted: setsToProcess.length,
+        totalSetsAvailable: allSets.length,
         totalImported,
         totalSkipped,
-        failedSets: failedSets.length > 0 ? failedSets : undefined
+        totalErrors,
+        successSets: successSets.slice(0, 10), // First 10
+        failedSets: failedSets.length > 0 ? failedSets.slice(0, 10) : undefined
       }
     };
 
-    console.log('Import result:', result);
+    console.log('\n=== IMPORT SUMMARY ===');
+    console.log(`Sets processed: ${result.stats.setsProcessed}/${result.stats.setsAttempted}`);
+    console.log(`Cards imported: ${totalImported}`);
+    console.log(`Cards skipped: ${totalSkipped}`);
+    console.log(`Errors: ${totalErrors}`);
 
     return new Response(
       JSON.stringify(result),

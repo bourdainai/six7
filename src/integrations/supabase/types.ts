@@ -2685,7 +2685,7 @@ export type Database = {
         | "disputed"
       membership_tier: "free" | "pro" | "enterprise"
       risk_tier: "A" | "B" | "C"
-      sync_source_type: "manual" | "cron" | "on_demand" | "justtcg"
+      sync_source_type: "manual" | "cron" | "on_demand" | "justtcg" | "github"
       user_role: "buyer" | "seller" | "admin" | "moderator"
     }
     CompositeTypes: {
@@ -2832,7 +2832,7 @@ export const Constants = {
       ],
       membership_tier: ["free", "pro", "enterprise"],
       risk_tier: ["A", "B", "C"],
-      sync_source_type: ["manual", "cron", "on_demand", "justtcg"],
+      sync_source_type: ["manual", "cron", "on_demand", "justtcg", "github"],
       user_role: ["buyer", "seller", "admin", "moderator"],
     },
   },
