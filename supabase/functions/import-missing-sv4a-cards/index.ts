@@ -30,14 +30,19 @@ serve(async (req) => {
       throw new Error('No cards found in SV4a set');
     }
 
-    // Check which card IDs we already have
+    // Check which cards we have that are fully populated (not placeholders)
     const { data: existingCards } = await supabase
       .from('pokemon_card_attributes')
-      .select('card_id')
+      .select('card_id, name, images')
       .eq('set_code', 'SV4a');
 
-    const existingCardIds = new Set(existingCards?.map(c => c.card_id) || []);
-    console.log(`Already have ${existingCardIds.size} cards in database`);
+    // Cards with images and proper names are considered complete
+    const completeCardIds = new Set(
+      existingCards
+        ?.filter(c => c.images && c.name && !c.name.startsWith('Card #'))
+        .map(c => c.card_id) || []
+    );
+    console.log(`Already have ${completeCardIds.size} complete cards in database`);
 
     let imported = 0;
     let skipped = 0;
@@ -47,32 +52,41 @@ serve(async (req) => {
     for (const card of setData.cards) {
       const cardId = `tcgdex_ja_${card.id}`;
       
-      if (existingCardIds.has(cardId)) {
+      // Skip if we already have complete data for this card
+      if (completeCardIds.has(cardId)) {
         skipped++;
         continue;
       }
+      
+      // Delete any placeholder/incomplete data
+      await supabase
+        .from('pokemon_card_attributes')
+        .delete()
+        .eq('card_id', cardId);
 
       try {
         // Fetch full card details
         const cardResponse = await fetch(`https://api.tcgdex.net/v2/ja/cards/${card.id}`);
         const cardData = await cardResponse.json();
 
-        // Determine series path for image URL
-        const seriesPath = 'sv';
+        // Get image URL from TCGdex
         const imageUrl = cardData.image || 
-          `https://assets.tcgdex.net/ja/${seriesPath}/SV4a/${cardData.localId}`;
+          `https://assets.tcgdex.net/ja/sv/SV4a/${cardData.localId}`;
 
-        // Prepare alt_numbers if card has variants
+        // Prepare alt_numbers from variants
         const altNumbers: string[] = [];
         if (cardData.variants) {
-          Object.keys(cardData.variants).forEach(variant => {
-            if (variant !== cardData.localId && variant !== cardData.id) {
-              altNumbers.push(variant);
-              // Add with set total too
-              altNumbers.push(`${variant}/190`);
+          // variants is an object like { "143": { name: "..." }, "308": { name: "..." } }
+          Object.keys(cardData.variants).forEach(variantNum => {
+            // Skip if it's the same as the current card number
+            if (variantNum !== cardData.localId) {
+              altNumbers.push(variantNum);
+              altNumbers.push(`${variantNum}/190`);
             }
           });
         }
+        
+        console.log(`Processing ${cardData.name} (#${cardData.localId}) - alt_numbers: ${JSON.stringify(altNumbers)}`);
 
         // Insert card
         const { error: insertError } = await supabase
