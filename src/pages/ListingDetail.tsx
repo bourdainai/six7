@@ -60,13 +60,14 @@ const ListingDetail = () => {
           *,
           seller:profiles!seller_id(id, full_name, avatar_url, trust_score),
           images:listing_images(image_url, display_order)
-        `);
+        `)
+        .eq("status", "active");
       
       let data, error;
       
       if (isShortId) {
-        // Query by short ID (first 8 chars of UUID)
-        const result = await query.like("id", `${extractedId}%`).limit(1);
+        // Query by short ID (first 8 chars of UUID) - case insensitive
+        const result = await query.ilike("id", `${extractedId}%`).limit(1);
         error = result.error;
         data = result.data?.[0];
         if (!data && !error) {
