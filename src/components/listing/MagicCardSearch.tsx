@@ -60,6 +60,16 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
+  // Score a card based on data completeness
+  const scoreCard = (card: PokemonCard) => {
+    let score = 0;
+    if (card.images?.small || card.images?.large) score += 10;
+    if (card.tcgplayer?.prices || card.cardmarket?.prices) score += 5;
+    if (card.rarity) score += 2;
+    if (card.artist) score += 1;
+    return score;
+  };
+
   useEffect(() => {
     const debounce = setTimeout(() => {
       if (query.trim().length >= 2) {
@@ -243,7 +253,19 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
       };
       });
 
-      setResults(transformedCards);
+      // Deduplicate by (set_code, number), keeping the card with the highest score
+      const dedupedCards = Array.from(
+        transformedCards.reduce((map, card) => {
+          const key = `${card.set.id}:${card.number}`;
+          const existing = map.get(key);
+          if (!existing || scoreCard(card) > scoreCard(existing)) {
+            map.set(key, card);
+          }
+          return map;
+        }, new Map<string, PokemonCard>()).values()
+      );
+
+      setResults(dedupedCards);
     } catch (error) {
       console.error("Card search error:", error);
     } finally {
