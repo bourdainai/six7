@@ -90,40 +90,24 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
       let error;
 
       if (isCardNumber) {
-        let orFilters: string[] = [];
-
+        // Extract card number from formats like "003/142" or "3"
+        let cardNumber = trimmedQuery;
+        
         if (trimmedQuery.includes("/")) {
-          const [rawCardPart] = trimmedQuery.split("/");
-          const parsedCardNum = parseInt(rawCardPart, 10);
-          const normalizedCardPart = Number.isNaN(parsedCardNum)
-            ? rawCardPart
-            : parsedCardNum.toString();
-
-          // Match against exact full number, raw first part, and normalized first part
-          orFilters = [
-            `number.eq.${trimmedQuery}`,
-            `number.eq.${rawCardPart}`,
-          ];
-
-          if (normalizedCardPart !== rawCardPart) {
-            orFilters.push(`number.eq.${normalizedCardPart}`);
-          }
-        } else {
-          const parsedCardNum = parseInt(trimmedQuery, 10);
-          const normalized = Number.isNaN(parsedCardNum)
-            ? trimmedQuery
-            : parsedCardNum.toString();
-
-          orFilters = [`number.eq.${trimmedQuery}`];
-          if (normalized !== trimmedQuery) {
-            orFilters.push(`number.eq.${normalized}`);
-          }
+          // Extract first part: "003/142" → "003"
+          cardNumber = trimmedQuery.split("/")[0];
         }
-
+        
+        // Normalize by removing leading zeros: "003" → "3"
+        const normalizedNumber = parseInt(cardNumber, 10).toString();
+        
+        console.log("🔢 Extracted card number:", normalizedNumber);
+        
+        // Search for exact match on normalized number
         const result = await supabase
           .from("pokemon_card_attributes")
           .select("*")
-          .or(orFilters.join(","))
+          .eq("number", normalizedNumber)
           .limit(12);
         dbCards = result.data;
         error = result.error;
