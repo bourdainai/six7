@@ -323,7 +323,7 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
             >
               <div className="aspect-[2.5/3.5] relative bg-muted">
                 <img
-                  src={card.images?.small}
+                  src={card.images?.small || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 140"%3E%3Crect fill="%23f3f4f6" width="100" height="140"/%3E%3Ctext x="50" y="70" font-family="Arial" font-size="12" fill="%239ca3af" text-anchor="middle"%3ENo Image%3C/text%3E%3C/svg%3E'}
                   alt={card.name}
                   className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300"
                   loading="lazy"
