@@ -134,3 +134,6 @@ verify_jwt = false
 
 [functions.import-tcgdex-data]
 verify_jwt = false
+
+[functions.import-missing-sv4a-cards]
+verify_jwt = false
