@@ -123,5 +123,8 @@ verify_jwt = false
 [functions.sync-tcg-data]
 verify_jwt = false
 
+[functions.import-github-tcg-data]
+verify_jwt = false
+
 [functions.sync-justtcg-data]
 verify_jwt = false
