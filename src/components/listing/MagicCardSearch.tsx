@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Search, Loader2, Sparkles, ChevronRight } from "lucide-react";
+import { Search, Loader2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -23,46 +23,7 @@ interface PokemonCard {
     prices?: {
       holofoil?: { market?: number };
       normal?: { market?: number };
-    };
-  };
-  cardmarket?: {
-    prices?: {
-      averageSellPrice?: number;
-    };
-  };
-  images?: {
-    large?: string;
-    small?: string;
-  };
-}
-
-export interface MagicCardData {
-  title: string;
-  description: string;
-  category: string;
-  set_code: string;
-  card_number: string;
-  rarity?: string;
-  original_rrp: number | null;
-  image_url?: string;
-}
-
-interface PokemonCard {
-  id: string;
-  name: string;
-  number: string;
-  rarity?: string;
-  artist?: string;
-  set: {
-    id: string;
-    name: string;
-    ptcgoCode?: string;
-    printedTotal?: number;
-  };
-  tcgplayer?: {
-    prices?: {
-      holofoil?: { market?: number };
-      normal?: { market?: number };
+      reverseHolofoil?: { market?: number };
     };
   };
   cardmarket?: {
@@ -119,12 +80,49 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
     setHasSearched(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('pokemon-search', {
-        body: { query: searchQuery, pageSize: 12 }
-      });
+      // Query our local database using full-text search
+      const { data: dbCards, error } = await supabase
+        .from('pokemon_card_attributes')
+        .select('*')
+        .textSearch('search_vector', searchQuery, {
+          type: 'websearch',
+          config: 'english'
+        })
+        .limit(12);
 
       if (error) throw error;
-      setResults(data.data || []);
+
+      // Transform database results to match PokemonCard interface
+      const transformedCards: PokemonCard[] = (dbCards || []).map(card => {
+        const images = card.images as any;
+        const tcgplayerPrices = card.tcgplayer_prices as any;
+        const cardmarketPrices = card.cardmarket_prices as any;
+
+        return {
+          id: card.card_id,
+          name: card.name,
+          number: card.number || '',
+          rarity: card.rarity || undefined,
+          artist: card.artist || undefined,
+          set: {
+            id: card.set_code || '',
+            name: card.set_name,
+            ptcgoCode: card.set_code || undefined,
+          },
+          tcgplayer: tcgplayerPrices ? {
+            prices: tcgplayerPrices
+          } : undefined,
+          cardmarket: cardmarketPrices ? {
+            prices: cardmarketPrices
+          } : undefined,
+          images: images ? {
+            large: images.large,
+            small: images.small
+          } : undefined
+        };
+      });
+
+      setResults(transformedCards);
     } catch (error) {
       console.error("Card search error:", error);
       // Don't toast on every debounce error, just log
@@ -134,20 +132,35 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
   };
 
   const handleSelect = (card: PokemonCard) => {
-    // Transform API data to our listing format
-    const cardData = {
+    // Extract market price from available sources
+    let marketPrice = null;
+    
+    if (card.tcgplayer?.prices) {
+      const prices = card.tcgplayer.prices;
+      marketPrice = prices.holofoil?.market || 
+                   prices.reverseHolofoil?.market || 
+                   prices.normal?.market || 
+                   null;
+    }
+    
+    if (!marketPrice && card.cardmarket?.prices?.averageSellPrice) {
+      marketPrice = card.cardmarket.prices.averageSellPrice;
+    }
+
+    // Transform data to our listing format
+    const cardData: MagicCardData = {
       title: `${card.name} - ${card.set.name}`,
-      description: `Authentic ${card.name} from the ${card.set.name} set.\n\nCard Number: ${card.number}/${card.set.printedTotal || '??'}\nRarity: ${card.rarity || 'Unknown'}\nArtist: ${card.artist || 'Unknown'}`,
+      description: `Authentic ${card.name} from the ${card.set.name} set.\n\nCard Number: ${card.number}\nRarity: ${card.rarity || 'Unknown'}\nArtist: ${card.artist || 'Unknown'}`,
       category: "Pokémon Singles",
-      set_code: card.set.ptcgoCode || card.set.id, // Preference for short code
+      set_code: card.set.ptcgoCode || card.set.id,
       card_number: card.number,
       rarity: card.rarity,
-      original_rrp: card.tcgplayer?.prices?.holofoil?.market || card.tcgplayer?.prices?.normal?.market || card.cardmarket?.prices?.averageSellPrice || null,
+      original_rrp: marketPrice,
       image_url: card.images?.large || card.images?.small
     };
 
     onSelect(cardData);
-    setQuery(""); // Reset search
+    setQuery("");
     setResults([]);
     setHasSearched(false);
   };
