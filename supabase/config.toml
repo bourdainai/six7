@@ -152,3 +152,9 @@ verify_jwt = false
 
 [functions.import-tcgdex-github]
 verify_jwt = false
+
+[functions.import-sv4a-images]
+verify_jwt = false
+
+[functions.validate-card-images]
+verify_jwt = false
