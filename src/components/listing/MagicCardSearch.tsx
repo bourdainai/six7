@@ -80,33 +80,47 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
     setHasSearched(true);
 
     try {
+      const trimmedQuery = searchQuery.trim();
       // Check if query looks like a card number (contains digits and possibly /)
-      const isCardNumber = /^\d+[\/\d]*$/.test(searchQuery.trim());
+      const isCardNumber = /^\d+[\/\d]*$/.test(trimmedQuery);
+      
+      console.log('🔍 Search query:', trimmedQuery, 'isCardNumber:', isCardNumber);
       
       let dbCards;
       let error;
 
       if (isCardNumber) {
-        // Search by card number - support both "11" and "11/15" formats
+        // Handle leading zeros: "003/142" should match "3/142" in database
+        // Strip leading zeros from each part of the number
+        const normalizedNumber = trimmedQuery
+          .split('/')
+          .map(part => parseInt(part, 10).toString())
+          .join('/');
+        
+        console.log('🔢 Normalized number:', normalizedNumber);
+        
+        // Search by card number - try exact match and prefix match with normalized number
         const result = await supabase
           .from('pokemon_card_attributes')
           .select('*')
-          .or(`number.ilike.${searchQuery}%,number.ilike.%/${searchQuery}`)
+          .or(`number.eq.${normalizedNumber},number.ilike.${normalizedNumber}%`)
           .limit(12);
         dbCards = result.data;
         error = result.error;
+        console.log('🎯 Card number search results:', dbCards?.length || 0, 'cards found');
       } else {
         // Search by name using full-text search
         const result = await supabase
           .from('pokemon_card_attributes')
           .select('*')
-          .textSearch('search_vector', searchQuery, {
+          .textSearch('search_vector', trimmedQuery, {
             type: 'websearch',
             config: 'english'
           })
           .limit(12);
         dbCards = result.data;
         error = result.error;
+        console.log('📝 Name search results:', dbCards?.length || 0, 'cards found');
       }
 
       if (error) throw error;
