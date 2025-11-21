@@ -89,18 +89,49 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
       let error;
 
       if (hasSlash) {
-        // Full number search: "25/198" - exact match on display_number globally
+        // Full number search with slash: "088/182" or "88/182"
+        // Normalize: lowercase, remove spaces, pad the number part if needed
         const normalizedInput = trimmedQuery.toLowerCase().replace(/\s/g, "");
-        const result = await supabase
-          .from("pokemon_card_attributes")
-          .select("*")
-          .eq("search_number", normalizedInput)
-          .limit(12);
-        dbCards = result.data;
-        error = result.error;
+        const [numPart, totalPart] = normalizedInput.split('/');
+        
+        // Try both with and without leading zeros
+        const queries = [];
+        
+        // Try exact match first
+        queries.push(
+          supabase
+            .from("pokemon_card_attributes")
+            .select("*")
+            .eq("search_number", normalizedInput)
+            .limit(12)
+        );
+        
+        // If the number part doesn't have leading zeros, also try with them
+        if (numPart && totalPart && numPart.length < 3) {
+          const paddedNumber = numPart.padStart(3, '0') + '/' + totalPart;
+          queries.push(
+            supabase
+              .from("pokemon_card_attributes")
+              .select("*")
+              .eq("search_number", paddedNumber)
+              .limit(12)
+          );
+        }
+        
+        // Execute searches
+        const results = await Promise.all(queries);
+        const allCards = results.flatMap(r => r.data || []);
+        
+        // Remove duplicates by card_id
+        const uniqueCards = Array.from(
+          new Map(allCards.map(card => [card.card_id, card])).values()
+        );
+        
+        dbCards = uniqueCards.slice(0, 12);
+        error = results.find(r => r.error)?.error;
         console.log("🎯 Full number search:", dbCards?.length || 0, "cards found");
       } else if (/^\d+$/.test(trimmedQuery)) {
-        // Partial number search: "25" - returns cards with that number from all sets
+        // Partial number search: "88" - returns cards with that number from all sets
         const result = await supabase
           .from("pokemon_card_attributes")
           .select("*")
