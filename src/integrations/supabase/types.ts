@@ -2704,6 +2704,7 @@ export type Database = {
         | "justtcg"
         | "github"
         | "tcgdex"
+        | "pokemon_tcg_api"
       user_role: "buyer" | "seller" | "admin" | "moderator"
     }
     CompositeTypes: {
@@ -2857,6 +2858,7 @@ export const Constants = {
         "justtcg",
         "github",
         "tcgdex",
+        "pokemon_tcg_api",
       ],
       user_role: ["buyer", "seller", "admin", "moderator"],
     },
