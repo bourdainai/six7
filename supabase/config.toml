@@ -1,5 +1,11 @@
 project_id = "ouvrgsvrkjxltbcwvuyz"
 
+[functions.scrape-pokellector]
+verify_jwt = false
+
+[functions.import-all-pokemon]
+verify_jwt = false
+
 [functions.analyze-listing-images]
 verify_jwt = true
 
