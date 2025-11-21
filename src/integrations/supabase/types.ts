@@ -605,6 +605,7 @@ export type Database = {
           shipping_cost_europe: number | null
           shipping_cost_international: number | null
           shipping_cost_uk: number | null
+          short_id: string | null
           size: string | null
           stale_risk_score: number | null
           status: Database["public"]["Enums"]["listing_status"] | null
@@ -650,6 +651,7 @@ export type Database = {
           shipping_cost_europe?: number | null
           shipping_cost_international?: number | null
           shipping_cost_uk?: number | null
+          short_id?: string | null
           size?: string | null
           stale_risk_score?: number | null
           status?: Database["public"]["Enums"]["listing_status"] | null
@@ -695,6 +697,7 @@ export type Database = {
           shipping_cost_europe?: number | null
           shipping_cost_international?: number | null
           shipping_cost_uk?: number | null
+          short_id?: string | null
           size?: string | null
           stale_risk_score?: number | null
           status?: Database["public"]["Enums"]["listing_status"] | null
