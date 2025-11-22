@@ -34,7 +34,6 @@ export const Navigation = React.memo(() => {
 
   const navLinks = [
     { to: "/browse", label: "Browse" },
-    { to: "/membership", label: "Membership" },
     { to: "/sell", label: "Sell" },
   ];
 

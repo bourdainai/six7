@@ -40,22 +40,6 @@ export const DesktopNav = ({
           {link.label}
         </Link>
       ))}
-      {user && (
-        <>
-          <Link 
-            to="/messages" 
-            className="text-sm text-foreground hover:opacity-70 transition-opacity duration-fast font-normal tracking-tight"
-          >
-            Messages
-          </Link>
-          <Link 
-            to="/orders" 
-            className="text-sm text-foreground hover:opacity-70 transition-opacity duration-fast font-normal tracking-tight"
-          >
-            Orders
-          </Link>
-        </>
-      )}
 
       {user ? (
         <DropdownMenu>
