@@ -19,8 +19,9 @@ interface Listing {
   images?: ListingImage[];
   set_code?: string | null;
   card_number?: string | null;
+  card_id?: string | null;
 }
-
+ 
 interface ListingsManagementProps {
   listings: Listing[];
   onDelete: (listingId: string) => void;
@@ -37,6 +38,25 @@ export const ListingsManagement = ({ listings, onDelete, isDeleting }: ListingsM
     return [];
   };
 
+  const getCardImageUrl = (listing: Listing): string | null => {
+    let setCode = listing.set_code ?? null;
+    let cardNumber = listing.card_number ?? null;
+
+    if ((!setCode || !cardNumber) && listing.card_id) {
+      const parts = listing.card_id.split("-");
+      if (parts.length >= 2) {
+        setCode = setCode || parts[0];
+        cardNumber = cardNumber || parts[parts.length - 1];
+      }
+    }
+
+    if (setCode && cardNumber) {
+      return `https://images.pokemontcg.io/${setCode}/${cardNumber}_hires.png`;
+    }
+
+    return null;
+  };
+
   const getFirstImage = (listing: Listing): string | null => {
     const images = getListingImages(listing);
 
@@ -47,12 +67,7 @@ export const ListingsManagement = ({ listings, onDelete, isDeleting }: ListingsM
       return sortedImages[0]?.image_url || null;
     }
 
-    // Fallback: derive from set_code/card_number (same pattern as main cards)
-    if (listing.set_code && listing.card_number) {
-      return `https://images.pokemontcg.io/${listing.set_code}/${listing.card_number}_hires.png`;
-    }
-
-    return null;
+    return getCardImageUrl(listing);
   };
 
   if (listings.length === 0) {
