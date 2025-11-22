@@ -38,11 +38,11 @@ export interface FilterState {
 }
 
 const CATEGORIES = [
-  "Pokémon Singles",
-  "Pokémon Sealed",
-  "Graded Cards",
-  "Raw Cards",
+  "Trading Cards",
+  "Sealed Products",
   "Accessories",
+  "Collectibles",
+  "Other"
 ];
 
 const CONDITIONS = [
