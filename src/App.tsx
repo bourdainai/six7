@@ -11,7 +11,6 @@ import { CookieConsent } from "@/components/CookieConsent";
 import { PageSkeleton } from "@/components/skeletons/PageSkeleton";
 import { ListingSkeleton } from "@/components/skeletons/ListingSkeleton";
 import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
-import { FeedSkeleton } from "@/components/skeletons/FeedSkeleton";
 
 // Lazy load routes for code splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -45,7 +44,6 @@ const NotificationPreferences = lazy(() => import("./pages/NotificationPreferenc
 const SellerVerification = lazy(() => import("./pages/SellerVerification"));
 const Wallet = lazy(() => import("./pages/Wallet"));
 const TradeOffers = lazy(() => import("./pages/TradeOffers"));
-const Feed = lazy(() => import("./pages/Feed"));
 const APIKeys = lazy(() => import("./pages/Settings/APIKeys"));
 const MCPDocs = lazy(() => import("./pages/MCPDocs"));
 const Changelog = lazy(() => import("./pages/Changelog"));
@@ -76,8 +74,8 @@ const AppRoutes = () => {
       <Route path="/orders" element={<Suspense fallback={<DashboardSkeleton />}><Orders /></Suspense>} />
       <Route path="/messages" element={<Suspense fallback={<DashboardSkeleton />}><Messages /></Suspense>} />
       <Route path="/membership" element={<Suspense fallback={<PageSkeleton />}><Membership /></Suspense>} />
-      <Route path="/saved" element={<Suspense fallback={<FeedSkeleton />}><SavedItems /></Suspense>} />
-      <Route path="/bundles" element={<Suspense fallback={<FeedSkeleton />}><Bundles /></Suspense>} />
+      <Route path="/saved" element={<Suspense fallback={<PageSkeleton />}><SavedItems /></Suspense>} />
+      <Route path="/bundles" element={<Suspense fallback={<PageSkeleton />}><Bundles /></Suspense>} />
       <Route path="/bundle/:id" element={<Suspense fallback={<ListingSkeleton />}><BundleDetail /></Suspense>} />
       <Route path="/dashboard/seller" element={<Suspense fallback={<DashboardSkeleton />}><SellerDashboard /></Suspense>} />
       <Route path="/edit-listing/:id" element={<Suspense fallback={<PageSkeleton />}><EditListing /></Suspense>} />
@@ -105,7 +103,6 @@ const AppRoutes = () => {
       {/* Wallet & Trading */}
       <Route path="/wallet" element={<Suspense fallback={<DashboardSkeleton />}><Wallet /></Suspense>} />
       <Route path="/trade-offers" element={<Suspense fallback={<DashboardSkeleton />}><TradeOffers /></Suspense>} />
-      <Route path="/feed" element={<Suspense fallback={<FeedSkeleton />}><Feed /></Suspense>} />
       <Route path="/changelog" element={<Suspense fallback={<PageSkeleton />}><Changelog /></Suspense>} />
 
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
