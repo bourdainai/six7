@@ -17,6 +17,8 @@ interface Listing {
   created_at: string | null;
   listing_images?: ListingImage[];
   images?: ListingImage[];
+  set_code?: string | null;
+  card_number?: string | null;
 }
 
 interface ListingsManagementProps {
@@ -37,10 +39,20 @@ export const ListingsManagement = ({ listings, onDelete, isDeleting }: ListingsM
 
   const getFirstImage = (listing: Listing): string | null => {
     const images = getListingImages(listing);
-    const sortedImages = images.slice().sort((a, b) =>
-      (a.display_order ?? 0) - (b.display_order ?? 0)
-    );
-    return sortedImages[0]?.image_url || null;
+
+    if (images.length > 0) {
+      const sortedImages = images.slice().sort((a, b) =>
+        (a.display_order ?? 0) - (b.display_order ?? 0)
+      );
+      return sortedImages[0]?.image_url || null;
+    }
+
+    // Fallback: derive from set_code/card_number (same pattern as main cards)
+    if (listing.set_code && listing.card_number) {
+      return `https://images.pokemontcg.io/${listing.set_code}/${listing.card_number}_hires.png`;
+    }
+
+    return null;
   };
 
   if (listings.length === 0) {
