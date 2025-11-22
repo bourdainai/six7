@@ -88,11 +88,6 @@ export const DesktopNav = ({
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link to="/seller/automation" className="cursor-pointer">
-                Automation Rules
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
               <Link to="/seller/reputation" className="cursor-pointer">
                 Reputation
               </Link>

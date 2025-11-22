@@ -154,8 +154,6 @@ const SellerDashboard = () => {
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="listings">My Listings</TabsTrigger>
-            <TabsTrigger value="copilot">AI Copilot</TabsTrigger>
-            <TabsTrigger value="automation">Automation</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -223,34 +221,6 @@ const SellerDashboard = () => {
                 />
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="copilot">
-            <Card>
-              <CardHeader>
-                <CardTitle className="font-normal tracking-tight">AI Copilot</CardTitle>
-                <CardDescription className="font-normal">Get insights for your listings</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {listings && listings.length > 0 ? (
-                  <div className="grid gap-4 md:grid-cols-3">
-                    {listings.slice(0, 6).map((listing) => (
-                      <Card key={listing.id} className="cursor-pointer hover:border-foreground transition-all duration-fast" onClick={() => setSelectedListingForCopilot(listing.id)}>
-                        <CardContent className="p-4">
-                          <h3 className="font-normal truncate tracking-tight">{listing.title}</h3>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-center py-8 text-muted-foreground font-normal">No listings yet</p>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="automation">
-            <AutomationRulesPanel />
           </TabsContent>
         </Tabs>
 
