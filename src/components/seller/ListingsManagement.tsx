@@ -51,15 +51,16 @@ export const ListingsManagement = ({ listings, onDelete, isDeleting }: ListingsM
             <CardContent className="p-4 flex items-center justify-between gap-4">
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 {firstImage ? (
-                  <div className="w-12 h-12 flex-shrink-0 bg-soft-neutral border border-divider-gray overflow-hidden">
+                  <div className="aspect-[5/7] w-12 flex-shrink-0 bg-soft-neutral border border-divider-gray overflow-hidden">
                     <img 
                       src={firstImage} 
                       alt={listing.title}
                       className="w-full h-full object-contain"
+                      loading="lazy"
                     />
                   </div>
                 ) : (
-                  <div className="w-12 h-12 flex-shrink-0 bg-soft-neutral border border-divider-gray flex items-center justify-center text-xs text-muted-foreground">
+                  <div className="aspect-[5/7] w-12 flex-shrink-0 bg-soft-neutral border border-divider-gray flex items-center justify-center text-[10px] text-muted-foreground">
                     No img
                   </div>
                 )}
