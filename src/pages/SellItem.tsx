@@ -39,7 +39,13 @@ interface ListingData {
   is_graded: boolean;
   grading_service: string;
   grading_score: string;
-  // Generic/Legacy fields (kept for compatibility but hidden/minimized)
+  // Product-specific fields
+  quantity: number | null; // For bulk/sealed
+  brand: string; // For all products
+  size: string; // For accessories, clothing
+  color: string; // General attribute
+  material: string; // For accessories
+  // Pricing
   style_tags: string[];
   original_rrp: number | null;
 }
@@ -96,12 +102,20 @@ const SellItem = () => {
     is_graded: false,
     grading_service: "",
     grading_score: "",
+    quantity: null,
+    brand: "",
+    size: "",
+    color: "",
+    material: "",
     style_tags: [],
     original_rrp: null,
   });
 
   // Check if current category is card-related
   const isCardCategory = listingData.category === "Trading Cards";
+  const isSealedProduct = listingData.category === "Sealed Products";
+  const isAccessory = listingData.category === "Accessories";
+  const isCollectible = listingData.category === "Collectibles";
 
   const [shipping, setShipping] = useState<ShippingData>({
     shipping_cost_uk: 2.99,
@@ -324,10 +338,30 @@ const SellItem = () => {
   };
 
   const handlePublish = async () => {
+    // Basic validation
     if (!user || !selectedPrice || !listingData.title || !listingData.category || images.length === 0) {
       toast({
         title: "Missing fields",
         description: "Please add photos, a title, category, and price to list your item.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Category-specific validation
+    if (isCardCategory && !listingData.condition) {
+      toast({
+        title: "Missing condition",
+        description: "Please specify the condition for trading cards.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (isSealedProduct && !listingData.quantity) {
+      toast({
+        title: "Missing quantity",
+        description: "Please specify the quantity for sealed products.",
         variant: "destructive"
       });
       return;
@@ -356,12 +390,22 @@ const SellItem = () => {
         set_code: isCardCategory ? (listingData.set_code || null) : null,
         card_number: isCardCategory ? (listingData.card_number || null) : null,
         condition: listingData.condition || null,
+        
+        // General product attributes
+        brand: listingData.brand || null,
+        size: listingData.size || null,
+        color: listingData.color || null,
+        material: listingData.material || null,
+        original_rrp: listingData.original_rrp || null,
+        
         category_attributes: isCardCategory ? {
           rarity: listingData.rarity || null,
           is_graded: listingData.is_graded || false,
           grading_service: listingData.is_graded ? listingData.grading_service : null,
           grading_score: listingData.is_graded ? (parseFloat(listingData.grading_score) || null) : null,
-        } : {},
+        } : (isSealedProduct ? {
+          quantity: listingData.quantity || 1,
+        } : {}),
 
         seller_price: Number(selectedPrice),
         status: "active",
@@ -719,6 +763,98 @@ const SellItem = () => {
               </div>
             )}
           </section>
+          )}
+
+          {/* Product Details - For Sealed Products & Accessories */}
+          {(isSealedProduct || isAccessory || isCollectible) && (
+            <Card className="border-soft-neutral">
+              <CardContent className="pt-6 space-y-6">
+                <h3 className="text-lg font-light text-foreground tracking-tight">Product Details</h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Brand - Show for all non-card products */}
+                  <div className="space-y-2">
+                    <Label>Brand {isSealedProduct && <span className="text-muted-foreground">(Optional)</span>}</Label>
+                    <Input
+                      placeholder="e.g. Pokémon Company"
+                      value={listingData.brand}
+                      onChange={e => setListingData({ ...listingData, brand: e.target.value })}
+                    />
+                  </div>
+
+                  {/* Quantity - Required for sealed products */}
+                  {isSealedProduct && (
+                    <div className="space-y-2">
+                      <Label>Quantity <span className="text-destructive">*</span></Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        placeholder="1"
+                        value={listingData.quantity || ""}
+                        onChange={e => setListingData({ ...listingData, quantity: parseInt(e.target.value) || null })}
+                      />
+                    </div>
+                  )}
+
+                  {/* Condition - Show for most products */}
+                  {!isCardCategory && (
+                    <div className="space-y-2">
+                      <Label>Condition</Label>
+                      <Select
+                        value={listingData.condition}
+                        onValueChange={val => setListingData({ ...listingData, condition: val as ConditionType })}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Select condition" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="new">New / Sealed</SelectItem>
+                          <SelectItem value="like_new">Like New</SelectItem>
+                          <SelectItem value="excellent">Excellent</SelectItem>
+                          <SelectItem value="good">Good</SelectItem>
+                          <SelectItem value="fair">Fair</SelectItem>
+                          <SelectItem value="poor">Poor</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* Color - For accessories and collectibles */}
+                  {(isAccessory || isCollectible) && (
+                    <div className="space-y-2">
+                      <Label>Color <span className="text-muted-foreground">(Optional)</span></Label>
+                      <Input
+                        placeholder="e.g. Black, Blue, Red"
+                        value={listingData.color}
+                        onChange={e => setListingData({ ...listingData, color: e.target.value })}
+                      />
+                    </div>
+                  )}
+
+                  {/* Size - For accessories */}
+                  {isAccessory && (
+                    <div className="space-y-2">
+                      <Label>Size <span className="text-muted-foreground">(Optional)</span></Label>
+                      <Input
+                        placeholder="e.g. Standard, 60mm x 87mm"
+                        value={listingData.size}
+                        onChange={e => setListingData({ ...listingData, size: e.target.value })}
+                      />
+                    </div>
+                  )}
+
+                  {/* Material - For accessories */}
+                  {isAccessory && (
+                    <div className="space-y-2">
+                      <Label>Material <span className="text-muted-foreground">(Optional)</span></Label>
+                      <Input
+                        placeholder="e.g. Plastic, Metal, Fabric"
+                        value={listingData.material}
+                        onChange={e => setListingData({ ...listingData, material: e.target.value })}
+                      />
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* Description */}

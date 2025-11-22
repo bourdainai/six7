@@ -39,6 +39,7 @@ const getFirstImage = (listing: ListingSummary): string | null => {
   return firstImage?.image_url || null;
 };
 
+// Update ListingCard to be more flexible
 export const ListingCard = React.memo(
   ({ listing, onSaveClick, isSaved = false, isSaving = false, showSaveButton = true, className = "" }: ListingCardProps) => {
     const navigate = useNavigate();
@@ -50,6 +51,9 @@ export const ListingCard = React.memo(
     );
     
     const firstImage = getFirstImage(listing);
+    const isCardListing = listing.category === "Trading Cards" || 
+                          listing.category?.includes("Card") || 
+                          listing.category?.includes("Pokémon");
 
   return (
     <div className={`group relative ${className}`}>
@@ -57,7 +61,8 @@ export const ListingCard = React.memo(
         onClick={() => navigate(listingUrl)}
         className="text-left w-full"
       >
-        <div className="aspect-[5/7] bg-soft-neutral overflow-hidden mb-3 relative border border-divider-gray group-hover:border-foreground transition-all duration-fast">
+        {/* Use different aspect ratio for non-card items */}
+        <div className={`${isCardListing ? 'aspect-[5/7]' : 'aspect-square'} bg-soft-neutral overflow-hidden mb-3 relative border border-divider-gray group-hover:border-foreground transition-all duration-fast`}>
           {firstImage ? (
             <img
               src={firstImage}
@@ -66,7 +71,7 @@ export const ListingCard = React.memo(
               loading="lazy"
               decoding="async"
               width="400"
-              height="560"
+              height={isCardListing ? "560" : "400"}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-muted-foreground">
