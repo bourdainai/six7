@@ -51,19 +51,19 @@ interface ShippingData {
 }
 
 const CATEGORIES = [
-  "Pokémon Singles",
-  "Pokémon Sealed",
-  "Graded Cards",
-  "Raw Cards",
+  "Trading Cards",
+  "Sealed Products",
   "Accessories",
+  "Collectibles",
+  "Other"
 ];
 
 const SUBCATEGORIES: Record<string, string[]> = {
-  "Pokémon Singles": ["Standard Format", "Vintage (WOTC)", "Modern Chase", "Bulk / Lots"],
-  "Pokémon Sealed": ["Booster Boxes", "ETBs", "Booster Packs", "Collection Boxes"],
-  "Graded Cards": ["PSA", "BGS", "CGC", "ACE", "Other"],
-  "Raw Cards": ["Near Mint", "Lightly Played", "Played", "Damaged"],
-  "Accessories": ["Sleeves", "Toploaders", "Binders", "Playmats"],
+  "Trading Cards": ["Pokémon Singles", "Pokémon Graded", "Magic: The Gathering", "Yu-Gi-Oh!", "Sports Cards", "Other TCG"],
+  "Sealed Products": ["Booster Boxes", "Booster Packs", "ETBs", "Tins", "Collection Boxes", "Bundle/Lot"],
+  "Accessories": ["Sleeves", "Deck Boxes", "Playmats", "Binders", "Toploaders", "Dice/Counters"],
+  "Collectibles": ["Figures", "Plush", "Keychains", "Pins", "Art Prints", "Posters"],
+  "Other": ["Bulk Lots", "Custom Items", "Miscellaneous"]
 };
 
 const SellItem = () => {
@@ -87,7 +87,7 @@ const SellItem = () => {
   const [listingData, setListingData] = useState<ListingData>({
     title: "",
     description: "",
-    category: "Pokémon Singles",
+    category: "Trading Cards",
     subcategory: "",
     set_code: "",
     card_number: "",
@@ -99,6 +99,9 @@ const SellItem = () => {
     style_tags: [],
     original_rrp: null,
   });
+
+  // Check if current category is card-related
+  const isCardCategory = listingData.category === "Trading Cards";
 
   const [shipping, setShipping] = useState<ShippingData>({
     shipping_cost_uk: 2.99,
@@ -149,17 +152,17 @@ const SellItem = () => {
   };
 
   const handleMagicSearchSelect = (cardData: MagicCardData) => {
-    setListingData(prev => ({
-      ...prev,
-      title: cardData.title,
-      description: cardData.description,
-      category: "Pokémon Singles",
-      subcategory: "Standard Format", // Default, user can change
-      set_code: cardData.set_code,
-      card_number: cardData.card_number,
-      rarity: cardData.rarity,
-      original_rrp: cardData.original_rrp
-    }));
+      setListingData(prev => ({
+        ...prev,
+        title: cardData.title,
+        description: cardData.description,
+        category: "Trading Cards",
+        subcategory: "Pokémon Singles", // Default, user can change
+        set_code: cardData.set_code,
+        card_number: cardData.card_number,
+        rarity: cardData.rarity,
+        original_rrp: cardData.original_rrp
+      }));
 
     // Pre-fill selling price with market price if available
     if (cardData.original_rrp) {
@@ -242,7 +245,7 @@ const SellItem = () => {
         ...prev,
         title: result.title || prev.title,
         description: result.description || prev.description,
-        category: result.category || "Pokémon Singles",
+        category: result.category || "Trading Cards",
         subcategory: result.subcategory || prev.subcategory,
         set_code: result.set_code || prev.set_code,
         card_number: result.card_number || prev.card_number,
@@ -324,7 +327,7 @@ const SellItem = () => {
     if (!user || !selectedPrice || !listingData.title || !listingData.category || images.length === 0) {
       toast({
         title: "Missing fields",
-        description: "Please add photos, a title, category, and price to list your card.",
+        description: "Please add photos, a title, category, and price to list your item.",
         variant: "destructive"
       });
       return;
@@ -349,16 +352,16 @@ const SellItem = () => {
         category: listingData.category,
         subcategory: listingData.subcategory || null,
 
-        // Card specific fields
-        set_code: listingData.set_code || null,
-        card_number: listingData.card_number || null, // Store full card number (e.g., 122/094)
+        // Card specific fields (only for Trading Cards)
+        set_code: isCardCategory ? (listingData.set_code || null) : null,
+        card_number: isCardCategory ? (listingData.card_number || null) : null,
         condition: listingData.condition || null,
-        category_attributes: {
+        category_attributes: isCardCategory ? {
           rarity: listingData.rarity || null,
           is_graded: listingData.is_graded || false,
           grading_service: listingData.is_graded ? listingData.grading_service : null,
           grading_score: listingData.is_graded ? (parseFloat(listingData.grading_score) || null) : null,
-        },
+        } : {},
 
         seller_price: Number(selectedPrice),
         status: "active",
@@ -428,7 +431,7 @@ const SellItem = () => {
       setPublishedListingId(listing.id);
       toast({
         title: "Listed Successfully!",
-        description: "Your card is now live on the marketplace.",
+        description: "Your item is now live on the marketplace.",
       });
 
     } catch (error) {
@@ -451,7 +454,7 @@ const SellItem = () => {
           <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <Check className="w-10 h-10 text-green-600" />
           </div>
-          <h1 className="text-3xl font-light text-foreground mb-4">Card Listed!</h1>
+          <h1 className="text-3xl font-light text-foreground mb-4">Item Listed!</h1>
           <p className="text-muted-foreground mb-8">
             Your listing is live. Good luck with the sale!
           </p>
@@ -470,23 +473,25 @@ const SellItem = () => {
 
   return (
     <PageLayout>
-      <SEO title="List Your Pokémon Card | 6Seven" />
+      <SEO title="List Your Item | 6Seven" />
       <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} defaultMode="signup" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 pt-6">
         <div className="mb-8 space-y-2">
           <h1 className="text-3xl font-light text-foreground tracking-tight">
-            List Your Card
+            List Your Item
           </h1>
           <p className="text-base text-muted-foreground font-normal tracking-tight">
             Add photos and details to start selling.
           </p>
         </div>
 
-        {/* Magic Search Section */}
-        <div className="mb-10">
-          <MagicCardSearch onSelect={handleMagicSearchSelect} />
-        </div>
+        {/* Magic Search Section - Only for Trading Cards */}
+        {isCardCategory && (
+          <div className="mb-10">
+            <MagicCardSearch onSelect={handleMagicSearchSelect} />
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-8 items-start">
 
@@ -532,13 +537,14 @@ const SellItem = () => {
               <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 flex gap-3">
                 <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-blue-800">
-                  Tip: Clear photos of the front and back of the card help it sell faster.
+                  Tip: Clear photos of your item help it sell faster.
                 </p>
               </div>
             )}
           </div>
 
-          {images.length > 0 && (
+          {/* Auto-Fill Button - Only for Cards */}
+          {isCardCategory && images.length > 0 && (
             <Button
               onClick={handleAutoFill}
               disabled={analyzing}
@@ -606,9 +612,10 @@ const SellItem = () => {
             </div>
           </section>
 
-          {/* Card Details */}
-          <section className="space-y-4">
-            <h2 className="text-xl font-medium border-b pb-2">Card Details</h2>
+          {/* Card Details - Only for Trading Cards */}
+          {isCardCategory && (
+            <section className="space-y-4">
+              <h2 className="text-xl font-medium border-b pb-2">Card Details</h2>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -712,12 +719,13 @@ const SellItem = () => {
               </div>
             )}
           </section>
+          )}
 
           {/* Description */}
           <section className="space-y-4">
             <h2 className="text-xl font-medium border-b pb-2">Description</h2>
             <Textarea
-              placeholder="Any swirls, print lines, or specific details about the card..."
+              placeholder="Any details about the item..."
               rows={4}
               value={listingData.description}
               onChange={e => setListingData({ ...listingData, description: e.target.value })}
@@ -744,37 +752,40 @@ const SellItem = () => {
                 We recommend checking sold listings on eBay or 130point for accurate pricing.
               </p>
 
-              <div className="pt-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleGetPriceSuggestion()}
-                  disabled={gettingPrice}
-                  className="w-full sm:w-auto"
-                >
-                  {gettingPrice ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2 text-yellow-500" />}
-                  Get Price Suggestion
-                </Button>
+              {/* Price Suggestion Button - Only for Cards */}
+              {isCardCategory && (
+                <div className="pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleGetPriceSuggestion()}
+                    disabled={gettingPrice}
+                    className="w-full sm:w-auto"
+                  >
+                    {gettingPrice ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2 text-yellow-500" />}
+                    Get Price Suggestion
+                  </Button>
 
-                {suggestedPrice && (
-                  <div className="mt-3 p-3 bg-green-50 border border-green-100 rounded-lg animate-in fade-in slide-in-from-top-2">
-                    <p className="text-sm font-medium text-green-800 mb-2">
-                      Market Price: ${suggestedPrice.price.toFixed(2)}
-                    </p>
-                    <p className="text-xs text-green-600 mb-3">
-                      Range: ${suggestedPrice.low.toFixed(2)} - ${suggestedPrice.high.toFixed(2)}
-                    </p>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="w-full bg-green-100 hover:bg-green-200 text-green-800 border-green-200"
-                      onClick={() => setSelectedPrice(suggestedPrice.price)}
-                    >
-                      Apply Price (${suggestedPrice.price})
-                    </Button>
-                  </div>
-                )}
-              </div>
+                  {suggestedPrice && (
+                    <div className="mt-3 p-3 bg-green-50 border border-green-100 rounded-lg animate-in fade-in slide-in-from-top-2">
+                      <p className="text-sm font-medium text-green-800 mb-2">
+                        Market Price: ${suggestedPrice.price.toFixed(2)}
+                      </p>
+                      <p className="text-xs text-green-600 mb-3">
+                        Range: ${suggestedPrice.low.toFixed(2)} - ${suggestedPrice.high.toFixed(2)}
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="w-full bg-green-100 hover:bg-green-200 text-green-800 border-green-200"
+                        onClick={() => setSelectedPrice(suggestedPrice.price)}
+                      >
+                        Apply Price (${suggestedPrice.price})
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </section>
 
