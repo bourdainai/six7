@@ -36,7 +36,11 @@ const SellerDashboard = () => {
     queryKey: ["seller-listings", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase.from("listings").select("*").eq("seller_id", user!.id).order("created_at", { ascending: false });
+      const { data, error } = await supabase
+        .from("listings")
+        .select("*, listing_images(image_url, display_order)")
+        .eq("seller_id", user!.id)
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
