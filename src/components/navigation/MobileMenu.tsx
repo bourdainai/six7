@@ -117,9 +117,6 @@ export const MobileMenu = ({
                 <Link to="/seller/analytics" onClick={handleNavClick} className="block px-4 py-3 text-base font-normal text-foreground hover:bg-soft-neutral transition-colors duration-fast rounded-sm">
                   Analytics
                 </Link>
-                <Link to="/seller/automation" onClick={handleNavClick} className="block px-4 py-3 text-base font-normal text-foreground hover:bg-soft-neutral transition-colors duration-fast rounded-sm">
-                  Automation Rules
-                </Link>
                 <Link to="/seller/reputation" onClick={handleNavClick} className="block px-4 py-3 text-base font-normal text-foreground hover:bg-soft-neutral transition-colors duration-fast rounded-sm">
                   Reputation
                 </Link>
