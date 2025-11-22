@@ -16,6 +16,7 @@ interface Listing {
   seller_price: number;
   created_at: string | null;
   listing_images?: ListingImage[];
+  images?: ListingImage[];
 }
 
 interface ListingsManagementProps {
@@ -27,9 +28,16 @@ interface ListingsManagementProps {
 export const ListingsManagement = ({ listings, onDelete, isDeleting }: ListingsManagementProps) => {
   const navigate = useNavigate();
 
+  const getListingImages = (listing: Listing): ListingImage[] => {
+    const anyListing = listing as Listing & { images?: ListingImage[] };
+    if (Array.isArray(anyListing.images)) return anyListing.images;
+    if (Array.isArray(anyListing.listing_images)) return anyListing.listing_images;
+    return [];
+  };
+
   const getFirstImage = (listing: Listing): string | null => {
-    const images = listing.listing_images || [];
-    const sortedImages = images.slice().sort((a, b) => 
+    const images = getListingImages(listing);
+    const sortedImages = images.slice().sort((a, b) =>
       (a.display_order ?? 0) - (b.display_order ?? 0)
     );
     return sortedImages[0]?.image_url || null;
