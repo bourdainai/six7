@@ -38,7 +38,10 @@ const SellerDashboard = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("listings")
-        .select("*, listing_images(image_url, display_order)")
+        .select(`
+          *,
+          images:listing_images(image_url, display_order)
+        `)
         .eq("seller_id", user!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
