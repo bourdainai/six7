@@ -10,11 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import {
   CheckCircle2,
   Mail,
-  Phone,
-  CreditCard,
-  Building2,
   Shield,
-  AlertCircle,
   Loader2,
   ArrowLeft
 } from "lucide-react";
@@ -45,7 +41,7 @@ const SellerVerification = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, verification_level, email_verified, phone_verified, id_verified, business_verified")
+        .select("id, verification_level, email_verified")
         .eq("id", user!.id)
         .single();
       if (error) throw error;
@@ -113,30 +109,9 @@ const SellerVerification = () => {
     {
       type: "email",
       label: "Email Verification",
-      description: "Verify your email address",
+      description: "Verify your email address to build trust with buyers",
       icon: Mail,
       verified: profile?.email_verified,
-    },
-    {
-      type: "phone",
-      label: "Phone Verification",
-      description: "Verify your phone number",
-      icon: Phone,
-      verified: profile?.phone_verified,
-    },
-    {
-      type: "id",
-      label: "Identity Verification",
-      description: "Verify your identity with government ID",
-      icon: CreditCard,
-      verified: profile?.id_verified,
-    },
-    {
-      type: "business",
-      label: "Business Verification",
-      description: "Verify your business registration",
-      icon: Building2,
-      verified: profile?.business_verified,
     },
   ];
 
