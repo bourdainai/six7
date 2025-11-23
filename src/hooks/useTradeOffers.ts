@@ -73,12 +73,37 @@ export const useTradeOffers = () => {
     }
   });
 
+  const counterOffer = useMutation({
+    mutationFn: async (payload: {
+      originalOfferId: string;
+      cashAmount?: number;
+      tradeItems?: { listingId: string; title?: string; value?: number }[];
+      notes?: string;
+      aiFairnessScore?: number;
+      aiSuggestions?: string[];
+    }) => {
+      const { data, error } = await supabase.functions.invoke('trade-counter', {
+        body: payload,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      toast({ title: "Counter Offer Sent", description: "Your counter offer has been sent!" });
+      queryClient.invalidateQueries({ queryKey: ['trade-offers'] });
+    },
+    onError: (error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  });
+
   return {
     offers,
     isLoading,
     createOffer,
     acceptOffer,
-    rejectOffer
+    rejectOffer,
+    counterOffer
   };
 };
 

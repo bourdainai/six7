@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -5,6 +6,9 @@ import { useTradeOffers } from "@/hooks/useTradeOffers";
 import { ArrowRightLeft, Clock, Eye, MessageCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { FairnessMeter } from "./FairnessMeter";
+import { CounterOfferDialog } from "./CounterOfferDialog";
+import { TradeChat } from "./TradeChat";
+import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
 type TradeOfferWithDetails = Database["public"]["Tables"]["trade_offers"]["Row"] & {
@@ -22,6 +26,15 @@ interface EnhancedTradeOfferCardProps {
 
 export function EnhancedTradeOfferCard({ offer, userRole, onCounter, onViewDetails }: EnhancedTradeOfferCardProps) {
   const { acceptOffer, rejectOffer } = useTradeOffers();
+  const [showCounterDialog, setShowCounterDialog] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string>('');
+
+  useState(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setCurrentUserId(user.id);
+    });
+  });
 
   const totalOfferedValue = (offer.trade_item_valuations as any[])?.reduce(
     (sum, item) => sum + (item.valuation || 0), 
@@ -149,31 +162,49 @@ export function EnhancedTradeOfferCard({ offer, userRole, onCounter, onViewDetai
 
         {/* Actions */}
         {offer.status === 'pending' && !isExpired && userRole === 'seller' && (
-          <div className="flex gap-2 pt-2">
+          <div className="space-y-2 pt-2">
+            <div className="flex gap-2">
+              <Button 
+                size="sm" 
+                onClick={() => acceptOffer.mutate(offer.id)}
+                disabled={acceptOffer.isPending}
+                className="flex-1"
+              >
+                Accept
+              </Button>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={() => setShowCounterDialog(true)}
+                className="flex-1"
+              >
+                Counter
+              </Button>
+              <Button 
+                size="sm" 
+                variant="destructive" 
+                onClick={() => rejectOffer.mutate(offer.id)}
+                disabled={rejectOffer.isPending}
+              >
+                Reject
+              </Button>
+            </div>
             <Button 
               size="sm" 
-              onClick={() => acceptOffer.mutate(offer.id)}
-              disabled={acceptOffer.isPending}
-              className="flex-1"
+              variant="ghost" 
+              onClick={() => setShowChat(!showChat)}
+              className="w-full"
             >
-              Accept
+              <MessageCircle className="w-4 h-4 mr-2" />
+              {showChat ? 'Hide Chat' : 'Open Chat'}
             </Button>
-            <Button 
-              size="sm" 
-              variant="outline" 
-              onClick={onCounter}
-              className="flex-1"
-            >
-              Counter
-            </Button>
-            <Button 
-              size="sm" 
-              variant="destructive" 
-              onClick={() => rejectOffer.mutate(offer.id)}
-              disabled={rejectOffer.isPending}
-            >
-              Reject
-            </Button>
+          </div>
+        )}
+
+        {/* Trade Chat */}
+        {showChat && currentUserId && (
+          <div className="pt-4 border-t">
+            <TradeChat tradeOfferId={offer.id} currentUserId={currentUserId} />
           </div>
         )}
 
@@ -188,6 +219,14 @@ export function EnhancedTradeOfferCard({ offer, userRole, onCounter, onViewDetai
           </Button>
         )}
       </CardContent>
+
+      {/* Counter Offer Dialog */}
+      <CounterOfferDialog
+        open={showCounterDialog}
+        onOpenChange={setShowCounterDialog}
+        originalOffer={offer}
+        userRole={userRole}
+      />
     </Card>
   );
 }
