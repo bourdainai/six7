@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   CheckCircle2,
   Mail,
@@ -85,7 +86,18 @@ const SellerVerification = () => {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes('not enabled') || error.message.includes('Unsupported provider') || error.message.includes('validation_failed')) {
+          toast({
+            title: "Provider not enabled",
+            description: `${provider.charAt(0).toUpperCase() + provider.slice(1)} authentication needs to be enabled in your backend settings first. Click "Open Backend Settings" above for instructions.`,
+            variant: "destructive",
+            duration: 8000,
+          });
+        } else {
+          throw error;
+        }
+      }
     } catch (error) {
       toast({
         title: "Connection failed",
@@ -223,6 +235,39 @@ const SellerVerification = () => {
             Complete verifications to build trust and unlock seller features
           </p>
         </div>
+
+        {/* Setup Instructions */}
+        <Alert className="mb-6 bg-primary/5 border-primary/20">
+          <AlertDescription className="space-y-3">
+            <p className="font-semibold text-foreground">📋 Enable Social Verifications (One-time Setup):</p>
+            <ol className="list-decimal list-inside space-y-1.5 text-sm text-muted-foreground ml-2">
+              <li>Click "Open Backend Settings" below</li>
+              <li>Navigate to <strong>Authentication → Providers</strong></li>
+              <li>Enable: <strong>LinkedIn, Facebook, Instagram, Twitter</strong></li>
+              <li>Configure each provider with OAuth credentials from their developer portals</li>
+              <li>Set redirect URL to: <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">{window.location.origin}/seller/verification</code></li>
+            </ol>
+            <div className="flex gap-3 pt-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  const event = new CustomEvent('lov-presentation-open-backend');
+                  window.dispatchEvent(event);
+                }}
+              >
+                Open Backend Settings
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => window.open('https://docs.lovable.dev/features/authentication', '_blank')}
+              >
+                View Setup Guide
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
 
         {/* Trust Score */}
         <div className="mb-6">
