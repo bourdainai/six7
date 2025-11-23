@@ -5,6 +5,30 @@ import { Badge } from "@/components/ui/badge";
 
 const changelogData = [
     {
+        date: "November 23, 2025",
+        title: "Advanced Search & Filtering",
+        description: "Browse smarter with our new comprehensive filtering system. Filter by subcategory, rarity, set code, color, material, shipping options, and more. Find exactly what you're looking for with precision controls designed for serious collectors.",
+        image: "/images/changelog-marketplace.png",
+        tags: ["Enhancement", "UX"],
+        version: "v1.3.0"
+    },
+    {
+        date: "November 23, 2025",
+        title: "Multi-Category Marketplace",
+        description: "6Seven now supports Trading Cards, Sealed Products, Accessories, and Collectibles. List any collectible item with category-specific fields for quantity, brand, color, size, and material. Your marketplace just got a whole lot bigger.",
+        image: "/images/changelog-marketplace.png",
+        tags: ["New Feature", "Expansion"],
+        version: "v1.3.0"
+    },
+    {
+        date: "November 23, 2025",
+        title: "Personalized Homepage",
+        description: "Signed-in users now land directly on the Browse page with full search and filter capabilities. Skip the landing page and dive straight into discovering your next collectible.",
+        image: "/images/changelog-performance.png",
+        tags: ["Enhancement", "UX"],
+        version: "v1.3.0"
+    },
+    {
         date: "November 20, 2025",
         title: "AI Listing Engine",
         description: "We've revolutionized how you list cards. Our new AI Listing Engine uses advanced computer vision to automatically identify your card, grade, and set from a single photo. It pre-fills all the details, making listing 10x faster.",
