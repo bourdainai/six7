@@ -252,19 +252,18 @@ const Orders = () => {
                           events={[]}
                           currentStatus={order.shipping_status || 'pending'}
                           trackingNumber={order.tracking_number}
-                          trackingUrl={order.shipping_details?.[0]?.tracking_url}
+                          trackingUrl={undefined}
                         />
                       </div>
                     )}
-                      <div className="flex-1">
-                        <div className="flex justify-between text-sm mb-2">
-                          <span className="text-muted-foreground">Total</span>
-                          <span className="font-medium text-foreground">
-                            £{Number(order.total_amount).toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
+                    
+                    <div className="flex justify-between text-sm mb-2">
+                      <span className="text-muted-foreground">Total</span>
+                      <span className="font-medium text-foreground">
+                        £{Number(order.total_amount).toFixed(2)}
+                      </span>
                     </div>
+                    
                     {order.status === "paid" && !order.delivered_at && (
                       <div className="flex gap-2 mt-4 flex-wrap">
                         {order.shipping_status === 'shipped' || order.shipping_status === 'in_transit' ? (
@@ -425,7 +424,7 @@ const Orders = () => {
                           events={[]}
                           currentStatus={order.shipping_status || 'pending'}
                           trackingNumber={order.tracking_number}
-                          trackingUrl={order.shipping_details?.[0]?.tracking_url}
+                          trackingUrl={undefined}
                         />
                       </div>
                     )}
@@ -451,9 +450,9 @@ const Orders = () => {
               </div>
             )}
           </TabsContent>
-          </Tabs>
+        </Tabs>
 
-        {selectedOrder && (
+      {selectedOrder && (
         <>
           <DisputeDialog
             open={disputeOpen}
@@ -471,7 +470,7 @@ const Orders = () => {
             reviewType="buyer_to_seller"
             revieweeName={selectedOrder.seller?.full_name || "Seller"}
           />
-          <ShipOrderDialog
+          <EnhancedShipOrderDialog
             open={shipOrderOpen}
             onOpenChange={setShipOrderOpen}
             orderId={selectedOrder.id}
