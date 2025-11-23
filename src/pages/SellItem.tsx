@@ -617,54 +617,98 @@ const SellItem = () => {
 
       if (listingError) throw listingError;
 
-      // Upload images
-      // If images contains URLs that are not local blobs (from Magic Search), we need to fetch and convert them or handle differently
-      // For now, let's assume we only upload local files from imageFiles
-      // If a user selected a Magic Search image, we might need to "save" that remote URL to our bucket or just use it directly.
-      // Simplest approach: If imageFiles is empty but images has content (Magic Search), download it and upload to storage.
+      // Image handling for multi-card bundles vs single items
+      if (isMultiCard && cards.length > 0) {
+        // Multi-card bundle: Auto-pull card images from database
+        const cardImages = cards
+          .filter(c => c.cardData.image_url)
+          .map(c => c.cardData.image_url!)
+          .slice(0, 6); // Take first 6 card images
 
-      let filesToUpload = [...imageFiles];
-
-      if (filesToUpload.length === 0 && images.length > 0 && images[0].startsWith('http')) {
-        // Magic search result
-        try {
-          const response = await fetch(images[0]);
-          const blob = await response.blob();
-          const file = new File([blob], "magic-card.jpg", { type: "image/jpeg" });
-          filesToUpload = [file];
-        } catch (e) {
-          console.error("Failed to fetch magic image", e);
-        }
-      }
-
-      for (let i = 0; i < filesToUpload.length; i++) {
-        const file = filesToUpload[i];
-        const fileName = `${listing.id}/${Date.now()}-${i}.jpg`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('listing-images')
-          .upload(fileName, file);
-
-        if (uploadError) {
-          if (import.meta.env.DEV) console.error("Image upload error:", uploadError);
-          continue;
+        // Insert card images as listing images
+        for (let i = 0; i < cardImages.length; i++) {
+          await supabase.from('listing_images').insert({
+            listing_id: listing.id,
+            image_url: cardImages[i],
+            display_order: i,
+            is_stock_photo: true
+          });
         }
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('listing-images')
-          .getPublicUrl(fileName);
+        // If user uploaded additional photos, add them after card images
+        if (imageFiles.length > 0) {
+          for (let i = 0; i < imageFiles.length; i++) {
+            const file = imageFiles[i];
+            const fileName = `${listing.id}/${Date.now()}-${i}.jpg`;
 
-        await supabase.from('listing_images').insert({
-          listing_id: listing.id,
-          image_url: publicUrl,
-          display_order: i
-        });
+            const { error: uploadError } = await supabase.storage
+              .from('listing-images')
+              .upload(fileName, file);
+
+            if (uploadError) {
+              if (import.meta.env.DEV) console.error("Image upload error:", uploadError);
+              continue;
+            }
+
+            const { data: { publicUrl } } = supabase.storage
+              .from('listing-images')
+              .getPublicUrl(fileName);
+
+            await supabase.from('listing_images').insert({
+              listing_id: listing.id,
+              image_url: publicUrl,
+              display_order: cardImages.length + i,
+              is_stock_photo: false
+            });
+          }
+        }
+      } else {
+        // Single item: Upload user photos or fetch Magic Search image
+        let filesToUpload = [...imageFiles];
+
+        if (filesToUpload.length === 0 && images.length > 0 && images[0].startsWith('http')) {
+          // Magic search result - fetch and upload
+          try {
+            const response = await fetch(images[0]);
+            const blob = await response.blob();
+            const file = new File([blob], "magic-card.jpg", { type: "image/jpeg" });
+            filesToUpload = [file];
+          } catch (e) {
+            console.error("Failed to fetch magic image", e);
+          }
+        }
+
+        for (let i = 0; i < filesToUpload.length; i++) {
+          const file = filesToUpload[i];
+          const fileName = `${listing.id}/${Date.now()}-${i}.jpg`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('listing-images')
+            .upload(fileName, file);
+
+          if (uploadError) {
+            if (import.meta.env.DEV) console.error("Image upload error:", uploadError);
+            continue;
+          }
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('listing-images')
+            .getPublicUrl(fileName);
+
+          await supabase.from('listing_images').insert({
+            listing_id: listing.id,
+            image_url: publicUrl,
+            display_order: i
+          });
+        }
       }
 
       setPublishedListingId(listing.id);
       toast({
         title: "Listed Successfully!",
-        description: "Your item is now live on the marketplace.",
+        description: isMultiCard 
+          ? `Your ${cards.length}-card bundle is now live on the marketplace.`
+          : "Your item is now live on the marketplace.",
       });
 
     } catch (error) {
@@ -906,6 +950,17 @@ const SellItem = () => {
 
           {/* Left Column: Photos (Sticky on Desktop) */}
           <div className="lg:sticky lg:top-24 space-y-4">
+            {/* Multi-Card Bundle Photo Info */}
+            {isMultiCard && cards.length > 0 && (
+              <Alert className="bg-blue-50 border-blue-200">
+                <Info className="h-4 w-4 text-blue-600" />
+                <AlertTitle className="text-blue-900">Bundle Images</AlertTitle>
+                <AlertDescription className="text-blue-700 text-sm">
+                  We'll use the first 6 card images from your bundle. You can optionally upload additional photos of the entire bundle.
+                </AlertDescription>
+              </Alert>
+            )}
+
             <div className="bg-background border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/50 transition-colors relative group">
               <input
                 type="file"
@@ -919,8 +974,15 @@ const SellItem = () => {
                   <Camera className="w-8 h-8 text-foreground/70" />
                 </div>
                 <div>
-                  <p className="font-medium text-lg">Add Photos</p>
-                  <p className="text-sm text-muted-foreground mt-1">Drag & drop or tap to select</p>
+                  <p className="font-medium text-lg">
+                    {isMultiCard ? "Add Bundle Photos (Optional)" : "Add Photos"}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {isMultiCard 
+                      ? "Upload photos of your card bundle"
+                      : "Drag & drop or tap to select"
+                    }
+                  </p>
                 </div>
               </div>
             </div>

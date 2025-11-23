@@ -1,7 +1,7 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Heart } from "lucide-react";
+import { Heart, Package } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatCondition, formatStatus } from "@/lib/format";
 import { SellerReputation } from "@/components/seller/SellerReputation";
@@ -55,6 +55,18 @@ export const ListingCard = React.memo(
                           listing.category?.includes("Card") || 
                           listing.category?.includes("Pokémon");
 
+    // Check if this is a multi-card bundle
+    const isBundle = listing.category_attributes && 
+      typeof listing.category_attributes === 'object' && 
+      'is_bundle' in listing.category_attributes &&
+      listing.category_attributes.is_bundle === true;
+    
+    const bundleCardCount = isBundle && listing.category_attributes && 
+      typeof listing.category_attributes === 'object' && 
+      'card_count' in listing.category_attributes
+      ? (listing.category_attributes.card_count as number)
+      : 0;
+
   return (
     <div className={`group relative ${className}`}>
       <button
@@ -76,6 +88,15 @@ export const ListingCard = React.memo(
           ) : (
             <div className="w-full h-full flex items-center justify-center text-muted-foreground">
               No image
+            </div>
+          )}
+          {/* Bundle Badge */}
+          {isBundle && bundleCardCount > 0 && (
+            <div className="absolute top-2 left-2">
+              <Badge className="bg-primary text-primary-foreground flex items-center gap-1">
+                <Package className="w-3 h-3" />
+                Bundle of {bundleCardCount}
+              </Badge>
             </div>
           )}
             {listing.status && listing.status !== "active" && (
