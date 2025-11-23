@@ -2,13 +2,16 @@ import { useState, useEffect, useRef } from "react";
 import { PageLayout } from "@/components/PageLayout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Send, MessageSquare } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Send, MessageSquare, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { MessageReplySuggestions } from "@/components/MessageReplySuggestions";
@@ -17,6 +20,7 @@ import { ConversationSentiment } from "@/components/ConversationSentiment";
 import { OfferCard } from "@/components/OfferCard";
 import { FileUpload, AttachmentData } from "@/components/messages/FileUpload";
 import { MessageAttachments } from "@/components/messages/MessageAttachments";
+import { AdminUserList } from "@/components/admin/AdminUserList";
 
 interface Conversation {
   id: string;
@@ -62,11 +66,13 @@ interface Offer {
 
 const Messages = () => {
   const { user } = useAuth();
+  const { data: isAdmin } = useAdminCheck();
   const { toast } = useToast();
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState("");
   const [shouldBlockMessage, setShouldBlockMessage] = useState(false);
   const [pendingAttachments, setPendingAttachments] = useState<AttachmentData[]>([]);
+  const [adminMode, setAdminMode] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { data: conversations, refetch: refetchConversations } = useQuery({
@@ -195,6 +201,70 @@ const Messages = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Handle admin creating a test conversation with a user
+  const handleSelectUserForAdmin = async (userId: string, userName: string) => {
+    if (!user) return;
+
+    try {
+      // First, check if a conversation already exists
+      const { data: existingConversations } = await supabase
+        .from("conversations")
+        .select("id")
+        .or(`and(buyer_id.eq.${user.id},seller_id.eq.${userId}),and(buyer_id.eq.${userId},seller_id.eq.${user.id})`);
+
+      if (existingConversations && existingConversations.length > 0) {
+        setSelectedConversation(existingConversations[0].id);
+        setAdminMode(false);
+        return;
+      }
+
+      // Get a dummy listing for the test conversation
+      const { data: dummyListing } = await supabase
+        .from("listings")
+        .select("id, seller_id")
+        .eq("status", "active")
+        .limit(1)
+        .maybeSingle();
+
+      if (!dummyListing) {
+        toast({
+          title: "No listings available",
+          description: "Please create a listing first to test messaging.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Create new conversation
+      const { data: newConversation, error } = await supabase
+        .from("conversations")
+        .insert({
+          buyer_id: user.id,
+          seller_id: userId,
+          listing_id: dummyListing.id,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setSelectedConversation(newConversation.id);
+      setAdminMode(false);
+      refetchConversations();
+      toast({
+        title: "Test conversation created",
+        description: `You can now message ${userName}`,
+      });
+    } catch (error) {
+      console.error("Error creating test conversation:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create test conversation",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSendMessage = async () => {
     if ((!messageInput.trim() && pendingAttachments.length === 0) || !selectedConversation || !user || shouldBlockMessage) return;
 
@@ -261,10 +331,49 @@ const Messages = () => {
           </p>
         </div>
 
+        {/* Admin Mode Toggle */}
+        {isAdmin && (
+          <Card className="p-4 mb-6 border-primary/20 bg-primary/5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Zap className="h-5 w-5 text-primary" />
+                <div>
+                  <Label htmlFor="admin-mode" className="text-base font-semibold cursor-pointer">
+                    Admin Test Mode
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Message any user to test the system
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="admin-mode"
+                checked={adminMode}
+                onCheckedChange={setAdminMode}
+              />
+            </div>
+            {adminMode && (
+              <Badge variant="outline" className="mt-3 bg-primary/10 text-primary border-primary/20">
+                ⚡ Admin Mode Active
+              </Badge>
+            )}
+          </Card>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
-          {/* Conversations List */}
+          {/* Conversations List or Admin User List */}
           <Card className="p-4 overflow-y-auto">
-            <h2 className="text-lg font-normal mb-4 tracking-tight">Conversations</h2>
+            {adminMode && isAdmin ? (
+              <>
+                <h2 className="text-lg font-normal mb-4 tracking-tight">All Users</h2>
+                <AdminUserList
+                  onSelectUser={handleSelectUserForAdmin}
+                  currentUserId={user?.id}
+                />
+              </>
+            ) : (
+              <>
+                <h2 className="text-lg font-normal mb-4 tracking-tight">Conversations</h2>
             {conversations && conversations.length > 0 ? (
               <div className="space-y-2">
                 {conversations.map((conv) => {
@@ -311,6 +420,8 @@ const Messages = () => {
                 <MessageSquare className="mx-auto h-12 w-12 mb-2 opacity-50" />
                 <p className="font-normal">No conversations yet</p>
               </div>
+            )}
+              </>
             )}
           </Card>
 
