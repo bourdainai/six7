@@ -238,48 +238,51 @@ export default function AdminCardRestoration() {
   return (
     <AdminLayout>
       <div className="space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Pokemon Card Restoration</h1>
-          <p className="text-muted-foreground">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <Database className="h-8 w-8 text-primary" />
+            <h1 className="text-3xl font-light text-foreground">Pokemon Card Restoration</h1>
+          </div>
+          <p className="text-base text-muted-foreground font-light">
             Enterprise-grade Japanese TCGdex card restoration dashboard
           </p>
         </div>
 
         {/* Overall Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Sets</CardTitle>
+            <CardHeader className="space-y-0 pb-3">
+              <CardTitle className="text-sm font-medium">Total Sets</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{setsToRestore?.length || 0}</div>
+              <div className="text-3xl font-bold">{setsToRestore?.length || 0}</div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Completed</CardTitle>
+            <CardHeader className="space-y-0 pb-3">
+              <CardTitle className="text-sm font-medium">Completed</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{completedCount}</div>
+              <div className="text-3xl font-bold text-green-600">{completedCount}</div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Pending</CardTitle>
+            <CardHeader className="space-y-0 pb-3">
+              <CardTitle className="text-sm font-medium">Pending</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-600">{pendingCount}</div>
+              <div className="text-3xl font-bold text-orange-600">{pendingCount}</div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Cards</CardTitle>
+            <CardHeader className="space-y-0 pb-3">
+              <CardTitle className="text-sm font-medium">Total Cards</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{overallProgress?.totalCards || 0}</div>
+              <div className="text-3xl font-bold">{overallProgress?.totalCards || 0}</div>
             </CardContent>
           </Card>
         </div>
@@ -287,8 +290,8 @@ export default function AdminCardRestoration() {
         {/* Progress Section */}
         <Card>
           <CardHeader>
-            <CardTitle>Restoration Progress</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-xl font-light">Restoration Progress</CardTitle>
+            <CardDescription className="font-light">
               {isRestoring ? `Currently importing: ${currentSet}` : 'Ready to start restoration'}
             </CardDescription>
           </CardHeader>
@@ -337,11 +340,11 @@ export default function AdminCardRestoration() {
         {/* Sets List */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="text-xl font-light flex items-center gap-2">
               <Database className="h-5 w-5" />
               Japanese Sets Status
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="font-light">
               Detailed status of each Japanese TCGdex set
             </CardDescription>
           </CardHeader>
