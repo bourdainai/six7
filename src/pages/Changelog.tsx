@@ -6,6 +6,14 @@ import { Badge } from "@/components/ui/badge";
 const changelogData = [
     {
         date: "November 23, 2025",
+        title: "Multi-Card Bundle Listings",
+        description: "Sellers can now list up to 30 cards in a single bundle listing. Smart auto-formatting groups cards by set or rarity, calculates bundle value, shows savings percentage, and automatically pulls card images from our database. Perfect for selling collections, playsets, or themed bundles.",
+        image: "/images/changelog-marketplace.png",
+        tags: ["New Feature", "Trading Cards"],
+        version: "v1.4.0"
+    },
+    {
+        date: "November 23, 2025",
         title: "Advanced Search & Filtering",
         description: "Browse smarter with our new comprehensive filtering system. Filter by subcategory, rarity, set code, color, material, shipping options, and more. Find exactly what you're looking for with precision controls designed for serious collectors.",
         image: "/images/changelog-marketplace.png",

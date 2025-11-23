@@ -382,6 +382,61 @@ const ListingDetail = () => {
               </div>
             )}
 
+            {/* Multi-Card Bundle Contents */}
+            {listing.category_attributes && 
+             typeof listing.category_attributes === 'object' && 
+             'is_bundle' in listing.category_attributes &&
+             listing.category_attributes.is_bundle === true &&
+             'cards' in listing.category_attributes &&
+             Array.isArray(listing.category_attributes.cards) && (
+              <div className="border-t border-divider-gray pt-6">
+                <h3 className="text-sm font-normal text-foreground mb-4 tracking-tight flex items-center gap-2">
+                  <PackagePlus className="w-4 h-4" />
+                  Bundle Contents ({(listing.category_attributes.cards as any[]).length} cards)
+                </h3>
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {(listing.category_attributes.cards as any[]).map((card: any, idx: number) => (
+                    <div key={idx} className="flex items-start gap-3 p-3 bg-secondary/20 rounded-lg border border-border/50">
+                      {card.image_url && (
+                        <img 
+                          src={card.image_url} 
+                          alt={card.name}
+                          className="w-12 h-16 object-cover rounded border border-border"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <p className="text-sm font-medium text-foreground truncate">{card.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {card.set_code} • #{card.card_number}
+                          {card.rarity && ` • ${card.rarity}`}
+                        </p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {card.condition && (
+                            <Badge variant="secondary" className="text-xs">
+                              {(card.condition as string).replace(/_/g, ' ')}
+                            </Badge>
+                          )}
+                          {card.quantity > 1 && (
+                            <Badge variant="outline" className="text-xs">
+                              Qty: {card.quantity}
+                            </Badge>
+                          )}
+                          {card.market_price && (
+                            <span className="text-xs text-muted-foreground">
+                              ~£{(card.market_price * card.quantity).toFixed(2)}
+                            </span>
+                          )}
+                        </div>
+                        {card.notes && (
+                          <p className="text-xs text-muted-foreground italic mt-1">{card.notes}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {(listing.set_code || listing.card_number || listing.condition) && (
               <div className="grid grid-cols-2 gap-4 border-t border-divider-gray pt-6">
                 {listing.set_code && (
