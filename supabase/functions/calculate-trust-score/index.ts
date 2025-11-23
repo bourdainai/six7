@@ -36,6 +36,15 @@ serve(async (req) => {
 
     if (ratingsError) throw ratingsError;
 
+    // Fetch verified verifications
+    const { data: verifications, error: verificationsError } = await supabaseClient
+      .from('seller_verifications')
+      .select('verification_type, status')
+      .eq('seller_id', userId)
+      .eq('status', 'verified');
+
+    if (verificationsError) throw verificationsError;
+
     // Fetch disputes (as seller)
     const { data: disputes, error: disputesError } = await supabaseClient
       .from('disputes')
@@ -91,7 +100,7 @@ serve(async (req) => {
     // 5. Account age (weight: +10 points for 1+ year)
     const { data: profile } = await supabaseClient
       .from('profiles')
-      .select('created_at')
+      .select('created_at, stripe_onboarding_complete')
       .eq('id', userId)
       .single();
 
@@ -102,6 +111,20 @@ serve(async (req) => {
       } else if (accountAgeMonths >= 6) {
         trustScore += 5;
       }
+    }
+
+    // 6. Verifications (weight: up to +30 points)
+    if (verifications) {
+      const verificationTypes = verifications.map(v => v.verification_type);
+      if (verificationTypes.includes('email')) trustScore += 5;
+      if (verificationTypes.includes('phone')) trustScore += 5;
+      if (verificationTypes.includes('id')) trustScore += 15;
+      if (verificationTypes.includes('business')) trustScore += 10;
+    }
+
+    // Check Stripe Connect verification
+    if (profile?.stripe_onboarding_complete) {
+      trustScore += 10;
     }
 
     // Clamp score between 0 and 100
@@ -126,6 +149,7 @@ serve(async (req) => {
           disputesCount: disputes?.length || 0,
           ordersCount: orders?.length || 0,
           reportsCount: reports?.length || 0,
+          verificationsCount: verifications?.length || 0,
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
