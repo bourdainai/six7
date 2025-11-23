@@ -12,9 +12,9 @@ export const ReadReceipt = ({ isSent, isRead, readAt }: ReadReceiptProps) => {
   return (
     <span className="inline-flex items-center">
       {isRead ? (
-        <CheckCheck className={`h-3.5 w-3.5 ${readAt ? 'text-blue-500' : 'text-primary-foreground/60'}`} />
+        <CheckCheck className="h-3 w-3 text-white/60" />
       ) : (
-        <Check className="h-3.5 w-3.5 text-primary-foreground/60" />
+        <Check className="h-3 w-3 text-white/60" />
       )}
     </span>
   );

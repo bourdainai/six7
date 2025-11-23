@@ -6,14 +6,13 @@ interface TypingIndicatorProps {
 
 export const TypingIndicator = ({ userName }: TypingIndicatorProps) => {
   return (
-    <div className="flex items-center gap-3 mb-3">
-      <div className="bg-background border border-border/50 rounded-2xl px-4 py-3 flex items-center gap-3 shadow-sm">
-        <span className="text-sm text-muted-foreground font-medium">{userName} is typing</span>
-        <div className="flex gap-1.5">
+    <div className="flex items-start mb-2">
+      <div className="bg-[#E9E9EB] dark:bg-[#3A3A3C] rounded-[18px] px-4 py-2.5 flex items-center gap-2">
+        <div className="flex gap-1">
           {[0, 1, 2].map((i) => (
             <motion.div
               key={i}
-              className="w-2 h-2 rounded-full bg-primary"
+              className="w-2 h-2 rounded-full bg-muted-foreground/60"
               animate={{
                 scale: [1, 1.3, 1],
                 opacity: [0.4, 1, 0.4],
