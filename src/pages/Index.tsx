@@ -5,10 +5,9 @@ import { ShowcaseSection } from "@/components/home/ShowcaseSection";
 import { AIIntelligenceSection } from "@/components/home/AIIntelligenceSection";
 import { MarketplaceSection } from "@/components/home/MarketplaceSection";
 import { TrustSection } from "@/components/home/TrustSection";
-import { Feed } from "@/components/Feed";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { BuyerOnboarding } from "@/components/BuyerOnboarding";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +15,7 @@ import { SEO } from "@/components/SEO";
 
 const Index = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [hasPreferences, setHasPreferences] = useState<boolean | null>(null);
 
@@ -37,35 +37,27 @@ const Index = () => {
       // Show onboarding if user is logged in but has no preferences
       if (!data) {
         setShowOnboarding(true);
+      } else {
+        // Redirect to browse if user has preferences
+        navigate('/browse');
       }
     };
 
     checkPreferences();
-  }, [user]);
+  }, [user, navigate]);
 
-  // If user is logged in, show personalized feed
+  // If user is logged in and checking preferences, show nothing (will redirect)
   if (user) {
     return (
-      <div className="min-h-screen bg-background">
-        <SEO
-          title="6Seven - Personalized Pokémon Card Feed"
-          description="Discover graded and raw Pokémon cards tailored to your tastes. AI ranks listings by set, rarity, condition, and price so you always see the best trades first."
-          keywords="Pokémon cards, pokemon tcg, graded pokemon cards, raw pokemon cards, card marketplace, AI recommendations, trading cards"
-        />
-        <Navigation />
-        <div className="pt-[72px]">
-          <Feed />
-        </div>
-
+      <>
         {showOnboarding && hasPreferences === false && (
           <BuyerOnboarding onComplete={() => {
             setShowOnboarding(false);
             setHasPreferences(true);
+            navigate('/browse');
           }} />
         )}
-
-        <Footer />
-      </div>
+      </>
     );
   }
 
