@@ -474,6 +474,56 @@ export type Database = {
           },
         ]
       }
+      import_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          failed_items: number
+          id: string
+          metadata: Json | null
+          processed_items: number
+          source: string
+          status: string
+          total_items: number
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          failed_items?: number
+          id?: string
+          metadata?: Json | null
+          processed_items?: number
+          source: string
+          status?: string
+          total_items?: number
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          failed_items?: number
+          id?: string
+          metadata?: Json | null
+          processed_items?: number
+          source?: string
+          status?: string
+          total_items?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_jobs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listing_embeddings: {
         Row: {
           created_at: string | null
@@ -590,11 +640,14 @@ export type Database = {
           estimated_delivery_days: number | null
           free_shipping: boolean | null
           id: string
+          import_job_id: string | null
+          import_metadata: Json | null
           last_view_at: string | null
           material: string | null
           original_rrp: number | null
           package_dimensions: Json | null
           package_weight: number | null
+          portfolio_name: string | null
           published_at: string | null
           quick_sale_price: number | null
           saves: number | null
@@ -636,11 +689,14 @@ export type Database = {
           estimated_delivery_days?: number | null
           free_shipping?: boolean | null
           id?: string
+          import_job_id?: string | null
+          import_metadata?: Json | null
           last_view_at?: string | null
           material?: string | null
           original_rrp?: number | null
           package_dimensions?: Json | null
           package_weight?: number | null
+          portfolio_name?: string | null
           published_at?: string | null
           quick_sale_price?: number | null
           saves?: number | null
@@ -682,11 +738,14 @@ export type Database = {
           estimated_delivery_days?: number | null
           free_shipping?: boolean | null
           id?: string
+          import_job_id?: string | null
+          import_metadata?: Json | null
           last_view_at?: string | null
           material?: string | null
           original_rrp?: number | null
           package_dimensions?: Json | null
           package_weight?: number | null
+          portfolio_name?: string | null
           published_at?: string | null
           quick_sale_price?: number | null
           saves?: number | null
@@ -717,6 +776,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pokemon_card_attributes"
             referencedColumns: ["card_id"]
+          },
+          {
+            foreignKeyName: "listings_import_job_id_fkey"
+            columns: ["import_job_id"]
+            isOneToOne: false
+            referencedRelation: "import_jobs"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "listings_seller_id_fkey"

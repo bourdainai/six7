@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
-import { Package, DollarSign, ShoppingCart, TrendingUp, Award, CheckCircle2 } from "lucide-react";
+import { Package, DollarSign, ShoppingCart, TrendingUp, Award, CheckCircle2, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { SellerCopilot } from "@/components/SellerCopilot";
@@ -15,12 +15,14 @@ import { AutomationRulesPanel } from "@/components/AutomationRulesPanel";
 import { OnboardingStatusCards } from "@/components/seller/OnboardingStatusCards";
 import { BalanceCards } from "@/components/seller/BalanceCards";
 import { ListingsManagement } from "@/components/seller/ListingsManagement";
+import { CollectrImportDialog } from "@/components/import/CollectrImportDialog";
 
 const SellerDashboard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [selectedListingForCopilot, setSelectedListingForCopilot] = useState<string | null>(null);
+  const [showImportDialog, setShowImportDialog] = useState(false);
 
   const { data: profile, refetch: refetchProfile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -138,6 +140,10 @@ const SellerDashboard = () => {
               </p>
             </div>
             <div className="flex gap-2">
+              <Button onClick={() => setShowImportDialog(true)} variant="outline" className="gap-2">
+                <Upload className="h-4 w-4" />
+                Import from Collectr
+              </Button>
               <Button onClick={() => navigate("/seller/verification")} variant="outline" className="gap-2">
                 <CheckCircle2 className="h-4 w-4" />
                 Verification
@@ -232,6 +238,8 @@ const SellerDashboard = () => {
           </div>
         </div>
       )}
+      
+      <CollectrImportDialog open={showImportDialog} onOpenChange={setShowImportDialog} />
     </PageLayout>
   );
 };
