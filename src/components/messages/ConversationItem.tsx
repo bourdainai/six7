@@ -34,10 +34,10 @@ export const ConversationItem = ({
   return (
     <button
       onClick={onClick}
-      className={`w-full text-left p-3 transition-colors ${
+      className={`w-full text-left p-3 transition-colors border-b border-border/20 ${
         isSelected 
-          ? 'bg-muted/50' 
-          : 'hover:bg-muted/30'
+          ? 'bg-muted/20 border-l-2 border-l-foreground' 
+          : 'hover:bg-muted/10'
       }`}
     >
       <div className="flex items-start gap-3">
@@ -45,7 +45,7 @@ export const ConversationItem = ({
           <img
             src={firstImage.image_url}
             alt={conversation.listing?.title || "Item"}
-            className="w-12 h-12 object-cover rounded-lg flex-shrink-0"
+            className="w-12 h-12 object-cover flex-shrink-0 border border-border/30"
             width="48"
             height="48"
             loading="lazy"
@@ -65,7 +65,7 @@ export const ConversationItem = ({
               {otherUser?.full_name || 'Unknown'}
             </p>
             {unreadCount > 0 && (
-              <Badge variant="default" className="rounded-full h-5 min-w-[20px] px-2 text-xs font-semibold bg-[#007AFF]">
+              <Badge variant="default" className="h-5 min-w-[20px] px-2 text-xs font-semibold bg-foreground text-background">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </Badge>
             )}
