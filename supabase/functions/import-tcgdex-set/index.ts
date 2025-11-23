@@ -8,6 +8,8 @@
  * - Comprehensive error handling
  * - Transaction safety
  * - Resumable imports
+ * 
+ * Note: display_number and search_number are generated columns
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -117,8 +119,6 @@ function transformCard(card: any, language: string, setCode: string, setName: st
     set_name: setName,
     set_code: setCode,
     number: localId,
-    display_number: localId,
-    search_number: localId.replace(/\s/g, '').toLowerCase(),
     rarity: card.rarity || null,
     types: card.types || null,
     supertype: card.category || null,
@@ -257,7 +257,6 @@ serve(async (req) => {
         set_name: setName,
         set_code: setCode,
         number: localId,
-        search_number: localId.replace(/\s/g, '').toLowerCase(),
         rarity: null, // Not in summary
         types: null,
         supertype: null,
