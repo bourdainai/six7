@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { PageLayout } from "@/components/PageLayout";
 import { useTradeOffers } from "@/hooks/useTradeOffers";
 import { EnhancedTradeOfferCard } from "@/components/trade/EnhancedTradeOfferCard";
+import { TradeAnalyticsDashboard } from "@/components/trade/TradeAnalyticsDashboard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeftRight, ArrowRight, ArrowLeft, CheckCircle, XCircle } from "lucide-react";
+import { ArrowLeftRight, ArrowRight, ArrowLeft, CheckCircle, XCircle, BarChart3 } from "lucide-react";
 
 import type { Database } from "@/integrations/supabase/types";
 
@@ -52,7 +53,7 @@ export default function TradeOffersPage() {
           </div>
         ) : (
           <Tabs defaultValue="incoming" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="incoming" className="flex items-center gap-2">
                 <ArrowLeft className="w-4 h-4" />
                 Incoming ({incomingOffers.length})
@@ -68,6 +69,10 @@ export default function TradeOffersPage() {
               <TabsTrigger value="rejected" className="flex items-center gap-2">
                 <XCircle className="w-4 h-4" />
                 Rejected ({rejectedOffers.length})
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4" />
+                Analytics
               </TabsTrigger>
             </TabsList>
 
@@ -133,6 +138,10 @@ export default function TradeOffersPage() {
                   />
                 ))
               )}
+            </TabsContent>
+
+            <TabsContent value="analytics">
+              <TradeAnalyticsDashboard />
             </TabsContent>
           </Tabs>
         )}

@@ -1434,6 +1434,50 @@ export type Database = {
         }
         Relationships: []
       }
+      portfolio_snapshots: {
+        Row: {
+          created_at: string | null
+          diversification_score: number | null
+          id: string
+          portfolio_health_score: number | null
+          snapshot_date: string
+          top_cards: Json | null
+          total_items: number | null
+          total_value: number | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          diversification_score?: number | null
+          id?: string
+          portfolio_health_score?: number | null
+          snapshot_date: string
+          top_cards?: Json | null
+          total_items?: number | null
+          total_value?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          diversification_score?: number | null
+          id?: string
+          portfolio_health_score?: number | null
+          snapshot_date?: string
+          top_cards?: Json | null
+          total_items?: number | null
+          total_value?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portfolio_snapshots_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -2665,6 +2709,66 @@ export type Database = {
         }
         Relationships: []
       }
+      trade_analytics: {
+        Row: {
+          avg_negotiation_rounds: number | null
+          avg_response_time_hours: number | null
+          avg_trade_value: number | null
+          best_trade_id: string | null
+          created_at: string | null
+          id: string
+          period: string
+          successful_trades: number | null
+          total_trades: number | null
+          total_value_gained: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          avg_negotiation_rounds?: number | null
+          avg_response_time_hours?: number | null
+          avg_trade_value?: number | null
+          best_trade_id?: string | null
+          created_at?: string | null
+          id?: string
+          period: string
+          successful_trades?: number | null
+          total_trades?: number | null
+          total_value_gained?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          avg_negotiation_rounds?: number | null
+          avg_response_time_hours?: number | null
+          avg_trade_value?: number | null
+          best_trade_id?: string | null
+          created_at?: string | null
+          id?: string
+          period?: string
+          successful_trades?: number | null
+          total_trades?: number | null
+          total_value_gained?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_analytics_best_trade_id_fkey"
+            columns: ["best_trade_id"]
+            isOneToOne: false
+            referencedRelation: "trade_offers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_analytics_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trade_chat_messages: {
         Row: {
           created_at: string | null
@@ -2843,6 +2947,47 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      trade_market_trends: {
+        Row: {
+          avg_trade_value: number | null
+          card_id: string | null
+          created_at: string | null
+          date: string
+          id: string
+          popularity_score: number | null
+          price_trend: string | null
+          trade_volume: number | null
+        }
+        Insert: {
+          avg_trade_value?: number | null
+          card_id?: string | null
+          created_at?: string | null
+          date: string
+          id?: string
+          popularity_score?: number | null
+          price_trend?: string | null
+          trade_volume?: number | null
+        }
+        Update: {
+          avg_trade_value?: number | null
+          card_id?: string | null
+          created_at?: string | null
+          date?: string
+          id?: string
+          popularity_score?: number | null
+          price_trend?: string | null
+          trade_volume?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_market_trends_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "pokemon_card_attributes"
+            referencedColumns: ["card_id"]
           },
         ]
       }
@@ -3026,6 +3171,53 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      trade_recommendations: {
+        Row: {
+          confidence_score: number | null
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          potential_value_gain: number | null
+          reasoning: string | null
+          recommended_offer: Json
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          potential_value_gain?: number | null
+          reasoning?: string | null
+          recommended_offer: Json
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          potential_value_gain?: number | null
+          reasoning?: string | null
+          recommended_offer?: Json
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_recommendations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       trade_stats: {
         Row: {
