@@ -77,7 +77,7 @@ serve(async (req) => {
     const urlParts = portfolioUrl.split("/").filter(Boolean);
     const portfolioId = urlParts[urlParts.length - 1];
 
-    console.log("Fetching Collectr portfolio page:", portfolioUrl);
+    console.log("Fetching portfolio:", portfolioUrl);
 
     // IMPORTANT: we only fetch the page URL the user provided –
     // no calls to https://api.getcollectr.com which fails DNS.
@@ -94,25 +94,81 @@ serve(async (req) => {
     }
 
     const html = await portfolioResponse.text();
-    console.log("Collectr HTML length:", html.length);
+    console.log("HTML length:", html.length);
 
     // ---- Try to extract embedded JSON data from the page ----
     let portfolioData: any = null;
 
-    // Pattern 1: window.__INITIAL_STATE__ = {...};
-    let jsonMatch = html.match(
-      /window\.__INITIAL_STATE__\s*=\s*({[\s\S]+?});/,
+    // Pattern 1: Next.js __NEXT_DATA__ script tag with flexible attributes
+    const nextDataTagMatch = html.match(
+      /<script[^>]*id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/,
     );
 
-    // Pattern 2: Next.js __NEXT_DATA__ script
-    if (!jsonMatch) {
-      jsonMatch = html.match(
-        /<script id="__NEXT_DATA__" type="application\/json">([\s\S]+?)<\/script>/,
-      );
+    if (nextDataTagMatch) {
+      try {
+        portfolioData = JSON.parse(nextDataTagMatch[1]);
+        console.log("Parsed portfolio data from __NEXT_DATA__ tag");
+      } catch (err) {
+        console.error("Failed to parse __NEXT_DATA__ JSON", err);
+      }
     }
 
-    // Pattern 3: any large JSON object inside script tags
-    if (!jsonMatch) {
+    // Pattern 2: window.__NEXT_DATA__ = { ... } inline assignment
+    if (!portfolioData) {
+      const nextDataWindowMatch = html.match(
+        /window\.__NEXT_DATA__\s*=\s*({[\s\S]+?})\s*;/,
+      );
+      if (nextDataWindowMatch) {
+        try {
+          portfolioData = JSON.parse(nextDataWindowMatch[1]);
+          console.log("Parsed portfolio data from window.__NEXT_DATA__ assignment");
+        } catch (err) {
+          console.error("Failed to parse window.__NEXT_DATA__ JSON", err);
+        }
+      }
+    }
+
+    // Pattern 3: window.__INITIAL_STATE__ = { ... } inline assignment
+    if (!portfolioData) {
+      const initialStateMatch = html.match(
+        /window\.__INITIAL_STATE__\s*=\s*({[\s\S]+?});/,
+      );
+      if (initialStateMatch) {
+        try {
+          portfolioData = JSON.parse(initialStateMatch[1]);
+          console.log("Parsed portfolio data from window.__INITIAL_STATE__");
+        } catch (err) {
+          console.error("Failed to parse window.__INITIAL_STATE__ JSON", err);
+        }
+      }
+    }
+
+    // Pattern 4: any <script type="application/json"> with portfolio-like data
+    if (!portfolioData) {
+      const jsonScriptRegex = /<script[^>]*type="application\/json"[^>]*>([\s\S]*?)<\/script>/g;
+      let match: RegExpExecArray | null;
+
+      while (!portfolioData && (match = jsonScriptRegex.exec(html)) !== null) {
+        try {
+          const candidate = JSON.parse(match[1]);
+          if (
+            Array.isArray((candidate as any).cards) ||
+            Array.isArray(candidate?.props?.pageProps?.cards) ||
+            Array.isArray(candidate?.props?.pageProps?.portfolio?.cards) ||
+            Array.isArray(candidate?.portfolio?.cards)
+          ) {
+            portfolioData = candidate;
+            console.log("Parsed portfolio data from application/json script tag");
+            break;
+          }
+        } catch (_err) {
+          // ignore non‑JSON contents
+        }
+      }
+    }
+
+    // Pattern 5: generic scan of all <script> tags for a large JSON object
+    if (!portfolioData) {
       const scriptMatches = html.match(/<script[^>]*>[\s\S]*?<\/script>/g);
       if (scriptMatches) {
         for (const script of scriptMatches) {
@@ -121,35 +177,36 @@ serve(async (req) => {
             .replace(/<\/script>/, "")
             .trim();
 
-          if (content.startsWith("{") && content.length > 200) {
+          // Look for a JSON object assignment like window.X = { ... };
+          const braceIndex = content.indexOf("{");
+          const lastBraceIndex = content.lastIndexOf("}");
+
+          if (braceIndex !== -1 && lastBraceIndex > braceIndex + 100) {
+            const jsonSubstring = content.slice(braceIndex, lastBraceIndex + 1);
             try {
-              const json = JSON.parse(content);
-              // very loose heuristic so we don't depend on exact Collectr shape
-              if (json.cards || json.portfolio || json.props?.pageProps) {
-                portfolioData = json;
+              const candidate = JSON.parse(jsonSubstring);
+              if (
+                Array.isArray((candidate as any).cards) ||
+                Array.isArray(candidate?.props?.pageProps?.cards) ||
+                Array.isArray(candidate?.props?.pageProps?.portfolio?.cards) ||
+                Array.isArray(candidate?.portfolio?.cards)
+              ) {
+                portfolioData = candidate;
+                console.log("Parsed portfolio data from generic script tag JSON");
                 break;
               }
             } catch (_err) {
-              // ignore non‑JSON script contents
+              // not valid JSON, continue searching
             }
           }
         }
       }
     }
 
-    if (!portfolioData && jsonMatch) {
-      try {
-        portfolioData = JSON.parse(jsonMatch[1]);
-      } catch (err) {
-        console.error("Failed to parse embedded portfolio JSON", err);
-        throw new Error("Failed to parse portfolio data from Collectr page");
-      }
-    }
-
     if (!portfolioData) {
-      console.error("No recognizable portfolio JSON in page");
+      console.error("No recognizable portfolio JSON found in Collectr page");
       throw new Error(
-        "Could not find portfolio data in Collectr page. Their layout may have changed.",
+        "Could not find portfolio data in page. The Collectr page format may have changed.",
       );
     }
 
