@@ -9,7 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { DisputeDialog } from "@/components/disputes/DisputeDialog";
 import { RatingDialog } from "@/components/ratings/RatingDialog";
-import { ShipOrderDialog } from "@/components/ShipOrderDialog";
+import { EnhancedShipOrderDialog } from "@/components/shipping/EnhancedShipOrderDialog";
+import { TrackingTimeline } from "@/components/shipping/TrackingTimeline";
 import { AlertCircle, Star, Truck, Package, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { format } from "date-fns";
@@ -39,8 +40,9 @@ const Orders = () => {
   const [disputeOpen, setDisputeOpen] = useState(false);
   const [ratingOpen, setRatingOpen] = useState(false);
   const [shipOrderOpen, setShipOrderOpen] = useState(false);
-    const [selectedOrder, setSelectedOrder] = useState<OrderWithRelations | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<OrderWithRelations | null>(null);
   const [markingDelivered, setMarkingDelivered] = useState<string | null>(null);
+  const [expandedTracking, setExpandedTracking] = useState<string | null>(null);
 
     const { data: buyerOrders, isLoading: isLoadingBuyer } = useQuery<OrderWithRelations[]>({
     queryKey: ["orders", "buyer", user?.id],
@@ -228,10 +230,32 @@ const Orders = () => {
                             <p>Carrier: {order.shipping_details[0].carrier}</p>
                           )}
                         </div>
+                        {order.tracking_number && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setExpandedTracking(
+                              expandedTracking === order.id ? null : order.id
+                            )}
+                          >
+                            <Package className="h-4 w-4 mr-2" />
+                            {expandedTracking === order.id ? 'Hide' : 'View'} Tracking
+                          </Button>
+                        )}
                       </div>
                     )}
                     
-                    <div className="flex justify-between items-center">
+                    {/* Tracking Timeline */}
+                    {expandedTracking === order.id && order.tracking_number && (
+                      <div className="mt-4">
+                        <TrackingTimeline
+                          events={[]}
+                          currentStatus={order.shipping_status || 'pending'}
+                          trackingNumber={order.tracking_number}
+                          trackingUrl={order.shipping_details?.[0]?.tracking_url}
+                        />
+                      </div>
+                    )}
                       <div className="flex-1">
                         <div className="flex justify-between text-sm mb-2">
                           <span className="text-muted-foreground">Total</span>
@@ -350,7 +374,7 @@ const Orders = () => {
                           <Truck className="h-4 w-4" />
                           <span className="font-medium text-sm">Shipping</span>
                         </div>
-                        {order.status === 'paid' && order.shipping_status === 'awaiting_shipment' && (
+                        {order.status === 'paid' && !order.shipped_at && (
                           <Button
                             size="sm"
                             onClick={() => {
@@ -358,7 +382,21 @@ const Orders = () => {
                               setShipOrderOpen(true);
                             }}
                           >
-                            Ship Order
+                            <Truck className="h-4 w-4 mr-2" />
+                            Create Shipping Label
+                          </Button>
+                        )}
+                        
+                        {order.tracking_number && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setExpandedTracking(
+                              expandedTracking === order.id ? null : order.id
+                            )}
+                          >
+                            <Package className="h-4 w-4 mr-2" />
+                            {expandedTracking === order.id ? 'Hide' : 'View'} Tracking
                           </Button>
                         )}
                       </div>
@@ -379,6 +417,18 @@ const Orders = () => {
                         )}
                       </div>
                     </div>
+                    
+                    {/* Tracking Timeline for Seller */}
+                    {expandedTracking === order.id && order.tracking_number && (
+                      <div className="mt-4">
+                        <TrackingTimeline
+                          events={[]}
+                          currentStatus={order.shipping_status || 'pending'}
+                          trackingNumber={order.tracking_number}
+                          trackingUrl={order.shipping_details?.[0]?.tracking_url}
+                        />
+                      </div>
+                    )}
                     
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Sale Amount</span>
