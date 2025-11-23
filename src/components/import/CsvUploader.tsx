@@ -119,7 +119,9 @@ export function CsvUploader({ onClose }: CsvUploaderProps) {
                   note: row["Notes"] || row["Note"] || ""
                 }, user.id);
 
-                if (mapped.errors.length === 0) {
+                // Import all cards, even if some fields are missing
+                // Only skip if absolutely critical data is missing (title)
+                if (mapped.listing.title) {
                   // Create N listings for quantity > 1
                   for (let q = 0; q < mapped.quantity; q++) {
                     listings.push({ ...mapped.listing, import_job_id: importJob.id });
