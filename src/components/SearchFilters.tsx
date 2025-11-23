@@ -30,11 +30,19 @@ interface SearchFiltersProps {
 export interface FilterState {
   search: string;
   category: string;
+  subcategory: string;
   condition: string;
   minPrice: string;
   maxPrice: string;
   brand: string;
   size: string;
+  color: string;
+  material: string;
+  setCode: string;
+  rarity: string;
+  tradeEnabled: string;
+  freeShipping: string;
+  maxDeliveryDays: string;
 }
 
 const CATEGORIES = [
@@ -45,13 +53,45 @@ const CATEGORIES = [
   "Other"
 ];
 
+const SUBCATEGORIES: Record<string, string[]> = {
+  "Trading Cards": ["Single Cards", "Graded Cards", "PSA Slabs", "CGC Slabs", "BGS Slabs"],
+  "Sealed Products": ["Booster Boxes", "Booster Packs", "ETBs", "Collection Boxes", "Tins"],
+  "Accessories": ["Sleeves", "Binders", "Deck Boxes", "Playmats", "Card Cases"],
+  "Collectibles": ["Figures", "Plushies", "Keychains", "Pins", "Merchandise"],
+  "Other": ["Bulk Lots", "Damaged Cards", "Promotional Items"]
+};
+
 const CONDITIONS = [
-  "All Conditions",
   "new_with_tags",
   "like_new",
   "excellent",
   "good",
   "fair"
+];
+
+const RARITIES = [
+  "Common",
+  "Uncommon",
+  "Rare",
+  "Rare Holo",
+  "Rare Holo EX",
+  "Rare Holo GX",
+  "Rare Holo V",
+  "Rare Holo VMAX",
+  "Rare Ultra",
+  "Rare Secret",
+  "Rare Rainbow",
+  "Rare Shiny"
+];
+
+const COLORS = [
+  "Black", "White", "Red", "Blue", "Green", "Yellow", 
+  "Purple", "Pink", "Orange", "Brown", "Grey", "Multi-Color"
+];
+
+const MATERIALS = [
+  "Cardboard", "Plastic", "Metal", "Fabric", 
+  "Acrylic", "Wood", "Rubber", "Mixed Materials"
 ];
 
 export const SearchFilters = ({
@@ -162,11 +202,19 @@ export const SearchFilters = ({
     const emptyFilters: FilterState = {
       search: "",
       category: "",
+      subcategory: "",
       condition: "",
       minPrice: "",
       maxPrice: "",
       brand: "",
       size: "",
+      color: "",
+      material: "",
+      setCode: "",
+      rarity: "",
+      tradeEnabled: "",
+      freeShipping: "",
+      maxDeliveryDays: "",
     };
     setLocalFilters(emptyFilters);
     onFilterChange(emptyFilters);
@@ -248,64 +296,239 @@ export const SearchFilters = ({
                   )}
                 </Button>
               </SheetTrigger>
-              <SheetContent className="w-[350px] sm:w-[400px] border-l border-border">
+              <SheetContent className="w-[350px] sm:w-[450px] border-l border-border overflow-y-auto">
                 <SheetHeader>
-                  <SheetTitle>Filters</SheetTitle>
-                  <SheetDescription>Narrow down your search results.</SheetDescription>
+                  <SheetTitle>Advanced Filters</SheetTitle>
+                  <SheetDescription>
+                    {activeFilterCount > 0 ? `${activeFilterCount} filter${activeFilterCount > 1 ? 's' : ''} active` : 'Refine your search'}
+                  </SheetDescription>
                 </SheetHeader>
 
                 <div className="space-y-6 py-6">
-                  <div className="space-y-2">
-                    <Label>Category</Label>
-                    <Select
-                      value={localFilters.category || "all"}
-                      onValueChange={(v) => updateFilter("category", v === "all" ? "" : v)}
-                    >
-                      <SelectTrigger><SelectValue placeholder="All Categories" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Categories</SelectItem>
-                        {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                  {/* Category & Subcategory */}
+                  <div className="space-y-4 pb-4 border-b border-border">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold">Category</Label>
+                      <Select
+                        value={localFilters.category || "all"}
+                        onValueChange={(v) => {
+                          updateFilter("category", v === "all" ? "" : v);
+                          updateFilter("subcategory", ""); // Reset subcategory
+                        }}
+                      >
+                        <SelectTrigger><SelectValue placeholder="All Categories" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Categories</SelectItem>
+                          {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {localFilters.category && SUBCATEGORIES[localFilters.category] && (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-semibold">Subcategory</Label>
+                        <Select
+                          value={localFilters.subcategory || "all"}
+                          onValueChange={(v) => updateFilter("subcategory", v === "all" ? "" : v)}
+                        >
+                          <SelectTrigger><SelectValue placeholder="All Subcategories" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Subcategories</SelectItem>
+                            {SUBCATEGORIES[localFilters.category].map(sc => (
+                              <SelectItem key={sc} value={sc}>{sc}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Condition</Label>
-                    <Select
-                      value={localFilters.condition || "all"}
-                      onValueChange={(v) => updateFilter("condition", v === "all" ? "" : v)}
-                    >
-                      <SelectTrigger><SelectValue placeholder="Any Condition" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Any Condition</SelectItem>
-                        {CONDITIONS.map(c => (
-                          <SelectItem key={c} value={c}>{c === "All Conditions" ? "All" : formatCondition(c)}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  {/* Trading Card Specific Filters */}
+                  {localFilters.category === "Trading Cards" && (
+                    <div className="space-y-4 pb-4 border-b border-border">
+                      <h3 className="text-sm font-semibold text-primary">Card Details</h3>
+                      
+                      <div className="space-y-2">
+                        <Label className="text-sm">Rarity</Label>
+                        <Select
+                          value={localFilters.rarity || "all"}
+                          onValueChange={(v) => updateFilter("rarity", v === "all" ? "" : v)}
+                        >
+                          <SelectTrigger><SelectValue placeholder="Any Rarity" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Any Rarity</SelectItem>
+                            {RARITIES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-sm">Set Code</Label>
+                        <Input
+                          placeholder="e.g., SV04, BASE, etc."
+                          value={localFilters.setCode}
+                          onChange={(e) => updateFilter("setCode", e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Price & Condition */}
+                  <div className="space-y-4 pb-4 border-b border-border">
+                    <h3 className="text-sm font-semibold text-primary">Price & Condition</h3>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-sm">Condition</Label>
+                      <Select
+                        value={localFilters.condition || "all"}
+                        onValueChange={(v) => updateFilter("condition", v === "all" ? "" : v)}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Any Condition" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Any Condition</SelectItem>
+                          {CONDITIONS.map(c => (
+                            <SelectItem key={c} value={c}>{formatCondition(c)}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm">Price Range (£)</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="number"
+                          placeholder="Min"
+                          value={localFilters.minPrice}
+                          onChange={(e) => updateFilter("minPrice", e.target.value)}
+                        />
+                        <Input
+                          type="number"
+                          placeholder="Max"
+                          value={localFilters.maxPrice}
+                          onChange={(e) => updateFilter("maxPrice", e.target.value)}
+                        />
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Price Range (£)</Label>
-                    <div className="flex gap-2">
+                  {/* Product Attributes */}
+                  <div className="space-y-4 pb-4 border-b border-border">
+                    <h3 className="text-sm font-semibold text-primary">Product Details</h3>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-sm">Brand</Label>
                       <Input
-                        type="number"
-                        placeholder="Min"
-                        value={localFilters.minPrice}
-                        onChange={(e) => updateFilter("minPrice", e.target.value)}
+                        placeholder="e.g., Pokémon, Ultra Pro"
+                        value={localFilters.brand}
+                        onChange={(e) => updateFilter("brand", e.target.value)}
                       />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm">Color</Label>
+                      <Select
+                        value={localFilters.color || "all"}
+                        onValueChange={(v) => updateFilter("color", v === "all" ? "" : v)}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Any Color" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Any Color</SelectItem>
+                          {COLORS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm">Material</Label>
+                      <Select
+                        value={localFilters.material || "all"}
+                        onValueChange={(v) => updateFilter("material", v === "all" ? "" : v)}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Any Material" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Any Material</SelectItem>
+                          {MATERIALS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm">Size</Label>
                       <Input
-                        type="number"
-                        placeholder="Max"
-                        value={localFilters.maxPrice}
-                        onChange={(e) => updateFilter("maxPrice", e.target.value)}
+                        placeholder="e.g., Standard, Large, XL"
+                        value={localFilters.size}
+                        onChange={(e) => updateFilter("size", e.target.value)}
                       />
                     </div>
                   </div>
 
-                  <div className="flex gap-2 pt-4">
-                    <Button variant="outline" className="flex-1" onClick={clearFilters}>Reset</Button>
-                    <Button className="flex-1" onClick={() => setIsOpen(false)}>Show Results</Button>
+                  {/* Shipping & Delivery */}
+                  <div className="space-y-4 pb-4 border-b border-border">
+                    <h3 className="text-sm font-semibold text-primary">Shipping & Delivery</h3>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-sm">Shipping</Label>
+                      <Select
+                        value={localFilters.freeShipping || "all"}
+                        onValueChange={(v) => updateFilter("freeShipping", v === "all" ? "" : v)}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Any Shipping" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Any Shipping</SelectItem>
+                          <SelectItem value="true">Free Shipping Only</SelectItem>
+                          <SelectItem value="false">Paid Shipping</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm">Max Delivery Time (days)</Label>
+                      <Select
+                        value={localFilters.maxDeliveryDays || "all"}
+                        onValueChange={(v) => updateFilter("maxDeliveryDays", v === "all" ? "" : v)}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Any Delivery Time" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Any Delivery Time</SelectItem>
+                          <SelectItem value="1">1 Day</SelectItem>
+                          <SelectItem value="2">2 Days</SelectItem>
+                          <SelectItem value="3">3 Days</SelectItem>
+                          <SelectItem value="5">5 Days</SelectItem>
+                          <SelectItem value="7">1 Week</SelectItem>
+                          <SelectItem value="14">2 Weeks</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* Trading Options */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-primary">Trading</h3>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-sm">Trade Options</Label>
+                      <Select
+                        value={localFilters.tradeEnabled || "all"}
+                        onValueChange={(v) => updateFilter("tradeEnabled", v === "all" ? "" : v)}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Buy or Trade" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Buy or Trade</SelectItem>
+                          <SelectItem value="true">Trade Offers Accepted</SelectItem>
+                          <SelectItem value="false">Buy Only</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 pt-4 sticky bottom-0 bg-background pb-2">
+                    <Button variant="outline" className="flex-1" onClick={clearFilters}>
+                      Reset All
+                    </Button>
+                    <Button className="flex-1" onClick={() => setIsOpen(false)}>
+                      Apply Filters
+                    </Button>
                   </div>
                 </div>
               </SheetContent>
