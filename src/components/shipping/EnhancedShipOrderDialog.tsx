@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { ShippingRateSelector } from "./ShippingRateSelector";
 import { Loader2, Package, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { formatCurrency } from "@/lib/format";
 
 interface EnhancedShipOrderDialogProps {
   open: boolean;
@@ -134,16 +135,16 @@ export const EnhancedShipOrderDialog = ({
             <div className="text-sm text-muted-foreground">
               <div>Weight: {(totalWeight / 1000).toFixed(2)} kg</div>
               <div>Items: {order.order_items.length}</div>
-              <div>Value: £{parseFloat(order.total_amount).toFixed(2)}</div>
+              <div>Value: {formatCurrency(Number(order.total_amount))}</div>
             </div>
           </div>
 
           <ShippingRateSelector
-            toCountry={shippingAddress.country}
-            toPostalCode={shippingAddress.postalCode || shippingAddress.zipCode}
-            toCity={shippingAddress.city}
+            toCountry={String(shippingAddress.country)}
+            toPostalCode={String(shippingAddress.postalCode || shippingAddress.zipCode)}
+            toCity={String(shippingAddress.city)}
             weight={totalWeight}
-            declaredValue={parseFloat(order.total_amount)}
+            declaredValue={Number(order.total_amount)}
             selectedRate={selectedRate}
             onRateSelected={setSelectedRate}
           />
