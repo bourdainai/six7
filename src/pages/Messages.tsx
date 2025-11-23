@@ -480,10 +480,10 @@ const Messages = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-14rem)]">
           {/* Conversations List or Admin User List */}
-          <Card className="p-0 overflow-hidden border-border/50">
-            <div className="p-5 border-b border-border/50 bg-muted/20">
-              <h2 className="text-xl font-semibold tracking-tight">
-                {adminMode && isAdmin ? 'All Users' : 'Conversations'}
+          <Card className="p-0 overflow-hidden border-0 shadow-sm">
+            <div className="p-4 border-b border-border/30">
+              <h2 className="text-lg font-semibold tracking-tight">
+                {adminMode && isAdmin ? 'All Users' : 'Messages'}
               </h2>
             </div>
             
@@ -528,43 +528,37 @@ const Messages = () => {
           </Card>
 
           {/* Messages Area */}
-          <Card className="lg:col-span-2 flex flex-col overflow-hidden border-border/50">
+          <Card className="lg:col-span-2 flex flex-col overflow-hidden border-0 shadow-sm">
             {selectedConv ? (
               <>
                 {/* Header */}
-                <div className="p-5 border-b border-border/50 bg-muted/20">
+                <div className="p-4 border-b border-border/30">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4 flex-1 min-w-0">
                       {selectedConv.listing?.images?.[0] && (
                         <img
                           src={selectedConv.listing.images[0].image_url}
                           alt={selectedConv.listing?.title || "Item"}
-                          className="w-14 h-14 object-cover rounded-lg border border-border/50 flex-shrink-0"
-                          width="56"
-                          height="56"
+                          className="w-10 h-10 object-cover rounded-lg flex-shrink-0"
+                          width="40"
+                          height="40"
                           loading="lazy"
                         />
                       )}
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-lg tracking-tight truncate">{selectedConv.listing?.title || "Untitled"}</h3>
-                        <p className="text-sm text-muted-foreground font-normal truncate mt-0.5">
+                        <h3 className="font-semibold text-base tracking-tight truncate">{selectedConv.listing?.title || "Untitled"}</h3>
+                        <p className="text-sm text-muted-foreground truncate">
                           {selectedConv.buyer_id === user.id
                             ? selectedConv.seller?.full_name || "Unknown"
                             : selectedConv.buyer?.full_name || "Unknown"}
                         </p>
                       </div>
-                      <Badge variant="secondary" className="text-base px-4 py-1.5 font-semibold flex-shrink-0">
+                      <Badge variant="secondary" className="text-sm px-3 py-1 font-medium flex-shrink-0 rounded-full">
                         £{selectedConv.listing?.seller_price || 0}
                       </Badge>
                     </div>
                     
-                    <div className="flex items-center gap-2 ml-4">
-                      {permission !== 'granted' && (
-                        <Button variant="outline" size="sm" onClick={requestPermission} className="gap-2">
-                          <span>🔔</span>
-                          <span className="hidden sm:inline">Enable Notifications</span>
-                        </Button>
-                      )}
+                    <div className="flex items-center gap-1 ml-4">
                       <MessageSearch 
                         messages={messages || []}
                         currentUserId={user.id}
@@ -580,7 +574,7 @@ const Messages = () => {
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 p-6 overflow-y-auto bg-muted/10">
+                <div className="flex-1 p-4 overflow-y-auto bg-background">
                   {(messages && messages.length > 0) || (offers && offers.length > 0) ? (
                     <div className="space-y-3">
                       {/* Merge and sort messages and offers by timestamp */}
@@ -602,24 +596,24 @@ const Messages = () => {
                               <div
                                 key={`msg-${msg.id}`}
                                 id={`message-${msg.id}`}
-                                className={`flex group mb-3 ${isOwnMessage ? "justify-end" : "justify-start"}`}
+                                className={`flex group mb-2 ${isOwnMessage ? "justify-end" : "justify-start"}`}
                               >
                                 <div
-                                  className={`max-w-[70%] rounded-2xl px-4 py-3 relative shadow-sm ${
+                                  className={`max-w-[70%] rounded-[18px] px-4 py-2.5 relative ${
                                     isOwnMessage
-                                      ? "bg-primary text-primary-foreground"
-                                      : "bg-background border border-border/50"
+                                      ? "bg-[#007AFF] text-white"
+                                      : "bg-[#E9E9EB] dark:bg-[#3A3A3C] text-foreground"
                                   }`}
                                 >
                                   {msg.content && msg.content !== '[Message deleted]' ? (
-                                    <p className="text-[15px] leading-relaxed break-words">{msg.content}</p>
+                                    <p className="text-[15px] leading-[1.4] break-words">{msg.content}</p>
                                   ) : (
-                                    <p className="text-sm italic text-muted-foreground">
+                                    <p className="text-sm italic opacity-60">
                                       {msg.content}
                                     </p>
                                   )}
                                   {msg.metadata?.edited && (
-                                    <span className={`text-xs mt-1.5 block ${isOwnMessage ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                                    <span className={`text-xs mt-1 block opacity-60`}>
                                       (edited)
                                     </span>
                                   )}
@@ -632,12 +626,12 @@ const Messages = () => {
                                     </div>
                                   )}
                                   
-                                  <div className="flex items-center justify-between gap-2 mt-2">
-                                    <div className="flex items-center gap-1.5">
+                                  <div className="flex items-center justify-between gap-2 mt-1">
+                                    <div className="flex items-center gap-1">
                                       <span
-                                        className={`text-xs ${
+                                        className={`text-[11px] ${
                                           isOwnMessage
-                                            ? "text-primary-foreground/70"
+                                            ? "text-white/60"
                                             : "text-muted-foreground"
                                         }`}
                                       >
@@ -706,7 +700,7 @@ const Messages = () => {
                 </div>
 
                 {/* Input */}
-                <div className="p-5 border-t border-border/50 space-y-3 bg-background">
+                <div className="p-4 bg-background space-y-3">
                   <MessageSafetyIndicator 
                     message={messageInput}
                     onBlock={() => setShouldBlockMessage(true)}
@@ -745,26 +739,29 @@ const Messages = () => {
                     onClear={() => setPendingAttachments([])}
                   />
                   
-                  <div className="flex gap-3">
-                    <Input
-                      value={messageInput}
-                      onChange={(e) => handleInputChange(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          handleSendMessage();
-                          stopTyping();
-                        }
-                      }}
-                      placeholder={pendingAttachments.length > 0 ? "Add a message (optional)..." : "Type a message..."}
-                      className="flex-1 h-11"
-                    />
+                  <div className="flex items-end gap-2">
+                    <div className="flex-1 bg-muted/50 rounded-[20px] border border-border/30 px-4 py-2.5 focus-within:border-primary/50 transition-colors">
+                      <input
+                        value={messageInput}
+                        onChange={(e) => handleInputChange(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSendMessage();
+                            stopTyping();
+                          }
+                        }}
+                        placeholder={pendingAttachments.length > 0 ? "Message (optional)" : "Message"}
+                        className="w-full bg-transparent border-none outline-none text-[15px] placeholder:text-muted-foreground/60"
+                      />
+                    </div>
                     <Button 
                       onClick={handleSendMessage} 
                       disabled={(messageInput.trim() === '' && pendingAttachments.length === 0) || shouldBlockMessage}
                       size="icon"
-                      className="h-11 w-11"
+                      className="h-9 w-9 rounded-full bg-[#007AFF] hover:bg-[#0051D5] disabled:opacity-40"
                     >
-                      <Send className="h-5 w-5" />
+                      <Send className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
