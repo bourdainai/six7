@@ -54,7 +54,8 @@ serve(async (req) => {
 
     // Send SMS via Bird.com
     const birdApiKey = Deno.env.get('BIRD_API_KEY');
-    const birdResponse = await fetch('https://api.bird.com/workspaces/YOUR_WORKSPACE_ID/channels/sms/messages', {
+    const birdWorkspaceId = Deno.env.get('BIRD_WORKSPACE_ID');
+    const birdResponse = await fetch(`https://api.bird.com/workspaces/${birdWorkspaceId}/channels/sms/messages`, {
       method: 'POST',
       headers: {
         'Authorization': `AccessKey ${birdApiKey}`,
