@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Navigation } from "@/components/Navigation";
+import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -99,11 +99,11 @@ export default function FraudDashboard() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6">
+      <AdminLayout>
         <div className="flex items-center justify-center h-64">
           <Clock className="h-8 w-8 animate-spin" />
         </div>
-      </div>
+      </AdminLayout>
     );
   }
 
@@ -111,10 +111,9 @@ export default function FraudDashboard() {
   const confirmedCount = flags?.filter(f => f.status === "confirmed").length || 0;
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-[72px]">
-        <div className="mb-8 space-y-2">
+    <AdminLayout>
+      <div className="space-y-8">
+        <div className="space-y-2">
           <h1 className="text-3xl font-light text-foreground">
             Fraud Detection Dashboard
           </h1>
@@ -290,6 +289,6 @@ export default function FraudDashboard() {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </AdminLayout>
   );
 }

@@ -2,16 +2,15 @@ import { AdminOrderView } from "@/components/admin/AdminOrderView";
 import { DisputeManager } from "@/components/admin/DisputeManager";
 import { RefundProcessor } from "@/components/admin/RefundProcessor";
 import { FakeCardReviewQueue } from "@/components/admin/FakeCardReviewQueue";
-import { PageLayout } from "@/components/PageLayout";
+import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Database, BarChart3, Shield, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function AdminDashboard() {
   return (
-    <PageLayout>
-      <div className="container py-8 space-y-8">
+    <AdminLayout>
+      <div className="space-y-8">
         <div>
           <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
           <p className="text-muted-foreground">Manage platform operations and data</p>
@@ -74,6 +73,6 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
-    </PageLayout>
+    </AdminLayout>
   );
 }
