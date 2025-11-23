@@ -113,10 +113,11 @@ serve(async (req) => {
       }
     }
 
-    // 6. Verifications (weight: +5 points for email)
+    // 6. Verifications (weight: +5 points for email, +15 for phone)
     if (verifications) {
       const verificationTypes = verifications.map(v => v.verification_type);
       if (verificationTypes.includes('email')) trustScore += 5;
+      if (verificationTypes.includes('phone')) trustScore += 15;
     }
 
     // Check Stripe Connect verification
