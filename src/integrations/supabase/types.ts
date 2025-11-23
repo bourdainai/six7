@@ -2665,6 +2665,41 @@ export type Database = {
         }
         Relationships: []
       }
+      trade_chat_messages: {
+        Row: {
+          created_at: string | null
+          id: string
+          message: string
+          read: boolean | null
+          trade_offer_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message: string
+          read?: boolean | null
+          trade_offer_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message?: string
+          read?: boolean | null
+          trade_offer_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_chat_messages_trade_offer_id_fkey"
+            columns: ["trade_offer_id"]
+            isOneToOne: false
+            referencedRelation: "trade_offers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trade_completions: {
         Row: {
           buyer_id: string
