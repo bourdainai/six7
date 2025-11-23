@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAdminCheck } from "@/hooks/useAdminCheck";
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -39,8 +39,6 @@ import type {
 const COLORS = ["hsl(var(--primary))", "hsl(var(--secondary))", "hsl(var(--accent))", "hsl(var(--muted))"];
 
 export default function AdminAnalytics() {
-    const { data: isAdmin, isLoading: loading } = useAdminCheck();
-    const navigate = useNavigate();
     const [overview, setOverview] = useState<AdminOverview | null>(null);
     const [charts, setCharts] = useState<{
       revenue: RevenueChartPoint[];
@@ -57,16 +55,8 @@ export default function AdminAnalytics() {
     });
 
   useEffect(() => {
-    if (!loading && !isAdmin) {
-      navigate("/");
-    }
-  }, [isAdmin, loading, navigate]);
-
-  useEffect(() => {
-    if (isAdmin) {
-      fetchAnalytics();
-    }
-  }, [isAdmin]);
+    fetchAnalytics();
+  }, []);
 
     const fetchAnalytics = async () => {
     try {
@@ -87,17 +77,19 @@ export default function AdminAnalytics() {
     }
   };
 
-  if (loading || !isAdmin) {
+  if (!overview) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        </div>
+      </AdminLayout>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Admin Analytics Dashboard</h1>
+    <AdminLayout>
+      <div className="space-y-8">
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -273,6 +265,7 @@ export default function AdminAnalytics() {
           </div>
         </TabsContent>
       </Tabs>
-    </div>
+      </div>
+    </AdminLayout>
   );
 }

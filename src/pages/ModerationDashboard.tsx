@@ -1,12 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Navigation } from "@/components/Navigation";
-import { useAdminCheck } from "@/hooks/useAdminCheck";
-import { useNavigate } from "react-router-dom";
 import { Flag, AlertTriangle, Shield, TrendingUp, Clock, CheckCircle, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { formatForDisplay } from "@/lib/format";
@@ -15,9 +13,6 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
 export default function ModerationDashboard() {
-  const { data: isAdmin, isLoading: adminLoading } = useAdminCheck();
-  const navigate = useNavigate();
-
   const { data: reports, isLoading: reportsLoading } = useQuery({
     queryKey: ["admin-reports"],
     queryFn: async () => {
@@ -35,7 +30,6 @@ export default function ModerationDashboard() {
       if (error) throw error;
       return data;
     },
-    enabled: isAdmin,
   });
 
   const { data: disputes, isLoading: disputesLoading } = useQuery({
@@ -55,33 +49,15 @@ export default function ModerationDashboard() {
       if (error) throw error;
       return data;
     },
-    enabled: isAdmin,
   });
 
-  if (adminLoading || reportsLoading || disputesLoading) {
+  if (reportsLoading || disputesLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navigation />
-        <div className="container mx-auto px-4 py-8">
-          <p>Loading...</p>
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="max-w-md">
-          <CardHeader>
-            <CardTitle>Access Denied</CardTitle>
-            <CardDescription>You don't have permission to access this page.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => navigate("/")}>Go Home</Button>
-          </CardContent>
-        </Card>
-      </div>
+      </AdminLayout>
     );
   }
 
@@ -109,10 +85,9 @@ export default function ModerationDashboard() {
   const COLORS = ['#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6'];
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-[72px]">
-        <div className="mb-8 space-y-2">
+    <AdminLayout>
+      <div className="space-y-8">
+        <div className="space-y-2">
           <div className="flex items-center gap-3">
             <Shield className="h-8 w-8 text-primary" />
             <h1 className="text-3xl font-light text-foreground">
@@ -337,6 +312,6 @@ export default function ModerationDashboard() {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </AdminLayout>
   );
 }
