@@ -2251,12 +2251,14 @@ export type Database = {
           external_order_id: string | null
           external_shipment_id: string | null
           id: string
+          is_return: boolean | null
           label_url: string | null
           metadata: Json | null
           order_id: string
           sendcloud_id: string
           service_point_id: string | null
           shipment_uuid: string | null
+          shipping_cost: number | null
           status: string
           status_message: string | null
           tracking_number: string | null
@@ -2273,12 +2275,14 @@ export type Database = {
           external_order_id?: string | null
           external_shipment_id?: string | null
           id?: string
+          is_return?: boolean | null
           label_url?: string | null
           metadata?: Json | null
           order_id: string
           sendcloud_id: string
           service_point_id?: string | null
           shipment_uuid?: string | null
+          shipping_cost?: number | null
           status?: string
           status_message?: string | null
           tracking_number?: string | null
@@ -2295,12 +2299,14 @@ export type Database = {
           external_order_id?: string | null
           external_shipment_id?: string | null
           id?: string
+          is_return?: boolean | null
           label_url?: string | null
           metadata?: Json | null
           order_id?: string
           sendcloud_id?: string
           service_point_id?: string | null
           shipment_uuid?: string | null
+          shipping_cost?: number | null
           status?: string
           status_message?: string | null
           tracking_number?: string | null
@@ -3089,6 +3095,7 @@ export type Database = {
         Args: { p_amount: number; p_user_id: string }
         Returns: undefined
       }
+      is_admin: { Args: never; Returns: boolean }
       refresh_listing_facets: { Args: never; Returns: undefined }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
