@@ -15,6 +15,8 @@ import { MessageReplySuggestions } from "@/components/MessageReplySuggestions";
 import { MessageSafetyIndicator } from "@/components/MessageSafetyIndicator";
 import { ConversationSentiment } from "@/components/ConversationSentiment";
 import { OfferCard } from "@/components/OfferCard";
+import { FileUpload, AttachmentData } from "@/components/messages/FileUpload";
+import { MessageAttachments } from "@/components/messages/MessageAttachments";
 
 interface Conversation {
   id: string;
@@ -42,6 +44,9 @@ interface Message {
   content: string;
   created_at: string;
   read: boolean;
+  metadata?: {
+    attachments?: AttachmentData[];
+  };
 }
 
 interface Offer {
@@ -61,6 +66,7 @@ const Messages = () => {
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState("");
   const [shouldBlockMessage, setShouldBlockMessage] = useState(false);
+  const [pendingAttachments, setPendingAttachments] = useState<AttachmentData[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { data: conversations, refetch: refetchConversations } = useQuery({
@@ -190,13 +196,18 @@ const Messages = () => {
   }, [messages]);
 
   const handleSendMessage = async () => {
-    if (!messageInput.trim() || !selectedConversation || !user || shouldBlockMessage) return;
+    if ((!messageInput.trim() && pendingAttachments.length === 0) || !selectedConversation || !user || shouldBlockMessage) return;
 
     try {
+      const metadata = pendingAttachments.length > 0 
+        ? { attachments: pendingAttachments }
+        : undefined;
+
       const { error } = await supabase.from("messages").insert({
         conversation_id: selectedConversation,
         sender_id: user.id,
         content: messageInput.trim(),
+        metadata: metadata as any,
       });
 
       if (error) throw error;
@@ -208,6 +219,7 @@ const Messages = () => {
         .eq("id", selectedConversation);
 
       setMessageInput("");
+      setPendingAttachments([]);
       setShouldBlockMessage(false);
       refetchMessages();
       refetchConversations();
@@ -367,7 +379,10 @@ const Messages = () => {
                                       : "bg-soft-neutral border-divider-gray"
                                   }`}
                                 >
-                                  <p className="text-sm font-normal tracking-tight">{msg.content}</p>
+                                  {msg.content && (
+                                    <p className="text-sm font-normal tracking-tight">{msg.content}</p>
+                                  )}
+                                  <MessageAttachments attachments={msg.metadata?.attachments || []} />
                                   <p
                                     className={`text-xs mt-1 font-normal ${
                                       isOwnMessage
@@ -421,6 +436,11 @@ const Messages = () => {
                     }}
                   />
                   
+                  <FileUpload
+                    conversationId={selectedConversation!}
+                    onFilesSelected={(files) => setPendingAttachments(files)}
+                  />
+                  
                   <div className="flex gap-2">
                     <Input
                       value={messageInput}
@@ -434,7 +454,7 @@ const Messages = () => {
                     />
                     <Button 
                       onClick={handleSendMessage} 
-                      disabled={!messageInput.trim() || shouldBlockMessage}
+                      disabled={(!messageInput.trim() && pendingAttachments.length === 0) || shouldBlockMessage}
                     >
                       <Send className="h-4 w-4" />
                     </Button>
