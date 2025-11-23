@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
     if (weight) params.append('weight', weight.toString());
 
     const response = await fetch(
-      `https://panel.sendcloud.sc/api/v2/service-points?${params.toString()}`,
+      `https://servicepoints.sendcloud.sc/api/v2/service-points?${params.toString()}`,
       {
         method: 'GET',
         headers: {
