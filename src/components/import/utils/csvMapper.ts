@@ -16,8 +16,9 @@ export interface CollectrCsvRow {
   averageCostPer: string;       // J
   quantity: string;             // K
   marketPrice: string;          // L
-  dateAdded: string;            // M
-  note: string;                 // N
+  watchlist: string;            // M (new - TRUE/FALSE)
+  dateAdded: string;            // N
+  note: string;                 // O
 }
 
 export interface MappedListing {
@@ -69,12 +70,13 @@ export function mapCsvRowToListing(row: CollectrCsvRow, userId: string): MappedL
     condition,
     currency: "GBP",
     status: "draft",
-    portfolio_name: row.portfolioName || null,
+    portfolio_name: row.portfolioName || "Imported Collection",
     import_metadata: {
       rarity: row.rarity,
       variance: row.variance,
       grade: row.grade,
       average_cost: row.averageCostPer,
+      watchlist: row.watchlist === "TRUE",
       date_added: row.dateAdded,
       note: row.note,
       ...grading
@@ -102,28 +104,29 @@ export const EXPECTED_CSV_HEADERS = [
   "Variance",
   "Grade",
   "Card Condition",
-  "Average Cost Per",
+  "Average Cost Paid",
   "Quantity",
   "Market Price",
+  "Watchlist",
   "Date Added",
-  "Note"
+  "Notes"
 ];
 
 /**
  * Validates CSV headers match expected format
  */
 export function validateCsvHeaders(headers: string[]): { valid: boolean; message?: string } {
-  if (headers.length < 14) {
+  if (headers.length < 15) {
     return {
       valid: false,
-      message: `Expected 14 columns, found ${headers.length}. Please use the exact Collectr export format.`
+      message: `Expected 15 columns, found ${headers.length}. Please use the exact Collectr export format.`
     };
   }
 
   // Check for key columns (flexible on exact match for minor variations)
   const hasProductName = headers.some(h => h.toLowerCase().includes('product') || h.toLowerCase().includes('name'));
   const hasSet = headers.some(h => h.toLowerCase().includes('set'));
-  const hasPrice = headers.some(h => h.toLowerCase().includes('price'));
+  const hasPrice = headers.some(h => h.toLowerCase().includes('price') || h.toLowerCase().includes('market'));
 
   if (!hasProductName || !hasSet || !hasPrice) {
     return {

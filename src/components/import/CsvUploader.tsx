@@ -111,11 +111,12 @@ export function CsvUploader({ onClose }: CsvUploaderProps) {
                   variance: row["Variance"] || "",
                   grade: row["Grade"] || "",
                   cardCondition: row["Card Condition"] || "",
-                  averageCostPer: row["Average Cost Per"] || "",
+                  averageCostPer: row["Average Cost Paid"] || "",
                   quantity: row["Quantity"] || "1",
-                  marketPrice: row["Market Price"] || "",
+                  marketPrice: row["Market Price (As of 2025-10-15)"] || row["Market Price"] || "",
+                  watchlist: row["Watchlist"] || "",
                   dateAdded: row["Date Added"] || "",
-                  note: row["Note"] || ""
+                  note: row["Notes"] || row["Note"] || ""
                 }, user.id);
 
                 if (mapped.errors.length === 0) {
@@ -245,9 +246,10 @@ export function CsvUploader({ onClose }: CsvUploaderProps) {
       <div className="bg-muted/50 rounded-lg p-4 text-sm space-y-2">
         <p className="font-medium">Expected CSV format:</p>
         <ul className="list-disc list-inside text-muted-foreground space-y-1">
-          <li>14 columns: Portfolio Name, Category, Set, Product Name, etc.</li>
-          <li>Export directly from Collectr app</li>
+          <li>15 columns: Portfolio Name, Category, Set, Product Name, etc.</li>
+          <li>Export directly from Collectr app (Settings → Export Collection)</li>
           <li>All listings will be created as drafts</li>
+          <li>Cards with Quantity &gt; 1 will create multiple listings</li>
           <li>You can add photos after import</li>
         </ul>
       </div>
