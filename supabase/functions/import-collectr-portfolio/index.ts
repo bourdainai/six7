@@ -2,227 +2,331 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
+interface CollectrCard {
+  name?: string;
+  cardName?: string;
+  title?: string;
+  set?: string;
+  setName?: string;
+  set_name?: string;
+  number?: string | number;
+  cardNumber?: string | number;
+  card_number?: string | number;
+  marketPrice?: string | number;
+  price?: string | number;
+  value?: string | number;
+  condition?: string;
+  cardCondition?: string;
+  qty?: string | number;
+  quantity?: string | number;
+  rarity?: string;
+  grade?: string;
+  variance?: string;
+  id?: string;
+}
+
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
+  // CORS preflight
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-    // Get authenticated user
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('No authorization header');
+    if (!supabaseUrl || !supabaseKey) {
+      console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY env");
+      throw new Error("Server configuration error");
     }
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    );
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // ---- Auth: require logged-in user ----
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      throw new Error("No authorization header");
+    }
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
 
     if (authError || !user) {
-      throw new Error('Unauthorized');
+      console.error("Auth error", authError);
+      throw new Error("Unauthorized");
     }
 
     const { portfolioUrl } = await req.json();
 
-    if (!portfolioUrl || !portfolioUrl.includes('app.getcollectr.com/showcase/profile/')) {
-      throw new Error('Invalid Collectr portfolio URL');
+    if (
+      !portfolioUrl ||
+      typeof portfolioUrl !== "string" ||
+      !portfolioUrl.includes("app.getcollectr.com/showcase/profile/")
+    ) {
+      throw new Error("Invalid Collectr portfolio URL");
     }
 
-    console.log('Fetching portfolio:', portfolioUrl);
+    // Extract a simple portfolio id from the URL for metadata
+    const urlParts = portfolioUrl.split("/").filter(Boolean);
+    const portfolioId = urlParts[urlParts.length - 1];
 
-    // Fetch portfolio data from Collectr
-    // Note: This may require scraping or API access
+    console.log("Fetching Collectr portfolio page:", portfolioUrl);
+
+    // IMPORTANT: we only fetch the page URL the user provided –
+    // no calls to https://api.getcollectr.com which fails DNS.
     const portfolioResponse = await fetch(portfolioUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; 6SevenBot/1.0)',
-        'Accept': 'application/json, text/html',
-      }
+        "User-Agent": "Mozilla/5.0 (compatible; 6SevenBot/1.0)",
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      },
     });
 
     if (!portfolioResponse.ok) {
-      throw new Error('Failed to fetch portfolio data');
+      console.error("Collectr page fetch failed", portfolioResponse.status);
+      throw new Error("Failed to fetch portfolio page");
     }
 
     const html = await portfolioResponse.text();
-    
-    // Extract portfolio ID from URL for metadata
-    const portfolioId = portfolioUrl.split('/').pop();
-    
-    console.log('HTML length:', html.length);
+    console.log("Collectr HTML length:", html.length);
 
-    // Try multiple patterns to extract JSON data
+    // ---- Try to extract embedded JSON data from the page ----
     let portfolioData: any = null;
-    
-    // Pattern 1: window.__INITIAL_STATE__
-    let jsonMatch = html.match(/window\.__INITIAL_STATE__\s*=\s*({.+?});/s);
-    
-    // Pattern 2: window.__NEXT_DATA__
+
+    // Pattern 1: window.__INITIAL_STATE__ = {...};
+    let jsonMatch = html.match(
+      /window\.__INITIAL_STATE__\s*=\s*({[\s\S]+?});/,
+    );
+
+    // Pattern 2: Next.js __NEXT_DATA__ script
     if (!jsonMatch) {
-      jsonMatch = html.match(/<script id="__NEXT_DATA__" type="application\/json">(.+?)<\/script>/s);
+      jsonMatch = html.match(
+        /<script id="__NEXT_DATA__" type="application\/json">([\s\S]+?)<\/script>/,
+      );
     }
-    
-    // Pattern 3: Any large JSON object in script tags
+
+    // Pattern 3: any large JSON object inside script tags
     if (!jsonMatch) {
-      const scriptMatches = html.match(/<script[^>]*>(.+?)<\/script>/gs);
+      const scriptMatches = html.match(/<script[^>]*>[\s\S]*?<\/script>/g);
       if (scriptMatches) {
         for (const script of scriptMatches) {
-          const content = script.replace(/<script[^>]*>|<\/script>/g, '').trim();
-          if (content.startsWith('{') && content.length > 100) {
+          const content = script
+            .replace(/<script[^>]*>/, "")
+            .replace(/<\/script>/, "")
+            .trim();
+
+          if (content.startsWith("{") && content.length > 200) {
             try {
-              portfolioData = JSON.parse(content);
-              if (portfolioData.props?.pageProps || portfolioData.cards) {
-                jsonMatch = [content, content];
+              const json = JSON.parse(content);
+              // very loose heuristic so we don't depend on exact Collectr shape
+              if (json.cards || json.portfolio || json.props?.pageProps) {
+                portfolioData = json;
                 break;
               }
-            } catch (e) {
-              // Not valid JSON, continue
+            } catch (_err) {
+              // ignore non‑JSON script contents
             }
           }
         }
       }
     }
 
-    if (jsonMatch) {
+    if (!portfolioData && jsonMatch) {
       try {
         portfolioData = JSON.parse(jsonMatch[1]);
-        console.log('Parsed portfolio data:', Object.keys(portfolioData));
-      } catch (e) {
-        console.error('JSON parse error:', e);
-        throw new Error('Failed to parse portfolio JSON data');
+      } catch (err) {
+        console.error("Failed to parse embedded portfolio JSON", err);
+        throw new Error("Failed to parse portfolio data from Collectr page");
       }
-    } else {
-      throw new Error('Could not find portfolio data in page. The Collectr page format may have changed.');
     }
 
-    // Create import job
+    if (!portfolioData) {
+      console.error("No recognizable portfolio JSON in page");
+      throw new Error(
+        "Could not find portfolio data in Collectr page. Their layout may have changed.",
+      );
+    }
+
+    // ---- Find cards array in whatever structure Collectr uses ----
+    let cards: CollectrCard[] = [];
+
+    if (Array.isArray((portfolioData as any).cards)) {
+      cards = (portfolioData as any).cards;
+    } else if (Array.isArray(portfolioData?.props?.pageProps?.cards)) {
+      cards = portfolioData.props.pageProps.cards;
+    } else if (
+      Array.isArray(portfolioData?.props?.pageProps?.portfolio?.cards)
+    ) {
+      cards = portfolioData.props.pageProps.portfolio.cards;
+    } else if (Array.isArray(portfolioData?.portfolio?.cards)) {
+      cards = portfolioData.portfolio.cards;
+    }
+
+    console.log("Detected cards count:", cards.length);
+
+    if (!cards.length) {
+      throw new Error(
+        "No cards found in portfolio. The portfolio may be empty or the page format changed.",
+      );
+    }
+
+    // ---- Create import job record ----
     const { data: importJob, error: jobError } = await supabase
-      .from('import_jobs')
+      .from("import_jobs")
       .insert({
         user_id: user.id,
-        source: 'portfolio_url',
-        total_items: portfolioData.cards?.length || 0,
-        metadata: { portfolioUrl, portfolioId }
+        source: "collectr_portfolio_url",
+        total_items: cards.length,
+        metadata: { portfolioUrl, portfolioId },
       })
       .select()
       .single();
 
-    if (jobError) throw jobError;
-
-    // Extract cards from various possible data structures
-    let cards: any[] = [];
-    
-    if (portfolioData.cards) {
-      cards = portfolioData.cards;
-    } else if (portfolioData.props?.pageProps?.cards) {
-      cards = portfolioData.props.pageProps.cards;
-    } else if (portfolioData.props?.pageProps?.portfolio?.cards) {
-      cards = portfolioData.props.pageProps.portfolio.cards;
+    if (jobError || !importJob) {
+      console.error("Failed to create import job", jobError);
+      throw new Error("Failed to create import job");
     }
 
-    console.log(`Found ${cards.length} cards to import`);
+    // ---- Map Collectr cards into listings rows ----
+    const portfolioName =
+      portfolioData?.portfolioName ||
+      portfolioData?.props?.pageProps?.portfolio?.name ||
+      "Collectr Import";
 
-    if (cards.length === 0) {
-      throw new Error('No cards found in portfolio. The portfolio may be empty or the format has changed.');
-    }
+    const listings = cards.map((card) => {
+      const cardName = card.name || card.cardName || card.title || "Unnamed card";
+      const setName = card.set || card.setName || card.set_name || "Unknown set";
+      const rawNumber = card.number ?? card.cardNumber ?? card.card_number ?? "";
+      const cardNumber = String(rawNumber || "");
 
-    // Map portfolio cards to listings format
-    const listings = cards.map((card: any) => {
-      // Handle various card data formats
-      const cardName = card.name || card.cardName || card.title;
-      const setName = card.set || card.setName || card.set_name;
-      const cardNumber = card.number || card.cardNumber || card.card_number;
-      const price = parseFloat(card.marketPrice || card.price || card.value || '0');
-      const condition = card.condition || card.cardCondition || 'Near Mint';
-      const quantity = parseInt(card.quantity || card.qty || '1');
+      const rawPrice =
+        (card.marketPrice as any) ??
+        (card.price as any) ??
+        (card.value as any) ??
+        "0";
+      const priceNum = Number(rawPrice) || 0;
+
+      const rawCondition = card.condition || card.cardCondition || "Near Mint";
+      const rawQty = (card.quantity as any) ?? (card.qty as any) ?? 1;
+      const quantity = Math.max(1, Number(rawQty) || 1);
 
       return {
         seller_id: user.id,
-        title: cardName || `${setName} - ${cardNumber}`,
+        title: cardName || `${setName} - ${cardNumber || ""}`.trim(),
         set_code: setName,
-        card_number: cardNumber,
-        seller_price: price > 0 ? price : 1,
-        condition: mapCollectrCondition(condition),
-        currency: 'GBP',
-        status: 'draft',
-        portfolio_name: portfolioData.portfolioName || portfolioData.props?.pageProps?.portfolio?.name || 'Collectr Import',
+        card_number: cardNumber || null,
+        seller_price: priceNum > 0 ? priceNum : 1,
+        condition: mapCollectrCondition(rawCondition),
+        currency: "GBP",
+        status: "draft",
+        portfolio_name: portfolioName,
         import_job_id: importJob.id,
         import_metadata: {
           rarity: card.rarity,
           grade: card.grade,
           variance: card.variance,
           collectr_id: card.id,
-          quantity
-        }
+          quantity,
+          source: "collectr_portfolio_url",
+        },
       };
     });
 
+    // ---- Insert listings in batches ----
+    const BATCH_SIZE = 50;
     let successCount = 0;
     let failedCount = 0;
 
-    // Insert in batches
-    const BATCH_SIZE = 50;
     for (let i = 0; i < listings.length; i += BATCH_SIZE) {
       const batch = listings.slice(i, i + BATCH_SIZE);
       const { error: insertError } = await supabase
-        .from('listings')
-        .insert(batch);
+        .from("listings")
+        .insert(batch as any);
 
       if (insertError) {
-        console.error('Insert error:', insertError);
+        console.error("Batch insert error", insertError);
         failedCount += batch.length;
       } else {
         successCount += batch.length;
       }
     }
 
-    // Update import job
-    await supabase
-      .from('import_jobs')
+    // ---- Update import job status ----
+    const { error: updateError } = await supabase
+      .from("import_jobs")
       .update({
-        status: 'completed',
+        status: "completed",
         processed_items: successCount,
         failed_items: failedCount,
-        completed_at: new Date().toISOString()
+        completed_at: new Date().toISOString(),
       })
-      .eq('id', importJob.id);
+      .eq("id", importJob.id);
+
+    if (updateError) {
+      console.error("Failed to update import job", updateError);
+    }
 
     return new Response(
       JSON.stringify({
         success: true,
         imported: successCount,
         failed: failedCount,
-        jobId: importJob.id
+        jobId: importJob.id,
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      {
+        status: 200,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
+      },
     );
-
   } catch (error) {
-    console.error('Error:', error);
+    console.error("import-collectr-portfolio error", error);
+
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Unknown error importing Collectr portfolio";
+
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ success: false, error: message }),
+      {
+        status: 500,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
+      },
     );
   }
 });
 
 function mapCollectrCondition(condition: string): string {
-  const map: Record<string, string> = {
-    'Near Mint': 'like_new',
-    'Lightly Played': 'excellent',
-    'Moderately Played': 'good',
-    'Heavily Played': 'fair',
-    'Damaged': 'poor'
-  };
-  return map[condition] || 'good';
+  const normalized = (condition || "").toLowerCase();
+
+  if (normalized.includes("near mint") || normalized === "nm") {
+    return "like_new";
+  }
+  if (normalized.includes("lightly played") || normalized === "lp") {
+    return "excellent";
+  }
+  if (normalized.includes("moderately played") || normalized === "mp") {
+    return "good";
+  }
+  if (normalized.includes("heavily played") || normalized === "hp") {
+    return "fair";
+  }
+  if (normalized.includes("damaged") || normalized.includes("poor")) {
+    return "poor";
+  }
+
+  // sensible fallback
+  return "good";
 }
