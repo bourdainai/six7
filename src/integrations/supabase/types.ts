@@ -3124,10 +3124,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "trade_offers_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "trade_offers_parent_offer_id_fkey"
             columns: ["parent_offer_id"]
             isOneToOne: false
             referencedRelation: "trade_offers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_offers_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {

@@ -7,6 +7,8 @@ import { PageLayout } from "@/components/PageLayout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { OfferDialog } from "@/components/OfferDialog";
 import { TradeOfferModal } from "@/components/trade/TradeOfferModal";
+import { MobileTradeBuilder } from "@/components/trade/MobileTradeBuilder";
+import { useMobileDetect } from "@/hooks/useMobileDetect";
 import { CreateBundleDialog } from "@/components/bundles/CreateBundleDialog";
 import { ReportDialog } from "@/components/moderation/ReportDialog";
 import { BundleRecommendation } from "@/components/BundleRecommendation";
@@ -37,6 +39,7 @@ const ListingDetail = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { isSaved, toggleSave, isSaving } = useSavedListings();
+  const { isMobile } = useMobileDetect();
   const [selectedImage, setSelectedImage] = useState(0);
   const [bundleDialogOpen, setBundleDialogOpen] = useState(false);
   const [tradeOfferOpen, setTradeOfferOpen] = useState(false);
@@ -630,11 +633,19 @@ const ListingDetail = () => {
         preselectedListings={[listing.id]}
       />
 
-      <TradeOfferModal
-        open={tradeOfferOpen}
-        onOpenChange={setTradeOfferOpen}
-        listingId={listing.id}
-      />
+      {isMobile ? (
+        <MobileTradeBuilder
+          open={tradeOfferOpen}
+          onOpenChange={setTradeOfferOpen}
+          targetListing={listing}
+        />
+      ) : (
+        <TradeOfferModal
+          open={tradeOfferOpen}
+          onOpenChange={setTradeOfferOpen}
+          listingId={listing.id}
+        />
+      )}
 
       <ReportDialog
         open={reportDialogOpen}
