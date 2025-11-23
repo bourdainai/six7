@@ -50,52 +50,129 @@ serve(async (req) => {
         isValid: cachedValidation.is_valid,
         normalizedAddress: cachedValidation.normalized_address,
         details: cachedValidation.validation_details,
+        issues: (cachedValidation.validation_details as any)?.issues || [],
+        suggestions: (cachedValidation.validation_details as any)?.suggestions,
         cached: true
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    // Basic validation
-    const isValid = !!(
-      addressData.address &&
-      addressData.city &&
-      addressData.postalCode &&
-      addressData.country &&
-      addressData.address.length >= 5 &&
-      addressData.city.length >= 2 &&
-      addressData.postalCode.length >= 3
-    );
+    // Basic validation with comprehensive checks
+    const issues: string[] = [];
+    
+    if (!addressData.address || addressData.address.length < 5) {
+      issues.push('Street address must be at least 5 characters');
+    }
+    if (!addressData.city || addressData.city.length < 2) {
+      issues.push('City name must be at least 2 characters');
+    }
+    if (!addressData.postalCode || addressData.postalCode.length < 3) {
+      issues.push('Postal code must be at least 3 characters');
+    }
+    if (!addressData.country || addressData.country.length !== 2) {
+      issues.push('Country code must be 2 characters (ISO 3166-1 alpha-2)');
+    }
+    
+    const isValid = issues.length === 0;
 
-    // Additional validation rules by country
+    // Additional validation rules by country with detailed checks
     let validationDetails: any = {
       checks: {
         hasAddress: !!addressData.address,
         hasCity: !!addressData.city,
         hasPostalCode: !!addressData.postalCode,
         hasCountry: !!addressData.country,
-      }
+        streetLengthValid: addressData.address?.length >= 5,
+        cityLengthValid: addressData.city?.length >= 2,
+        postalCodeLengthValid: addressData.postalCode?.length >= 3,
+      },
+      issues: issues,
     };
 
-    // Normalize address
+    // Normalize address with smart formatting
     const normalizedAddress = {
       address: addressData.address.trim(),
       address2: addressData.address2?.trim() || '',
-      city: addressData.city.trim(),
-      postalCode: addressData.postalCode.trim().toUpperCase(),
+      city: addressData.city.trim().split(' ').map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+      ).join(' '),
+      postalCode: addressData.postalCode.trim().toUpperCase().replace(/\s+/g, ' '),
       country: addressData.country.toUpperCase(),
     };
 
-    // Country-specific validation
+    // Country-specific validation with suggestions
+    const suggestions: any[] = [];
+    
     if (addressData.country === 'GB' || addressData.country === 'UK') {
-      // UK postcode validation (basic)
+      // UK postcode validation (comprehensive)
       const ukPostcodeRegex = /^[A-Z]{1,2}[0-9][A-Z0-9]? ?[0-9][A-Z]{2}$/i;
-      validationDetails.postcodeValid = ukPostcodeRegex.test(normalizedAddress.postalCode);
+      const isPostcodeValid = ukPostcodeRegex.test(normalizedAddress.postalCode);
+      validationDetails.postcodeValid = isPostcodeValid;
+      
+      if (!isPostcodeValid) {
+        issues.push('Invalid UK postcode format. Expected format: SW1A 1AA');
+        // Suggest proper spacing if missing
+        const withSpace = normalizedAddress.postalCode.replace(/([A-Z0-9]{3,4})([A-Z]{2})$/i, '$1 $2');
+        if (withSpace !== normalizedAddress.postalCode && ukPostcodeRegex.test(withSpace)) {
+          suggestions.push({
+            ...normalizedAddress,
+            postalCode: withSpace,
+          });
+        }
+      }
+      
+      // Normalize country to GB (not UK)
+      if (normalizedAddress.country === 'UK') {
+        normalizedAddress.country = 'GB';
+      }
     } else if (addressData.country === 'US') {
       // US ZIP code validation
       const usZipRegex = /^\d{5}(-\d{4})?$/;
-      validationDetails.postcodeValid = usZipRegex.test(normalizedAddress.postalCode);
+      const isPostcodeValid = usZipRegex.test(normalizedAddress.postalCode);
+      validationDetails.postcodeValid = isPostcodeValid;
+      
+      if (!isPostcodeValid) {
+        issues.push('Invalid US ZIP code format. Expected: 12345 or 12345-6789');
+      }
+    } else if (addressData.country === 'NL') {
+      // Netherlands postcode validation (1234 AB format)
+      const nlPostcodeRegex = /^[1-9][0-9]{3}\s?[A-Z]{2}$/i;
+      const isPostcodeValid = nlPostcodeRegex.test(normalizedAddress.postalCode);
+      validationDetails.postcodeValid = isPostcodeValid;
+      
+      if (!isPostcodeValid) {
+        issues.push('Invalid NL postcode format. Expected: 1234 AB');
+        // Suggest proper spacing
+        const withSpace = normalizedAddress.postalCode.replace(/^([0-9]{4})([A-Z]{2})$/i, '$1 $2');
+        if (withSpace !== normalizedAddress.postalCode && nlPostcodeRegex.test(withSpace)) {
+          suggestions.push({
+            ...normalizedAddress,
+            postalCode: withSpace,
+          });
+        }
+      }
+    } else if (['DE', 'FR', 'IT', 'ES'].includes(addressData.country)) {
+      // European postcode validation (5 digits)
+      const euPostcodeRegex = /^\d{5}$/;
+      const isPostcodeValid = euPostcodeRegex.test(normalizedAddress.postalCode);
+      validationDetails.postcodeValid = isPostcodeValid;
+      
+      if (!isPostcodeValid) {
+        issues.push('Invalid postcode format. Expected: 5 digits');
+      }
     }
+    
+    // Validate street address has a number
+    const hasNumber = /\d/.test(addressData.address);
+    validationDetails.hasStreetNumber = hasNumber;
+    if (!hasNumber) {
+      issues.push('Street address should include a house/building number');
+    }
+    
+    // Update validation result
+    validationDetails.issues = issues;
+    const finalIsValid = issues.length === 0;
 
     // Cache the validation for 30 days
     const expiresAt = new Date();
@@ -105,16 +182,18 @@ serve(async (req) => {
       .from('address_validation_cache')
       .upsert({
         address_hash: addressHash,
-        is_valid: isValid,
+        is_valid: finalIsValid,
         normalized_address: normalizedAddress,
         validation_details: validationDetails,
         expires_at: expiresAt.toISOString()
       });
 
     return new Response(JSON.stringify({
-      isValid,
+      isValid: finalIsValid,
       normalizedAddress,
       details: validationDetails,
+      issues: issues,
+      suggestions: suggestions.length > 0 ? suggestions : undefined,
       cached: false
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

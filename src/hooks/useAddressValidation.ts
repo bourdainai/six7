@@ -15,6 +15,11 @@ interface ValidationResult {
   normalizedAddress?: Address;
   issues?: string[];
   suggestions?: Address[];
+  details?: {
+    checks?: Record<string, boolean>;
+    postcodeValid?: boolean;
+    hasStreetNumber?: boolean;
+  };
 }
 
 export const useAddressValidation = () => {
@@ -35,8 +40,9 @@ export const useAddressValidation = () => {
       const result: ValidationResult = {
         isValid: data.isValid || false,
         normalizedAddress: data.normalizedAddress,
-        issues: data.details?.issues || [],
-        suggestions: data.details?.suggestions || [],
+        issues: data.issues || data.details?.issues || [],
+        suggestions: data.suggestions || [],
+        details: data.details,
       };
 
       setValidationResult(result);
