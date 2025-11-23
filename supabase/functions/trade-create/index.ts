@@ -14,8 +14,12 @@ const tradeSchema = z.object({
     listingId: z.string().uuid(),
     title: z.string().max(200).optional(),
     value: z.number().positive().optional()
-  })).max(20, 'Maximum 20 items per trade'),
-  photos: z.array(z.string().url()).max(10, 'Maximum 10 photos').optional()
+  })).max(20, 'Maximum 20 items per trade').optional(),
+  photos: z.array(z.string().url()).max(10, 'Maximum 10 photos').optional(),
+  notes: z.string().max(500).optional(),
+  tradeType: z.enum(['simple', 'multi_card', 'bulk']).optional(),
+  aiFairnessScore: z.number().min(0).max(1).optional(),
+  aiSuggestions: z.array(z.string()).optional()
 });
 
 serve(async (req) => {
@@ -29,7 +33,16 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const body = await req.json();
-    const { targetListingId, cashAmount, tradeItems, photos } = tradeSchema.parse(body);
+    const { 
+      targetListingId, 
+      cashAmount, 
+      tradeItems, 
+      photos, 
+      notes, 
+      tradeType, 
+      aiFairnessScore, 
+      aiSuggestions 
+    } = tradeSchema.parse(body);
     
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) throw new Error('Missing Authorization header');
@@ -47,14 +60,14 @@ serve(async (req) => {
     if (listing.status !== 'active') throw new Error('Listing not active');
     if (listing.seller_id === user.id) throw new Error('Cannot trade with yourself');
 
-    // Trigger AI Valuation (Async or sync? For now sync call or just placeholder)
-    // We'll assume we call another function or calculate it here
-    // For MVP, just set a placeholder valuation
-    const valuations = tradeItems.map((item: any) => ({ ...item, valuation: 100 })); // Mock valuation
+    // Use provided valuations or get from items
+    const valuations = tradeItems?.map((item: any) => ({ 
+      ...item, 
+      valuation: item.value || 0 
+    })) || [];
 
-    // Trigger Fairness Score
-    // Mock score
-    const fairnessScore = 0.85; 
+    // Use provided fairness score
+    const fairnessScore = aiFairnessScore || 0.5;
 
     const { data: offer, error: offerError } = await supabase
       .from('trade_offers')
@@ -62,13 +75,17 @@ serve(async (req) => {
         buyer_id: user.id,
         seller_id: listing.seller_id,
         target_listing_id: targetListingId,
-        cash_amount: cashAmount,
-        trade_items: tradeItems,
+        cash_amount: cashAmount || 0,
+        trade_items: tradeItems || [],
         trade_item_valuations: valuations,
-        photos: photos,
+        photos: photos || [],
         ai_fairness_score: fairnessScore,
         status: 'pending',
-        expiry_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
+        expiry_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
+        trade_type: tradeType || 'simple',
+        requester_notes: notes,
+        ai_suggestions: aiSuggestions || [],
+        negotiation_round: 1
       })
       .select()
       .single();

@@ -2665,53 +2665,279 @@ export type Database = {
         }
         Relationships: []
       }
+      trade_completions: {
+        Row: {
+          buyer_id: string
+          buyer_received: boolean | null
+          buyer_shipped: boolean | null
+          buyer_tracking_number: string | null
+          completed_at: string | null
+          created_at: string | null
+          dispute_opened: boolean | null
+          dispute_reason: string | null
+          escrow_amount: number | null
+          escrow_released: boolean | null
+          escrow_released_at: string | null
+          id: string
+          seller_id: string
+          seller_received: boolean | null
+          seller_shipped: boolean | null
+          seller_tracking_number: string | null
+          trade_offer_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          buyer_id: string
+          buyer_received?: boolean | null
+          buyer_shipped?: boolean | null
+          buyer_tracking_number?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          dispute_opened?: boolean | null
+          dispute_reason?: string | null
+          escrow_amount?: number | null
+          escrow_released?: boolean | null
+          escrow_released_at?: string | null
+          id?: string
+          seller_id: string
+          seller_received?: boolean | null
+          seller_shipped?: boolean | null
+          seller_tracking_number?: string | null
+          trade_offer_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          buyer_id?: string
+          buyer_received?: boolean | null
+          buyer_shipped?: boolean | null
+          buyer_tracking_number?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          dispute_opened?: boolean | null
+          dispute_reason?: string | null
+          escrow_amount?: number | null
+          escrow_released?: boolean | null
+          escrow_released_at?: string | null
+          id?: string
+          seller_id?: string
+          seller_received?: boolean | null
+          seller_shipped?: boolean | null
+          seller_tracking_number?: string | null
+          trade_offer_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_completions_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_completions_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_completions_trade_offer_id_fkey"
+            columns: ["trade_offer_id"]
+            isOneToOne: false
+            referencedRelation: "trade_offers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trade_history: {
+        Row: {
+          completion_time_hours: number | null
+          created_at: string | null
+          fairness_score: number | null
+          id: string
+          partner_id: string
+          rating: number | null
+          review_text: string | null
+          trade_offer_id: string
+          trade_value: number
+          user_id: string
+        }
+        Insert: {
+          completion_time_hours?: number | null
+          created_at?: string | null
+          fairness_score?: number | null
+          id?: string
+          partner_id: string
+          rating?: number | null
+          review_text?: string | null
+          trade_offer_id: string
+          trade_value: number
+          user_id: string
+        }
+        Update: {
+          completion_time_hours?: number | null
+          created_at?: string | null
+          fairness_score?: number | null
+          id?: string
+          partner_id?: string
+          rating?: number | null
+          review_text?: string | null
+          trade_offer_id?: string
+          trade_value?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_history_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_history_trade_offer_id_fkey"
+            columns: ["trade_offer_id"]
+            isOneToOne: false
+            referencedRelation: "trade_offers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trade_negotiations: {
+        Row: {
+          changes_summary: Json | null
+          created_at: string | null
+          current_offer_id: string
+          id: string
+          iteration: number
+          original_offer_id: string
+          proposer_id: string
+        }
+        Insert: {
+          changes_summary?: Json | null
+          created_at?: string | null
+          current_offer_id: string
+          id?: string
+          iteration?: number
+          original_offer_id: string
+          proposer_id: string
+        }
+        Update: {
+          changes_summary?: Json | null
+          created_at?: string | null
+          current_offer_id?: string
+          id?: string
+          iteration?: number
+          original_offer_id?: string
+          proposer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_negotiations_current_offer_id_fkey"
+            columns: ["current_offer_id"]
+            isOneToOne: false
+            referencedRelation: "trade_offers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_negotiations_original_offer_id_fkey"
+            columns: ["original_offer_id"]
+            isOneToOne: false
+            referencedRelation: "trade_offers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_negotiations_proposer_id_fkey"
+            columns: ["proposer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trade_offers: {
         Row: {
           ai_fairness_score: number | null
+          ai_suggestions: Json | null
           buyer_id: string
           cash_amount: number | null
           created_at: string | null
           expiry_date: string | null
           id: string
+          last_viewed_at: string | null
+          negotiation_round: number | null
+          parent_offer_id: string | null
           photos: Json | null
+          requester_notes: string | null
           seller_id: string
           status: string | null
           target_listing_id: string
           trade_item_valuations: Json | null
           trade_items: Json
+          trade_type: string | null
           updated_at: string | null
+          view_count: number | null
         }
         Insert: {
           ai_fairness_score?: number | null
+          ai_suggestions?: Json | null
           buyer_id: string
           cash_amount?: number | null
           created_at?: string | null
           expiry_date?: string | null
           id?: string
+          last_viewed_at?: string | null
+          negotiation_round?: number | null
+          parent_offer_id?: string | null
           photos?: Json | null
+          requester_notes?: string | null
           seller_id: string
           status?: string | null
           target_listing_id: string
           trade_item_valuations?: Json | null
           trade_items?: Json
+          trade_type?: string | null
           updated_at?: string | null
+          view_count?: number | null
         }
         Update: {
           ai_fairness_score?: number | null
+          ai_suggestions?: Json | null
           buyer_id?: string
           cash_amount?: number | null
           created_at?: string | null
           expiry_date?: string | null
           id?: string
+          last_viewed_at?: string | null
+          negotiation_round?: number | null
+          parent_offer_id?: string | null
           photos?: Json | null
+          requester_notes?: string | null
           seller_id?: string
           status?: string | null
           target_listing_id?: string
           trade_item_valuations?: Json | null
           trade_items?: Json
+          trade_type?: string | null
           updated_at?: string | null
+          view_count?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "trade_offers_parent_offer_id_fkey"
+            columns: ["parent_offer_id"]
+            isOneToOne: false
+            referencedRelation: "trade_offers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "trade_offers_target_listing_id_fkey"
             columns: ["target_listing_id"]
@@ -3075,6 +3301,33 @@ export type Database = {
         }
         Relationships: []
       }
+      trade_opportunities: {
+        Row: {
+          cards_i_want: number | null
+          cards_they_want: number | null
+          categories_match: string[] | null
+          potential_partner_id: string | null
+          total_value_i_want: number | null
+          total_value_they_want: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listings_seller_id_fkey"
+            columns: ["potential_partner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listings_seller_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       ensure_admin_role: { Args: never; Returns: undefined }
@@ -3097,6 +3350,7 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       refresh_listing_facets: { Args: never; Returns: undefined }
+      refresh_trade_opportunities: { Args: never; Returns: undefined }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
     }
