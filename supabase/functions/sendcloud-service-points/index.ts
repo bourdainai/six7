@@ -55,14 +55,15 @@ Deno.serve(async (req) => {
       throw new Error('Sendcloud credentials not configured');
     }
 
-    const auth = btoa(`${sendcloudPublicKey}:${sendcloudSecretKey}`);
-
-    // Build query parameters
+    // Build query parameters according to Sendcloud v2 Service Points API
     const params = new URLSearchParams({
       country,
-      postal_code: postalCode,
+      // Sendcloud docs allow using `address` for postcode-based search
+      address: postalCode,
       radius: radius.toString(),
       limit: limit.toString(),
+      // For the Service Points API, the public API key can be used as access_token
+      access_token: sendcloudPublicKey,
     });
 
     if (city) params.append('city', city);
@@ -74,8 +75,8 @@ Deno.serve(async (req) => {
       {
         method: 'GET',
         headers: {
-          'Authorization': `Basic ${auth}`,
           'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
         },
       }
     );
