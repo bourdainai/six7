@@ -59,7 +59,12 @@ export function PortfolioUrlInput({ onClose }: PortfolioUrlInputProps) {
           description: `Successfully imported ${data.imported} cards`
         });
       } else {
-        throw new Error(data.error || "Import failed");
+        // Handle graceful failure with helpful message
+        if (data.error === "portfolio_format_unsupported") {
+          setError(data.message || "Portfolio import is not available. Please use CSV export instead.");
+        } else {
+          throw new Error(data.error || "Import failed");
+        }
       }
 
     } catch (err) {

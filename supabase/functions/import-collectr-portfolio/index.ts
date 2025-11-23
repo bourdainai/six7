@@ -205,8 +205,21 @@ serve(async (req) => {
 
     if (!portfolioData) {
       console.error("No recognizable portfolio JSON found in Collectr page");
-      throw new Error(
-        "Could not find portfolio data in page. The Collectr page format may have changed.",
+      
+      // Return a graceful failure instead of throwing an error
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "portfolio_format_unsupported",
+          message: "We couldn't automatically import your Collectr portfolio. Collectr's showcase pages load data dynamically, which our system can't access. Please use CSV export instead.",
+        }),
+        {
+          status: 200,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+        },
       );
     }
 
