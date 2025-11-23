@@ -16,7 +16,6 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { MessageReplySuggestions } from "@/components/MessageReplySuggestions";
 import { MessageSafetyIndicator } from "@/components/MessageSafetyIndicator";
-import { ConversationSentiment } from "@/components/ConversationSentiment";
 import { OfferCard } from "@/components/OfferCard";
 import { FileUpload, AttachmentData } from "@/components/messages/FileUpload";
 import { MessageAttachments } from "@/components/messages/MessageAttachments";
@@ -453,16 +452,6 @@ const Messages = () => {
                     </div>
                     <Badge>£{selectedConv.listing?.seller_price || 0}</Badge>
                   </div>
-                  
-                  {messages && messages.length > 0 && (
-                    <ConversationSentiment 
-                      conversationId={selectedConversation!}
-                      messages={messages.map(m => ({
-                        role: m.sender_id === selectedConv.seller_id ? 'seller' : 'buyer',
-                        content: m.content
-                      }))}
-                    />
-                  )}
                 </div>
 
                 {/* Messages */}
