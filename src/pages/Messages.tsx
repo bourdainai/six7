@@ -23,8 +23,14 @@ import { AdminUserList } from "@/components/admin/AdminUserList";
 import { TypingIndicator } from "@/components/messages/TypingIndicator";
 import { ReadReceipt } from "@/components/messages/ReadReceipt";
 import { ConversationItem } from "@/components/messages/ConversationItem";
+import { ImageLightbox } from "@/components/messages/ImageLightbox";
+import { MessageSearch } from "@/components/messages/MessageSearch";
+import { MessageActions } from "@/components/messages/MessageActions";
+import { MessageReactions } from "@/components/messages/MessageReactions";
+import { ConversationMenu } from "@/components/messages/ConversationMenu";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 import { useUnreadCount } from "@/hooks/useUnreadCount";
+import { useBrowserNotifications } from "@/hooks/useBrowserNotifications";
 
 interface Conversation {
   id: string;
@@ -38,9 +44,11 @@ interface Conversation {
     images: { image_url: string }[];
   } | null;
   buyer: {
+    id: string;
     full_name: string;
   } | null;
   seller: {
+    id: string;
     full_name: string;
   } | null;
 }
@@ -55,6 +63,10 @@ interface Message {
   read_at: string | null;
   metadata?: {
     attachments?: AttachmentData[];
+    edited?: boolean;
+    edited_at?: string;
+    deleted?: boolean;
+    reactions?: Record<string, string[]>;
   };
 }
 
@@ -78,8 +90,15 @@ const Messages = () => {
   const [shouldBlockMessage, setShouldBlockMessage] = useState(false);
   const [pendingAttachments, setPendingAttachments] = useState<AttachmentData[]>([]);
   const [adminMode, setAdminMode] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [editingMessage, setEditingMessage] = useState<{ id: string; content: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
+
+  // Browser notifications
+  const { permission, requestPermission } = useBrowserNotifications(user?.id);
 
   const { data: conversations, refetch: refetchConversations } = useQuery({
     queryKey: ["conversations", user?.id],
@@ -116,8 +135,8 @@ const Messages = () => {
 
       return data.map(conv => ({
         ...conv,
-        buyer: buyerMap.get(conv.buyer_id) || { full_name: "Unknown" },
-        seller: sellerMap.get(conv.seller_id) || { full_name: "Unknown" },
+        buyer: buyerMap.get(conv.buyer_id) || { id: conv.buyer_id, full_name: "Unknown" },
+        seller: sellerMap.get(conv.seller_id) || { id: conv.seller_id, full_name: "Unknown" },
       })) as Conversation[];
     },
     enabled: !!user,
@@ -307,6 +326,26 @@ const Messages = () => {
     if ((messageInput.trim() === '' && pendingAttachments.length === 0) || !selectedConversation || !user || shouldBlockMessage) return;
 
     try {
+      let contentToSend = messageInput.trim();
+      
+      // If editing, update existing message
+      if (editingMessage) {
+        const { error } = await supabase
+          .from('messages')
+          .update({ 
+            content: contentToSend,
+            metadata: { edited: true, edited_at: new Date().toISOString() }
+          })
+          .eq('id', editingMessage.id);
+
+        if (error) throw error;
+        
+        setEditingMessage(null);
+        setMessageInput("");
+        refetchMessages();
+        return;
+      }
+
       const metadata = pendingAttachments.length > 0 
         ? { attachments: pendingAttachments }
         : undefined;
@@ -314,7 +353,7 @@ const Messages = () => {
       const { error } = await supabase.from("messages").insert({
         conversation_id: selectedConversation,
         sender_id: user.id,
-        content: messageInput.trim(),
+        content: contentToSend,
         metadata: metadata as any,
       });
 
@@ -329,6 +368,7 @@ const Messages = () => {
       setMessageInput("");
       setPendingAttachments([]);
       setShouldBlockMessage(false);
+      stopTyping();
       refetchMessages();
       refetchConversations();
     } catch (error) {
@@ -350,6 +390,11 @@ const Messages = () => {
     setMessageInput(value);
     setShouldBlockMessage(false);
 
+    // Clear editing mode if user changes text significantly
+    if (editingMessage && value !== editingMessage.content) {
+      setEditingMessage(null);
+    }
+
     // Start typing indicator
     if (value.length > 0 && otherUser) {
       startTyping(user?.email || 'User');
@@ -366,6 +411,24 @@ const Messages = () => {
     } else {
       stopTyping();
     }
+  };
+
+  const handleImageClick = (images: string[], index: number) => {
+    setLightboxImages(images);
+    setLightboxIndex(index);
+    setIsLightboxOpen(true);
+  };
+
+  const handleEditMessage = (id: string, content: string) => {
+    setEditingMessage({ id, content });
+    setMessageInput(content);
+  };
+
+  const scrollToMessage = (messageId: string) => {
+    const element = document.getElementById(`message-${messageId}`);
+    element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    element?.classList.add('bg-accent');
+    setTimeout(() => element?.classList.remove('bg-accent'), 2000);
   };
 
   if (!user) {
@@ -466,27 +529,47 @@ const Messages = () => {
             {selectedConv ? (
               <>
                 {/* Header */}
-                <div className="p-4 border-b border-divider-gray space-y-3">
-                  <div className="flex items-center gap-3">
-                    {selectedConv.listing?.images?.[0] && (
-                      <img
-                        src={selectedConv.listing.images[0].image_url}
-                        alt={selectedConv.listing?.title || "Item"}
-                        className="w-12 h-12 object-cover border border-divider-gray"
-                        width="48"
-                        height="48"
-                        loading="lazy"
-                      />
-                    )}
-                    <div className="flex-1">
-                      <h3 className="font-normal tracking-tight">{selectedConv.listing?.title || "Untitled"}</h3>
-                      <p className="text-sm text-muted-foreground font-normal">
-                        {selectedConv.buyer_id === user.id
-                          ? selectedConv.seller?.full_name || "Unknown"
-                          : selectedConv.buyer?.full_name || "Unknown"}
-                      </p>
+                <div className="p-4 border-b border-divider-gray">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      {selectedConv.listing?.images?.[0] && (
+                        <img
+                          src={selectedConv.listing.images[0].image_url}
+                          alt={selectedConv.listing?.title || "Item"}
+                          className="w-12 h-12 object-cover border border-divider-gray"
+                          width="48"
+                          height="48"
+                          loading="lazy"
+                        />
+                      )}
+                      <div className="flex-1">
+                        <h3 className="font-normal tracking-tight">{selectedConv.listing?.title || "Untitled"}</h3>
+                        <p className="text-sm text-muted-foreground font-normal">
+                          {selectedConv.buyer_id === user.id
+                            ? selectedConv.seller?.full_name || "Unknown"
+                            : selectedConv.buyer?.full_name || "Unknown"}
+                        </p>
+                      </div>
+                      <Badge>£{selectedConv.listing?.seller_price || 0}</Badge>
                     </div>
-                    <Badge>£{selectedConv.listing?.seller_price || 0}</Badge>
+                    
+                    <div className="flex items-center gap-2">
+                      {permission !== 'granted' && (
+                        <Button variant="ghost" size="sm" onClick={requestPermission}>
+                          🔔 Enable Notifications
+                        </Button>
+                      )}
+                      <MessageSearch 
+                        messages={messages || []}
+                        currentUserId={user.id}
+                        onSelectMessage={scrollToMessage}
+                      />
+                      <ConversationMenu
+                        conversationId={selectedConv.id}
+                        otherUserId={otherUser?.id || ''}
+                        otherUserName={otherUser?.full_name || 'User'}
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -504,40 +587,78 @@ const Messages = () => {
                           if (item.type === 'message') {
                             const msg = item.data;
                             const isOwnMessage = msg.sender_id === user.id;
+                            const attachments = msg.metadata?.attachments || [];
+                            const imageAttachments = attachments
+                              .filter((a: any) => a.file_type.startsWith('image/'))
+                              .map((a: any) => a.file_url);
+                            
                             return (
                               <div
                                 key={`msg-${msg.id}`}
-                                className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}
+                                id={`message-${msg.id}`}
+                                className={`flex group transition-colors ${isOwnMessage ? "justify-end" : "justify-start"}`}
                               >
                                 <div
-                                  className={`max-w-[70%] p-3 border ${
+                                  className={`max-w-[70%] p-3 border relative ${
                                     isOwnMessage
                                       ? "bg-foreground text-background border-foreground"
                                       : "bg-soft-neutral border-divider-gray"
                                   }`}
                                 >
-                                  {msg.content && (
+                                  {msg.metadata?.edited && (
+                                    <span className="text-xs text-muted-foreground">(edited)</span>
+                                  )}
+                                  {msg.content && msg.content !== '[Message deleted]' && (
                                     <p className="text-sm font-normal tracking-tight">{msg.content}</p>
                                   )}
-                                  <MessageAttachments attachments={msg.metadata?.attachments || []} />
-                                  <div className="flex items-center gap-1 mt-1">
-                                    <p
-                                      className={`text-xs font-normal ${
-                                        isOwnMessage
-                                          ? "text-background/70"
-                                          : "text-muted-foreground"
-                                      }`}
-                                    >
-                                      {format(new Date(msg.created_at), "h:mm a")}
+                                  {msg.content === '[Message deleted]' && (
+                                    <p className="text-sm font-normal tracking-tight italic opacity-60">
+                                      {msg.content}
                                     </p>
-                                    {isOwnMessage && (
-                                      <ReadReceipt 
-                                        isSent={true}
-                                        isRead={msg.read}
-                                        readAt={msg.read_at}
+                                  )}
+                                  <div 
+                                    className="cursor-pointer" 
+                                    onClick={() => imageAttachments.length > 0 && handleImageClick(imageAttachments, 0)}
+                                  >
+                                    <MessageAttachments attachments={attachments} />
+                                  </div>
+                                  <div className="flex items-center justify-between gap-2 mt-1">
+                                    <div className="flex items-center gap-1">
+                                      <p
+                                        className={`text-xs font-normal ${
+                                          isOwnMessage
+                                            ? "text-background/70"
+                                            : "text-muted-foreground"
+                                        }`}
+                                      >
+                                        {format(new Date(msg.created_at), "h:mm a")}
+                                      </p>
+                                      {isOwnMessage && (
+                                        <ReadReceipt 
+                                          isSent={true}
+                                          isRead={msg.read}
+                                          readAt={msg.read_at}
+                                        />
+                                      )}
+                                    </div>
+                                    {msg.content !== '[Message deleted]' && (
+                                      <MessageActions
+                                        messageId={msg.id}
+                                        messageContent={msg.content}
+                                        isOwnMessage={isOwnMessage}
+                                        createdAt={msg.created_at}
+                                        onEdit={handleEditMessage}
+                                        onDelete={() => refetchMessages()}
                                       />
                                     )}
                                   </div>
+                                  {!msg.metadata?.deleted && (
+                                    <MessageReactions
+                                      messageId={msg.id}
+                                      currentUserId={user.id}
+                                      existingReactions={msg.metadata?.reactions as any}
+                                    />
+                                  )}
                                 </div>
                               </div>
                             );
@@ -584,8 +705,25 @@ const Messages = () => {
                     onSelectSuggestion={(text) => {
                       setMessageInput(text);
                       setShouldBlockMessage(false);
+                      setEditingMessage(null);
                     }}
                   />
+                  
+                  {editingMessage && (
+                    <div className="flex items-center justify-between p-2 bg-accent rounded">
+                      <span className="text-sm">Editing message...</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setEditingMessage(null);
+                          setMessageInput('');
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  )}
                   
                   <FileUpload
                     key={selectedConversation} // Reset component when conversation changes
@@ -626,6 +764,14 @@ const Messages = () => {
             )}
           </Card>
         </div>
+
+        {/* Image Lightbox */}
+        <ImageLightbox
+          images={lightboxImages}
+          initialIndex={lightboxIndex}
+          isOpen={isLightboxOpen}
+          onClose={() => setIsLightboxOpen(false)}
+        />
     </PageLayout>
   );
 };

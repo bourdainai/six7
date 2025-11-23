@@ -6,6 +6,7 @@ import { AuthModal } from "@/components/auth/AuthModal";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { DesktopNav } from "@/components/navigation/DesktopNav";
 import { MobileMenu } from "@/components/navigation/MobileMenu";
+import { useTotalUnreadMessages } from "@/hooks/useTotalUnreadMessages";
 import logo from "@/assets/logo.svg";
 import React from "react";
 
@@ -16,6 +17,7 @@ export const Navigation = React.memo(() => {
   const notificationRef = useRef<HTMLButtonElement>(null);
   const { user, signOut } = useAuth();
   const { data: isAdmin } = useAdminCheck();
+  const totalUnread = useTotalUnreadMessages(user?.id);
 
   const handleAuthClick = (mode: "signin" | "signup") => {
     setAuthMode(mode);
@@ -95,6 +97,7 @@ export const Navigation = React.memo(() => {
               isAdmin={!!isAdmin}
               onSignOut={handleSignOut}
               onAuthClick={handleAuthClick}
+              unreadMessagesCount={totalUnread}
             />
             {user && <NotificationCenter ref={notificationRef} />}
           </div>
@@ -110,6 +113,7 @@ export const Navigation = React.memo(() => {
               isAdmin={!!isAdmin}
               onSignOut={handleSignOut}
               onNotificationsClick={handleNotificationsClick}
+              unreadMessagesCount={totalUnread}
             />
           </div>
         </div>
