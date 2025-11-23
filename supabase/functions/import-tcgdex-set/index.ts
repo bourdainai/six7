@@ -21,29 +21,6 @@ const corsHeaders = {
 const TCGDEX_API_BASE = 'https://api.tcgdex.net/v2';
 const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 200;
-const MAX_CARDS_PER_SET = 500;
-
-interface TCGdexCard {
-  id: string;
-  localId: string;
-  name: string;
-  image?: string;
-  category: string;
-  hp?: number;
-  types?: string[];
-  stage?: string;
-  illustrator?: string;
-  rarity?: string;
-  set: {
-    id: string;
-    name: string;
-    cardCount: {
-      official?: number;
-      total?: number;
-    };
-  };
-  [key: string]: any;
-}
 
 interface ImportProgress {
   setCode: string;
@@ -129,18 +106,19 @@ async function updateProgress(
 /**
  * Transform TCGdex card to database format
  */
-function transformCard(card: TCGdexCard, language: string): any {
-  const setCode = card.set.id.toLowerCase();
-  const imageUrl = card.image || `https://assets.tcgdex.net/${language}/${setCode}/${card.localId}`;
+function transformCard(card: any, language: string, setCode: string, setName: string): any {
+  const cardId = card.id || `${setCode}-${card.localId || 'unknown'}`;
+  const localId = card.localId || card.id || 'unknown';
+  const imageUrl = card.image || `https://assets.tcgdex.net/${language}/${setCode}/${localId}`;
   
   return {
-    card_id: `tcgdex_${language}_${card.id}`,
-    name: card.name,
-    set_name: card.set.name,
+    card_id: `tcgdex_${language}_${cardId}`,
+    name: card.name || 'Unknown',
+    set_name: setName,
     set_code: setCode,
-    number: card.localId,
-    display_number: card.localId,
-    search_number: card.localId.replace(/\s/g, '').toLowerCase(),
+    number: localId,
+    display_number: localId,
+    search_number: localId.replace(/\s/g, '').toLowerCase(),
     rarity: card.rarity || null,
     types: card.types || null,
     supertype: card.category || null,
@@ -151,11 +129,24 @@ function transformCard(card: TCGdexCard, language: string): any {
       large: imageUrl,
       tcgdex: imageUrl
     },
-    printed_total: card.set.cardCount?.official || card.set.cardCount?.total || null,
+    printed_total: card.set?.cardCount?.official || card.set?.cardCount?.total || null,
     sync_source: 'tcgdex',
     synced_at: new Date().toISOString(),
     metadata: {
-      ...card,
+      hp: card.hp,
+      evolveFrom: card.evolveFrom,
+      stage: card.stage,
+      abilities: card.abilities,
+      attacks: card.attacks,
+      weaknesses: card.weaknesses,
+      resistances: card.resistances,
+      retreat: card.retreat,
+      effect: card.effect,
+      trainerType: card.trainerType,
+      energyType: card.energyType,
+      regulationMark: card.regulationMark,
+      dexId: card.dexId,
+      category: card.category,
       language,
       imported_at: new Date().toISOString()
     }
@@ -167,7 +158,11 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let requestBody: any;
+  
   try {
+    requestBody = await req.json();
+    
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -176,7 +171,7 @@ serve(async (req) => {
     const { 
       setCode,
       language = 'ja',
-    } = await req.json();
+    } = requestBody;
 
     if (!setCode) {
       return new Response(
@@ -218,8 +213,9 @@ serve(async (req) => {
       );
     }
 
-    const totalCards = setData.cardCount?.total || MAX_CARDS_PER_SET;
-    console.log(`📊 Set has ${totalCards} cards`);
+    const setName = setData.name || setCode;
+    const totalCards = setData.cardCount?.total || 0;
+    console.log(`📊 Set "${setName}" has ${totalCards} cards`);
 
     await updateProgress(supabase, {
       setCode,
@@ -228,14 +224,11 @@ serve(async (req) => {
       cardsTotal: totalCards
     });
 
-    // Fetch all cards in the set
-    const cardsUrl = `${TCGDEX_API_BASE}/${language}/sets/${setCode}`;
-    console.log(`🔍 Fetching cards from: ${cardsUrl}`);
+    // Get list of cards from set (these contain enough data for our needs)
+    console.log(`🔍 Processing cards from set data...`);
+    const cardsList = setData.cards || [];
     
-    const setWithCards = await fetchCardWithRetry(cardsUrl);
-    const cards: TCGdexCard[] = setWithCards?.cards || [];
-
-    if (cards.length === 0) {
+    if (cardsList.length === 0) {
       const errorMsg = `No cards found in set ${setCode}`;
       console.error(`❌ ${errorMsg}`);
       await updateProgress(supabase, {
@@ -250,15 +243,63 @@ serve(async (req) => {
       );
     }
 
-    console.log(`✅ Found ${cards.length} cards in set`);
+    console.log(`✅ Found ${cardsList.length} cards in set`);
 
-    // Transform cards for database
-    const transformedCards = cards.map(card => transformCard(card, language));
+    // Transform cards for database (use summary data from set endpoint)
+    const transformedCards = cardsList.map((card: any) => {
+      const cardId = card.id || `${setCode}-${card.localId || 'unknown'}`;
+      const localId = card.localId || card.id || 'unknown';
+      const imageUrl = card.image || `https://assets.tcgdex.net/${language}/${setCode}/${localId}`;
+      
+      return {
+        card_id: `tcgdex_${language}_${cardId}`,
+        name: card.name || 'Unknown',
+        set_name: setName,
+        set_code: setCode,
+        number: localId,
+        search_number: localId.replace(/\s/g, '').toLowerCase(),
+        rarity: null, // Not in summary
+        types: null,
+        supertype: null,
+        subtypes: null,
+        artist: null,
+        images: {
+          small: imageUrl,
+          large: imageUrl,
+          tcgdex: imageUrl
+        },
+        printed_total: totalCards,
+        sync_source: 'tcgdex',
+        synced_at: new Date().toISOString(),
+        metadata: {
+          language,
+          imported_at: new Date().toISOString(),
+          summary_import: true
+        }
+      };
+    });
+
+    if (transformedCards.length === 0) {
+      const errorMsg = `Failed to fetch any card details for set ${setCode}`;
+      console.error(`❌ ${errorMsg}`);
+      await updateProgress(supabase, {
+        setCode,
+        language,
+        status: 'failed',
+        errorMessage: errorMsg
+      });
+      return new Response(
+        JSON.stringify({ error: errorMsg }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+      );
+    }
 
     // Use UPSERT for idempotency
-    const BATCH_SIZE = 25;
+    const BATCH_SIZE = 50;
     let importedCount = 0;
     let errorCount = 0;
+
+    console.log(`💾 Importing ${transformedCards.length} cards to database...`);
 
     for (let i = 0; i < transformedCards.length; i += BATCH_SIZE) {
       const batch = transformedCards.slice(i, i + BATCH_SIZE);
@@ -276,23 +317,23 @@ serve(async (req) => {
           errorCount += batch.length;
         } else {
           importedCount += batch.length;
-          console.log(`   ✅ Imported ${importedCount}/${cards.length} cards`);
           
           // Update progress periodically
-          if (i % (BATCH_SIZE * 4) === 0) {
+          if (importedCount % 100 === 0 || importedCount === transformedCards.length) {
+            console.log(`   ✅ Imported ${importedCount}/${transformedCards.length} cards`);
             await updateProgress(supabase, {
               setCode,
               language,
               status: 'in_progress',
               cardsImported: importedCount,
-              cardsTotal: cards.length,
+              cardsTotal: transformedCards.length,
               lastCardNumber: i + batch.length
             });
           }
         }
 
-        // Rate limiting
-        await delayWithBackoff(0);
+        // Minimal rate limiting
+        await new Promise(resolve => setTimeout(resolve, 50));
         
       } catch (error) {
         console.error(`❌ Batch exception:`, error);
@@ -306,7 +347,7 @@ serve(async (req) => {
       language,
       status: 'completed',
       cardsImported: importedCount,
-      cardsTotal: cards.length,
+      cardsTotal: transformedCards.length,
       errorMessage: errorCount > 0 ? `${errorCount} cards failed to import` : undefined
     });
 
@@ -319,7 +360,7 @@ serve(async (req) => {
         setCode,
         language,
         stats: {
-          total: cards.length,
+          total: transformedCards.length,
           imported: importedCount,
           errors: errorCount
         }
@@ -335,15 +376,14 @@ serve(async (req) => {
     
     // Try to mark as failed in database
     try {
-      const { setCode, language } = await req.json();
-      if (setCode && language) {
+      if (requestBody?.setCode && requestBody?.language) {
         const supabase = createClient(
           Deno.env.get('SUPABASE_URL') ?? '',
           Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
         );
         await updateProgress(supabase, {
-          setCode,
-          language,
+          setCode: requestBody.setCode,
+          language: requestBody.language,
           status: 'failed',
           errorMessage: error instanceof Error ? error.message : 'Unknown error'
         });
