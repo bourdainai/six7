@@ -237,6 +237,97 @@ const SellItem = () => {
     setCards(prev => prev.map(c => c.id === cardId ? { ...c, ...updates } : c));
   };
 
+  // Description grouping options
+  const [descriptionGroupBy, setDescriptionGroupBy] = useState<'set' | 'rarity' | 'none'>('set');
+
+  // Generate multi-card description
+  const generateMultiCardDescription = (groupBy: 'set' | 'rarity' | 'none'): string => {
+    if (cards.length === 0) return "";
+
+    let description = `This listing includes ${cards.length} trading card${cards.length > 1 ? 's' : ''}:\n\n`;
+
+    if (groupBy === 'none') {
+      // Simple list
+      cards.forEach((card, idx) => {
+        const conditionText = card.condition ? ` - ${card.condition.replace(/_/g, ' ')}` : '';
+        const qtyText = card.quantity > 1 ? ` x${card.quantity}` : '';
+        description += `• ${card.cardData.title} #${card.cardData.card_number}${conditionText}${qtyText}\n`;
+      });
+    } else if (groupBy === 'set') {
+      // Group by set
+      const grouped = cards.reduce((acc, card) => {
+        const setName = card.cardData.set_code || 'Unknown Set';
+        if (!acc[setName]) acc[setName] = [];
+        acc[setName].push(card);
+        return acc;
+      }, {} as Record<string, CardEntry[]>);
+
+      Object.entries(grouped).forEach(([setName, setCards]) => {
+        description += `**${setName}:**\n`;
+        setCards.forEach(card => {
+          const conditionText = card.condition ? ` - ${card.condition.replace(/_/g, ' ')}` : '';
+          const qtyText = card.quantity > 1 ? ` x${card.quantity}` : '';
+          description += `• ${card.cardData.title} #${card.cardData.card_number}${conditionText}${qtyText}\n`;
+          if (card.notes) description += `  ↳ ${card.notes}\n`;
+        });
+        description += '\n';
+      });
+    } else if (groupBy === 'rarity') {
+      // Group by rarity
+      const grouped = cards.reduce((acc, card) => {
+        const rarity = card.cardData.rarity || 'Unknown Rarity';
+        if (!acc[rarity]) acc[rarity] = [];
+        acc[rarity].push(card);
+        return acc;
+      }, {} as Record<string, CardEntry[]>);
+
+      Object.entries(grouped).forEach(([rarity, rarityCards]) => {
+        description += `**${rarity}:**\n`;
+        rarityCards.forEach(card => {
+          const conditionText = card.condition ? ` - ${card.condition.replace(/_/g, ' ')}` : '';
+          const qtyText = card.quantity > 1 ? ` x${card.quantity}` : '';
+          description += `• ${card.cardData.title} #${card.cardData.card_number}${conditionText}${qtyText}\n`;
+          if (card.notes) description += `  ↳ ${card.notes}\n`;
+        });
+        description += '\n';
+      });
+    }
+
+    // Add condition notes section if any cards have notes
+    const cardsWithNotes = cards.filter(c => c.notes);
+    if (cardsWithNotes.length > 0 && groupBy !== 'set' && groupBy !== 'rarity') {
+      description += '\n**Additional Notes:**\n';
+      cardsWithNotes.forEach(card => {
+        description += `• ${card.cardData.title}: ${card.notes}\n`;
+      });
+    }
+
+    // Calculate total estimated value
+    const totalValue = cards.reduce((sum, card) => {
+      return sum + ((card.cardData.original_rrp || 0) * card.quantity);
+    }, 0);
+
+    if (totalValue > 0) {
+      description += `\n**Estimated Total Value:** £${totalValue.toFixed(2)}\n`;
+    }
+
+    description += '\nAll cards will be shipped with care in protective sleeves.';
+
+    return description;
+  };
+
+  // Auto-update description when cards or grouping changes
+  useEffect(() => {
+    if (isMultiCard && cards.length > 0) {
+      const generatedDesc = generateMultiCardDescription(descriptionGroupBy);
+      setListingData(prev => ({
+        ...prev,
+        title: `${cards.length} Card Bundle - ${cards[0]?.cardData.set_code || 'Mixed Set'}`,
+        description: generatedDesc
+      }));
+    }
+  }, [cards, descriptionGroupBy, isMultiCard]);
+
   const handleAutoFill = async () => {
     if (imageFiles.length === 0 && images.length === 0) {
       toast({
@@ -1078,12 +1169,70 @@ const SellItem = () => {
           {/* Description */}
           <section className="space-y-4">
             <h2 className="text-xl font-medium border-b pb-2">Description</h2>
-            <Textarea
-              placeholder="Any details about the item..."
-              rows={4}
-              value={listingData.description}
-              onChange={e => setListingData({ ...listingData, description: e.target.value })}
-            />
+            
+            {/* Multi-Card Grouping Options */}
+            {isMultiCard && cards.length > 0 && (
+              <Card className="bg-secondary/20">
+                <CardContent className="pt-6 space-y-4">
+                  <div className="space-y-2">
+                    <Label>Description Format</Label>
+                    <Select
+                      value={descriptionGroupBy}
+                      onValueChange={(val) => setDescriptionGroupBy(val as 'set' | 'rarity' | 'none')}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="set">Group by Set</SelectItem>
+                        <SelectItem value="rarity">Group by Rarity</SelectItem>
+                        <SelectItem value="none">Simple List</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Choose how to organize cards in the description
+                    </p>
+                  </div>
+
+                  {/* Description Preview */}
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-yellow-500" />
+                      Auto-Generated Preview
+                    </Label>
+                    <div className="bg-background border rounded-lg p-4 max-h-60 overflow-y-auto">
+                      <pre className="text-xs whitespace-pre-wrap font-mono">
+                        {generateMultiCardDescription(descriptionGroupBy)}
+                      </pre>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            <div className="space-y-2">
+              <Label>
+                {isMultiCard && cards.length > 0 
+                  ? "Additional Notes (optional)" 
+                  : "Description"
+                }
+              </Label>
+              <Textarea
+                placeholder={
+                  isMultiCard && cards.length > 0
+                    ? "Add any additional details or special instructions..."
+                    : "Any details about the item..."
+                }
+                rows={isMultiCard && cards.length > 0 ? 3 : 4}
+                value={listingData.description}
+                onChange={e => setListingData({ ...listingData, description: e.target.value })}
+              />
+              {isMultiCard && cards.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  The auto-generated description above will be used. Add any extra details here.
+                </p>
+              )}
+            </div>
           </section>
 
           {/* Pricing */}
