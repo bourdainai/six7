@@ -113,13 +113,17 @@ serve(async (req) => {
       }
     }
 
-    // 6. Verifications (weight: up to +30 points)
+    // 6. Verifications (weight: up to +40 points)
     if (verifications) {
       const verificationTypes = verifications.map(v => v.verification_type);
       if (verificationTypes.includes('email')) trustScore += 5;
-      if (verificationTypes.includes('phone')) trustScore += 5;
-      if (verificationTypes.includes('id')) trustScore += 15;
-      if (verificationTypes.includes('business')) trustScore += 10;
+      if (verificationTypes.includes('linkedin')) {
+        // LinkedIn bonus based on connections (we'll add this logic in social verification edge function)
+        trustScore += 15; // Max bonus for LinkedIn
+      }
+      if (verificationTypes.includes('facebook')) trustScore += 10;
+      if (verificationTypes.includes('instagram')) trustScore += 8;
+      if (verificationTypes.includes('twitter')) trustScore += 5;
     }
 
     // Check Stripe Connect verification

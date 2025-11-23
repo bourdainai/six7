@@ -1380,16 +1380,20 @@ export type Database = {
           created_at: string | null
           email: string | null
           email_verified: boolean | null
+          facebook_verified: boolean | null
           full_name: string | null
           id: string
           id_verified: boolean | null
+          instagram_verified: boolean | null
           is_banned: boolean | null
           kyc_status: boolean | null
+          linkedin_verified: boolean | null
           notification_preferences: Json | null
           phone_verified: boolean | null
           stripe_connect_account_id: string | null
           stripe_onboarding_complete: boolean | null
           trust_score: number | null
+          twitter_verified: boolean | null
           updated_at: string | null
           verification_level: string | null
         }
@@ -1401,16 +1405,20 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           email_verified?: boolean | null
+          facebook_verified?: boolean | null
           full_name?: string | null
           id: string
           id_verified?: boolean | null
+          instagram_verified?: boolean | null
           is_banned?: boolean | null
           kyc_status?: boolean | null
+          linkedin_verified?: boolean | null
           notification_preferences?: Json | null
           phone_verified?: boolean | null
           stripe_connect_account_id?: string | null
           stripe_onboarding_complete?: boolean | null
           trust_score?: number | null
+          twitter_verified?: boolean | null
           updated_at?: string | null
           verification_level?: string | null
         }
@@ -1422,16 +1430,20 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           email_verified?: boolean | null
+          facebook_verified?: boolean | null
           full_name?: string | null
           id?: string
           id_verified?: boolean | null
+          instagram_verified?: boolean | null
           is_banned?: boolean | null
           kyc_status?: boolean | null
+          linkedin_verified?: boolean | null
           notification_preferences?: Json | null
           phone_verified?: boolean | null
           stripe_connect_account_id?: string | null
           stripe_onboarding_complete?: boolean | null
           trust_score?: number | null
+          twitter_verified?: boolean | null
           updated_at?: string | null
           verification_level?: string | null
         }
@@ -2177,6 +2189,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      social_verifications: {
+        Row: {
+          connection_count: number | null
+          created_at: string | null
+          id: string
+          last_validated: string | null
+          profile_age_days: number | null
+          profile_data: Json | null
+          provider: string
+          provider_user_id: string
+          user_id: string
+          verified_at: string | null
+        }
+        Insert: {
+          connection_count?: number | null
+          created_at?: string | null
+          id?: string
+          last_validated?: string | null
+          profile_age_days?: number | null
+          profile_data?: Json | null
+          provider: string
+          provider_user_id: string
+          user_id: string
+          verified_at?: string | null
+        }
+        Update: {
+          connection_count?: number | null
+          created_at?: string | null
+          id?: string
+          last_validated?: string | null
+          profile_age_days?: number | null
+          profile_data?: Json | null
+          provider?: string
+          provider_user_id?: string
+          user_id?: string
+          verified_at?: string | null
+        }
+        Relationships: []
       }
       support_ticket_replies: {
         Row: {

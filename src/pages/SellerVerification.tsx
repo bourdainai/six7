@@ -12,7 +12,11 @@ import {
   Mail,
   Shield,
   Loader2,
-  ArrowLeft
+  ArrowLeft,
+  Linkedin,
+  Facebook,
+  Instagram,
+  Twitter
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -41,7 +45,7 @@ const SellerVerification = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, verification_level, email_verified")
+        .select("id, verification_level, email_verified, linkedin_verified, facebook_verified, instagram_verified, twitter_verified")
         .eq("id", user!.id)
         .single();
       if (error) throw error;
@@ -63,6 +67,33 @@ const SellerVerification = () => {
       return data as Verification[];
     },
   });
+
+  const handleSocialConnect = async (provider: string) => {
+    try {
+      const redirectUrl = `${window.location.origin}/seller/verification`;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: provider === 'linkedin' ? 'linkedin_oidc' : provider as any,
+        options: {
+          redirectTo: redirectUrl,
+          scopes: provider === 'linkedin' 
+            ? 'openid profile email' 
+            : provider === 'facebook'
+            ? 'public_profile,email'
+            : provider === 'instagram'
+            ? 'user_profile'
+            : 'users.read tweet.read',
+        },
+      });
+
+      if (error) throw error;
+    } catch (error) {
+      toast({
+        title: "Connection failed",
+        description: error instanceof Error ? error.message : "Failed to connect social account",
+        variant: "destructive",
+      });
+    }
+  };
 
   const requestVerificationMutation = useMutation({
     mutationFn: async (type: string) => {
@@ -112,6 +143,43 @@ const SellerVerification = () => {
       description: "Verify your email address to build trust with buyers",
       icon: Mail,
       verified: profile?.email_verified,
+      trustBonus: "+5 points",
+    },
+    {
+      type: "linkedin",
+      label: "LinkedIn Profile",
+      description: "Connect your LinkedIn profile to verify your professional identity",
+      icon: Linkedin,
+      verified: profile?.linkedin_verified,
+      trustBonus: "+10-15 points",
+      isSocial: true,
+    },
+    {
+      type: "facebook",
+      label: "Facebook Profile",
+      description: "Connect your Facebook profile to build buyer confidence",
+      icon: Facebook,
+      verified: profile?.facebook_verified,
+      trustBonus: "+5-10 points",
+      isSocial: true,
+    },
+    {
+      type: "instagram",
+      label: "Instagram Profile",
+      description: "Connect Instagram to showcase your products and authenticity",
+      icon: Instagram,
+      verified: profile?.instagram_verified,
+      trustBonus: "+5-10 points",
+      isSocial: true,
+    },
+    {
+      type: "twitter",
+      label: "Twitter/X Profile",
+      description: "Connect your Twitter/X profile for additional verification",
+      icon: Twitter,
+      verified: profile?.twitter_verified,
+      trustBonus: "+5 points",
+      isSocial: true,
     },
   ];
 
@@ -245,6 +313,11 @@ const SellerVerification = () => {
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground">{vt.description}</p>
+                          {vt.trustBonus && (
+                            <p className="text-xs text-primary font-medium mt-1">
+                              Trust Score Bonus: {vt.trustBonus}
+                            </p>
+                          )}
                           {verification?.notes && (
                             <p className="text-xs text-muted-foreground mt-1">
                               {verification.notes}
@@ -271,7 +344,7 @@ const SellerVerification = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => requestVerificationMutation.mutate(vt.type)}
+                            onClick={() => vt.isSocial ? handleSocialConnect(vt.type) : requestVerificationMutation.mutate(vt.type)}
                             disabled={requestVerificationMutation.isPending}
                           >
                             {requestVerificationMutation.isPending ? (
@@ -280,7 +353,7 @@ const SellerVerification = () => {
                                 Requesting...
                               </>
                             ) : (
-                              "Request Verification"
+                              vt.isSocial ? "Connect" : "Request Verification"
                             )}
                           </Button>
                         )}
