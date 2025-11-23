@@ -1,0 +1,213 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('No authorization header');
+    }
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(
+      authHeader.replace('Bearer ', '')
+    );
+
+    if (authError || !user) {
+      throw new Error('Unauthorized');
+    }
+
+    const { orderId, reason } = await req.json();
+
+    if (!orderId) {
+      throw new Error('orderId is required');
+    }
+
+    console.log('Creating return label for order:', orderId);
+
+    // Fetch order details
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .select(`
+        *,
+        order_items(
+          *,
+          listing:listings(title, package_weight, package_dimensions)
+        ),
+        seller:profiles!seller_id(full_name, email),
+        buyer:profiles!buyer_id(full_name, email)
+      `)
+      .eq('id', orderId)
+      .single();
+
+    if (orderError) throw orderError;
+
+    // Verify user is buyer
+    if (order.buyer_id !== user.id) {
+      throw new Error('Unauthorized - not the buyer');
+    }
+
+    const sendcloudPublicKey = Deno.env.get('SENDCLOUD_PUBLIC_KEY');
+    const sendcloudSecretKey = Deno.env.get('SENDCLOUD_SECRET_KEY');
+
+    if (!sendcloudPublicKey || !sendcloudSecretKey) {
+      throw new Error('Sendcloud credentials not configured');
+    }
+
+    const auth = btoa(`${sendcloudPublicKey}:${sendcloudSecretKey}`);
+
+    // Calculate total weight
+    const totalWeight = order.order_items.reduce((sum: number, item: any) => {
+      return sum + (item.listing?.package_weight || 0.5);
+    }, 0);
+
+    // Create return parcel - reverse shipping address (buyer to seller)
+    const shippingAddress = order.shipping_address as any;
+    
+    // Get seller's return address (for now, use a default or from profile)
+    const sellerReturnAddress = {
+      name: order.seller?.full_name || 'Seller',
+      company_name: '6SEVEN',
+      address: 'Seller Street 1', // TODO: Get from seller profile
+      city: 'London',
+      postal_code: 'SW1A 1AA',
+      country: 'GB',
+      email: order.seller?.email,
+      telephone: shippingAddress.phone || '',
+    };
+
+    const parcelData = {
+      parcel: {
+        name: shippingAddress.name,
+        company_name: shippingAddress.company || '',
+        address: shippingAddress.address,
+        address_2: shippingAddress.address2 || '',
+        city: shippingAddress.city,
+        postal_code: shippingAddress.postalCode,
+        country: shippingAddress.country,
+        email: order.buyer?.email,
+        telephone: shippingAddress.phone || '',
+        request_label: true,
+        shipment: {
+          name: sellerReturnAddress.name,
+          company_name: sellerReturnAddress.company_name,
+          address: sellerReturnAddress.address,
+          city: sellerReturnAddress.city,
+          postal_code: sellerReturnAddress.postal_code,
+          country: sellerReturnAddress.country,
+          email: sellerReturnAddress.email,
+          telephone: sellerReturnAddress.telephone,
+        },
+        weight: String(Math.max(totalWeight, 0.1)),
+        order_number: orderId.slice(0, 8),
+        is_return: true,
+        parcel_items: order.order_items.map((item: any) => ({
+          description: item.listing?.title || 'Item',
+          quantity: 1,
+          weight: String(item.listing?.package_weight || 0.5),
+          value: String(item.price),
+        })),
+      },
+    };
+
+    console.log('Creating Sendcloud return parcel:', JSON.stringify(parcelData, null, 2));
+
+    const response = await fetch('https://panel.sendcloud.sc/api/v2/parcels', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(parcelData),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Sendcloud API error:', errorText);
+      throw new Error(`Sendcloud API error: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    console.log('Return label created:', result);
+
+    // Store return parcel info
+    const { error: insertError } = await supabase
+      .from('sendcloud_parcels')
+      .insert({
+        order_id: orderId,
+        sendcloud_parcel_id: result.parcel.id.toString(),
+        tracking_number: result.parcel.tracking_number,
+        label_url: result.parcel.label?.label_printer || result.parcel.label?.normal_printer?.[0],
+        status: 'return_requested',
+        carrier: result.parcel.carrier?.name,
+        is_return: true,
+      });
+
+    if (insertError) {
+      console.error('Error storing return parcel:', insertError);
+      throw insertError;
+    }
+
+    // Create return record
+    const { error: returnError } = await supabase
+      .from('returns')
+      .insert({
+        order_id: orderId,
+        buyer_id: user.id,
+        seller_id: order.seller_id,
+        reason: reason || 'Return requested',
+        status: 'pending',
+        tracking_number: result.parcel.tracking_number,
+      });
+
+    if (returnError) {
+      console.error('Error creating return record:', returnError);
+    }
+
+    // Notify seller
+    await supabase.functions.invoke('send-notification', {
+      body: {
+        userId: order.seller_id,
+        title: 'Return Label Requested 📦',
+        message: `A return label has been generated for order #${orderId.slice(0, 8)}`,
+        type: 'return_requested',
+        link: `/seller/orders`,
+        metadata: { orderId, trackingNumber: result.parcel.tracking_number },
+      }
+    });
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        parcelId: result.parcel.id,
+        trackingNumber: result.parcel.tracking_number,
+        labelUrl: result.parcel.label?.label_printer || result.parcel.label?.normal_printer?.[0],
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error('Return label error:', error);
+    return new Response(
+      JSON.stringify({ 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      }),
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
+  }
+});

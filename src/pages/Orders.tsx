@@ -11,6 +11,8 @@ import { DisputeDialog } from "@/components/disputes/DisputeDialog";
 import { RatingDialog } from "@/components/ratings/RatingDialog";
 import { EnhancedShipOrderDialog } from "@/components/shipping/EnhancedShipOrderDialog";
 import { TrackingTimeline } from "@/components/shipping/TrackingTimeline";
+import { BulkShippingDialog } from "@/components/shipping/BulkShippingDialog";
+import { ReturnLabelButton } from "@/components/shipping/ReturnLabelButton";
 import { AlertCircle, Star, Truck, Package, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { format } from "date-fns";
@@ -40,6 +42,7 @@ const Orders = () => {
   const [disputeOpen, setDisputeOpen] = useState(false);
   const [ratingOpen, setRatingOpen] = useState(false);
   const [shipOrderOpen, setShipOrderOpen] = useState(false);
+  const [bulkShipOpen, setBulkShipOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderWithRelations | null>(null);
   const [markingDelivered, setMarkingDelivered] = useState<string | null>(null);
   const [expandedTracking, setExpandedTracking] = useState<string | null>(null);
@@ -175,6 +178,13 @@ const Orders = () => {
           </TabsList>
 
           <TabsContent value="purchases" className="space-y-4">
+            {buyerOrders && buyerOrders.length > 0 && (
+              <div className="flex justify-between items-center mb-4">
+                <p className="text-sm text-muted-foreground">
+                  {buyerOrders.length} order{buyerOrders.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+            )}
             {isLoadingBuyer ? (
               <div className="space-y-4">
                 {[1, 2, 3].map((i) => (
@@ -302,6 +312,12 @@ const Orders = () => {
                           <Star className="h-4 w-4" />
                           Rate Seller
                         </Button>
+                        {order.delivered_at && (
+                          <ReturnLabelButton
+                            orderId={order.id}
+                            onSuccess={() => queryClient.invalidateQueries({ queryKey: ['orders'] })}
+                          />
+                        )}
                       </div>
                     )}
                     {order.delivered_at && (
@@ -326,6 +342,23 @@ const Orders = () => {
           </TabsContent>
 
           <TabsContent value="sales" className="space-y-4">
+            {sellerOrders && sellerOrders.length > 0 && (
+              <div className="flex justify-between items-center mb-4">
+                <p className="text-sm text-muted-foreground">
+                  {sellerOrders.length} order{sellerOrders.length !== 1 ? 's' : ''}
+                </p>
+                {sellerOrders.filter(o => o.status === 'paid' && !o.shipped_at).length > 0 && (
+                  <Button
+                    size="sm"
+                    onClick={() => setBulkShipOpen(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <Package className="h-4 w-4" />
+                    Bulk Create Labels
+                  </Button>
+                )}
+              </div>
+            )}
             {isLoadingSeller ? (
               <div className="space-y-4">
                 {[1, 2, 3].map((i) => (
@@ -476,6 +509,18 @@ const Orders = () => {
             orderId={selectedOrder.id}
           />
         </>
+      )}
+      
+      {sellerOrders && (
+        <BulkShippingDialog
+          open={bulkShipOpen}
+          onOpenChange={setBulkShipOpen}
+          orders={sellerOrders}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['orders'] });
+            setBulkShipOpen(false);
+          }}
+        />
       )}
     </PageLayout>
   );

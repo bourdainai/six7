@@ -1695,6 +1695,56 @@ export type Database = {
           },
         ]
       }
+      returns: {
+        Row: {
+          admin_notes: string | null
+          buyer_id: string
+          created_at: string | null
+          id: string
+          order_id: string
+          reason: string
+          refund_amount: number | null
+          seller_id: string
+          status: string | null
+          tracking_number: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          buyer_id: string
+          created_at?: string | null
+          id?: string
+          order_id: string
+          reason: string
+          refund_amount?: number | null
+          seller_id: string
+          status?: string | null
+          tracking_number?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          buyer_id?: string
+          created_at?: string | null
+          id?: string
+          order_id?: string
+          reason?: string
+          refund_amount?: number | null
+          seller_id?: string
+          status?: string | null
+          tracking_number?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "returns_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saved_listings: {
         Row: {
           created_at: string | null
@@ -2320,6 +2370,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      shipping_presets: {
+        Row: {
+          created_at: string | null
+          default_carrier: string | null
+          default_package_type: string | null
+          default_service_point_id: string | null
+          default_shipping_method_id: string | null
+          id: string
+          is_default: boolean | null
+          name: string
+          seller_id: string
+          settings: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          default_carrier?: string | null
+          default_package_type?: string | null
+          default_service_point_id?: string | null
+          default_shipping_method_id?: string | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+          seller_id: string
+          settings?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          default_carrier?: string | null
+          default_package_type?: string | null
+          default_service_point_id?: string | null
+          default_shipping_method_id?: string | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          seller_id?: string
+          settings?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       shipping_rates_cache: {
         Row: {
