@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Upload, Check, Loader2, X, AlertCircle, ArrowRight, ExternalLink, Camera, PoundSterling, Info, Sparkles } from "lucide-react";
+import { Upload, Check, Loader2, X, AlertCircle, ArrowRight, ExternalLink, Camera, PoundSterling, Info, Sparkles, Plus, GripVertical, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,9 +22,18 @@ import { SEO } from "@/components/SEO";
 import { useEmailVerification } from "@/hooks/useEmailVerification";
 import { MagicCardSearch, type MagicCardData } from "@/components/listing/MagicCardSearch";
 import { AIAnswerEnginesToggle } from "@/components/listings/AIAnswerEnginesToggle";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 type ConditionType = Database["public"]["Enums"]["condition_type"];
 type ListingInsert = Database["public"]["Tables"]["listings"]["Insert"];
+
+interface CardEntry {
+  id: string;
+  cardData: MagicCardData;
+  condition: ConditionType | "";
+  quantity: number;
+  notes: string;
+}
 
 interface ListingData {
   title: string;
@@ -89,6 +98,11 @@ const SellItem = () => {
   const [suggestedPrice, setSuggestedPrice] = useState<{ price: number, low: number, high: number } | null>(null);
   const [selectedPrice, setSelectedPrice] = useState<number | "">("");
   const [aiAnswerEnginesEnabled, setAiAnswerEnginesEnabled] = useState(false);
+  
+  // Multi-card state
+  const [isMultiCard, setIsMultiCard] = useState(false);
+  const [cards, setCards] = useState<CardEntry[]>([]);
+  const [showCardSearch, setShowCardSearch] = useState(false);
 
   const [listingData, setListingData] = useState<ListingData>({
     title: "",
@@ -166,33 +180,61 @@ const SellItem = () => {
   };
 
   const handleMagicSearchSelect = (cardData: MagicCardData) => {
+    if (isMultiCard) {
+      // Add to cards array
+      const newCard: CardEntry = {
+        id: `card-${Date.now()}-${Math.random()}`,
+        cardData,
+        condition: "",
+        quantity: 1,
+        notes: ""
+      };
+      setCards(prev => [...prev, newCard]);
+      setShowCardSearch(false);
+      
+      toast({
+        title: "Card Added!",
+        description: `${cardData.title} added to bundle (${cards.length + 1}/30)`,
+      });
+    } else {
+      // Single card mode - existing behavior
       setListingData(prev => ({
         ...prev,
         title: cardData.title,
         description: cardData.description,
         category: "Trading Cards",
-        subcategory: "Pokémon Singles", // Default, user can change
+        subcategory: "Pokémon Singles",
         set_code: cardData.set_code,
         card_number: cardData.card_number,
         rarity: cardData.rarity,
         original_rrp: cardData.original_rrp
       }));
 
-    // Pre-fill selling price with market price if available
-    if (cardData.original_rrp) {
-      setSelectedPrice(cardData.original_rrp);
-    }
+      if (cardData.original_rrp) {
+        setSelectedPrice(cardData.original_rrp);
+      }
 
-    if (cardData.image_url) {
-      setImages([cardData.image_url]);
-      // We don't have a File object for remote images, so imageFiles stays empty
-      // The publish logic needs to handle this case (uploading from URL or skipping if already URL)
-    }
+      if (cardData.image_url) {
+        setImages([cardData.image_url]);
+      }
 
+      toast({
+        title: "Card Details Found!",
+        description: "We've auto-filled the details for you.",
+      });
+    }
+  };
+
+  const removeCard = (cardId: string) => {
+    setCards(prev => prev.filter(c => c.id !== cardId));
     toast({
-      title: "Card Details Found!",
-      description: "We've auto-filled the details for you.",
+      title: "Card Removed",
+      description: "Card removed from bundle",
     });
+  };
+
+  const updateCardEntry = (cardId: string, updates: Partial<CardEntry>) => {
+    setCards(prev => prev.map(c => c.id === cardId ? { ...c, ...updates } : c));
   };
 
   const handleAutoFill = async () => {
@@ -530,10 +572,186 @@ const SellItem = () => {
           </p>
         </div>
 
-        {/* Magic Search Section - Only for Trading Cards */}
+        {/* Multi-Card Toggle - Only for Trading Cards */}
         {isCardCategory && (
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label className="text-base font-medium">List Multiple Cards</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Create a bundle listing with up to 30 cards
+                  </p>
+                </div>
+                <Switch
+                  checked={isMultiCard}
+                  onCheckedChange={(checked) => {
+                    setIsMultiCard(checked);
+                    if (!checked) {
+                      setCards([]);
+                      setShowCardSearch(false);
+                    } else {
+                      setShowCardSearch(true);
+                    }
+                  }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Magic Search Section - Only for Trading Cards */}
+        {isCardCategory && !isMultiCard && (
           <div className="mb-10">
             <MagicCardSearch onSelect={handleMagicSearchSelect} />
+          </div>
+        )}
+
+        {/* Multi-Card Bundle Interface */}
+        {isCardCategory && isMultiCard && (
+          <div className="mb-10 space-y-6">
+            {/* Cards Summary Panel */}
+            {cards.length > 0 && (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-medium">Cards in Bundle</h3>
+                    <Badge variant="secondary" className="text-sm">
+                      {cards.length} / 30 cards
+                    </Badge>
+                  </div>
+
+                  <ScrollArea className="h-[400px] pr-4">
+                    <div className="space-y-3">
+                      {cards.map((card, index) => (
+                        <Card key={card.id} className="border-border/50">
+                          <CardContent className="p-4">
+                            <div className="flex gap-4">
+                              {/* Card Image */}
+                              <div className="flex-shrink-0 w-16 h-20 rounded overflow-hidden bg-secondary">
+                                {card.cardData.image_url && (
+                                  <img 
+                                    src={card.cardData.image_url} 
+                                    alt={card.cardData.title}
+                                    className="w-full h-full object-cover"
+                                  />
+                                )}
+                              </div>
+
+                              {/* Card Info */}
+                              <div className="flex-1 min-w-0 space-y-3">
+                                <div>
+                                  <h4 className="font-medium text-sm truncate">{card.cardData.title}</h4>
+                                  <p className="text-xs text-muted-foreground">
+                                    {card.cardData.set_code} • #{card.cardData.card_number}
+                                  </p>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2">
+                                  {/* Condition */}
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">Condition</Label>
+                                    <Select
+                                      value={card.condition}
+                                      onValueChange={(val) => updateCardEntry(card.id, { condition: val as ConditionType })}
+                                    >
+                                      <SelectTrigger className="h-8 text-xs">
+                                        <SelectValue placeholder="Select" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="new_with_tags">Mint</SelectItem>
+                                        <SelectItem value="like_new">Near Mint</SelectItem>
+                                        <SelectItem value="excellent">Lightly Played</SelectItem>
+                                        <SelectItem value="good">Moderately Played</SelectItem>
+                                        <SelectItem value="fair">Heavily Played</SelectItem>
+                                        <SelectItem value="poor">Damaged</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+
+                                  {/* Quantity */}
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">Quantity</Label>
+                                    <Input
+                                      type="number"
+                                      min="1"
+                                      value={card.quantity}
+                                      onChange={(e) => updateCardEntry(card.id, { quantity: parseInt(e.target.value) || 1 })}
+                                      className="h-8 text-xs"
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* Notes */}
+                                <div className="space-y-1">
+                                  <Label className="text-xs">Notes (optional)</Label>
+                                  <Input
+                                    placeholder="Special notes about this card..."
+                                    value={card.notes}
+                                    onChange={(e) => updateCardEntry(card.id, { notes: e.target.value })}
+                                    className="h-8 text-xs"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Remove Button */}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 flex-shrink-0"
+                                onClick={() => removeCard(card.id)}
+                              >
+                                <Trash2 className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Add Card Section */}
+            {cards.length < 30 && (
+              <div className="space-y-4">
+                {showCardSearch ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-base">Search for a card to add</Label>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowCardSearch(false)}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                    <MagicCardSearch onSelect={handleMagicSearchSelect} />
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setShowCardSearch(true)}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Another Card ({cards.length}/30)
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {cards.length >= 30 && (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Maximum Reached</AlertTitle>
+                <AlertDescription>
+                  You've reached the maximum of 30 cards per bundle listing.
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
         )}
 
