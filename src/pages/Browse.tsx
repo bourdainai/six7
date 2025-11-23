@@ -16,11 +16,19 @@ const Browse = () => {
   const [filters, setFilters] = useState<FilterState>({
     search: "",
     category: "",
+    subcategory: "",
     condition: "",
     minPrice: "",
     maxPrice: "",
     brand: "",
     size: "",
+    color: "",
+    material: "",
+    setCode: "",
+    rarity: "",
+    tradeEnabled: "",
+    freeShipping: "",
+    maxDeliveryDays: "",
   });
   
   const [vibeSearchOpen, setVibeSearchOpen] = useState(false);
@@ -43,13 +51,17 @@ const Browse = () => {
         .select(`
           *,
           images:listing_images(image_url, display_order),
-          seller:profiles!seller_id(id, full_name, trust_score)
+          seller:profiles!seller_id(id, full_name, trust_score),
+          card:pokemon_card_attributes!card_id(rarity, set_name, artist)
         `, { count: 'exact' })
         .eq("status", "active");
 
       // Server-side filtering
       if (filters.category) {
         query = query.eq("category", filters.category);
+      }
+      if (filters.subcategory) {
+        query = query.eq("subcategory", filters.subcategory);
       }
       if (filters.condition) {
         query = query.eq("condition", filters.condition as any);
@@ -62,6 +74,27 @@ const Browse = () => {
       }
       if (filters.brand) {
         query = query.ilike("brand", `%${filters.brand}%`);
+      }
+      if (filters.size) {
+        query = query.ilike("size", `%${filters.size}%`);
+      }
+      if (filters.color) {
+        query = query.ilike("color", `%${filters.color}%`);
+      }
+      if (filters.material) {
+        query = query.ilike("material", `%${filters.material}%`);
+      }
+      if (filters.setCode) {
+        query = query.ilike("set_code", `%${filters.setCode}%`);
+      }
+      if (filters.tradeEnabled) {
+        query = query.eq("trade_enabled", filters.tradeEnabled === "true");
+      }
+      if (filters.freeShipping) {
+        query = query.eq("free_shipping", filters.freeShipping === "true");
+      }
+      if (filters.maxDeliveryDays) {
+        query = query.lte("estimated_delivery_days", Number(filters.maxDeliveryDays));
       }
       if (filters.search) {
         query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%,brand.ilike.%${filters.search}%`);
@@ -100,9 +133,18 @@ const Browse = () => {
       return semanticResults;
     }
 
-    // Server-side filtering handles everything, just return listings
-    return listings || [];
-  }, [listings, semanticResults, searchMode]);
+    let results = listings || [];
+
+    // Client-side filtering for rarity (from pokemon_card_attributes join)
+    if (filters.rarity && results.length > 0) {
+      results = results.filter(listing => {
+        const card = (listing as any).card;
+        return card && card[0]?.rarity === filters.rarity;
+      });
+    }
+
+    return results;
+  }, [listings, semanticResults, searchMode, filters.rarity]);
 
   const handleSemanticResults = (results: ListingSummary[]) => {
     setSemanticResults(results);
@@ -247,11 +289,19 @@ const Browse = () => {
               onClick={() => setFilters({
                 search: "",
                 category: "",
+                subcategory: "",
                 condition: "",
                 minPrice: "",
                 maxPrice: "",
                 brand: "",
                 size: "",
+                color: "",
+                material: "",
+                setCode: "",
+                rarity: "",
+                tradeEnabled: "",
+                freeShipping: "",
+                maxDeliveryDays: "",
               })}
             >
               Clear Filters
