@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Navigation } from "@/components/Navigation";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useState } from "react";
@@ -13,6 +14,9 @@ import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useEmailVerification } from "@/hooks/useEmailVerification";
 import { useWallet } from "@/hooks/useWallet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ServicePointPicker } from "@/components/shipping/ServicePointPicker";
+import { AddressValidationForm } from "@/components/shipping/AddressValidationForm";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
 
@@ -73,12 +77,12 @@ const CheckoutForm = ({ orderId, listingTitle, canProceed }: CheckoutFormProps) 
 
       <PaymentElement />
 
-              <Button
-                type="submit"
-                disabled={!stripe || isProcessing || !canProceed}
-                className="w-full h-12"
-                size="lg"
-              >
+      <Button
+        type="submit"
+        disabled={!stripe || isProcessing || !canProceed}
+        className="w-full h-12"
+        size="lg"
+      >
         {isProcessing ? (
           <>
             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -102,8 +106,11 @@ const Checkout = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const { isVerified: emailVerified } = useEmailVerification();
-  const { wallet } = useWallet(); // Add wallet hook
+  const { wallet } = useWallet();
   const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'wallet'>('stripe');
+  const [deliveryMethod, setDeliveryMethod] = useState<'home' | 'pickup'>('home');
+  const [selectedServicePoint, setSelectedServicePoint] = useState<any>(null);
+  const [addressValidated, setAddressValidated] = useState(false);
 
   const [shippingAddress, setShippingAddress] = useState({
     name: "",
@@ -140,7 +147,6 @@ const Checkout = () => {
     },
   });
 
-  // Fetch offer if present
   const { data: offer } = useQuery({
     queryKey: ["offer", offerId],
     queryFn: async () => {
@@ -158,7 +164,6 @@ const Checkout = () => {
     enabled: !!offerId,
   });
 
-  // Calculate shipping cost - UK only
   const calculateShippingCost = () => {
     if (!listing) return 0;
     if (listing.free_shipping) return 0;
@@ -166,10 +171,8 @@ const Checkout = () => {
   };
 
   const shippingCost = calculateShippingCost();
-  // Use offer amount if available, otherwise use listing price
   const itemPrice = offer ? Number(offer.amount) : Number(listing?.seller_price || 0);
   
-  // Fetch fee calculation
   const { data: feeData } = useQuery({
     queryKey: ["fees", user?.id, listing?.seller_id, itemPrice],
     queryFn: async () => {
@@ -198,6 +201,7 @@ const Checkout = () => {
         body: {
           listingId: id,
           shippingAddress,
+          servicePointId: selectedServicePoint?.id,
         },
       });
 
@@ -227,17 +231,18 @@ const Checkout = () => {
         body: {
           listingId: id,
           shippingAddress,
+          servicePointId: selectedServicePoint?.id,
         },
       });
 
       if (error) throw error;
       return data;
     },
-      onError: (error) => {
-        const message = error instanceof Error ? error.message : "An unexpected error occurred";
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "An unexpected error occurred";
       toast({
         title: "Checkout failed",
-          description: message,
+        description: message,
         variant: "destructive",
       });
     },
@@ -246,7 +251,6 @@ const Checkout = () => {
   const handleCreateCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Additional validation before submitting
     if (!user) {
       toast({
         title: "Authentication required",
@@ -256,11 +260,28 @@ const Checkout = () => {
       return;
     }
 
-    // Check email verification
     if (!emailVerified) {
       toast({
         title: "Email verification required",
         description: "Please verify your email address before making purchases. Check your inbox for the verification link.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (deliveryMethod === 'home' && !addressValidated) {
+      toast({
+        title: "Address validation required",
+        description: "Please validate your delivery address before proceeding",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (deliveryMethod === 'pickup' && !selectedServicePoint) {
+      toast({
+        title: "Pickup point required",
+        description: "Please select a pickup point for your order",
         variant: "destructive",
       });
       return;
@@ -275,7 +296,6 @@ const Checkout = () => {
       return;
     }
 
-    // Validate shipping address
     if (!shippingAddress.name || !shippingAddress.line1 || !shippingAddress.city || !shippingAddress.postal_code) {
       toast({
         title: "Incomplete shipping address",
@@ -304,12 +324,12 @@ const Checkout = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navigation />
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-[72px]">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-soft-neutral w-1/2"></div>
-          <div className="h-64 bg-soft-neutral"></div>
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-[72px]">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-soft-neutral w-1/2"></div>
+            <div className="h-64 bg-soft-neutral"></div>
+          </div>
         </div>
-      </div>
       </div>
     );
   }
@@ -328,7 +348,6 @@ const Checkout = () => {
     );
   }
 
-  // Validation checks
   const validationErrors: string[] = [];
   
   if (user?.id === listing.seller_id) {
@@ -387,164 +406,201 @@ const Checkout = () => {
         )}
 
         {!createCheckoutMutation.data ? (
-            <form onSubmit={handleCreateCheckout} className="space-y-6">
-              {!canProceed && (
-                <div className="p-4 bg-soft-neutral border border-divider-gray">
-                  <p className="text-sm text-muted-foreground font-normal">
-                    Please resolve the issues above before proceeding with checkout.
-                  </p>
-                </div>
-              )}
-            <div className="bg-soft-neutral border border-divider-gray p-6 mb-8">
-              <h2 className="text-lg font-light text-foreground mb-4 tracking-tight">{listing.title}</h2>
-              {offer && (
-                <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20">
-                  <p className="text-sm font-normal text-green-600 dark:text-green-400">
-                    ✅ Accepted Offer Price
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1 font-normal">
-                    Original price: £{Number(listing?.seller_price || 0).toFixed(2)}
-                  </p>
-                </div>
-              )}
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    {offer ? 'Agreed Price' : 'Item Price'}
-                  </span>
-                  <span className="text-foreground">£{itemPrice.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Buyer Protection</span>
-                  <span className="text-foreground">
-                    {buyerProtectionFee > 0 ? `£${buyerProtectionFee.toFixed(2)}` : 'FREE'}
-                  </span>
-                </div>
-                {feeData?.buyerTier === 'pro' && buyerProtectionFee === 0 && (
-                  <div className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
-                    ✓ Pro Member Benefit
+          <form onSubmit={handleCreateCheckout} className="space-y-6">
+            {!canProceed && (
+              <div className="p-4 bg-soft-neutral border border-divider-gray">
+                <p className="text-sm text-muted-foreground font-normal">
+                  Please resolve the issues above before proceeding with checkout.
+                </p>
+              </div>
+            )}
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>{listing.title}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {offer && (
+                  <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20">
+                    <p className="text-sm font-normal text-green-600 dark:text-green-400">
+                      ✅ Accepted Offer Price
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1 font-normal">
+                      Original price: £{Number(listing?.seller_price || 0).toFixed(2)}
+                    </p>
                   </div>
                 )}
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Shipping</span>
-                  <span className="text-foreground">
-                    {listing.free_shipping ? 'FREE' : `£${shippingCost.toFixed(2)}`}
-                  </span>
-                </div>
-                <div className="border-t border-divider-gray pt-2 mt-2">
-                  <div className="flex justify-between">
-                    <span className="font-normal text-foreground tracking-tight">Total</span>
-                    <span className="text-2xl font-light text-foreground tracking-tight">
-                      £{totalPrice.toFixed(2)}
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      {offer ? 'Agreed Price' : 'Item Price'}
+                    </span>
+                    <span className="text-foreground">£{itemPrice.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Buyer Protection</span>
+                    <span className="text-foreground">
+                      {buyerProtectionFee > 0 ? `£${buyerProtectionFee.toFixed(2)}` : 'FREE'}
                     </span>
                   </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="text-sm font-normal text-foreground tracking-tight">Payment Method</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div
-                  className={`border rounded-lg p-4 cursor-pointer transition-colors ${
-                    paymentMethod === 'stripe'
-                      ? 'bg-primary/5 border-primary ring-1 ring-primary'
-                      : 'bg-background hover:bg-muted'
-                  }`}
-                  onClick={() => setPaymentMethod('stripe')}
-                >
-                  <div className="font-medium">Card Payment</div>
-                  <div className="text-sm text-muted-foreground">Pay securely via Stripe</div>
-                </div>
-                
-                <div
-                  className={`border rounded-lg p-4 cursor-pointer transition-colors ${
-                    paymentMethod === 'wallet'
-                      ? 'bg-primary/5 border-primary ring-1 ring-primary'
-                      : 'bg-background hover:bg-muted'
-                  }`}
-                  onClick={() => setPaymentMethod('wallet')}
-                >
-                  <div className="font-medium">Wallet Balance</div>
-                  <div className="text-sm text-muted-foreground">
-                    Balance: £{wallet?.balance?.toFixed(2) || '0.00'}
-                  </div>
-                  {(wallet?.balance || 0) < totalPrice && (
-                    <div className="text-xs text-destructive mt-1">Insufficient funds</div>
+                  {feeData?.buyerTier === 'pro' && buyerProtectionFee === 0 && (
+                    <div className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                      ✓ Pro Member Benefit
+                    </div>
                   )}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Shipping</span>
+                    <span className="text-foreground">
+                      {listing.free_shipping ? 'FREE' : `£${shippingCost.toFixed(2)}`}
+                    </span>
+                  </div>
+                  <div className="border-t border-divider-gray pt-2 mt-2">
+                    <div className="flex justify-between">
+                      <span className="font-normal text-foreground tracking-tight">Total</span>
+                      <span className="text-2xl font-light text-foreground tracking-tight">
+                        £{totalPrice.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
-            <div className="space-y-4">
-              <h3 className="text-sm font-normal text-foreground tracking-tight">Shipping Address</h3>
-              
-              <div>
-                <Label htmlFor="name">Full Name</Label>
-                <Input
-                  id="name"
-                  required
-                  value={shippingAddress.name}
-                  onChange={(e) => setShippingAddress({ ...shippingAddress, name: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="line1">Address Line 1</Label>
-                <Input
-                  id="line1"
-                  required
-                  value={shippingAddress.line1}
-                  onChange={(e) => setShippingAddress({ ...shippingAddress, line1: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="line2">Address Line 2 (Optional)</Label>
-                <Input
-                  id="line2"
-                  value={shippingAddress.line2}
-                  onChange={(e) => setShippingAddress({ ...shippingAddress, line2: e.target.value })}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="city">City</Label>
-                  <Input
-                    id="city"
-                    required
-                    value={shippingAddress.city}
-                    onChange={(e) => setShippingAddress({ ...shippingAddress, city: e.target.value })}
-                  />
+            <Card>
+              <CardHeader>
+                <CardTitle>Payment Method</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4">
+                  <div
+                    className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                      paymentMethod === 'stripe'
+                        ? 'bg-primary/5 border-primary ring-1 ring-primary'
+                        : 'bg-background hover:bg-muted'
+                    }`}
+                    onClick={() => setPaymentMethod('stripe')}
+                  >
+                    <div className="font-medium">Card Payment</div>
+                    <div className="text-sm text-muted-foreground">Pay securely via Stripe</div>
+                  </div>
+                  
+                  <div
+                    className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                      paymentMethod === 'wallet'
+                        ? 'bg-primary/5 border-primary ring-1 ring-primary'
+                        : 'bg-background hover:bg-muted'
+                    }`}
+                    onClick={() => setPaymentMethod('wallet')}
+                  >
+                    <div className="font-medium">Wallet Balance</div>
+                    <div className="text-sm text-muted-foreground">
+                      Balance: £{wallet?.balance?.toFixed(2) || '0.00'}
+                    </div>
+                    {(wallet?.balance || 0) < totalPrice && (
+                      <div className="text-xs text-destructive mt-1">Insufficient funds</div>
+                    )}
+                  </div>
                 </div>
+              </CardContent>
+            </Card>
 
-                <div>
-                  <Label htmlFor="postal_code">Postcode</Label>
-                  <Input
-                    id="postal_code"
-                    required
-                    value={shippingAddress.postal_code}
-                    onChange={(e) => setShippingAddress({ ...shippingAddress, postal_code: e.target.value })}
-                    placeholder="SW1A 1AA"
-                  />
-                </div>
-              </div>
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Delivery Method</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Tabs value={deliveryMethod} onValueChange={(v) => setDeliveryMethod(v as 'home' | 'pickup')}>
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="home">Home Delivery</TabsTrigger>
+                    <TabsTrigger value="pickup">Pickup Point</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="home" className="space-y-4 mt-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="name">Full Name</Label>
+                        <Input
+                          id="name"
+                          value={shippingAddress.name}
+                          onChange={(e) => setShippingAddress({ ...shippingAddress, name: e.target.value })}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <AddressValidationForm
+                      initialAddress={{
+                        address: shippingAddress.line1,
+                        address2: shippingAddress.line2,
+                        city: shippingAddress.city,
+                        postalCode: shippingAddress.postal_code,
+                        country: shippingAddress.country,
+                      }}
+                      onValidated={(validatedAddress, isValid) => {
+                        if (isValid) {
+                          setShippingAddress({
+                            ...shippingAddress,
+                            line1: validatedAddress.address,
+                            line2: validatedAddress.address2 || "",
+                            city: validatedAddress.city,
+                            postal_code: validatedAddress.postalCode,
+                            country: validatedAddress.country,
+                          });
+                          setAddressValidated(true);
+                        } else {
+                          setAddressValidated(false);
+                        }
+                      }}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="pickup" className="space-y-4 mt-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="name-pickup">Full Name</Label>
+                        <Input
+                          id="name-pickup"
+                          value={shippingAddress.name}
+                          onChange={(e) => setShippingAddress({ ...shippingAddress, name: e.target.value })}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <ServicePointPicker
+                      country={shippingAddress.country}
+                      postalCode={shippingAddress.postal_code}
+                      city={shippingAddress.city}
+                      onSelect={(servicePoint) => {
+                        setSelectedServicePoint(servicePoint);
+                        setShippingAddress({
+                          ...shippingAddress,
+                          line1: `${servicePoint.street} ${servicePoint.houseNumber}`,
+                          city: servicePoint.city,
+                          postal_code: servicePoint.postalCode,
+                          country: servicePoint.country,
+                        });
+                      }}
+                      selectedServicePoint={selectedServicePoint}
+                    />
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
 
             <Button
               type="submit"
-              disabled={createCheckoutMutation.isPending}
-              className="w-full h-12"
-              size="lg"
+              className="w-full"
+              disabled={!canProceed || createCheckoutMutation.isPending || walletPurchaseMutation.isPending}
             >
-              {createCheckoutMutation.isPending ? (
+              {createCheckoutMutation.isPending || walletPurchaseMutation.isPending ? (
                 <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Setting up...
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
                 </>
               ) : (
-                "Continue to Payment"
+                `Complete Purchase - £${totalPrice.toFixed(2)}`
               )}
             </Button>
           </form>
@@ -554,13 +610,7 @@ const Checkout = () => {
             options={{
               clientSecret: createCheckoutMutation.data.clientSecret,
               appearance: {
-                theme: "flat",
-                variables: {
-                  colorPrimary: "hsl(var(--primary))",
-                  colorBackground: "hsl(var(--background))",
-                  colorText: "hsl(var(--foreground))",
-                  borderRadius: "2px",
-                },
+                theme: 'stripe',
               },
             }}
           >

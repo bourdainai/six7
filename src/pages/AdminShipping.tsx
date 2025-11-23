@@ -19,8 +19,12 @@ import {
   TestTube,
   Settings,
   BarChart3,
-  Search
+  Search,
+  CheckCircle2
 } from "lucide-react";
+import { ShippingRateSelector } from '@/components/shipping/ShippingRateSelector';
+import { ServicePointPicker } from '@/components/shipping/ServicePointPicker';
+import { AddressValidationForm } from '@/components/shipping/AddressValidationForm';
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -214,6 +218,12 @@ const AdminShipping = () => {
               <TestTube className="h-4 w-4 mr-2" />
               Testing
             </TabsTrigger>
+            <TabsTrigger value="service-points">
+              Service Points
+            </TabsTrigger>
+            <TabsTrigger value="validation">
+              Address Validation
+            </TabsTrigger>
             <TabsTrigger value="settings">
               <Settings className="h-4 w-4 mr-2" />
               Settings
@@ -328,6 +338,132 @@ const AdminShipping = () => {
 
           {/* Testing Tab */}
           <TabsContent value="testing" className="space-y-4">
+            // ... keep existing code
+          </TabsContent>
+
+          {/* Service Points Tab */}
+          <TabsContent value="service-points" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Test Service Point Lookup</CardTitle>
+                <CardDescription>
+                  Search for pickup points in any location to test the integration
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ServicePointPicker
+                  country="NL"
+                  postalCode="1012AB"
+                  city="Amsterdam"
+                  onSelect={(point) => {
+                    console.log('Selected service point:', point);
+                    toast.success(`Selected: ${point.name}`, {
+                      description: `${point.street} ${point.houseNumber}, ${point.city}`,
+                    });
+                  }}
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Service Point Integration Guide</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <h4 className="font-semibold">How to Use Service Points:</h4>
+                  <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
+                    <li>Enter a postal code and click "Find Locations"</li>
+                    <li>Service points will appear sorted by distance</li>
+                    <li>Click on a service point to select it</li>
+                    <li>When creating a label, pass the service point ID</li>
+                    <li>The label will be for pickup at that location</li>
+                  </ol>
+                </div>
+
+                <div className="space-y-2">
+                  <h4 className="font-semibold">Supported Countries:</h4>
+                  <p className="text-sm text-muted-foreground">
+                    NL, BE, DE, FR, ES, IT, AT, DK, PL, CZ and more EU countries
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Address Validation Tab */}
+          <TabsContent value="validation" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Test Address Validation</CardTitle>
+                <CardDescription>
+                  Validate addresses to ensure accurate delivery and reduce failed shipments
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AddressValidationForm
+                  onValidated={(address, isValid) => {
+                    console.log('Validated address:', address, 'Valid:', isValid);
+                    if (isValid) {
+                      toast.success('Address validated successfully');
+                    }
+                  }}
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Address Validation Benefits</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      Reduces Failed Deliveries
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Catch address errors before shipping, saving return costs
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      Standardizes Formats
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Normalizes addresses to carrier-preferred formats
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      Suggests Corrections
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Offers alternatives when addresses can't be found
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      Improves Customer Trust
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Shows buyers their address is verified and deliverable
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Settings Tab */}
+          <TabsContent value="settings" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle>Test Label Creation</CardTitle>
