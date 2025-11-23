@@ -471,18 +471,60 @@ const SellItem = () => {
   };
 
   const handlePublish = async () => {
+    // Multi-card validation
+    if (isMultiCard) {
+      if (cards.length < 2) {
+        toast({
+          title: "Not enough cards",
+          description: "Please add at least 2 cards to create a bundle.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (cards.length > 30) {
+        toast({
+          title: "Too many cards",
+          description: "Maximum 30 cards per bundle.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Check all cards have required fields
+      const invalidCards = cards.filter(c => !c.condition || c.quantity < 1);
+      if (invalidCards.length > 0) {
+        toast({
+          title: "Incomplete card details",
+          description: "All cards must have a condition and quantity of at least 1.",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
     // Basic validation
-    if (!user || !selectedPrice || !listingData.title || !listingData.category || images.length === 0) {
+    if (!user || !selectedPrice || !listingData.title || !listingData.category) {
       toast({
         title: "Missing fields",
-        description: "Please add photos, a title, category, and price to list your item.",
+        description: "Please add a title, category, and price to list your item.",
         variant: "destructive"
       });
       return;
     }
 
-    // Category-specific validation
-    if (isCardCategory && !listingData.condition) {
+    // Image validation - relaxed for multi-card bundles (can use card images)
+    if (!isMultiCard && images.length === 0) {
+      toast({
+        title: "Missing photos",
+        description: "Please add photos of your item.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Category-specific validation (single card mode)
+    if (isCardCategory && !isMultiCard && !listingData.condition) {
       toast({
         title: "Missing condition",
         description: "Please specify the condition for trading cards.",
@@ -517,12 +559,12 @@ const SellItem = () => {
         title: listingData.title,
         description: listingData.description,
         category: listingData.category,
-        subcategory: listingData.subcategory || null,
+        subcategory: isMultiCard ? "Multi-Card Bundle" : (listingData.subcategory || null),
 
-        // Card specific fields (only for Trading Cards)
-        set_code: isCardCategory ? (listingData.set_code || null) : null,
-        card_number: isCardCategory ? (listingData.card_number || null) : null,
-        condition: listingData.condition || null,
+        // Card specific fields (only for single card Trading Cards)
+        set_code: (isCardCategory && !isMultiCard) ? (listingData.set_code || null) : null,
+        card_number: (isCardCategory && !isMultiCard) ? (listingData.card_number || null) : null,
+        condition: (!isMultiCard && listingData.condition) ? listingData.condition : null,
         
         // General product attributes
         brand: listingData.brand || null,
@@ -531,14 +573,28 @@ const SellItem = () => {
         material: listingData.material || null,
         original_rrp: listingData.original_rrp || null,
         
-        category_attributes: isCardCategory ? {
+        category_attributes: isMultiCard ? {
+          is_bundle: true,
+          card_count: cards.length,
+          cards: cards.map(c => ({
+            name: c.cardData.title,
+            set_code: c.cardData.set_code,
+            card_number: c.cardData.card_number,
+            condition: c.condition,
+            quantity: c.quantity,
+            rarity: c.cardData.rarity,
+            notes: c.notes || null,
+            image_url: c.cardData.image_url || null,
+            market_price: c.cardData.original_rrp || null
+          }))
+        } : (isCardCategory ? {
           rarity: listingData.rarity || null,
           is_graded: listingData.is_graded || false,
           grading_service: listingData.is_graded ? listingData.grading_service : null,
           grading_score: listingData.is_graded ? (parseFloat(listingData.grading_score) || null) : null,
         } : (isSealedProduct ? {
           quantity: listingData.quantity || 1,
-        } : {}),
+        } : {})),
 
         seller_price: Number(selectedPrice),
         status: "active",
@@ -547,8 +603,8 @@ const SellItem = () => {
 
         // Shipping
         shipping_cost_uk: shipping.free_shipping ? 0 : shipping.shipping_cost_uk,
-        shipping_cost_europe: null, // Disabled for now
-        shipping_cost_international: null, // Disabled for now
+        shipping_cost_europe: null,
+        shipping_cost_international: null,
         free_shipping: shipping.free_shipping,
         estimated_delivery_days: shipping.estimated_delivery_days,
       };
@@ -1238,13 +1294,72 @@ const SellItem = () => {
           {/* Pricing */}
           <section className="space-y-4">
             <h2 className="text-xl font-medium border-b pb-2">Pricing</h2>
+
+            {/* Multi-Card Bundle Pricing Calculator */}
+            {isMultiCard && cards.length > 0 && (
+              <Card className="bg-blue-50 border-blue-200">
+                <CardContent className="pt-6 space-y-4">
+                  <div className="flex items-start gap-3">
+                    <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div className="space-y-3 flex-1">
+                      <div>
+                        <h3 className="font-medium text-blue-900 mb-1">Bundle Value Calculator</h3>
+                        <p className="text-sm text-blue-700">
+                          {(() => {
+                            const totalEstimated = cards.reduce((sum, c) => 
+                              sum + ((c.cardData.original_rrp || 0) * c.quantity), 0
+                            );
+                            const currentPrice = Number(selectedPrice) || 0;
+                            const savings = totalEstimated > 0 && currentPrice > 0 
+                              ? ((totalEstimated - currentPrice) / totalEstimated * 100).toFixed(0)
+                              : 0;
+
+                            return totalEstimated > 0 ? (
+                              <>
+                                Estimated individual value: <span className="font-semibold">£{totalEstimated.toFixed(2)}</span>
+                                {currentPrice > 0 && currentPrice < totalEstimated && (
+                                  <span className="block mt-1">
+                                    🎉 Bundle saves buyers <span className="font-bold text-green-700">{savings}%</span> (£{(totalEstimated - currentPrice).toFixed(2)})
+                                  </span>
+                                )}
+                                {currentPrice > totalEstimated && (
+                                  <span className="block mt-1 text-orange-700">
+                                    ⚠️ Price is above estimated value - may be harder to sell
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              "Add cards with market prices to see value estimate"
+                            );
+                          })()}
+                        </p>
+                      </div>
+
+                      {/* Pricing Tips */}
+                      <div className="bg-white rounded-lg p-3 border border-blue-100">
+                        <p className="text-xs text-blue-800 font-medium mb-2">💡 Bundle Pricing Tips:</p>
+                        <ul className="text-xs text-blue-700 space-y-1">
+                          <li>• Offer 10-20% discount for faster sales</li>
+                          <li>• Price competitively to beat single card buying</li>
+                          <li>• Consider condition when pricing below market</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <div className="space-y-2">
-              <Label className="text-base">Selling Price (£)</Label>
+              <Label className="text-base">
+                {isMultiCard ? "Bundle Price (£)" : "Selling Price (£)"}
+              </Label>
               <div className="relative">
                 <PoundSterling className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   type="number"
                   step="0.01"
+                  min="0.01"
                   className="pl-10 text-lg"
                   placeholder="0.00"
                   value={selectedPrice}
@@ -1252,7 +1367,10 @@ const SellItem = () => {
                 />
               </div>
               <p className="text-sm text-muted-foreground">
-                We recommend checking sold listings on eBay or 130point for accurate pricing.
+                {isMultiCard 
+                  ? "Set a single price for the entire bundle"
+                  : "We recommend checking sold listings on eBay or 130point for accurate pricing."
+                }
               </p>
 
               {/* Price Suggestion Button - Only for Cards */}
