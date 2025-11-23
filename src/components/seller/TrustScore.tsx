@@ -18,7 +18,7 @@ export const TrustScore = ({ sellerId, compact = false }: TrustScoreProps) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("trust_score, verification_level, email_verified, linkedin_verified, facebook_verified, instagram_verified, twitter_verified")
+        .select("trust_score, verification_level, email_verified")
         .eq("id", sellerId)
         .single();
 
@@ -96,13 +96,7 @@ export const TrustScore = ({ sellerId, compact = false }: TrustScoreProps) => {
 
   const trustLevel = getTrustLevel(trustScore);
 
-  const verificationCount = [
-    profile?.email_verified,
-    profile?.linkedin_verified,
-    profile?.facebook_verified,
-    profile?.instagram_verified,
-    profile?.twitter_verified,
-  ].filter(Boolean).length;
+  const verificationCount = profile?.email_verified ? 1 : 0;
 
   if (compact) {
     return (
@@ -158,9 +152,6 @@ export const TrustScore = ({ sellerId, compact = false }: TrustScoreProps) => {
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>{verificationCount} verification{verificationCount !== 1 ? 's' : ''} completed</span>
-            {verificationCount < 3 && (
-              <span className="text-orange-500">• Connect social profiles for higher trust</span>
-            )}
           </div>
         </div>
 
@@ -189,47 +180,15 @@ export const TrustScore = ({ sellerId, compact = false }: TrustScoreProps) => {
         {/* Verification Status */}
         <div className="space-y-2 pt-2">
           <div className="text-sm font-medium">Verification Status</div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="flex items-center gap-2 text-sm">
-              {profile?.email_verified ? (
-                <Shield className="h-4 w-4 text-green-500" />
-              ) : (
-                <AlertCircle className="h-4 w-4 text-muted-foreground" />
-              )}
-              <span className={profile?.email_verified ? "text-foreground" : "text-muted-foreground"}>
-                Email
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              {profile?.linkedin_verified ? (
-                <Shield className="h-4 w-4 text-green-500" />
-              ) : (
-                <AlertCircle className="h-4 w-4 text-muted-foreground" />
-              )}
-              <span className={profile?.linkedin_verified ? "text-foreground" : "text-muted-foreground"}>
-                LinkedIn
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              {profile?.facebook_verified ? (
-                <Shield className="h-4 w-4 text-green-500" />
-              ) : (
-                <AlertCircle className="h-4 w-4 text-muted-foreground" />
-              )}
-              <span className={profile?.facebook_verified ? "text-foreground" : "text-muted-foreground"}>
-                Facebook
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              {profile?.instagram_verified ? (
-                <Shield className="h-4 w-4 text-green-500" />
-              ) : (
-                <AlertCircle className="h-4 w-4 text-muted-foreground" />
-              )}
-              <span className={profile?.instagram_verified ? "text-foreground" : "text-muted-foreground"}>
-                Instagram
-              </span>
-            </div>
+          <div className="flex items-center gap-2 text-sm">
+            {profile?.email_verified ? (
+              <Shield className="h-4 w-4 text-green-500" />
+            ) : (
+              <AlertCircle className="h-4 w-4 text-muted-foreground" />
+            )}
+            <span className={profile?.email_verified ? "text-foreground" : "text-muted-foreground"}>
+              Email
+            </span>
           </div>
         </div>
       </CardContent>

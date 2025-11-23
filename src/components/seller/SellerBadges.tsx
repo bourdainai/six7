@@ -10,11 +10,7 @@ import {
   Shield,
   Sparkles,
   Mail,
-  Zap,
-  Linkedin,
-  Facebook,
-  Instagram,
-  Twitter
+  Zap
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -52,10 +48,6 @@ const badgeIcons: Record<string, React.ComponentType<{ className?: string }>> = 
   new_seller: Sparkles,
   power_seller: Zap,
   email_verified: Mail,
-  linkedin_verified: Linkedin,
-  facebook_verified: Facebook,
-  instagram_verified: Instagram,
-  twitter_verified: Twitter,
   stripe_verified: Shield,
 };
 
@@ -68,10 +60,6 @@ const badgeColors: Record<string, string> = {
   new_seller: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20",
   power_seller: "bg-orange-500/10 text-orange-500 border-orange-500/20",
   email_verified: "bg-gray-500/10 text-gray-500 border-gray-500/20",
-  linkedin_verified: "bg-blue-600/10 text-blue-600 border-blue-600/20",
-  facebook_verified: "bg-blue-500/10 text-blue-500 border-blue-500/20",
-  instagram_verified: "bg-pink-500/10 text-pink-500 border-pink-500/20",
-  twitter_verified: "bg-sky-500/10 text-sky-500 border-sky-500/20",
   stripe_verified: "bg-green-500/10 text-green-500 border-green-500/20",
 };
 
@@ -147,10 +135,6 @@ export const SellerBadges = ({
                   <TooltipContent>
                     <p className="text-sm">
                       {verification.verification_type === "email" && "Email verified"}
-                      {verification.verification_type === "linkedin" && "LinkedIn profile verified"}
-                      {verification.verification_type === "facebook" && "Facebook profile verified"}
-                      {verification.verification_type === "instagram" && "Instagram profile verified"}
-                      {verification.verification_type === "twitter" && "Twitter/X profile verified"}
                       {verification.verified_at && (
                         <span className="block text-xs text-muted-foreground mt-1">
                           Verified {new Date(verification.verified_at).toLocaleDateString()}
