@@ -2253,6 +2253,54 @@ export type Database = {
         }
         Relationships: []
       }
+      tcgdex_import_progress: {
+        Row: {
+          cards_imported: number | null
+          cards_total: number | null
+          completed_at: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          language: string
+          last_card_number: number | null
+          retry_count: number | null
+          set_code: string
+          started_at: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          cards_imported?: number | null
+          cards_total?: number | null
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          language: string
+          last_card_number?: number | null
+          retry_count?: number | null
+          set_code: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          cards_imported?: number | null
+          cards_total?: number | null
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          language?: string
+          last_card_number?: number | null
+          retry_count?: number | null
+          set_code?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       trade_offers: {
         Row: {
           ai_fairness_score: number | null
