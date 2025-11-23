@@ -34,9 +34,11 @@ export default function AdminCardRestoration() {
   const queryClient = useQueryClient();
 
   // Fetch Japanese sets that need restoration
-  const { data: setsToRestore, isLoading } = useQuery({
+  const { data: setsToRestore, isLoading, error: queryError } = useQuery({
     queryKey: ['japanese-sets-to-restore'],
     queryFn: async () => {
+      console.log('🔍 Fetching TCGdex sets...');
+      
       // Get all unique TCGdex sets (Japanese sets from TCGdex API)
       const { data: allSets, error } = await supabase
         .from('pokemon_card_attributes')
@@ -44,7 +46,12 @@ export default function AdminCardRestoration() {
         .eq('sync_source', 'tcgdex')
         .order('set_code');
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error fetching sets:', error);
+        throw error;
+      }
+
+      console.log(`✅ Found ${allSets?.length || 0} cards from TCGdex sets`);
 
       // Get unique sets and count cards
       const uniqueSets = new Map<string, { set_name: string; count: number }>();
@@ -65,7 +72,7 @@ export default function AdminCardRestoration() {
         (progressData || []).map(p => [p.set_code, p])
       );
 
-      return Array.from(uniqueSets.entries()).map(([set_code, info]) => {
+      const result = Array.from(uniqueSets.entries()).map(([set_code, info]) => {
         const progress = progressMap.get(set_code);
         return {
           set_code,
@@ -74,9 +81,37 @@ export default function AdminCardRestoration() {
           status: progress?.status || 'pending'
         } as SetInfo;
       });
+
+      console.log(`📊 Processed ${result.length} unique sets`);
+      return result;
     },
     refetchInterval: isRestoring ? 3000 : false, // Poll every 3s during restoration
   });
+
+  // Log query state for debugging
+  useEffect(() => {
+    if (queryError) {
+      console.error('Query Error:', queryError);
+      toast.error('Failed to load sets: ' + (queryError as Error).message);
+    }
+    if (setsToRestore) {
+      console.log('Sets loaded:', setsToRestore.length);
+    }
+  }, [queryError, setsToRestore]);
+
+  // Log query state for debugging
+  useEffect(() => {
+    if (queryError) {
+      console.error('❌ Query Error:', queryError);
+      toast.error('Failed to load sets: ' + (queryError as Error).message);
+    }
+    if (setsToRestore) {
+      console.log('✅ Sets loaded:', setsToRestore.length, 'sets');
+    }
+    if (isLoading) {
+      console.log('⏳ Loading sets...');
+    }
+  }, [queryError, setsToRestore, isLoading]);
 
   // Import progress for real-time stats
   const { data: overallProgress } = useQuery({
