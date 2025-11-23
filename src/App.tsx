@@ -31,6 +31,7 @@ const SellerAccountManagement = lazy(() => import("./pages/SellerAccountManageme
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminAnalytics = lazy(() => import("./pages/AdminAnalytics"));
 const AdminCardRestoration = lazy(() => import("./pages/AdminCardRestoration"));
+const AdminShipping = lazy(() => import("./pages/AdminShipping"));
 const ModerationDashboard = lazy(() => import("./pages/ModerationDashboard"));
 const FraudDashboard = lazy(() => import("./pages/FraudDashboard"));
 const Bundles = lazy(() => import("./pages/Bundles"));
@@ -89,6 +90,7 @@ const AppRoutes = () => {
       <Route path="/admin" element={<Suspense fallback={<DashboardSkeleton />}><AdminDashboard /></Suspense>} />
       <Route path="/admin/analytics" element={<Suspense fallback={<DashboardSkeleton />}><AdminAnalytics /></Suspense>} />
       <Route path="/admin/restore-cards" element={<Suspense fallback={<DashboardSkeleton />}><AdminCardRestoration /></Suspense>} />
+      <Route path="/admin/shipping" element={<Suspense fallback={<DashboardSkeleton />}><AdminShipping /></Suspense>} />
       <Route path="/admin/moderation" element={<Suspense fallback={<DashboardSkeleton />}><ModerationDashboard /></Suspense>} />
       <Route path="/admin/fraud" element={<Suspense fallback={<DashboardSkeleton />}><FraudDashboard /></Suspense>} />
 
