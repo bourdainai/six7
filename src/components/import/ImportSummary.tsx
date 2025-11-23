@@ -13,7 +13,8 @@ export function ImportSummary({ success, failed, onClose }: ImportSummaryProps) 
 
   const handleViewDrafts = () => {
     onClose();
-    navigate("/seller-dashboard");
+    // Navigate and switch to listings tab
+    navigate("/seller-dashboard?tab=listings");
   };
 
   return (
@@ -29,16 +30,13 @@ export function ImportSummary({ success, failed, onClose }: ImportSummaryProps) 
       <div className="space-y-2">
         <h3 className="text-xl font-semibold">Import Complete</h3>
         <div className="text-muted-foreground space-y-1">
-          {success > 0 && (
-            <p className="flex items-center justify-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
-              {success} cards imported successfully
-            </p>
-          )}
+          <p className="flex items-center justify-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+            {success} cards imported successfully
+          </p>
           {failed > 0 && (
-            <p className="flex items-center justify-center gap-2">
-              <AlertCircle className="h-4 w-4 text-yellow-500" />
-              {failed} cards failed (missing data)
+            <p className="text-sm text-muted-foreground">
+              {failed} cards skipped (missing critical data)
             </p>
           )}
         </div>

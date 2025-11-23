@@ -83,10 +83,8 @@ export function mapCsvRowToListing(row: CollectrCsvRow, userId: string): MappedL
     }
   };
 
-  // Validate required fields
+  // Only validate absolutely critical fields - cards without our data can still be listed
   if (!listing.title) errors.push("Missing product name");
-  if (!listing.set_code) errors.push("Missing set");
-  if (!price) errors.push("Missing market price");
 
   return { listing, errors, quantity };
 }
