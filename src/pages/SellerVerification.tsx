@@ -7,17 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   CheckCircle2,
   Mail,
   Shield,
   Loader2,
-  ArrowLeft,
-  Linkedin,
-  Facebook,
-  Instagram,
-  Twitter
+  ArrowLeft
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -46,7 +41,7 @@ const SellerVerification = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, verification_level, email_verified, linkedin_verified, facebook_verified, instagram_verified, twitter_verified")
+        .select("id, verification_level, email_verified")
         .eq("id", user!.id)
         .single();
       if (error) throw error;
@@ -69,43 +64,6 @@ const SellerVerification = () => {
     },
   });
 
-  const handleSocialConnect = async (provider: string) => {
-    try {
-      const redirectUrl = `${window.location.origin}/seller/verification`;
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: provider === 'linkedin' ? 'linkedin_oidc' : provider as any,
-        options: {
-          redirectTo: redirectUrl,
-          scopes: provider === 'linkedin' 
-            ? 'openid profile email' 
-            : provider === 'facebook'
-            ? 'public_profile,email'
-            : provider === 'instagram'
-            ? 'user_profile'
-            : 'users.read tweet.read',
-        },
-      });
-
-      if (error) {
-        if (error.message.includes('not enabled') || error.message.includes('Unsupported provider') || error.message.includes('validation_failed')) {
-          toast({
-            title: "Provider not enabled",
-            description: `${provider.charAt(0).toUpperCase() + provider.slice(1)} authentication needs to be enabled in your backend settings first. Click "Open Backend Settings" above for instructions.`,
-            variant: "destructive",
-            duration: 8000,
-          });
-        } else {
-          throw error;
-        }
-      }
-    } catch (error) {
-      toast({
-        title: "Connection failed",
-        description: error instanceof Error ? error.message : "Failed to connect social account",
-        variant: "destructive",
-      });
-    }
-  };
 
   const requestVerificationMutation = useMutation({
     mutationFn: async (type: string) => {
@@ -157,42 +115,6 @@ const SellerVerification = () => {
       verified: profile?.email_verified,
       trustBonus: "+5 points",
     },
-    {
-      type: "linkedin",
-      label: "LinkedIn Profile",
-      description: "Connect your LinkedIn profile to verify your professional identity",
-      icon: Linkedin,
-      verified: profile?.linkedin_verified,
-      trustBonus: "+10-15 points",
-      isSocial: true,
-    },
-    {
-      type: "facebook",
-      label: "Facebook Profile",
-      description: "Connect your Facebook profile to build buyer confidence",
-      icon: Facebook,
-      verified: profile?.facebook_verified,
-      trustBonus: "+5-10 points",
-      isSocial: true,
-    },
-    {
-      type: "instagram",
-      label: "Instagram Profile",
-      description: "Connect Instagram to showcase your products and authenticity",
-      icon: Instagram,
-      verified: profile?.instagram_verified,
-      trustBonus: "+5-10 points",
-      isSocial: true,
-    },
-    {
-      type: "twitter",
-      label: "Twitter/X Profile",
-      description: "Connect your Twitter/X profile for additional verification",
-      icon: Twitter,
-      verified: profile?.twitter_verified,
-      trustBonus: "+5 points",
-      isSocial: true,
-    },
   ];
 
   const getVerificationStatus = (type: string) => {
@@ -232,42 +154,9 @@ const SellerVerification = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-light tracking-tight mb-2">Seller Verification</h1>
           <p className="text-muted-foreground">
-            Complete verifications to build trust and unlock seller features
+            Verify your email address to build trust with buyers
           </p>
         </div>
-
-        {/* Setup Instructions */}
-        <Alert className="mb-6 bg-primary/5 border-primary/20">
-          <AlertDescription className="space-y-3">
-            <p className="font-semibold text-foreground">📋 Enable Social Verifications (One-time Setup):</p>
-            <ol className="list-decimal list-inside space-y-1.5 text-sm text-muted-foreground ml-2">
-              <li>Click "Open Backend Settings" below</li>
-              <li>Navigate to <strong>Authentication → Providers</strong></li>
-              <li>Enable: <strong>LinkedIn, Facebook, Instagram, Twitter</strong></li>
-              <li>Configure each provider with OAuth credentials from their developer portals</li>
-              <li>Set redirect URL to: <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">{window.location.origin}/seller/verification</code></li>
-            </ol>
-            <div className="flex gap-3 pt-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => {
-                  const event = new CustomEvent('lov-presentation-open-backend');
-                  window.dispatchEvent(event);
-                }}
-              >
-                Open Backend Settings
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => window.open('https://docs.lovable.dev/features/authentication', '_blank')}
-              >
-                View Setup Guide
-              </Button>
-            </div>
-          </AlertDescription>
-        </Alert>
 
         {/* Trust Score */}
         <div className="mb-6">
@@ -389,7 +278,7 @@ const SellerVerification = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => vt.isSocial ? handleSocialConnect(vt.type) : requestVerificationMutation.mutate(vt.type)}
+                            onClick={() => requestVerificationMutation.mutate(vt.type)}
                             disabled={requestVerificationMutation.isPending}
                           >
                             {requestVerificationMutation.isPending ? (
@@ -398,7 +287,7 @@ const SellerVerification = () => {
                                 Requesting...
                               </>
                             ) : (
-                              vt.isSocial ? "Connect" : "Request Verification"
+                              "Request Verification"
                             )}
                           </Button>
                         )}
