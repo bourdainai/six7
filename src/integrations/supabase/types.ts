@@ -735,6 +735,7 @@ export type Database = {
           id: string
           metadata: Json | null
           read: boolean | null
+          read_at: string | null
           sender_id: string
         }
         Insert: {
@@ -744,6 +745,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           read?: boolean | null
+          read_at?: string | null
           sender_id: string
         }
         Update: {
@@ -753,6 +755,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           read?: boolean | null
+          read_at?: string | null
           sender_id?: string
         }
         Relationships: [
