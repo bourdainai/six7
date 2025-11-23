@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +21,7 @@ interface DesktopNavProps {
   isAdmin: boolean;
   onSignOut: () => void;
   onAuthClick: (mode: "signin" | "signup") => void;
+  unreadMessagesCount?: number;
 }
 
 export const DesktopNav = ({
@@ -28,6 +30,7 @@ export const DesktopNav = ({
   isAdmin,
   onSignOut,
   onAuthClick,
+  unreadMessagesCount = 0,
 }: DesktopNavProps) => {
   return (
     <>
@@ -77,8 +80,13 @@ export const DesktopNav = ({
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link to="/messages" className="cursor-pointer">
-                Messages
+              <Link to="/messages" className="cursor-pointer flex items-center justify-between">
+                <span>Messages</span>
+                {unreadMessagesCount > 0 && (
+                  <Badge variant="destructive" className="ml-2 rounded-full h-5 min-w-5 px-1.5 flex items-center justify-center text-xs">
+                    {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
+                  </Badge>
+                )}
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>

@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
 import {
   Sheet,
   SheetContent,
@@ -22,6 +23,7 @@ interface MobileMenuProps {
   isAdmin: boolean;
   onSignOut: () => void;
   onNotificationsClick: () => void;
+  unreadMessagesCount?: number;
 }
 
 export const MobileMenu = ({
@@ -32,6 +34,7 @@ export const MobileMenu = ({
   isAdmin,
   onSignOut,
   onNotificationsClick,
+  unreadMessagesCount = 0,
 }: MobileMenuProps) => {
   const handleNavClick = () => {
     onOpenChange(false);
@@ -74,8 +77,13 @@ export const MobileMenu = ({
                   </h3>
                 </div>
                 
-                <Link to="/messages" onClick={handleNavClick} className="block px-4 py-3 text-base font-normal text-foreground hover:bg-soft-neutral transition-colors duration-fast rounded-sm">
-                  Messages
+                <Link to="/messages" onClick={handleNavClick} className="block px-4 py-3 text-base font-normal text-foreground hover:bg-soft-neutral transition-colors duration-fast rounded-sm flex items-center justify-between">
+                  <span>Messages</span>
+                  {unreadMessagesCount > 0 && (
+                    <Badge variant="destructive" className="rounded-full h-5 min-w-5 px-1.5 flex items-center justify-center text-xs">
+                      {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
+                    </Badge>
+                  )}
                 </Link>
                 <Link to="/orders" onClick={handleNavClick} className="block px-4 py-3 text-base font-normal text-foreground hover:bg-soft-neutral transition-colors duration-fast rounded-sm">
                   Orders

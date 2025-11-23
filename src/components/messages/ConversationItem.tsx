@@ -12,7 +12,10 @@ interface ConversationItemProps {
     updated_at: string;
   };
   isSelected: boolean;
-  otherUser: { full_name: string } | null;
+  otherUser: { 
+    id: string;
+    full_name: string;
+  } | null;
   firstImage?: { image_url: string };
   currentUserId: string;
   onClick: () => void;
