@@ -134,11 +134,19 @@ export const AddressValidationForm = ({
           )}
           <AlertDescription>
             {validationResult.isValid ? (
-              'Address is valid and ready for shipping'
+              <div className="space-y-1">
+                <div className="font-medium">✓ Address verified and ready for shipping</div>
+                {validationResult.details?.checks && (
+                  <div className="text-xs mt-2 space-y-1 opacity-70">
+                    {validationResult.details.checks.hasStreetNumber && <div>• Street number detected</div>}
+                    {validationResult.details.postcodeValid && <div>• Postal code format valid</div>}
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="space-y-2">
-                <div>Address validation failed:</div>
-                <ul className="list-disc list-inside text-sm">
+                <div className="font-medium">Address validation issues:</div>
+                <ul className="list-disc list-inside text-sm space-y-1">
                   {validationResult.issues?.map((issue, idx) => (
                     <li key={idx}>{issue}</li>
                   ))}

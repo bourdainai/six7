@@ -46,7 +46,7 @@ export const ServicePointPicker = ({
 }: ServicePointPickerProps) => {
   const [servicePoints, setServicePoints] = useState<ServicePoint[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searchRadius, setSearchRadius] = useState(5000);
+  const [searchRadius, setSearchRadius] = useState(32187); // 20 miles in meters
   const [localPostalCode, setLocalPostalCode] = useState(postalCode);
 
   const fetchServicePoints = async () => {
@@ -119,15 +119,15 @@ export const ServicePointPicker = ({
           />
         </div>
         <div className="w-32">
-          <Label htmlFor="radius">Radius</Label>
+          <Label htmlFor="radius">Radius (mi)</Label>
           <Input
             id="radius"
             type="number"
-            value={searchRadius}
-            onChange={(e) => setSearchRadius(Number(e.target.value))}
-            min={1000}
-            max={25000}
-            step={1000}
+            value={Math.round(searchRadius / 1609.34)} // Convert meters to miles for display
+            onChange={(e) => setSearchRadius(Number(e.target.value) * 1609.34)} // Convert miles to meters
+            min={1}
+            max={50}
+            step={5}
           />
         </div>
         <div className="flex items-end">
@@ -142,8 +142,10 @@ export const ServicePointPicker = ({
           {servicePoints.map((point) => (
             <Card
               key={point.id}
-              className={`cursor-pointer transition-colors hover:bg-accent ${
-                selectedServicePoint?.id === point.id ? 'border-primary bg-accent' : ''
+              className={`cursor-pointer transition-all ${
+                selectedServicePoint?.id === point.id 
+                  ? 'border-primary ring-2 ring-primary/20 bg-primary/5' 
+                  : 'hover:border-primary/50 hover:ring-1 hover:ring-primary/10'
               }`}
               onClick={() => onSelect(point)}
             >

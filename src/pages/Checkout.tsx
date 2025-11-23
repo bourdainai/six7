@@ -80,13 +80,13 @@ const CheckoutForm = ({ orderId, listingTitle, canProceed }: CheckoutFormProps) 
       <Button
         type="submit"
         disabled={!stripe || isProcessing || !canProceed}
-        className="w-full h-12"
+        className="w-full md:w-2/3 md:mx-auto h-12 md:h-14 text-base md:text-lg"
         size="lg"
       >
         {isProcessing ? (
           <>
             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-            Processing...
+            Processing Payment...
           </>
         ) : (
           "Complete Purchase"
@@ -591,16 +591,17 @@ const Checkout = () => {
 
             <Button
               type="submit"
-              className="w-full"
+              className="w-full md:w-2/3 md:mx-auto h-12 md:h-14 text-base md:text-lg"
+              size="lg"
               disabled={!canProceed || createCheckoutMutation.isPending || walletPurchaseMutation.isPending}
             >
               {createCheckoutMutation.isPending || walletPurchaseMutation.isPending ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                   Processing...
                 </>
               ) : (
-                `Complete Purchase - £${totalPrice.toFixed(2)}`
+                `Buy Now - £${totalPrice.toFixed(2)}`
               )}
             </Button>
           </form>
