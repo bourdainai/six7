@@ -114,50 +114,51 @@ export default function FraudDashboard() {
     <AdminLayout>
       <div className="space-y-8">
         <div className="space-y-2">
-          <h1 className="text-3xl font-light text-foreground">
-            Fraud Detection Dashboard
-          </h1>
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="h-8 w-8 text-primary" />
+            <h1 className="text-3xl font-light text-foreground">Fraud Detection</h1>
+          </div>
           <p className="text-base text-muted-foreground font-light">
             Monitor and manage fraud detection alerts across the platform
           </p>
         </div>
 
         {/* Stats Overview */}
-        <div className="grid gap-4 md:grid-cols-4 mb-6">
+        <div className="grid gap-6 md:grid-cols-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-sm font-medium">Pending Review</CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{pendingCount}</div>
+              <div className="text-3xl font-bold">{pendingCount}</div>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-sm font-medium">Confirmed Fraud</CardTitle>
               <AlertTriangle className="h-4 w-4 text-red-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">{confirmedCount}</div>
+              <div className="text-3xl font-bold text-red-600">{confirmedCount}</div>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-sm font-medium">Total Flags</CardTitle>
               <Shield className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{flags?.length || 0}</div>
+              <div className="text-3xl font-bold">{flags?.length || 0}</div>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-sm font-medium">Dismissed</CardTitle>
               <CheckCircle className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">
+              <div className="text-3xl font-bold text-green-600">
                 {flags?.filter(f => f.status === "dismissed").length || 0}
               </div>
             </CardContent>

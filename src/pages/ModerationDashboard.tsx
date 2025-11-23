@@ -99,58 +99,58 @@ export default function ModerationDashboard() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-sm font-medium">Pending Reports</CardTitle>
               <AlertTriangle className="h-4 w-4 text-orange-500" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-orange-600">{pendingReports.length}</div>
-              <p className="text-xs text-muted-foreground mt-1">Needs attention</p>
+              <p className="text-xs text-muted-foreground font-light mt-1">Needs attention</p>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-sm font-medium">Open Disputes</CardTitle>
               <Flag className="h-4 w-4 text-red-500" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-red-600">{openDisputes.length}</div>
-              <p className="text-xs text-muted-foreground mt-1">Active cases</p>
+              <p className="text-xs text-muted-foreground font-light mt-1">Active cases</p>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-sm font-medium">Resolved Today</CardTitle>
               <CheckCircle className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-green-600">{resolvedReports.length}</div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground font-light mt-1">
                 <TrendingUp className="h-3 w-3 inline mr-1" />
                 +12% from yesterday
               </p>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-sm font-medium">Avg Response Time</CardTitle>
               <Clock className="h-4 w-4 text-blue-500" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-blue-600">4.2h</div>
-              <p className="text-xs text-muted-foreground mt-1">-15% improvement</p>
+              <p className="text-xs text-muted-foreground font-light mt-1">-15% improvement</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Analytics Charts */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>Report Types Distribution</CardTitle>
-              <CardDescription>Breakdown of report categories</CardDescription>
+              <CardTitle className="text-xl font-light">Report Types Distribution</CardTitle>
+              <CardDescription className="font-light">Breakdown of report categories</CardDescription>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
@@ -177,8 +177,8 @@ export default function ModerationDashboard() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Resolution Time Analysis</CardTitle>
-              <CardDescription>Time taken to resolve reports</CardDescription>
+              <CardTitle className="text-xl font-light">Resolution Time Analysis</CardTitle>
+              <CardDescription className="font-light">Time taken to resolve reports</CardDescription>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
