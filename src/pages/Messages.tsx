@@ -20,6 +20,11 @@ import { OfferCard } from "@/components/OfferCard";
 import { FileUpload, AttachmentData } from "@/components/messages/FileUpload";
 import { MessageAttachments } from "@/components/messages/MessageAttachments";
 import { AdminUserList } from "@/components/admin/AdminUserList";
+import { TypingIndicator } from "@/components/messages/TypingIndicator";
+import { ReadReceipt } from "@/components/messages/ReadReceipt";
+import { ConversationItem } from "@/components/messages/ConversationItem";
+import { useTypingIndicator } from "@/hooks/useTypingIndicator";
+import { useUnreadCount } from "@/hooks/useUnreadCount";
 
 interface Conversation {
   id: string;
@@ -47,6 +52,7 @@ interface Message {
   content: string;
   created_at: string;
   read: boolean;
+  read_at: string | null;
   metadata?: {
     attachments?: AttachmentData[];
   };
@@ -73,6 +79,7 @@ const Messages = () => {
   const [pendingAttachments, setPendingAttachments] = useState<AttachmentData[]>([]);
   const [adminMode, setAdminMode] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout>();
 
   const { data: conversations, refetch: refetchConversations } = useQuery({
     queryKey: ["conversations", user?.id],
@@ -116,6 +123,18 @@ const Messages = () => {
     enabled: !!user,
     staleTime: 1000 * 30, // 30 seconds
   });
+
+  // Get selected conversation and other user info
+  const selectedConv = conversations?.find((c) => c.id === selectedConversation);
+  const otherUser = selectedConv && user 
+    ? (selectedConv.buyer_id === user.id ? selectedConv.seller : selectedConv.buyer)
+    : null;
+
+  // Typing indicator for selected conversation
+  const { typingUsers, startTyping, stopTyping } = useTypingIndicator(
+    selectedConversation || '',
+    user?.id
+  );
 
   const { data: messages, refetch: refetchMessages } = useQuery({
     queryKey: ["messages", selectedConversation],
@@ -199,6 +218,25 @@ const Messages = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Mark messages as read when conversation is opened
+  useEffect(() => {
+    if (!selectedConversation || !user) return;
+
+    const markAsRead = async () => {
+      await supabase
+        .from('messages')
+        .update({ 
+          read: true,
+          read_at: new Date().toISOString()
+        })
+        .eq('conversation_id', selectedConversation)
+        .eq('read', false)
+        .neq('sender_id', user.id);
+    };
+
+    markAsRead();
+  }, [selectedConversation, user]);
 
   // Handle admin creating a test conversation with a user
   const handleSelectUserForAdmin = async (userId: string, userName: string) => {
@@ -308,7 +346,27 @@ const Messages = () => {
     return selectedConv.seller_id === user.id ? 'seller' : 'buyer';
   };
 
-  const selectedConv = conversations?.find((c) => c.id === selectedConversation);
+  const handleInputChange = (value: string) => {
+    setMessageInput(value);
+    setShouldBlockMessage(false);
+
+    // Start typing indicator
+    if (value.length > 0 && otherUser) {
+      startTyping(user?.email || 'User');
+      
+      // Clear existing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      
+      // Stop typing after 2 seconds of inactivity
+      typingTimeoutRef.current = setTimeout(() => {
+        stopTyping();
+      }, 2000);
+    } else {
+      stopTyping();
+    }
+  };
 
   if (!user) {
     return (
@@ -377,41 +435,19 @@ const Messages = () => {
             {conversations && conversations.length > 0 ? (
               <div className="space-y-2">
                 {conversations.map((conv) => {
-                  const otherUser = conv.buyer_id === user.id ? conv.seller : conv.buyer;
+                  const otherUserData = conv.buyer_id === user.id ? conv.seller : conv.buyer;
                   const firstImage = conv.listing?.images?.[0];
                   
                   return (
-                    <button
+                    <ConversationItem
                       key={conv.id}
+                      conversation={conv}
+                      isSelected={selectedConversation === conv.id}
+                      otherUser={otherUserData}
+                      firstImage={firstImage}
+                      currentUserId={user.id}
                       onClick={() => setSelectedConversation(conv.id)}
-                      className={`w-full p-3 text-left transition-colors duration-fast border ${
-                        selectedConversation === conv.id
-                          ? "bg-soft-neutral border-foreground"
-                          : "bg-background border-divider-gray hover:bg-soft-neutral"
-                      }`}
-                    >
-                      <div className="flex gap-3">
-                        {firstImage && (
-                          <img
-                            src={firstImage.image_url}
-                            alt={conv.listing?.title || "Item"}
-                            className="w-12 h-12 object-cover border border-divider-gray"
-                            width="48"
-                            height="48"
-                            loading="lazy"
-                          />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-normal text-sm truncate tracking-tight">{conv.listing?.title || "Untitled"}</p>
-                          <p className="text-xs text-muted-foreground truncate font-normal">
-                            {otherUser?.full_name || "Unknown"}
-                          </p>
-                          <p className="text-xs text-muted-foreground font-normal">
-                            {format(new Date(conv.updated_at), "MMM d, h:mm a")}
-                          </p>
-                        </div>
-                      </div>
-                    </button>
+                    />
                   );
                 })}
               </div>
@@ -484,15 +520,24 @@ const Messages = () => {
                                     <p className="text-sm font-normal tracking-tight">{msg.content}</p>
                                   )}
                                   <MessageAttachments attachments={msg.metadata?.attachments || []} />
-                                  <p
-                                    className={`text-xs mt-1 font-normal ${
-                                      isOwnMessage
-                                        ? "text-background/70"
-                                        : "text-muted-foreground"
-                                    }`}
-                                  >
-                                    {format(new Date(msg.created_at), "h:mm a")}
-                                  </p>
+                                  <div className="flex items-center gap-1 mt-1">
+                                    <p
+                                      className={`text-xs font-normal ${
+                                        isOwnMessage
+                                          ? "text-background/70"
+                                          : "text-muted-foreground"
+                                      }`}
+                                    >
+                                      {format(new Date(msg.created_at), "h:mm a")}
+                                    </p>
+                                    {isOwnMessage && (
+                                      <ReadReceipt 
+                                        isSent={true}
+                                        isRead={msg.read}
+                                        readAt={msg.read_at}
+                                      />
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             );
@@ -518,6 +563,11 @@ const Messages = () => {
                     <div className="text-center py-8 text-muted-foreground">
                       <p>No messages yet. Start the conversation!</p>
                     </div>
+                  )}
+                  
+                  {/* Typing Indicator */}
+                  {typingUsers.length > 0 && (
+                    <TypingIndicator userName={typingUsers[0].userName} />
                   )}
                 </div>
 
@@ -547,11 +597,13 @@ const Messages = () => {
                   <div className="flex gap-2">
                     <Input
                       value={messageInput}
-                      onChange={(e) => {
-                        setMessageInput(e.target.value);
-                        setShouldBlockMessage(false);
+                      onChange={(e) => handleInputChange(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          handleSendMessage();
+                          stopTyping();
+                        }
                       }}
-                      onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
                       placeholder={pendingAttachments.length > 0 ? "Add a message (optional)..." : "Type a message..."}
                       className="flex-1"
                     />
