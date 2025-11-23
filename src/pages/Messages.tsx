@@ -266,7 +266,8 @@ const Messages = () => {
   };
 
   const handleSendMessage = async () => {
-    if ((!messageInput.trim() && pendingAttachments.length === 0) || !selectedConversation || !user || shouldBlockMessage) return;
+    // Allow sending if there's either text content OR attachments
+    if ((messageInput.trim() === '' && pendingAttachments.length === 0) || !selectedConversation || !user || shouldBlockMessage) return;
 
     try {
       const metadata = pendingAttachments.length > 0 
@@ -548,8 +549,10 @@ const Messages = () => {
                   />
                   
                   <FileUpload
+                    key={selectedConversation} // Reset component when conversation changes
                     conversationId={selectedConversation!}
                     onFilesSelected={(files) => setPendingAttachments(files)}
+                    onClear={() => setPendingAttachments([])}
                   />
                   
                   <div className="flex gap-2">
@@ -559,13 +562,13 @@ const Messages = () => {
                         setMessageInput(e.target.value);
                         setShouldBlockMessage(false);
                       }}
-                      onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-                      placeholder="Type a message..."
+                      onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
+                      placeholder={pendingAttachments.length > 0 ? "Add a message (optional)..." : "Type a message..."}
                       className="flex-1"
                     />
                     <Button 
                       onClick={handleSendMessage} 
-                      disabled={(!messageInput.trim() && pendingAttachments.length === 0) || shouldBlockMessage}
+                      disabled={(messageInput.trim() === '' && pendingAttachments.length === 0) || shouldBlockMessage}
                     >
                       <Send className="h-4 w-4" />
                     </Button>

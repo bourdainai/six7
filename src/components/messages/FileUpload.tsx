@@ -1,12 +1,13 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Paperclip, X, Upload, Loader2 } from "lucide-react";
+import { Paperclip, X, Upload, Loader2, File } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface FileUploadProps {
   conversationId: string;
   onFilesSelected: (files: AttachmentData[]) => void;
+  onClear?: () => void; // Callback to notify parent when files are cleared
 }
 
 export interface AttachmentData {
@@ -31,8 +32,9 @@ const ALLOWED_TYPES = [
   "video/quicktime"
 ];
 
-export function FileUpload({ conversationId, onFilesSelected }: FileUploadProps) {
+export function FileUpload({ conversationId, onFilesSelected, onClear }: FileUploadProps) {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [uploadedAttachments, setUploadedAttachments] = useState<AttachmentData[]>([]);
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -105,9 +107,10 @@ export function FileUpload({ conversationId, onFilesSelected }: FileUploadProps)
         uploadedFiles.push(attachmentData);
       }
 
+      setUploadedAttachments(uploadedFiles);
       onFilesSelected(uploadedFiles);
       setSelectedFiles([]);
-      toast.success(`${uploadedFiles.length} file(s) uploaded`);
+      toast.success(`${uploadedFiles.length} file(s) uploaded and ready to send`);
       return uploadedFiles;
     } catch (error) {
       console.error('Upload error:', error);
@@ -117,6 +120,12 @@ export function FileUpload({ conversationId, onFilesSelected }: FileUploadProps)
       setUploading(false);
     }
   };
+
+  // Reset uploaded attachments when new conversation is selected
+  useEffect(() => {
+    setUploadedAttachments([]);
+    setSelectedFiles([]);
+  }, [conversationId]);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -136,6 +145,57 @@ export function FileUpload({ conversationId, onFilesSelected }: FileUploadProps)
 
   return (
     <div className="space-y-3">
+      {/* Uploaded Files Ready to Send */}
+      {uploadedAttachments.length > 0 && (
+        <div className="border border-primary/20 bg-primary/5 rounded-lg p-3">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Paperclip className="h-4 w-4 text-primary" />
+              <p className="text-sm font-medium text-primary">
+                {uploadedAttachments.length} file(s) ready to send
+              </p>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setUploadedAttachments([]);
+                onFilesSelected([]);
+                onClear?.();
+              }}
+            >
+              Clear
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {uploadedAttachments.map((attachment) => (
+              <div
+                key={attachment.id}
+                className="relative group border border-border rounded p-2 flex items-center gap-2 bg-background"
+              >
+                {attachment.file_type.startsWith('image/') ? (
+                  <img
+                    src={attachment.url}
+                    alt={attachment.file_name}
+                    className="w-12 h-12 object-cover rounded"
+                  />
+                ) : (
+                  <File className="w-12 h-12 text-muted-foreground p-2" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium truncate">{attachment.file_name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {(attachment.file_size / 1024 / 1024).toFixed(2)} MB
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Selected Files Preview (before upload) */}
       {selectedFiles.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {selectedFiles.map((file, index) => (
