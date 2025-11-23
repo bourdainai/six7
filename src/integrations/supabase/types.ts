@@ -2905,6 +2905,10 @@ export type Database = {
           buyer_id: string
           cash_amount: number | null
           created_at: string | null
+          escrow_amount: number | null
+          escrow_enabled: boolean | null
+          escrow_released: boolean | null
+          escrow_released_at: string | null
           expiry_date: string | null
           id: string
           last_viewed_at: string | null
@@ -2927,6 +2931,10 @@ export type Database = {
           buyer_id: string
           cash_amount?: number | null
           created_at?: string | null
+          escrow_amount?: number | null
+          escrow_enabled?: boolean | null
+          escrow_released?: boolean | null
+          escrow_released_at?: string | null
           expiry_date?: string | null
           id?: string
           last_viewed_at?: string | null
@@ -2949,6 +2957,10 @@ export type Database = {
           buyer_id?: string
           cash_amount?: number | null
           created_at?: string | null
+          escrow_amount?: number | null
+          escrow_enabled?: boolean | null
+          escrow_released?: boolean | null
+          escrow_released_at?: string | null
           expiry_date?: string | null
           id?: string
           last_viewed_at?: string | null
@@ -2981,6 +2993,93 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      trade_packages: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          listing_ids: string[]
+          name: string
+          total_value: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          listing_ids: string[]
+          name: string
+          total_value?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          listing_ids?: string[]
+          name?: string
+          total_value?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      trade_stats: {
+        Row: {
+          avg_fairness_accepted: number | null
+          last_calculated_at: string | null
+          total_trades_completed: number | null
+          trade_completion_rate: number | null
+          user_id: string
+        }
+        Insert: {
+          avg_fairness_accepted?: number | null
+          last_calculated_at?: string | null
+          total_trades_completed?: number | null
+          trade_completion_rate?: number | null
+          user_id: string
+        }
+        Update: {
+          avg_fairness_accepted?: number | null
+          last_calculated_at?: string | null
+          total_trades_completed?: number | null
+          trade_completion_rate?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      trade_templates: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          template_data: Json
+          use_count: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          template_data: Json
+          use_count?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          template_data?: Json
+          use_count?: number | null
+          user_id?: string
+        }
+        Relationships: []
       }
       transaction_fees: {
         Row: {

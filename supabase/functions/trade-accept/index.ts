@@ -32,16 +32,25 @@ serve(async (req) => {
 
     if (!offer) throw new Error('Offer not found');
     
-    // Verify user is the recipient (seller of target item OR buyer if counter offer)
-    // Simplified: assumes standard flow where seller accepts buyer's offer
+    // Verify user is the recipient (seller of target item)
     if (offer.seller_id !== user.id) {
       throw new Error('Not authorized to accept this offer');
+    }
+
+    // Handle escrow if cash is involved
+    const updateData: any = { status: 'accepted' };
+
+    if (offer.cash_amount && offer.cash_amount > 0) {
+      // Enable escrow for cash trades
+      updateData.escrow_enabled = true;
+      updateData.escrow_amount = offer.cash_amount;
+      console.log(`Escrow enabled for trade ${offerId}, amount: ${offer.cash_amount}`);
     }
 
     // Update Offer Status
     const { error: updateError } = await supabase
       .from('trade_offers')
-      .update({ status: 'accepted' })
+      .update(updateData)
       .eq('id', offerId);
 
     if (updateError) throw updateError;
