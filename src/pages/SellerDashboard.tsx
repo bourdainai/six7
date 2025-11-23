@@ -23,6 +23,10 @@ const SellerDashboard = () => {
   const navigate = useNavigate();
   const [selectedListingForCopilot, setSelectedListingForCopilot] = useState<string | null>(null);
   const [showImportDialog, setShowImportDialog] = useState(false);
+  
+  // Read tab from URL query params
+  const searchParams = new URLSearchParams(window.location.search);
+  const activeTab = searchParams.get("tab") || "overview";
 
   const { data: profile, refetch: refetchProfile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -156,7 +160,7 @@ const SellerDashboard = () => {
           </div>
         </div>
 
-        <Tabs defaultValue={new URLSearchParams(window.location.search).get("tab") || "overview"} className="space-y-6">
+        <Tabs value={activeTab} onValueChange={(value) => navigate(`/dashboard/seller?tab=${value}`)} className="space-y-6">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="listings">My Listings</TabsTrigger>
