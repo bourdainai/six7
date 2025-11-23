@@ -12,8 +12,11 @@ import {
   Mail,
   Shield,
   Loader2,
-  ArrowLeft
+  ArrowLeft,
+  Phone
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { SellerBadges } from "@/components/seller/SellerBadges";
@@ -34,6 +37,9 @@ const SellerVerification = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
+  const [showCodeInput, setShowCodeInput] = useState(false);
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -41,7 +47,7 @@ const SellerVerification = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, verification_level, email_verified")
+        .select("id, verification_level, email_verified, phone_verified")
         .eq("id", user!.id)
         .single();
       if (error) throw error;
@@ -106,6 +112,58 @@ const SellerVerification = () => {
     },
   });
 
+  const sendPhoneMutation = useMutation({
+    mutationFn: async (phone: string) => {
+      const { data, error } = await supabase.functions.invoke('send-phone-verification', {
+        body: { phoneNumber: phone }
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      setShowCodeInput(true);
+      toast({
+        title: "Code sent",
+        description: "Check your phone for the verification code",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to send code",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const verifyPhoneMutation = useMutation({
+    mutationFn: async (code: string) => {
+      const { data, error } = await supabase.functions.invoke('verify-phone-code', {
+        body: { code }
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profile", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["seller-verifications", user?.id] });
+      setShowCodeInput(false);
+      setPhoneNumber("");
+      setVerificationCode("");
+      toast({
+        title: "Phone verified",
+        description: "Your phone number has been verified successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to verify code",
+        variant: "destructive",
+      });
+    },
+  });
+
   const verificationTypes = [
     {
       type: "email",
@@ -114,6 +172,14 @@ const SellerVerification = () => {
       icon: Mail,
       verified: profile?.email_verified,
       trustBonus: "+5 points",
+    },
+    {
+      type: "phone",
+      label: "Phone Verification",
+      description: "Verify your phone number for enhanced security",
+      icon: Phone,
+      verified: profile?.phone_verified,
+      trustBonus: "+15 points",
     },
   ];
 
@@ -264,11 +330,66 @@ const SellerVerification = () => {
                           )}
                         </div>
                       </div>
-                      <div>
+                      <div className="flex flex-col gap-2 min-w-[200px]">
                         {status === "verified" ? (
                           <Badge className="bg-green-500/10 text-green-500 border-green-500/20">
                             Verified
                           </Badge>
+                        ) : vt.type === "phone" && !status.includes("verified") ? (
+                          <div className="flex flex-col gap-2">
+                            {!showCodeInput ? (
+                              <>
+                                <Input
+                                  type="tel"
+                                  placeholder="+44 7XXX XXXXXX"
+                                  value={phoneNumber}
+                                  onChange={(e) => setPhoneNumber(e.target.value)}
+                                  className="text-sm"
+                                />
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => sendPhoneMutation.mutate(phoneNumber)}
+                                  disabled={sendPhoneMutation.isPending || !phoneNumber}
+                                >
+                                  {sendPhoneMutation.isPending ? (
+                                    <>
+                                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                      Sending...
+                                    </>
+                                  ) : (
+                                    "Send Code"
+                                  )}
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                <Input
+                                  type="text"
+                                  placeholder="Enter 6-digit code"
+                                  value={verificationCode}
+                                  onChange={(e) => setVerificationCode(e.target.value)}
+                                  maxLength={6}
+                                  className="text-sm"
+                                />
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => verifyPhoneMutation.mutate(verificationCode)}
+                                  disabled={verifyPhoneMutation.isPending || verificationCode.length !== 6}
+                                >
+                                  {verifyPhoneMutation.isPending ? (
+                                    <>
+                                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                      Verifying...
+                                    </>
+                                  ) : (
+                                    "Verify"
+                                  )}
+                                </Button>
+                              </>
+                            )}
+                          </div>
                         ) : status === "pending" ? (
                           <Button variant="outline" size="sm" disabled>
                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />

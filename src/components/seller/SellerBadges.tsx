@@ -10,7 +10,8 @@ import {
   Shield,
   Sparkles,
   Mail,
-  Zap
+  Zap,
+  Phone
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -48,6 +49,7 @@ const badgeIcons: Record<string, React.ComponentType<{ className?: string }>> = 
   new_seller: Sparkles,
   power_seller: Zap,
   email_verified: Mail,
+  phone_verified: Phone,
   stripe_verified: Shield,
 };
 
@@ -60,6 +62,7 @@ const badgeColors: Record<string, string> = {
   new_seller: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20",
   power_seller: "bg-orange-500/10 text-orange-500 border-orange-500/20",
   email_verified: "bg-gray-500/10 text-gray-500 border-gray-500/20",
+  phone_verified: "bg-blue-500/10 text-blue-500 border-blue-500/20",
   stripe_verified: "bg-green-500/10 text-green-500 border-green-500/20",
 };
 
@@ -135,6 +138,7 @@ export const SellerBadges = ({
                   <TooltipContent>
                     <p className="text-sm">
                       {verification.verification_type === "email" && "Email verified"}
+                      {verification.verification_type === "phone" && "Phone verified"}
                       {verification.verified_at && (
                         <span className="block text-xs text-muted-foreground mt-1">
                           Verified {new Date(verification.verified_at).toLocaleDateString()}

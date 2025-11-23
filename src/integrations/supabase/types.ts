@@ -1245,6 +1245,39 @@ export type Database = {
           },
         ]
       }
+      phone_verification_codes: {
+        Row: {
+          code: string
+          created_at: string | null
+          expires_at: string
+          id: string
+          phone_number: string
+          updated_at: string | null
+          user_id: string
+          verified: boolean | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          phone_number: string
+          updated_at?: string | null
+          user_id: string
+          verified?: boolean | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          phone_number?: string
+          updated_at?: string | null
+          user_id?: string
+          verified?: boolean | null
+        }
+        Relationships: []
+      }
       pokemon_card_attributes: {
         Row: {
           artist: string | null
@@ -1386,6 +1419,7 @@ export type Database = {
           is_banned: boolean | null
           kyc_status: boolean | null
           notification_preferences: Json | null
+          phone_number: string | null
           phone_verified: boolean | null
           stripe_connect_account_id: string | null
           stripe_onboarding_complete: boolean | null
@@ -1407,6 +1441,7 @@ export type Database = {
           is_banned?: boolean | null
           kyc_status?: boolean | null
           notification_preferences?: Json | null
+          phone_number?: string | null
           phone_verified?: boolean | null
           stripe_connect_account_id?: string | null
           stripe_onboarding_complete?: boolean | null
@@ -1428,6 +1463,7 @@ export type Database = {
           is_banned?: boolean | null
           kyc_status?: boolean | null
           notification_preferences?: Json | null
+          phone_number?: string | null
           phone_verified?: boolean | null
           stripe_connect_account_id?: string | null
           stripe_onboarding_complete?: boolean | null

@@ -18,7 +18,7 @@ export const TrustScore = ({ sellerId, compact = false }: TrustScoreProps) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("trust_score, verification_level, email_verified")
+        .select("trust_score, verification_level, email_verified, phone_verified")
         .eq("id", sellerId)
         .single();
 
@@ -96,7 +96,7 @@ export const TrustScore = ({ sellerId, compact = false }: TrustScoreProps) => {
 
   const trustLevel = getTrustLevel(trustScore);
 
-  const verificationCount = profile?.email_verified ? 1 : 0;
+  const verificationCount = (profile?.email_verified ? 1 : 0) + (profile?.phone_verified ? 1 : 0);
 
   if (compact) {
     return (
@@ -188,6 +188,16 @@ export const TrustScore = ({ sellerId, compact = false }: TrustScoreProps) => {
             )}
             <span className={profile?.email_verified ? "text-foreground" : "text-muted-foreground"}>
               Email
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            {profile?.phone_verified ? (
+              <Shield className="h-4 w-4 text-green-500" />
+            ) : (
+              <AlertCircle className="h-4 w-4 text-muted-foreground" />
+            )}
+            <span className={profile?.phone_verified ? "text-foreground" : "text-muted-foreground"}>
+              Phone
             </span>
           </div>
         </div>
