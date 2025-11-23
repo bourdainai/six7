@@ -14,7 +14,7 @@ export function ImportSummary({ success, failed, onClose }: ImportSummaryProps) 
   const handleViewDrafts = () => {
     onClose();
     // Navigate and switch to listings tab
-    navigate("/seller-dashboard?tab=listings");
+    navigate("/dashboard/seller?tab=listings");
   };
 
   return (
