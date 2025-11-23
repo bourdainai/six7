@@ -128,11 +128,39 @@ export const useShipping = () => {
     });
   };
 
+  const getServicePoints = async ({
+    country,
+    postalCode,
+    city,
+    carrierCode,
+    radius = 5000,
+    limit = 10,
+  }: {
+    country: string;
+    postalCode: string;
+    city?: string;
+    carrierCode?: string;
+    radius?: number;
+    limit?: number;
+  }) => {
+    const { data, error } = await supabase.functions.invoke('sendcloud-service-points', {
+      body: { country, postalCode, city, carrierCode, radius, limit }
+    });
+
+    if (error) {
+      console.error('Failed to fetch service points:', error);
+      return [];
+    }
+
+    return data.servicePoints || [];
+  };
+
   return {
     createLabel,
     getRates,
     validateAddress,
     getParcelTracking,
+    getServicePoints,
   };
 };
 
