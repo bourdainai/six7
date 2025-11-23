@@ -52,6 +52,7 @@ export const ServicePointPicker = ({
   const [searchRadius, setSearchRadius] = useState(32187); // 20 miles in meters
   const [localPostalCode, setLocalPostalCode] = useState(postalCode);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [mapboxToken, setMapboxToken] = useState<string | null>(null);
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<mapboxgl.Marker[]>([]);
@@ -116,17 +117,30 @@ export const ServicePointPicker = ({
     }
   }, []);
 
+  // Load Mapbox public token from backend
+  useEffect(() => {
+    const fetchToken = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('mapbox-public-token');
+        if (error) throw error;
+        if (!data?.token) {
+          console.error('Mapbox token response missing token');
+          return;
+        }
+        setMapboxToken(data.token);
+      } catch (err) {
+        console.error('Failed to load Mapbox token', err);
+      }
+    };
+
+    fetchToken();
+  }, []);
+
   // Initialize and update map
   useEffect(() => {
-    if (!mapContainer.current || servicePoints.length === 0) return;
+    if (!mapContainer.current || servicePoints.length === 0 || !mapboxToken) return;
 
-    const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN;
-    if (!MAPBOX_TOKEN) {
-      console.error('Mapbox token not found');
-      return;
-    }
-
-    mapboxgl.accessToken = MAPBOX_TOKEN;
+    mapboxgl.accessToken = mapboxToken;
 
     // Clear existing markers
     markers.current.forEach(marker => marker.remove());
@@ -221,7 +235,7 @@ export const ServicePointPicker = ({
         markers.current = [];
       }
     };
-  }, [servicePoints, selectedServicePoint, userLocation, onSelect]);
+  }, [servicePoints, selectedServicePoint, userLocation, onSelect, mapboxToken]);
 
   const formatDistance = (meters?: number) => {
     if (!meters) return '';
