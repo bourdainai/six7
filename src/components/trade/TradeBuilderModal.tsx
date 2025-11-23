@@ -136,17 +136,17 @@ export function TradeBuilderModal({ open, onOpenChange, targetListing }: TradeBu
     try {
       const { error } = await supabase.functions.invoke('trade-create', {
         body: {
-          targetListingId: targetListing.id,
-          tradeItems: myCards.map(item => ({
-            listingId: item.listing.id,
+          target_listing_id: targetListing.id,
+          trade_items: myCards.map(item => ({
+            listing_id: item.listing.id,
             title: item.listing.title,
             value: item.valuation || item.listing.seller_price
           })),
-          cashAmount: cashOffer,
+          cash_amount: cashOffer,
           notes: notes,
-          tradeType: myCards.length > 1 ? 'multi_card' : 'simple',
-          aiFairnessScore: fairnessScore,
-          aiSuggestions: aiSuggestions
+          trade_type: myCards.length > 1 ? 'multi_card' : 'simple',
+          ai_fairness_score: fairnessScore,
+          ai_suggestions: aiSuggestions
         }
       });
 

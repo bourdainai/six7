@@ -8,18 +8,18 @@ const corsHeaders = {
 };
 
 const tradeSchema = z.object({
-  targetListingId: z.string().uuid('Invalid listing ID format'),
-  cashAmount: z.number().min(0, 'Cash amount must be non-negative').max(10000, 'Cash amount too large').optional(),
-  tradeItems: z.array(z.object({
-    listingId: z.string().uuid(),
+  target_listing_id: z.string().uuid('Invalid listing ID format'),
+  cash_amount: z.number().min(0, 'Cash amount must be non-negative').max(10000, 'Cash amount too large').optional(),
+  trade_items: z.array(z.object({
+    listing_id: z.string().uuid(),
     title: z.string().max(200).optional(),
     value: z.number().positive().optional()
   })).max(20, 'Maximum 20 items per trade').optional(),
   photos: z.array(z.string().url()).max(10, 'Maximum 10 photos').optional(),
   notes: z.string().max(500).optional(),
-  tradeType: z.enum(['simple', 'multi_card', 'bulk']).optional(),
-  aiFairnessScore: z.number().min(0).max(1).optional(),
-  aiSuggestions: z.array(z.string()).optional()
+  trade_type: z.enum(['simple', 'multi_card', 'bulk']).optional(),
+  ai_fairness_score: z.number().min(0).max(1).optional(),
+  ai_suggestions: z.array(z.string()).optional()
 });
 
 serve(async (req) => {
@@ -34,14 +34,14 @@ serve(async (req) => {
 
     const body = await req.json();
     const { 
-      targetListingId, 
-      cashAmount, 
-      tradeItems, 
+      target_listing_id, 
+      cash_amount, 
+      trade_items, 
       photos, 
       notes, 
-      tradeType, 
-      aiFairnessScore, 
-      aiSuggestions 
+      trade_type, 
+      ai_fairness_score, 
+      ai_suggestions 
     } = tradeSchema.parse(body);
     
     const authHeader = req.headers.get('Authorization');
@@ -53,7 +53,7 @@ serve(async (req) => {
     const { data: listing, error: listingError } = await supabase
       .from('listings')
       .select('seller_id, status')
-      .eq('id', targetListingId)
+      .eq('id', target_listing_id)
       .single();
 
     if (listingError || !listing) throw new Error('Listing not found');
@@ -61,30 +61,30 @@ serve(async (req) => {
     if (listing.seller_id === user.id) throw new Error('Cannot trade with yourself');
 
     // Use provided valuations or get from items
-    const valuations = tradeItems?.map((item: any) => ({ 
-      ...item, 
+    const valuations = trade_items?.map((item: any) => ({ 
+      listing_id: item.listing_id,
       valuation: item.value || 0 
     })) || [];
 
     // Use provided fairness score
-    const fairnessScore = aiFairnessScore || 0.5;
+    const fairnessScore = ai_fairness_score || 0.5;
 
     const { data: offer, error: offerError } = await supabase
       .from('trade_offers')
       .insert({
         buyer_id: user.id,
         seller_id: listing.seller_id,
-        target_listing_id: targetListingId,
-        cash_amount: cashAmount || 0,
-        trade_items: tradeItems || [],
+        target_listing_id: target_listing_id,
+        cash_amount: cash_amount || 0,
+        trade_items: trade_items || [],
         trade_item_valuations: valuations,
         photos: photos || [],
         ai_fairness_score: fairnessScore,
         status: 'pending',
         expiry_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
-        trade_type: tradeType || 'simple',
+        trade_type: trade_type || 'simple',
         requester_notes: notes,
-        ai_suggestions: aiSuggestions || [],
+        ai_suggestions: ai_suggestions || [],
         negotiation_round: 1
       })
       .select()
