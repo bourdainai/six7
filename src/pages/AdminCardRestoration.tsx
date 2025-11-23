@@ -39,29 +39,30 @@ export default function AdminCardRestoration() {
     queryFn: async () => {
       console.log('🔍 Fetching TCGdex sets...');
       
-      // Get all unique TCGdex sets (Japanese sets from TCGdex API)
+      // Get all TCGdex cards with aggregated counts
       const { data: allSets, error } = await supabase
         .from('pokemon_card_attributes')
-        .select('set_code, set_name')
-        .eq('sync_source', 'tcgdex')
-        .order('set_code');
+        .select('set_code, set_name, sync_source')
+        .eq('sync_source', 'tcgdex');
 
       if (error) {
         console.error('❌ Error fetching sets:', error);
         throw error;
       }
 
-      console.log(`✅ Found ${allSets?.length || 0} cards from TCGdex sets`);
+      console.log(`✅ Found ${allSets?.length || 0} TCGdex cards total`);
 
-      // Get unique sets and count cards
-      const uniqueSets = new Map<string, { set_name: string; count: number }>();
-      allSets.forEach(card => {
-        const existing = uniqueSets.get(card.set_code) || { set_name: card.set_name, count: 0 };
-        uniqueSets.set(card.set_code, { ...existing, count: existing.count + 1 });
+      // Group by set and count cards
+      const setMap = new Map<string, { name: string; count: number }>();
+      allSets?.forEach(card => {
+        const existing = setMap.get(card.set_code) || { name: card.set_name, count: 0 };
+        setMap.set(card.set_code, { name: existing.name, count: existing.count + 1 });
       });
 
-      // Get import progress for each set
-      const setCodes = Array.from(uniqueSets.keys());
+      console.log(`📦 Grouped into ${setMap.size} unique sets`);
+
+      // Get import progress
+      const setCodes = Array.from(setMap.keys());
       const { data: progressData } = await supabase
         .from('tcgdex_import_progress')
         .select('*')
@@ -72,20 +73,22 @@ export default function AdminCardRestoration() {
         (progressData || []).map(p => [p.set_code, p])
       );
 
-      const result = Array.from(uniqueSets.entries()).map(([set_code, info]) => {
+      const result = Array.from(setMap.entries()).map(([set_code, info]) => {
         const progress = progressMap.get(set_code);
+        // If no progress entry but cards exist, mark as completed
+        const status = progress?.status || (info.count > 0 ? 'completed' : 'pending');
         return {
           set_code,
-          set_name: info.set_name,
+          set_name: info.name,
           existing_cards: info.count,
-          status: progress?.status || 'pending'
+          status
         } as SetInfo;
       });
 
-      console.log(`📊 Processed ${result.length} unique sets`);
+      console.log(`📊 Final result: ${result.length} sets processed`);
       return result;
     },
-    refetchInterval: isRestoring ? 3000 : false, // Poll every 3s during restoration
+    refetchInterval: isRestoring ? 3000 : false,
   });
 
   // Log query state for debugging
@@ -117,6 +120,17 @@ export default function AdminCardRestoration() {
   const { data: overallProgress } = useQuery({
     queryKey: ['import-progress-stats'],
     queryFn: async () => {
+      // Get actual card counts from database
+      const { data: cardData, error: cardError } = await supabase
+        .from('pokemon_card_attributes')
+        .select('id', { count: 'exact', head: true })
+        .eq('sync_source', 'tcgdex');
+
+      if (cardError) throw cardError;
+
+      const totalCards = cardData || 0;
+
+      // Get progress data for status counts
       const { data, error } = await supabase
         .from('tcgdex_import_progress')
         .select('*')
@@ -127,13 +141,12 @@ export default function AdminCardRestoration() {
       const completed = data.filter(p => p.status === 'completed').length;
       const inProgress = data.filter(p => p.status === 'in_progress').length;
       const failed = data.filter(p => p.status === 'failed').length;
-      const totalCards = data.reduce((sum, p) => sum + (p.cards_imported || 0), 0);
 
       return {
         completed,
         inProgress,
         failed,
-        totalCards,
+        totalCards: typeof totalCards === 'number' ? totalCards : 0,
         totalSets: data.length,
       };
     },
@@ -310,11 +323,11 @@ export default function AdminCardRestoration() {
               )}
             </div>
 
-            {pendingCount === 0 && !isRestoring && (
+            {pendingCount === 0 && !isRestoring && completedCount > 0 && (
               <Alert>
                 <CheckCircle2 className="h-4 w-4" />
                 <AlertDescription>
-                  All Japanese sets have been imported successfully! 🎉
+                  All {setsToRestore?.length || 0} Japanese TCGdex sets ({overallProgress?.totalCards || 0} cards) have been successfully imported! 🎉
                 </AlertDescription>
               </Alert>
             )}
