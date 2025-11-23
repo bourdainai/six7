@@ -454,109 +454,115 @@ const Messages = () => {
 
         {/* Admin Mode Toggle */}
         {isAdmin && (
-          <Card className="p-4 mb-6 border-primary/20 bg-primary/5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Zap className="h-5 w-5 text-primary" />
-                <div>
-                  <Label htmlFor="admin-mode" className="text-base font-semibold cursor-pointer">
-                    Admin Test Mode
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    Message any user to test the system
-                  </p>
-                </div>
+          <div className="mb-6 p-5 bg-yellow-500/10 border-2 border-yellow-500/30 rounded-xl">
+            <div className="flex items-start gap-4">
+              <Zap className="h-6 w-6 text-yellow-600 dark:text-yellow-500 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-lg text-yellow-900 dark:text-yellow-100 mb-1">Admin Test Mode</h3>
+                <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                  Message any user to test the system
+                </p>
+                {adminMode && (
+                  <Badge variant="outline" className="mt-3 bg-yellow-500/20 text-yellow-900 dark:text-yellow-100 border-yellow-500/40">
+                    ⚡ Active
+                  </Badge>
+                )}
               </div>
               <Switch
                 id="admin-mode"
                 checked={adminMode}
                 onCheckedChange={setAdminMode}
+                className="mt-1"
               />
             </div>
-            {adminMode && (
-              <Badge variant="outline" className="mt-3 bg-primary/10 text-primary border-primary/20">
-                ⚡ Admin Mode Active
-              </Badge>
-            )}
-          </Card>
+          </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-14rem)]">
           {/* Conversations List or Admin User List */}
-          <Card className="p-4 overflow-y-auto">
+          <Card className="p-0 overflow-hidden border-border/50">
+            <div className="p-5 border-b border-border/50 bg-muted/20">
+              <h2 className="text-xl font-semibold tracking-tight">
+                {adminMode && isAdmin ? 'All Users' : 'Conversations'}
+              </h2>
+            </div>
+            
+            <div className="overflow-y-auto" style={{ height: 'calc(100% - 4rem)' }}>
             {adminMode && isAdmin ? (
-              <>
-                <h2 className="text-lg font-normal mb-4 tracking-tight">All Users</h2>
+              <div className="p-3">
                 <AdminUserList
                   onSelectUser={handleSelectUserForAdmin}
                   currentUserId={user?.id}
                 />
-              </>
+              </div>
             ) : (
               <>
-                <h2 className="text-lg font-normal mb-4 tracking-tight">Conversations</h2>
-            {conversations && conversations.length > 0 ? (
-              <div className="space-y-2">
-                {conversations.map((conv) => {
-                  const otherUserData = conv.buyer_id === user.id ? conv.seller : conv.buyer;
-                  const firstImage = conv.listing?.images?.[0];
-                  
-                  return (
-                    <ConversationItem
-                      key={conv.id}
-                      conversation={conv}
-                      isSelected={selectedConversation === conv.id}
-                      otherUser={otherUserData}
-                      firstImage={firstImage}
-                      currentUserId={user.id}
-                      onClick={() => setSelectedConversation(conv.id)}
-                    />
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <MessageSquare className="mx-auto h-12 w-12 mb-2 opacity-50" />
-                <p className="font-normal">No conversations yet</p>
-              </div>
+              {conversations && conversations.length > 0 ? (
+                <div className="space-y-1 p-3">
+                  {conversations.map((conv) => {
+                    const otherUserData = conv.buyer_id === user.id ? conv.seller : conv.buyer;
+                    const firstImage = conv.listing?.images?.[0];
+                    
+                    return (
+                      <ConversationItem
+                        key={conv.id}
+                        conversation={conv}
+                        isSelected={selectedConversation === conv.id}
+                        otherUser={otherUserData}
+                        firstImage={firstImage}
+                        currentUserId={user.id}
+                        onClick={() => setSelectedConversation(conv.id)}
+                      />
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-12 px-4 text-muted-foreground">
+                  <MessageSquare className="mx-auto h-14 w-14 mb-3 opacity-40" />
+                  <p className="font-medium">No conversations yet</p>
+                </div>
+              )}
+            </>
             )}
-              </>
-            )}
+            </div>
           </Card>
 
           {/* Messages Area */}
-          <Card className="lg:col-span-2 flex flex-col">
+          <Card className="lg:col-span-2 flex flex-col overflow-hidden border-border/50">
             {selectedConv ? (
               <>
                 {/* Header */}
-                <div className="p-4 border-b border-divider-gray">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
+                <div className="p-5 border-b border-border/50 bg-muted/20">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
                       {selectedConv.listing?.images?.[0] && (
                         <img
                           src={selectedConv.listing.images[0].image_url}
                           alt={selectedConv.listing?.title || "Item"}
-                          className="w-12 h-12 object-cover border border-divider-gray"
-                          width="48"
-                          height="48"
+                          className="w-14 h-14 object-cover rounded-lg border border-border/50 flex-shrink-0"
+                          width="56"
+                          height="56"
                           loading="lazy"
                         />
                       )}
-                      <div className="flex-1">
-                        <h3 className="font-normal tracking-tight">{selectedConv.listing?.title || "Untitled"}</h3>
-                        <p className="text-sm text-muted-foreground font-normal">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-lg tracking-tight truncate">{selectedConv.listing?.title || "Untitled"}</h3>
+                        <p className="text-sm text-muted-foreground font-normal truncate mt-0.5">
                           {selectedConv.buyer_id === user.id
                             ? selectedConv.seller?.full_name || "Unknown"
                             : selectedConv.buyer?.full_name || "Unknown"}
                         </p>
                       </div>
-                      <Badge>£{selectedConv.listing?.seller_price || 0}</Badge>
+                      <Badge variant="secondary" className="text-base px-4 py-1.5 font-semibold flex-shrink-0">
+                        £{selectedConv.listing?.seller_price || 0}
+                      </Badge>
                     </div>
                     
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 ml-4">
                       {permission !== 'granted' && (
-                        <Button variant="ghost" size="sm" onClick={requestPermission}>
-                          🔔 Enable Notifications
+                        <Button variant="outline" size="sm" onClick={requestPermission} className="gap-2">
+                          <span>🔔</span>
+                          <span className="hidden sm:inline">Enable Notifications</span>
                         </Button>
                       )}
                       <MessageSearch 
@@ -574,9 +580,9 @@ const Messages = () => {
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 p-4 overflow-y-auto">
+                <div className="flex-1 p-6 overflow-y-auto bg-muted/10">
                   {(messages && messages.length > 0) || (offers && offers.length > 0) ? (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {/* Merge and sort messages and offers by timestamp */}
                       {[
                         ...(messages?.map(msg => ({ type: 'message' as const, data: msg, timestamp: new Date(msg.created_at).getTime() })) || []),
@@ -596,43 +602,47 @@ const Messages = () => {
                               <div
                                 key={`msg-${msg.id}`}
                                 id={`message-${msg.id}`}
-                                className={`flex group transition-colors ${isOwnMessage ? "justify-end" : "justify-start"}`}
+                                className={`flex group mb-3 ${isOwnMessage ? "justify-end" : "justify-start"}`}
                               >
                                 <div
-                                  className={`max-w-[70%] p-3 border relative ${
+                                  className={`max-w-[70%] rounded-2xl px-4 py-3 relative shadow-sm ${
                                     isOwnMessage
-                                      ? "bg-foreground text-background border-foreground"
-                                      : "bg-soft-neutral border-divider-gray"
+                                      ? "bg-primary text-primary-foreground"
+                                      : "bg-background border border-border/50"
                                   }`}
                                 >
-                                  {msg.metadata?.edited && (
-                                    <span className="text-xs text-muted-foreground">(edited)</span>
-                                  )}
-                                  {msg.content && msg.content !== '[Message deleted]' && (
-                                    <p className="text-sm font-normal tracking-tight">{msg.content}</p>
-                                  )}
-                                  {msg.content === '[Message deleted]' && (
-                                    <p className="text-sm font-normal tracking-tight italic opacity-60">
+                                  {msg.content && msg.content !== '[Message deleted]' ? (
+                                    <p className="text-[15px] leading-relaxed break-words">{msg.content}</p>
+                                  ) : (
+                                    <p className="text-sm italic text-muted-foreground">
                                       {msg.content}
                                     </p>
                                   )}
-                                  <div 
-                                    className="cursor-pointer" 
-                                    onClick={() => imageAttachments.length > 0 && handleImageClick(imageAttachments, 0)}
-                                  >
-                                    <MessageAttachments attachments={attachments} />
-                                  </div>
-                                  <div className="flex items-center justify-between gap-2 mt-1">
-                                    <div className="flex items-center gap-1">
-                                      <p
-                                        className={`text-xs font-normal ${
+                                  {msg.metadata?.edited && (
+                                    <span className={`text-xs mt-1.5 block ${isOwnMessage ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                                      (edited)
+                                    </span>
+                                  )}
+                                  {attachments.length > 0 && (
+                                    <div 
+                                      className="cursor-pointer mt-3" 
+                                      onClick={() => imageAttachments.length > 0 && handleImageClick(imageAttachments, 0)}
+                                    >
+                                      <MessageAttachments attachments={attachments} />
+                                    </div>
+                                  )}
+                                  
+                                  <div className="flex items-center justify-between gap-2 mt-2">
+                                    <div className="flex items-center gap-1.5">
+                                      <span
+                                        className={`text-xs ${
                                           isOwnMessage
-                                            ? "text-background/70"
+                                            ? "text-primary-foreground/70"
                                             : "text-muted-foreground"
                                         }`}
                                       >
                                         {format(new Date(msg.created_at), "h:mm a")}
-                                      </p>
+                                      </span>
                                       {isOwnMessage && (
                                         <ReadReceipt 
                                           isSent={true}
@@ -652,12 +662,15 @@ const Messages = () => {
                                       />
                                     )}
                                   </div>
+                                  
                                   {!msg.metadata?.deleted && (
-                                    <MessageReactions
-                                      messageId={msg.id}
-                                      currentUserId={user.id}
-                                      existingReactions={msg.metadata?.reactions as any}
-                                    />
+                                    <div className="mt-2.5 pt-2.5 border-t border-border/10">
+                                      <MessageReactions
+                                        messageId={msg.id}
+                                        currentUserId={user.id}
+                                        existingReactions={msg.metadata?.reactions as any}
+                                      />
+                                    </div>
                                   )}
                                 </div>
                               </div>
@@ -693,7 +706,7 @@ const Messages = () => {
                 </div>
 
                 {/* Input */}
-                <div className="p-4 border-t border-divider-gray space-y-3">
+                <div className="p-5 border-t border-border/50 space-y-3 bg-background">
                   <MessageSafetyIndicator 
                     message={messageInput}
                     onBlock={() => setShouldBlockMessage(true)}
@@ -732,7 +745,7 @@ const Messages = () => {
                     onClear={() => setPendingAttachments([])}
                   />
                   
-                  <div className="flex gap-2">
+                  <div className="flex gap-3">
                     <Input
                       value={messageInput}
                       onChange={(e) => handleInputChange(e.target.value)}
@@ -743,13 +756,15 @@ const Messages = () => {
                         }
                       }}
                       placeholder={pendingAttachments.length > 0 ? "Add a message (optional)..." : "Type a message..."}
-                      className="flex-1"
+                      className="flex-1 h-11"
                     />
                     <Button 
                       onClick={handleSendMessage} 
                       disabled={(messageInput.trim() === '' && pendingAttachments.length === 0) || shouldBlockMessage}
+                      size="icon"
+                      className="h-11 w-11"
                     >
-                      <Send className="h-4 w-4" />
+                      <Send className="h-5 w-5" />
                     </Button>
                   </div>
                 </div>
