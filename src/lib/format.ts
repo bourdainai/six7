@@ -26,3 +26,14 @@ export const formatForDisplay = (value: string | null | undefined): string => {
   return value.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
+/**
+ * Formats currency values
+ */
+export const formatCurrency = (amount: number, currency: string = 'GBP'): string => {
+  const formatter = new Intl.NumberFormat('en-GB', {
+    style: 'currency',
+    currency: currency,
+  });
+  return formatter.format(amount);
+};
+

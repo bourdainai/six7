@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      address_validation_cache: {
+        Row: {
+          address_hash: string
+          created_at: string | null
+          expires_at: string
+          id: string
+          is_valid: boolean
+          normalized_address: Json | null
+          validation_details: Json | null
+        }
+        Insert: {
+          address_hash: string
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          is_valid: boolean
+          normalized_address?: Json | null
+          validation_details?: Json | null
+        }
+        Update: {
+          address_hash?: string
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          is_valid?: boolean
+          normalized_address?: Json | null
+          validation_details?: Json | null
+        }
+        Relationships: []
+      }
       api_key_usage_logs: {
         Row: {
           api_key_id: string
@@ -2161,6 +2191,83 @@ export type Database = {
           },
         ]
       }
+      sendcloud_parcels: {
+        Row: {
+          carrier: string | null
+          carrier_code: string | null
+          created_at: string | null
+          customs_invoice_url: string | null
+          customs_shipment_type: string | null
+          external_order_id: string | null
+          external_shipment_id: string | null
+          id: string
+          label_url: string | null
+          metadata: Json | null
+          order_id: string
+          sendcloud_id: string
+          service_point_id: string | null
+          shipment_uuid: string | null
+          status: string
+          status_message: string | null
+          tracking_number: string | null
+          tracking_url: string | null
+          updated_at: string | null
+          weight: number | null
+        }
+        Insert: {
+          carrier?: string | null
+          carrier_code?: string | null
+          created_at?: string | null
+          customs_invoice_url?: string | null
+          customs_shipment_type?: string | null
+          external_order_id?: string | null
+          external_shipment_id?: string | null
+          id?: string
+          label_url?: string | null
+          metadata?: Json | null
+          order_id: string
+          sendcloud_id: string
+          service_point_id?: string | null
+          shipment_uuid?: string | null
+          status?: string
+          status_message?: string | null
+          tracking_number?: string | null
+          tracking_url?: string | null
+          updated_at?: string | null
+          weight?: number | null
+        }
+        Update: {
+          carrier?: string | null
+          carrier_code?: string | null
+          created_at?: string | null
+          customs_invoice_url?: string | null
+          customs_shipment_type?: string | null
+          external_order_id?: string | null
+          external_shipment_id?: string | null
+          id?: string
+          label_url?: string | null
+          metadata?: Json | null
+          order_id?: string
+          sendcloud_id?: string
+          service_point_id?: string | null
+          shipment_uuid?: string | null
+          status?: string
+          status_message?: string | null
+          tracking_number?: string | null
+          tracking_url?: string | null
+          updated_at?: string | null
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sendcloud_parcels_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shipping_details: {
         Row: {
           carrier: string | null
@@ -2213,6 +2320,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      shipping_rates_cache: {
+        Row: {
+          carrier_code: string
+          created_at: string | null
+          currency: string
+          estimated_days: number | null
+          expires_at: string
+          from_country: string
+          from_postal_code: string
+          id: string
+          metadata: Json | null
+          rate: number
+          service_point_id: string | null
+          to_country: string
+          to_postal_code: string
+          weight: number
+        }
+        Insert: {
+          carrier_code: string
+          created_at?: string | null
+          currency?: string
+          estimated_days?: number | null
+          expires_at: string
+          from_country: string
+          from_postal_code: string
+          id?: string
+          metadata?: Json | null
+          rate: number
+          service_point_id?: string | null
+          to_country: string
+          to_postal_code: string
+          weight: number
+        }
+        Update: {
+          carrier_code?: string
+          created_at?: string | null
+          currency?: string
+          estimated_days?: number | null
+          expires_at?: string
+          from_country?: string
+          from_postal_code?: string
+          id?: string
+          metadata?: Json | null
+          rate?: number
+          service_point_id?: string | null
+          to_country?: string
+          to_postal_code?: string
+          weight?: number
+        }
+        Relationships: []
       }
       support_ticket_replies: {
         Row: {
