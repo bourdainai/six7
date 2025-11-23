@@ -37,10 +37,11 @@ export default function AdminCardRestoration() {
   const { data: setsToRestore, isLoading } = useQuery({
     queryKey: ['japanese-sets-to-restore'],
     queryFn: async () => {
+      // Get all unique TCGdex sets (Japanese sets from TCGdex API)
       const { data: allSets, error } = await supabase
         .from('pokemon_card_attributes')
         .select('set_code, set_name')
-        .ilike('set_code', '%-ja')
+        .eq('sync_source', 'tcgdex')
         .order('set_code');
 
       if (error) throw error;
