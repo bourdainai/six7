@@ -107,6 +107,10 @@ const SellItem = () => {
   const [cards, setCards] = useState<CardEntry[]>([]);
   const [showCardSearch, setShowCardSearch] = useState(false);
   const cardsScrollRef = useRef<HTMLDivElement>(null);
+  
+  // Bundle pricing state
+  const [bundleDiscountEnabled, setBundleDiscountEnabled] = useState(true);
+  const [bundlePrice, setBundlePrice] = useState<number | "">("");
 
   const [listingData, setListingData] = useState<ListingData>({
     title: "",
@@ -550,7 +554,15 @@ const SellItem = () => {
     }
 
     // Basic validation
-    if (!user || !selectedPrice || !listingData.title || !listingData.category) {
+    const needsPrice = isMultiCard 
+      ? bundleDiscountEnabled // Only need bundle price if discount enabled
+      : true; // Single items always need price
+    
+    const hasPrice = isMultiCard && bundleDiscountEnabled
+      ? bundlePrice && Number(bundlePrice) > 0
+      : selectedPrice && Number(selectedPrice) > 0;
+    
+    if (!user || (needsPrice && !hasPrice) || !listingData.title || !listingData.category) {
       toast({
         title: "Missing fields",
         description: "Please add a title, category, and price to list your item.",
@@ -600,8 +612,39 @@ const SellItem = () => {
     setPublishing(true);
 
     try {
-      // For multi-card bundles, calculate the lowest variant price for the parent listing
-      const lowestPrice = isMultiCard ? Math.min(...cards.map(c => c.price)) : Number(selectedPrice);
+      // Multi-card bundle pricing validation
+      if (isMultiCard && bundleDiscountEnabled) {
+        if (!bundlePrice || Number(bundlePrice) <= 0) {
+          toast({
+            title: "Missing bundle price",
+            description: "Please set a bundle price for your card bundle.",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        const individualTotal = cards.reduce((sum, c) => sum + (c.price * c.quantity), 0);
+        if (Number(bundlePrice) >= individualTotal) {
+          toast({
+            title: "Bundle price too high",
+            description: "Bundle price should be lower than individual prices to attract buyers.",
+            variant: "destructive"
+          });
+          return;
+        }
+      }
+
+      // Calculate pricing based on bundle mode
+      const individualTotal = isMultiCard ? cards.reduce((sum, c) => sum + (c.price * c.quantity), 0) : 0;
+      const bundlePriceNum = bundleDiscountEnabled && bundlePrice ? Number(bundlePrice) : 0;
+      const bundleDiscount = bundleDiscountEnabled && bundlePriceNum > 0 
+        ? Math.round(((individualTotal - bundlePriceNum) / individualTotal) * 100)
+        : 0;
+      
+      // For listing display price: use bundle price if enabled, otherwise lowest variant price
+      const displayPrice = isMultiCard 
+        ? (bundleDiscountEnabled && bundlePriceNum > 0 ? bundlePriceNum : Math.min(...cards.map(c => c.price)))
+        : Number(selectedPrice);
       
       const listingPayload: ListingInsert = {
         seller_id: user.id,
@@ -609,7 +652,16 @@ const SellItem = () => {
         description: listingData.description,
         category: listingData.category,
         subcategory: isMultiCard ? "Multi-Card Bundle" : (listingData.subcategory || null),
-        has_variants: isMultiCard, // Flag this as a variant-based listing
+        has_variants: isMultiCard,
+
+        // Bundle pricing fields
+        bundle_type: isMultiCard 
+          ? (bundleDiscountEnabled ? 'bundle_with_discount' : 'variants_only')
+          : 'none',
+        bundle_price: bundleDiscountEnabled && bundlePriceNum > 0 ? bundlePriceNum : null,
+        bundle_discount_percentage: bundleDiscount || null,
+        original_bundle_price: bundleDiscountEnabled && bundlePriceNum > 0 ? bundlePriceNum : null,
+        remaining_bundle_price: bundleDiscountEnabled && bundlePriceNum > 0 ? bundlePriceNum : null,
 
         // Card specific fields (only for single card Trading Cards)
         set_code: (isCardCategory && !isMultiCard) ? (listingData.set_code || null) : null,
@@ -626,8 +678,11 @@ const SellItem = () => {
         category_attributes: isMultiCard ? {
           is_bundle: true,
           has_variants: true,
+          bundle_mode: bundleDiscountEnabled ? 'bundle_with_discount' : 'variants_only',
           card_count: cards.length,
-          total_value: cards.reduce((sum, c) => sum + (c.price * c.quantity), 0)
+          total_value: individualTotal,
+          individual_total: individualTotal,
+          bundle_savings: bundleDiscount > 0 ? (individualTotal - bundlePriceNum) : 0,
         } : (isCardCategory ? {
           rarity: listingData.rarity || null,
           is_graded: listingData.is_graded || false,
@@ -637,7 +692,7 @@ const SellItem = () => {
           quantity: listingData.quantity || 1,
         } : {})),
 
-        seller_price: lowestPrice,
+        seller_price: displayPrice,
         status: "active",
         published_at: new Date().toISOString(),
         ai_answer_engines_enabled: aiAnswerEnginesEnabled,
@@ -824,10 +879,15 @@ const SellItem = () => {
       }
 
       setPublishedListingId(listing.id);
+      
+      const bundleMode = isMultiCard 
+        ? (bundleDiscountEnabled ? 'bundle with discount' : 'individual variants')
+        : null;
+      
       toast({
         title: "Listed Successfully!",
         description: isMultiCard 
-          ? `Your ${cards.length}-card bundle is now live on the marketplace.`
+          ? `Your ${cards.length}-card bundle is now live ${bundleMode ? `(${bundleMode} mode)` : ''}.`
           : "Your item is now live on the marketplace.",
       });
 
@@ -1583,119 +1643,180 @@ const SellItem = () => {
           <section className="space-y-4">
             <h2 className="text-xl font-medium border-b pb-2">Pricing</h2>
 
-            {/* Multi-Card Bundle Pricing Calculator */}
+            {/* Multi-Card Bundle Pricing Options */}
             {isMultiCard && cards.length > 0 && (
-              <Card className="bg-blue-50 border-blue-200">
-                <CardContent className="pt-6 space-y-4">
-                  <div className="flex items-start gap-3">
-                    <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <div className="space-y-3 flex-1">
-                      <div>
-                        <h3 className="font-medium text-blue-900 mb-1">Bundle Value Calculator</h3>
-                        <p className="text-sm text-blue-700">
-                          {(() => {
-                            const totalEstimated = cards.reduce((sum, c) => 
-                              sum + ((c.cardData.original_rrp || 0) * c.quantity), 0
-                            );
-                            const currentPrice = Number(selectedPrice) || 0;
-                            const savings = totalEstimated > 0 && currentPrice > 0 
-                              ? ((totalEstimated - currentPrice) / totalEstimated * 100).toFixed(0)
-                              : 0;
+              <Card className="border-primary/20">
+                <CardContent className="pt-6 space-y-5">
+                  {/* Bundle Discount Toggle */}
+                  <div className="flex items-start justify-between gap-4 pb-4 border-b">
+                    <div className="space-y-1">
+                      <Label className="text-base font-medium">Enable Bundle Discount?</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Offer a special price when buyers purchase all cards together
+                      </p>
+                    </div>
+                    <Switch
+                      checked={bundleDiscountEnabled}
+                      onCheckedChange={setBundleDiscountEnabled}
+                    />
+                  </div>
 
-                            return totalEstimated > 0 ? (
-                              <>
-                                Estimated individual value: <span className="font-semibold">£{totalEstimated.toFixed(2)}</span>
-                                {currentPrice > 0 && currentPrice < totalEstimated && (
-                                  <span className="block mt-1">
-                                    🎉 Bundle saves buyers <span className="font-bold text-green-700">{savings}%</span> (£{(totalEstimated - currentPrice).toFixed(2)})
-                                  </span>
-                                )}
-                                {currentPrice > totalEstimated && (
-                                  <span className="block mt-1 text-orange-700">
-                                    ⚠️ Price is above estimated value - may be harder to sell
-                                  </span>
-                                )}
-                              </>
-                            ) : (
-                              "Add cards with market prices to see value estimate"
-                            );
-                          })()}
-                        </p>
-                      </div>
-
-                      {/* Pricing Tips */}
-                      <div className="bg-white rounded-lg p-3 border border-blue-100">
-                        <p className="text-xs text-blue-800 font-medium mb-2">💡 Bundle Pricing Tips:</p>
-                        <ul className="text-xs text-blue-700 space-y-1">
-                          <li>• Offer 10-20% discount for faster sales</li>
-                          <li>• Price competitively to beat single card buying</li>
-                          <li>• Consider condition when pricing below market</li>
-                        </ul>
+                  {/* Individual Card Prices Summary */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Individual Card Prices:</Label>
+                    <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+                      {cards.map((card, idx) => (
+                        <div key={card.id} className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground truncate max-w-[200px]">
+                            {idx + 1}. {card.cardData.title}
+                          </span>
+                          <span className="font-medium">£{card.price.toFixed(2)}</span>
+                        </div>
+                      ))}
+                      <div className="flex items-center justify-between text-sm font-semibold pt-2 border-t">
+                        <span>Total if sold individually:</span>
+                        <span>£{cards.reduce((sum, c) => sum + (c.price * c.quantity), 0).toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
+
+                  {/* Bundle Price Input (only if discount enabled) */}
+                  {bundleDiscountEnabled && (
+                    <div className="space-y-3">
+                      <Label className="text-base font-medium">
+                        Bundle Price (All {cards.length} Cards) <span className="text-destructive">*</span>
+                      </Label>
+                      <div className="relative">
+                        <PoundSterling className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0.01"
+                          className="pl-10 text-lg"
+                          placeholder="0.00"
+                          value={bundlePrice}
+                          onChange={e => setBundlePrice(e.target.value ? parseFloat(e.target.value) : "")}
+                        />
+                      </div>
+
+                      {/* Savings Calculator */}
+                      {bundlePrice && Number(bundlePrice) > 0 && (
+                        <div className="animate-in fade-in slide-in-from-top-2">
+                          {(() => {
+                            const individualTotal = cards.reduce((sum, c) => sum + (c.price * c.quantity), 0);
+                            const bundlePriceNum = Number(bundlePrice);
+                            const savings = individualTotal - bundlePriceNum;
+                            const savingsPercent = (savings / individualTotal) * 100;
+
+                            if (bundlePriceNum >= individualTotal) {
+                              return (
+                                <Alert variant="destructive">
+                                  <AlertCircle className="h-4 w-4" />
+                                  <AlertTitle>No Discount</AlertTitle>
+                                  <AlertDescription>
+                                    Bundle price should be lower than £{individualTotal.toFixed(2)} (individual total) to incentivize buyers.
+                                  </AlertDescription>
+                                </Alert>
+                              );
+                            }
+
+                            return (
+                              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                                <div className="flex items-start gap-2">
+                                  <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                  <div className="space-y-1">
+                                    <p className="text-sm font-medium text-green-900">
+                                      Great Bundle Deal! 🎉
+                                    </p>
+                                    <p className="text-sm text-green-700">
+                                      Buyers save <span className="font-bold">£{savings.toFixed(2)}</span> ({savingsPercent.toFixed(1)}% discount)
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
+
+                      <p className="text-xs text-muted-foreground">
+                        💡 Recommended: Offer 10-20% discount for faster sales
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Note for variants-only mode */}
+                  {!bundleDiscountEnabled && (
+                    <Alert>
+                      <Info className="h-4 w-4" />
+                      <AlertTitle>Variants Only Mode</AlertTitle>
+                      <AlertDescription>
+                        Cards will be listed separately. Buyers can purchase individual cards or use bulk checkout to buy multiple cards.
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </CardContent>
               </Card>
             )}
 
-            <div className="space-y-2">
-              <Label className="text-base">
-                {isMultiCard ? "Bundle Price (£)" : "Selling Price (£)"}
-              </Label>
-              <div className="relative">
-                <PoundSterling className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  className="pl-10 text-lg"
-                  placeholder="0.00"
-                  value={selectedPrice}
-                  onChange={e => setSelectedPrice(e.target.value ? parseFloat(e.target.value) : "")}
-                />
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {isMultiCard 
-                  ? "Set a single price for the entire bundle"
-                  : "We recommend checking sold listings on eBay or 130point for accurate pricing."
-                }
-              </p>
-
-              {/* Price Suggestion Button - Only for Cards */}
-              {isCardCategory && (
-                <div className="pt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleGetPriceSuggestion()}
-                    disabled={gettingPrice}
-                    className="w-full sm:w-auto"
-                  >
-                    {gettingPrice ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2 text-yellow-500" />}
-                    Get Price Suggestion
-                  </Button>
-
-                  {suggestedPrice && (
-                    <div className="mt-3 p-3 bg-green-50 border border-green-100 rounded-lg animate-in fade-in slide-in-from-top-2">
-                      <p className="text-sm font-medium text-green-800 mb-2">
-                        Market Price: ${suggestedPrice.price.toFixed(2)}
-                      </p>
-                      <p className="text-xs text-green-600 mb-3">
-                        Range: ${suggestedPrice.low.toFixed(2)} - ${suggestedPrice.high.toFixed(2)}
-                      </p>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="w-full bg-green-100 hover:bg-green-200 text-green-800 border-green-200"
-                        onClick={() => setSelectedPrice(suggestedPrice.price)}
-                      >
-                        Apply Price (${suggestedPrice.price})
-                      </Button>
-                    </div>
-                  )}
+            {/* Single Item Pricing - Only show for non-multi-card listings */}
+            {!isMultiCard && (
+              <div className="space-y-2">
+                <Label className="text-base">
+                  Selling Price (£)
+                </Label>
+                <div className="relative">
+                  <PoundSterling className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    className="pl-10 text-lg"
+                    placeholder="0.00"
+                    value={selectedPrice}
+                    onChange={e => setSelectedPrice(e.target.value ? parseFloat(e.target.value) : "")}
+                  />
                 </div>
-              )}
-            </div>
+                <p className="text-sm text-muted-foreground">
+                  We recommend checking sold listings on eBay or 130point for accurate pricing.
+                </p>
+
+                {/* Price Suggestion Button - Only for Cards */}
+                {isCardCategory && (
+                  <div className="pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleGetPriceSuggestion()}
+                      disabled={gettingPrice}
+                      className="w-full sm:w-auto"
+                    >
+                      {gettingPrice ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2 text-yellow-500" />}
+                      Get Price Suggestion
+                    </Button>
+
+                    {suggestedPrice && (
+                      <div className="mt-3 p-3 bg-green-50 border border-green-100 rounded-lg animate-in fade-in slide-in-from-top-2">
+                        <p className="text-sm font-medium text-green-800 mb-2">
+                          Market Price: ${suggestedPrice.price.toFixed(2)}
+                        </p>
+                        <p className="text-xs text-green-600 mb-3">
+                          Range: ${suggestedPrice.low.toFixed(2)} - ${suggestedPrice.high.toFixed(2)}
+                        </p>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="w-full bg-green-100 hover:bg-green-200 text-green-800 border-green-200"
+                          onClick={() => setSelectedPrice(suggestedPrice.price)}
+                        >
+                          Apply Price (${suggestedPrice.price})
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </section>
 
           {/* Shipping */}
