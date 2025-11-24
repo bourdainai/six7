@@ -28,7 +28,13 @@ type ShippingDetailRow = Database["public"]["Tables"]["shipping_details"]["Row"]
 interface OrderWithRelations extends OrderRow {
   order_items: Array<
     OrderItemRow & {
-      listing: Pick<ListingRow, "title" | "brand" | "id">;
+      listing: Pick<ListingRow, "title" | "brand" | "id" | "bundle_type" | "has_variants">;
+      variant?: {
+        id: string;
+        variant_name: string;
+        variant_price: number;
+        variant_condition: string;
+      } | null;
     }
   >;
   seller?: Pick<ProfileRow, "id" | "full_name" | "avatar_url"> | null;
@@ -57,9 +63,10 @@ const Orders = () => {
           *,
           order_items(
             *,
-            listing:listings(title, brand)
+            listing:listings(title, brand, id, bundle_type, has_variants),
+            variant:listing_variants(id, variant_name, variant_price, variant_condition)
           ),
-          seller:profiles!seller_id(full_name, avatar_url),
+          seller:profiles!seller_id(id, full_name, avatar_url),
           shipping_details(*)
         `)
         .eq("buyer_id", user!.id)
@@ -80,9 +87,10 @@ const Orders = () => {
           *,
           order_items(
             *,
-            listing:listings(title, brand)
+            listing:listings(title, brand, id, bundle_type, has_variants),
+            variant:listing_variants(id, variant_name, variant_price, variant_condition)
           ),
-          buyer:profiles!buyer_id(full_name, avatar_url),
+          buyer:profiles!buyer_id(id, full_name, avatar_url),
           shipping_details(*)
         `)
         .eq("seller_id", user!.id)
@@ -208,21 +216,52 @@ const Orders = () => {
                     </Badge>
                   </div>
 
-                    {order.order_items.map((item) => (
-                    <div key={item.id} className="flex items-center gap-4 mb-4">
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-foreground">
-                          {item.listing.title}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {item.listing.brand}
-                        </p>
-                      </div>
-                      <p className="text-sm font-medium text-foreground">
-                        £{Number(item.price).toFixed(2)}
-                      </p>
-                    </div>
-                  ))}
+                    {order.order_items.map((item) => {
+                      const isBundle = item.listing.bundle_type === 'bundle_with_discount';
+                      const isSingleVariant = item.variant_id && !isBundle;
+                      
+                      return (
+                        <div key={item.id} className="mb-4">
+                          <div className="flex items-start gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="text-sm font-medium text-foreground">
+                                  {item.listing.title}
+                                </p>
+                                {isBundle && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    Bundle Purchase
+                                  </Badge>
+                                )}
+                                {isSingleVariant && (
+                                  <Badge variant="outline" className="text-xs">
+                                    Single Card
+                                  </Badge>
+                                )}
+                              </div>
+                              {item.listing.brand && (
+                                <p className="text-sm text-muted-foreground">
+                                  {item.listing.brand}
+                                </p>
+                              )}
+                              {isSingleVariant && item.variant && (
+                                <div className="mt-2 p-2 bg-accent/10 rounded-md">
+                                  <p className="text-xs font-medium text-foreground">
+                                    {item.variant.variant_name}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground capitalize">
+                                    Condition: {item.variant.variant_condition?.replace('_', ' ')}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                            <p className="text-sm font-medium text-foreground">
+                              £{Number(item.price).toFixed(2)}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
 
                   <div className="border-t border-border pt-4 mt-4">
                     {order.shipping_details && order.shipping_details.length > 0 && (
@@ -382,21 +421,52 @@ const Orders = () => {
                     </Badge>
                   </div>
 
-                    {order.order_items.map((item) => (
-                    <div key={item.id} className="flex items-center gap-4 mb-4">
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-foreground">
-                          {item.listing.title}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {item.listing.brand}
-                        </p>
-                      </div>
-                      <p className="text-sm font-medium text-foreground">
-                        £{Number(item.price).toFixed(2)}
-                      </p>
-                    </div>
-                  ))}
+                    {order.order_items.map((item) => {
+                      const isBundle = item.listing.bundle_type === 'bundle_with_discount';
+                      const isSingleVariant = item.variant_id && !isBundle;
+                      
+                      return (
+                        <div key={item.id} className="mb-4">
+                          <div className="flex items-start gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="text-sm font-medium text-foreground">
+                                  {item.listing.title}
+                                </p>
+                                {isBundle && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    Bundle Sale
+                                  </Badge>
+                                )}
+                                {isSingleVariant && (
+                                  <Badge variant="outline" className="text-xs">
+                                    Single Card
+                                  </Badge>
+                                )}
+                              </div>
+                              {item.listing.brand && (
+                                <p className="text-sm text-muted-foreground">
+                                  {item.listing.brand}
+                                </p>
+                              )}
+                              {isSingleVariant && item.variant && (
+                                <div className="mt-2 p-2 bg-accent/10 rounded-md">
+                                  <p className="text-xs font-medium text-foreground">
+                                    {item.variant.variant_name}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground capitalize">
+                                    Condition: {item.variant.variant_condition?.replace('_', ' ')}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                            <p className="text-sm font-medium text-foreground">
+                              £{Number(item.price).toFixed(2)}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
 
                   <div className="border-t border-border pt-4 mt-4 space-y-2">
                     {/* Shipping Management for Seller */}
