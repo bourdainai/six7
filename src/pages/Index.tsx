@@ -46,19 +46,28 @@ const Index = () => {
     checkPreferences();
   }, [user, navigate]);
 
-  // If user is logged in and checking preferences, show nothing (will redirect)
-  if (user) {
+  // Show onboarding dialog if needed
+  if (user && showOnboarding && hasPreferences === false) {
     return (
-      <>
-        {showOnboarding && hasPreferences === false && (
-          <BuyerOnboarding onComplete={() => {
-            setShowOnboarding(false);
-            setHasPreferences(true);
-            navigate('/browse');
-          }} />
-        )}
-      </>
+      <div className="min-h-screen bg-background">
+        <SEO
+          title="Welcome to 6Seven"
+          description="Let's personalize your experience"
+        />
+        <Navigation />
+        <BuyerOnboarding onComplete={() => {
+          setShowOnboarding(false);
+          setHasPreferences(true);
+          navigate('/browse');
+        }} />
+      </div>
     );
+  }
+
+  // If user is logged in with preferences, redirect to browse
+  if (user && hasPreferences === true) {
+    navigate('/browse');
+    return null;
   }
 
   // If not logged in, show marketing pages
