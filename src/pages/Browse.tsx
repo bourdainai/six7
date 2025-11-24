@@ -40,22 +40,20 @@ const Browse = () => {
   const [page, setPage] = useState(1);
   const itemsPerPage = 24;
 
-  const { data: listings, isLoading, error } = useQuery<ListingSummary[]>({
-    queryKey: ["active-listings", page, JSON.stringify(filters), sortBy],
+  const { data: listings, isLoading, error } = useQuery({
+    queryKey: ["active-listings", page, filters, sortBy],
     queryFn: async () => {
-      try {
-        console.log("🔍 Starting browse query...");
-        const from = (page - 1) * itemsPerPage;
-        const to = from + itemsPerPage - 1;
+      const from = (page - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
 
-        let query = supabase
-          .from("listings")
-          .select(`
-            *,
-            images:listing_images(image_url, display_order),
-            seller:profiles!seller_id(id, full_name, trust_score)
-          `)
-          .eq("status", "active");
+      let query = supabase
+        .from("listings")
+        .select(`
+          *,
+          images:listing_images(image_url, display_order),
+          seller:profiles!seller_id(id, full_name, trust_score)
+        `)
+        .eq("status", "active");
 
         // Server-side filtering
         if (filters.category) {
@@ -118,30 +116,18 @@ const Browse = () => {
             break;
         }
 
-        query = query.range(from, to);
+      query = query.range(from, to);
 
-        console.log("🔍 Executing query...");
-        const { data, error } = await query;
-        
-        console.log("🔍 Query result:", { data, error });
-        
-        if (error) {
-          console.error("❌ Browse query error:", error);
-          throw error;
-        }
-        
-        console.log("✅ Query successful, returning", data?.length, "listings");
-        return data as ListingSummary[];
-      } catch (err) {
-        console.error("❌ Browse query exception:", err);
-        throw err;
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error("Browse query error:", error);
+        throw error;
       }
+      
+      return (data || []) as ListingSummary[];
     },
-    staleTime: 1000 * 60, // 1 minute
-    retry: false,
   });
-
-  console.log("📊 Browse state:", { isLoading, hasListings: !!listings, count: listings?.length, hasError: !!error, error });
 
   // For semantic/vibe search results, use those directly
   const filteredListings = useMemo((): ListingSummary[] => {

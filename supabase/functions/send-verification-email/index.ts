@@ -1,15 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+import { Resend } from "https://esm.sh/resend@4.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface VerificationRequest {
-  userId: string;
-  email: string;
-}
+const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -49,34 +47,21 @@ serve(async (req) => {
       );
     }
 
-    // Generate verification token and send email
-    // Use Supabase Admin API to generate email confirmation token
-    const { data: tokenData, error: tokenError } = await supabaseClient.auth.admin.generateLink({
+    // Send verification email using Supabase's built-in method
+    const { error: resendError } = await supabaseClient.auth.resend({
       type: 'signup',
       email: user.email!,
-      password: crypto.randomUUID(), // Generate a random password for the link
     });
 
-    if (tokenError) {
-      console.error("Error generating verification link:", tokenError);
-      // Fallback: Use the user's email to send via email notification service
-      // For now, we'll return success as Supabase should have sent the email on signup
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: "If you haven't received a verification email, please check your spam folder or contact support." 
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (resendError) {
+      console.error("Error resending verification:", resendError);
+      throw new Error("Failed to resend verification email");
     }
-
-    // In production, you would send the email via your email service
-    // For now, Supabase handles this automatically on signup
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Verification email sent successfully. Please check your inbox." 
+        message: "Verification email sent successfully. Please check your inbox at " + user.email 
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
