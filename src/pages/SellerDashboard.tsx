@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
-import { Package, DollarSign, ShoppingCart, TrendingUp, Award, CheckCircle2, Upload } from "lucide-react";
+import { Package, DollarSign, ShoppingCart, TrendingUp, Award, CheckCircle2, Upload, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { SellerCopilot } from "@/components/SellerCopilot";
@@ -148,6 +148,10 @@ const SellerDashboard = () => {
               <Button onClick={() => setShowImportDialog(true)} variant="outline" className="gap-2">
                 <Upload className="h-4 w-4" />
                 Import from Collectr
+              </Button>
+              <Button onClick={() => navigate("/seller/profile/settings")} variant="outline" className="gap-2">
+                <User className="h-4 w-4" />
+                Profile
               </Button>
               <Button onClick={() => navigate("/seller/verification")} variant="outline" className="gap-2">
                 <CheckCircle2 className="h-4 w-4" />

@@ -12,6 +12,8 @@ export interface AdminOverview {
   resolvedDisputes: number;
   pendingReports: number;
   avgRating: number;
+  totalMessages: number;
+  totalTradeOffers: number;
 }
 
 export interface RevenueChartPoint {

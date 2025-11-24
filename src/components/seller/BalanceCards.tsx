@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Wallet, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { CreditBalance } from "@/components/wallet/CreditBalance";
 
 interface BalanceCardsProps {
   balance: {
@@ -18,7 +19,7 @@ export const BalanceCards = ({ balance, isLoading }: BalanceCardsProps) => {
 
   if (isLoading || !balance) {
     return (
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-3">
         <Card className="border-green-500/20">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-normal flex items-center gap-2 tracking-tight">
@@ -43,12 +44,13 @@ export const BalanceCards = ({ balance, isLoading }: BalanceCardsProps) => {
             <Skeleton className="h-9 w-full" />
           </CardContent>
         </Card>
+        <Skeleton className="h-full" />
       </div>
     );
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid gap-4 md:grid-cols-3">
       <Card className="border-green-500/20">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-normal flex items-center gap-2 tracking-tight">
@@ -93,6 +95,8 @@ export const BalanceCards = ({ balance, isLoading }: BalanceCardsProps) => {
           </Button>
         </CardContent>
       </Card>
+      
+      <CreditBalance />
     </div>
   );
 };

@@ -159,7 +159,15 @@ export const ListingCard = React.memo(
 
           {listing.seller?.id && (
             <div className="pt-1">
-              <SellerReputation sellerId={listing.seller.id} compact />
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/seller/${listing.seller.id}`);
+                }}
+                className="hover:opacity-70 transition-opacity"
+              >
+                <SellerReputation sellerId={listing.seller.id} compact />
+              </button>
             </div>
           )}
         </div>

@@ -107,6 +107,18 @@ serve(async (req) => {
       .select("*")
       .gte("created_at", startDate.toISOString());
 
+    // Fetch messages
+    const { count: messagesCount } = await supabaseClient
+      .from("messages")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", startDate.toISOString());
+
+    // Fetch trade offers
+    const { count: tradeOffersCount } = await supabaseClient
+      .from("trade_offers")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", startDate.toISOString());
+
     // Calculate platform metrics
     const totalOrders = orders?.length || 0;
     const completedOrders = orders?.filter(o => o.status === "completed" || o.status === "paid") || [];
@@ -244,6 +256,8 @@ serve(async (req) => {
           resolvedDisputes,
           pendingReports,
           avgRating,
+          totalMessages: messagesCount || 0,
+          totalTradeOffers: tradeOffersCount || 0,
         },
         revenueChart,
         userGrowthChart,

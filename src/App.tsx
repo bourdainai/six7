@@ -28,6 +28,8 @@ const SellerAnalytics = lazy(() => import("./pages/SellerAnalytics"));
 const SellerReputation = lazy(() => import("./pages/SellerReputation"));
 const SellerOnboarding = lazy(() => import("./pages/SellerOnboarding"));
 const SellerAccountManagement = lazy(() => import("./pages/SellerAccountManagement"));
+const SellerProfile = lazy(() => import("./pages/SellerProfile"));
+const SellerProfileSettings = lazy(() => import("./pages/SellerProfileSettings"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminAnalytics = lazy(() => import("./pages/AdminAnalytics"));
 const AdminLiveStats = lazy(() => import("./pages/AdminLiveStats"));
@@ -88,6 +90,8 @@ const AppRoutes = () => {
       <Route path="/seller/reputation" element={<Suspense fallback={<DashboardSkeleton />}><SellerReputation /></Suspense>} />
       <Route path="/seller/automation" element={<Suspense fallback={<DashboardSkeleton />}><AutoRelistRules /></Suspense>} />
       <Route path="/seller/verification" element={<Suspense fallback={<PageSkeleton />}><SellerVerification /></Suspense>} />
+      <Route path="/seller/profile/settings" element={<Suspense fallback={<PageSkeleton />}><SellerProfileSettings /></Suspense>} />
+      <Route path="/seller/:sellerId" element={<Suspense fallback={<PageSkeleton />}><SellerProfile /></Suspense>} />
       <Route path="/admin" element={<Suspense fallback={<DashboardSkeleton />}><AdminDashboard /></Suspense>} />
       <Route path="/admin/analytics" element={<Suspense fallback={<DashboardSkeleton />}><AdminAnalytics /></Suspense>} />
       <Route path="/admin/live" element={<Suspense fallback={<DashboardSkeleton />}><AdminLiveStats /></Suspense>} />
