@@ -10,6 +10,7 @@ const corsHeaders = {
 const purchaseSchema = z.object({
   listingId: z.string().uuid('Invalid listing ID format'),
   variantId: z.string().uuid().optional(),
+  purchaseType: z.enum(['single', 'variant', 'bundle']).optional(),
   shippingAddress: z.object({
     line1: z.string().max(100),
     line2: z.string().max(100).optional(),
@@ -30,7 +31,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const body = await req.json();
-    const { listingId, variantId, shippingAddress } = purchaseSchema.parse(body);
+    const { listingId, variantId, purchaseType, shippingAddress } = purchaseSchema.parse(body);
     
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) throw new Error('Missing Authorization header');
@@ -49,9 +50,34 @@ serve(async (req) => {
 
     let price = Number(listing.seller_price);
     let variant = null;
+    let bundleVariants: any[] = [];
 
-    // Check variant if provided
-    if (variantId) {
+    // Handle different purchase types
+    if (purchaseType === 'bundle' && listing.bundle_type === 'bundle_with_discount') {
+      // Bundle purchase - get all available variants
+      const { data: variants } = await supabase
+        .from('listing_variants')
+        .select('*')
+        .eq('listing_id', listingId)
+        .eq('is_available', true)
+        .eq('is_sold', false);
+      
+      if (!variants || variants.length === 0) {
+        throw new Error('No variants available for bundle purchase');
+      }
+      
+      bundleVariants = variants;
+      
+      // Calculate bundle price with discount if 2+ cards
+      const individualTotal = bundleVariants.reduce((sum, v) => sum + Number(v.variant_price), 0);
+      
+      if (bundleVariants.length >= 2 && listing.bundle_discount_percentage && listing.bundle_discount_percentage > 0) {
+        price = individualTotal * (1 - listing.bundle_discount_percentage / 100);
+      } else {
+        price = individualTotal;
+      }
+    } else if (variantId) {
+      // Single variant purchase
       const { data: variantData } = await supabase
         .from('listing_variants')
         .select('*')
@@ -66,11 +92,11 @@ serve(async (req) => {
       variant = variantData;
       price = Number(variant.variant_price);
     } else if (listing.has_variants) {
-      throw new Error('Please select a variant');
+      throw new Error('Please select a variant or purchase bundle');
     }
 
     const shipping = Number(listing.shipping_cost_uk || 0);
-    const total = price + shipping; // Simplified fees for now
+    const total = price + shipping;
 
     // 2. Check Wallet Balance
     const { data: wallet } = await supabase
@@ -119,28 +145,68 @@ serve(async (req) => {
     if (deductError) throw deductError;
 
     // 5. Record Transaction
+    const transactionDescription = purchaseType === 'bundle' 
+      ? `Bundle purchase of ${listing.title} (${bundleVariants.length} cards)`
+      : variant 
+        ? `Purchase of ${listing.title} - ${variant.variant_name}`
+        : `Purchase of ${listing.title}`;
+    
     await supabase.from('wallet_transactions').insert({
       wallet_id: wallet.id,
       type: 'purchase',
       amount: -total,
       balance_after: wallet.balance - total,
       related_order_id: order.id,
-      description: `Purchase of ${listing.title}`,
+      description: transactionDescription,
       status: 'completed'
     });
 
     // 6. Update Listing/Variant Status
-    if (variant) {
-      // Decrease variant quantity
+    if (purchaseType === 'bundle' && bundleVariants.length > 0) {
+      // Bundle purchase - mark all variants as sold
+      const variantIds = bundleVariants.map(v => v.id);
+      await supabase
+        .from('listing_variants')
+        .update({ 
+          is_sold: true,
+          is_available: false,
+          sold_at: new Date().toISOString()
+        })
+        .in('id', variantIds);
+      
+      // Update listing status to sold
+      await supabase
+        .from('listings')
+        .update({ status: 'sold' })
+        .eq('id', listingId);
+    } else if (variant) {
+      // Single variant purchase - decrease variant quantity
       const newQuantity = variant.variant_quantity - 1;
       await supabase
         .from('listing_variants')
         .update({ 
           variant_quantity: newQuantity,
-          is_available: newQuantity > 0
+          is_available: newQuantity > 0,
+          is_sold: newQuantity === 0,
+          sold_at: newQuantity === 0 ? new Date().toISOString() : null
         })
         .eq('id', variantId);
+      
+      // Check if all variants are sold to update listing
+      const { data: remainingVariants } = await supabase
+        .from('listing_variants')
+        .select('id')
+        .eq('listing_id', listingId)
+        .eq('is_available', true);
+      
+      if (!remainingVariants || remainingVariants.length === 0) {
+        await supabase
+          .from('listings')
+          .update({ status: 'sold' })
+          .eq('id', listingId);
+      }
     } else {
+      // Simple listing without variants
       await supabase
         .from('listings')
         .update({ status: 'sold' })
