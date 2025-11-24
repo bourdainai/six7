@@ -24,15 +24,35 @@ Deno.serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    // Get user's credit balance
-    const { data: credits, error: creditsError } = await supabase
+    // Get user's credit balance, create if doesn't exist
+    let { data: credits, error: creditsError } = await supabase
       .from('seller_credits')
       .select('*')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
+
+    // If no credits record exists, create one
+    if (!credits && !creditsError) {
+      const { data: newCredits, error: insertError } = await supabase
+        .from('seller_credits')
+        .insert({ 
+          user_id: user.id, 
+          balance: 0, 
+          lifetime_earned: 0, 
+          lifetime_used: 0 
+        })
+        .select()
+        .single();
+      
+      if (insertError) {
+        console.error('Error creating seller_credits:', insertError);
+      } else {
+        credits = newCredits;
+      }
+    }
 
     if (creditsError) {
-      throw creditsError;
+      console.error('Error fetching seller_credits:', creditsError);
     }
 
     // Get promo status
