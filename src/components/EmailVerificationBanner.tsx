@@ -7,6 +7,7 @@ import { Mail, X, CheckCircle2, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
+import { Link } from "react-router-dom";
 
 export const EmailVerificationBanner = () => {
   const { user } = useAuth();
@@ -107,9 +108,9 @@ export const EmailVerificationBanner = () => {
                   <Button
                     size="sm"
                     variant="secondary"
-                    onClick={() => window.location.href = '/admin/live'}
+                    asChild
                   >
-                    Test Admin Dashboard
+                    <Link to="/admin/live">Test Admin Dashboard</Link>
                   </Button>
                 )}
               </div>
