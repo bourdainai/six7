@@ -1,12 +1,19 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageLayout } from "@/components/PageLayout";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TrendingUp, Users, MessageSquare, Repeat2, DollarSign, Package, Gift } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { TrendingUp, Users, MessageSquare, Repeat2, DollarSign, Package, Gift, Mail } from "lucide-react";
+import { useState } from "react";
 
 export default function AdminLiveStats() {
+  const { toast } = useToast();
+  const [testEmail, setTestEmail] = useState("");
+  
   const { data, isLoading } = useQuery({
     queryKey: ["admin-live-stats"],
     queryFn: async () => {
@@ -15,6 +22,30 @@ export default function AdminLiveStats() {
       return data;
     },
     refetchInterval: 10000, // Refresh every 10 seconds
+  });
+
+  const sendTestEmailMutation = useMutation({
+    mutationFn: async (email: string) => {
+      const { data, error } = await supabase.functions.invoke("admin-send-test-email", {
+        body: { testEmail: email },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Test email sent",
+        description: data.message,
+      });
+      setTestEmail("");
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to send test email",
+        variant: "destructive",
+      });
+    },
   });
 
   if (isLoading) {
@@ -45,6 +76,44 @@ export default function AdminLiveStats() {
             <h1 className="text-3xl font-bold">Live Dashboard</h1>
             <p className="text-muted-foreground">Real-time platform metrics</p>
           </div>
+
+          {/* Admin Test Email Section */}
+          <Card className="border-yellow-500 bg-yellow-500/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Mail className="h-5 w-5" />
+                Email Verification Testing
+              </CardTitle>
+              <CardDescription>
+                Send test verification emails to any address for testing purposes
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-2">
+                <Input
+                  type="email"
+                  placeholder="test@example.com"
+                  value={testEmail}
+                  onChange={(e) => setTestEmail(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && testEmail) {
+                      sendTestEmailMutation.mutate(testEmail);
+                    }
+                  }}
+                />
+                <Button
+                  onClick={() => sendTestEmailMutation.mutate(testEmail)}
+                  disabled={!testEmail || sendTestEmailMutation.isPending}
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  {sendTestEmailMutation.isPending ? "Sending..." : "Send Test Email"}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                ⚠️ Test emails will be clearly marked with a red border and warning message
+              </p>
+            </CardContent>
+          </Card>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
