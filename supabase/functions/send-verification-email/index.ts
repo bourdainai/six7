@@ -47,16 +47,47 @@ serve(async (req) => {
       );
     }
 
-    // Send verification email using Supabase's built-in method
-    const { error: resendError } = await supabaseClient.auth.resend({
-      type: 'signup',
+    console.log("📧 Generating verification link for user:", user.email);
+    
+    // Generate verification link using Supabase Admin API
+    const { data: linkData, error: linkError } = await supabaseClient.auth.admin.generateLink({
+      type: 'magiclink',
       email: user.email!,
     });
 
-    if (resendError) {
-      console.error("Error resending verification:", resendError);
-      throw new Error("Failed to resend verification email");
+    if (linkError || !linkData) {
+      console.error("❌ Error generating verification link:", linkError);
+      throw new Error("Failed to generate verification link");
     }
+
+    console.log("✅ Verification link generated");
+
+    // Send email via Resend
+    const { data: emailData, error: emailError } = await resend.emails.send({
+      from: "Grail Central <noreply@grailcentral.com>",
+      to: [user.email!],
+      subject: "Verify your email address",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Verify Your Email</h2>
+          <p>Thanks for signing up! Please verify your email address by clicking the button below:</p>
+          <a href="${linkData.properties.action_link}" 
+             style="display: inline-block; background-color: #000; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0;">
+            Verify Email
+          </a>
+          <p style="color: #666; font-size: 14px;">Or copy and paste this link into your browser:</p>
+          <p style="color: #666; font-size: 12px; word-break: break-all;">${linkData.properties.action_link}</p>
+          <p style="color: #999; font-size: 12px; margin-top: 40px;">If you didn't sign up for this account, you can safely ignore this email.</p>
+        </div>
+      `,
+    });
+
+    if (emailError) {
+      console.error("❌ Error sending email:", emailError);
+      throw new Error("Failed to send verification email");
+    }
+
+    console.log("✅ Verification email sent successfully:", emailData);
 
     return new Response(
       JSON.stringify({ 

@@ -41,7 +41,7 @@ const Browse = () => {
   const itemsPerPage = 24;
 
   const { data: listings, isLoading, error } = useQuery({
-    queryKey: ["active-listings", page, filters, sortBy],
+    queryKey: ["active-listings", page, JSON.stringify(filters), sortBy],
     queryFn: async () => {
       const from = (page - 1) * itemsPerPage;
       const to = from + itemsPerPage - 1;
@@ -50,8 +50,7 @@ const Browse = () => {
         .from("listings")
         .select(`
           *,
-          images:listing_images(image_url, display_order),
-          seller:profiles!seller_id(id, full_name, trust_score)
+          images:listing_images(image_url, display_order)
         `)
         .eq("status", "active");
 
