@@ -409,16 +409,32 @@ const ListingDetail = () => {
                         Buy All {variants.filter(v => v.is_available && !v.is_sold).length} Cards Together
                       </h3>
                       <p className="text-sm text-muted-foreground">
-                        Save money with our exclusive bundle price
+                        {variants.filter(v => v.is_available && !v.is_sold).length >= 2 
+                          ? 'Save money with our exclusive bundle price'
+                          : 'Bundle discount requires 2+ cards'}
                       </p>
                     </div>
                   </div>
                   
                   <div className="flex items-baseline gap-3 mb-4">
                     <span className="text-4xl font-bold text-primary">
-                      £{Number(listing.remaining_bundle_price || listing.bundle_price).toFixed(2)}
+                      £{(() => {
+                        const availableVariants = variants.filter(v => v.is_available && !v.is_sold);
+                        const individualTotal = availableVariants.reduce((sum, v) => sum + Number(v.variant_price), 0);
+                        
+                        // Only apply discount if 2+ cards remain
+                        if (availableVariants.length >= 2 && listing.bundle_discount_percentage && listing.bundle_discount_percentage > 0) {
+                          const discountedPrice = individualTotal * (1 - listing.bundle_discount_percentage / 100);
+                          return discountedPrice.toFixed(2);
+                        }
+                        
+                        // Otherwise show sum of individual prices
+                        return individualTotal.toFixed(2);
+                      })()}
                     </span>
-                    {listing.bundle_discount_percentage && listing.bundle_discount_percentage > 0 && (
+                    {variants.filter(v => v.is_available && !v.is_sold).length >= 2 && 
+                     listing.bundle_discount_percentage && 
+                     listing.bundle_discount_percentage > 0 && (
                       <Badge variant="secondary" className="text-base px-3 py-1">
                         Save {listing.bundle_discount_percentage}%
                       </Badge>
