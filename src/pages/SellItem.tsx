@@ -810,7 +810,7 @@ const SellItem = () => {
         {/* Multi-Card Bundle Interface */}
         {isCardCategory && isMultiCard && (
           <div className="mb-10 space-y-6">
-            {/* Cards Summary Panel - Improved UI */}
+            {/* Cards Summary Panel - Balanced Scrollable View */}
             {cards.length > 0 && (
               <Card>
                 <CardContent className="pt-6">
@@ -824,138 +824,130 @@ const SellItem = () => {
                     </Badge>
                   </div>
 
-                  {/* Cards Grid - No scrolling, better visibility */}
-                  <div className="space-y-4">
-                    {cards.map((card, index) => (
-                      <Card key={card.id} className="border-2 hover:border-primary/50 transition-colors">
-                        <CardContent className="p-4">
-                          <div className="grid grid-cols-[140px_1fr] gap-4">
-                            {/* Card Image Preview - Larger */}
-                            <div className="flex flex-col gap-2">
-                              {card.cardData.image_url ? (
-                                <div className="aspect-[2.5/3.5] bg-muted rounded-lg overflow-hidden border-2 border-border shadow-sm">
-                                  <img
-                                    src={card.cardData.image_url}
-                                    alt={card.cardData.title}
-                                    className="w-full h-full object-contain"
-                                    loading="lazy"
-                                  />
-                                </div>
-                              ) : (
-                                <div className="aspect-[2.5/3.5] bg-muted rounded-lg flex items-center justify-center border-2 border-dashed border-border">
-                                  <span className="text-xs text-muted-foreground">No image</span>
-                                </div>
-                              )}
-                              <Badge variant="outline" className="text-xs justify-center">
-                                Card {index + 1}
-                              </Badge>
-                            </div>
+                  {/* Scrollable Container with Better Card Visibility */}
+                  <ScrollArea className="h-[500px] pr-4">
+                    <div className="space-y-4">
+                      {cards.map((card, index) => (
+                        <Card key={card.id} className="border-2 hover:border-primary/50 transition-colors">
+                          <CardContent className="p-4">
+                            <div className="grid grid-cols-[100px_1fr_auto] gap-4 items-start">
+                              {/* Card Image Preview - Medium Size */}
+                              <div className="flex flex-col gap-2">
+                                {card.cardData.image_url ? (
+                                  <div className="aspect-[2.5/3.5] bg-muted rounded-lg overflow-hidden border-2 border-border shadow-sm">
+                                    <img
+                                      src={card.cardData.image_url}
+                                      alt={card.cardData.title}
+                                      className="w-full h-full object-contain"
+                                      loading="lazy"
+                                    />
+                                  </div>
+                                ) : (
+                                  <div className="aspect-[2.5/3.5] bg-muted rounded-lg flex items-center justify-center border-2 border-dashed border-border">
+                                    <span className="text-xs text-muted-foreground text-center p-2">No image</span>
+                                  </div>
+                                )}
+                                <Badge variant="outline" className="text-xs justify-center">
+                                  #{index + 1}
+                                </Badge>
+                              </div>
 
-                            {/* Card Details & Form */}
-                            <div className="space-y-3">
-                              {/* Card Info Header */}
-                              <div className="pb-3 border-b">
-                                <h4 className="font-semibold text-base line-clamp-2">{card.cardData.title}</h4>
-                                <div className="flex flex-wrap gap-2 mt-2">
-                                  <Badge variant="secondary" className="text-xs">
-                                    #{card.cardData.card_number}
-                                  </Badge>
-                                  <Badge variant="secondary" className="text-xs">
-                                    {card.cardData.set_code}
-                                  </Badge>
-                                  {card.cardData.rarity && (
-                                    <Badge variant="outline" className="text-xs">
-                                      {card.cardData.rarity}
+                              {/* Card Details & Form */}
+                              <div className="space-y-3 min-w-0">
+                                {/* Card Info Header */}
+                                <div>
+                                  <h4 className="font-semibold text-sm line-clamp-2">{card.cardData.title}</h4>
+                                  <div className="flex flex-wrap gap-1.5 mt-1.5">
+                                    <Badge variant="secondary" className="text-xs">
+                                      #{card.cardData.card_number}
                                     </Badge>
+                                    <Badge variant="secondary" className="text-xs">
+                                      {card.cardData.set_code}
+                                    </Badge>
+                                    {card.cardData.rarity && (
+                                      <Badge variant="outline" className="text-xs">
+                                        {card.cardData.rarity}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  {card.cardData.original_rrp && (
+                                    <p className="text-xs text-muted-foreground mt-1.5">
+                                      Value: <span className="font-semibold text-foreground">£{card.cardData.original_rrp.toFixed(2)}</span>
+                                    </p>
                                   )}
                                 </div>
-                                {card.cardData.original_rrp && (
-                                  <p className="text-sm text-muted-foreground mt-2">
-                                    Market Value: <span className="font-semibold text-foreground">£{card.cardData.original_rrp.toFixed(2)}</span>
-                                  </p>
-                                )}
-                              </div>
 
-                              {/* Required Fields - Prominent */}
-                              <Alert variant="destructive" className={`${card.condition && card.quantity >= 1 ? 'hidden' : ''}`}>
-                                <AlertCircle className="h-4 w-4" />
-                                <AlertDescription className="text-sm">
-                                  Condition and quantity are required for this card
-                                </AlertDescription>
-                              </Alert>
+                                {/* Form Grid */}
+                                <div className="grid grid-cols-2 gap-2">
+                                  {/* Condition - Required */}
+                                  <div className="space-y-1.5">
+                                    <Label className="text-xs font-semibold flex items-center gap-1">
+                                      Condition
+                                      <span className="text-destructive">*</span>
+                                    </Label>
+                                    <Select
+                                      value={card.condition}
+                                      onValueChange={(val) => updateCardEntry(card.id, { condition: val as ConditionType })}
+                                    >
+                                      <SelectTrigger className={`h-9 text-sm ${!card.condition ? 'border-destructive' : ''}`}>
+                                        <SelectValue placeholder="Select..." />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="new_with_tags">Mint</SelectItem>
+                                        <SelectItem value="like_new">Near Mint</SelectItem>
+                                        <SelectItem value="excellent">Lightly Played</SelectItem>
+                                        <SelectItem value="good">Moderately Played</SelectItem>
+                                        <SelectItem value="fair">Heavily Played</SelectItem>
+                                        <SelectItem value="poor">Damaged</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
 
-                              {/* Form Grid */}
-                              <div className="grid grid-cols-2 gap-3">
-                                {/* Condition - Required */}
-                                <div className="space-y-2">
-                                  <Label className="text-sm font-semibold flex items-center gap-1">
-                                    Condition
-                                    <span className="text-destructive">*</span>
-                                  </Label>
-                                  <Select
-                                    value={card.condition}
-                                    onValueChange={(val) => updateCardEntry(card.id, { condition: val as ConditionType })}
-                                  >
-                                    <SelectTrigger className={`h-10 ${!card.condition ? 'border-destructive border-2' : ''}`}>
-                                      <SelectValue placeholder="Choose condition..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="new_with_tags">Mint (M)</SelectItem>
-                                      <SelectItem value="like_new">Near Mint (NM)</SelectItem>
-                                      <SelectItem value="excellent">Lightly Played (LP)</SelectItem>
-                                      <SelectItem value="good">Moderately Played (MP)</SelectItem>
-                                      <SelectItem value="fair">Heavily Played (HP)</SelectItem>
-                                      <SelectItem value="poor">Damaged (DMG)</SelectItem>
-                                    </SelectContent>
-                                  </Select>
+                                  {/* Quantity - Required */}
+                                  <div className="space-y-1.5">
+                                    <Label className="text-xs font-semibold flex items-center gap-1">
+                                      Qty
+                                      <span className="text-destructive">*</span>
+                                    </Label>
+                                    <Input
+                                      type="number"
+                                      min="1"
+                                      max="99"
+                                      value={card.quantity}
+                                      onChange={(e) => updateCardEntry(card.id, { quantity: parseInt(e.target.value) || 1 })}
+                                      className={`h-9 ${card.quantity < 1 ? 'border-destructive' : ''}`}
+                                    />
+                                  </div>
                                 </div>
 
-                                {/* Quantity - Required */}
-                                <div className="space-y-2">
-                                  <Label className="text-sm font-semibold flex items-center gap-1">
-                                    Quantity
-                                    <span className="text-destructive">*</span>
-                                  </Label>
+                                {/* Notes */}
+                                <div className="space-y-1.5">
+                                  <Label className="text-xs">Notes (optional)</Label>
                                   <Input
-                                    type="number"
-                                    min="1"
-                                    max="99"
-                                    value={card.quantity}
-                                    onChange={(e) => updateCardEntry(card.id, { quantity: parseInt(e.target.value) || 1 })}
-                                    className={`h-10 ${card.quantity < 1 ? 'border-destructive border-2' : ''}`}
+                                    placeholder="e.g., Minor edge wear..."
+                                    value={card.notes}
+                                    onChange={(e) => updateCardEntry(card.id, { notes: e.target.value })}
+                                    className="h-9 text-sm"
                                   />
                                 </div>
-                              </div>
-
-                              {/* Notes - Full Width */}
-                              <div className="space-y-2">
-                                <Label className="text-sm">Additional Notes (Optional)</Label>
-                                <Input
-                                  placeholder="e.g., Minor edge wear on top right corner..."
-                                  value={card.notes}
-                                  onChange={(e) => updateCardEntry(card.id, { notes: e.target.value })}
-                                  className="h-10"
-                                />
                               </div>
 
                               {/* Remove Button */}
-                              <div className="pt-2 flex justify-end">
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={() => removeCard(card.id)}
-                                  className="gap-2"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                  Remove Card
-                                </Button>
-                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 flex-shrink-0"
+                                onClick={() => removeCard(card.id)}
+                                title="Remove card"
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
                             </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </ScrollArea>
                 </CardContent>
               </Card>
             )}
