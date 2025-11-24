@@ -658,7 +658,9 @@ export type Database = {
           display_order: number | null
           id: string
           is_available: boolean | null
+          is_sold: boolean | null
           listing_id: string
+          sold_at: string | null
           updated_at: string | null
           variant_condition:
             | Database["public"]["Enums"]["condition_type"]
@@ -674,7 +676,9 @@ export type Database = {
           display_order?: number | null
           id?: string
           is_available?: boolean | null
+          is_sold?: boolean | null
           listing_id: string
+          sold_at?: string | null
           updated_at?: string | null
           variant_condition?:
             | Database["public"]["Enums"]["condition_type"]
@@ -690,7 +694,9 @@ export type Database = {
           display_order?: number | null
           id?: string
           is_available?: boolean | null
+          is_sold?: boolean | null
           listing_id?: string
+          sold_at?: string | null
           updated_at?: string | null
           variant_condition?:
             | Database["public"]["Enums"]["condition_type"]
@@ -723,6 +729,9 @@ export type Database = {
           ai_confidence: Json | null
           ambitious_price: number | null
           brand: string | null
+          bundle_discount_percentage: number | null
+          bundle_price: number | null
+          bundle_type: string | null
           card_id: string | null
           card_number: string | null
           category: string | null
@@ -741,12 +750,14 @@ export type Database = {
           import_metadata: Json | null
           last_view_at: string | null
           material: string | null
+          original_bundle_price: number | null
           original_rrp: number | null
           package_dimensions: Json | null
           package_weight: number | null
           portfolio_name: string | null
           published_at: string | null
           quick_sale_price: number | null
+          remaining_bundle_price: number | null
           saves: number | null
           search_vector: unknown
           seller_id: string
@@ -773,6 +784,9 @@ export type Database = {
           ai_confidence?: Json | null
           ambitious_price?: number | null
           brand?: string | null
+          bundle_discount_percentage?: number | null
+          bundle_price?: number | null
+          bundle_type?: string | null
           card_id?: string | null
           card_number?: string | null
           category?: string | null
@@ -791,12 +805,14 @@ export type Database = {
           import_metadata?: Json | null
           last_view_at?: string | null
           material?: string | null
+          original_bundle_price?: number | null
           original_rrp?: number | null
           package_dimensions?: Json | null
           package_weight?: number | null
           portfolio_name?: string | null
           published_at?: string | null
           quick_sale_price?: number | null
+          remaining_bundle_price?: number | null
           saves?: number | null
           search_vector?: unknown
           seller_id: string
@@ -823,6 +839,9 @@ export type Database = {
           ai_confidence?: Json | null
           ambitious_price?: number | null
           brand?: string | null
+          bundle_discount_percentage?: number | null
+          bundle_price?: number | null
+          bundle_type?: string | null
           card_id?: string | null
           card_number?: string | null
           category?: string | null
@@ -841,12 +860,14 @@ export type Database = {
           import_metadata?: Json | null
           last_view_at?: string | null
           material?: string | null
+          original_bundle_price?: number | null
           original_rrp?: number | null
           package_dimensions?: Json | null
           package_weight?: number | null
           portfolio_name?: string | null
           published_at?: string | null
           quick_sale_price?: number | null
+          remaining_bundle_price?: number | null
           saves?: number | null
           search_vector?: unknown
           seller_id?: string
@@ -3749,6 +3770,10 @@ export type Database = {
       }
     }
     Functions: {
+      calculate_remaining_bundle_price: {
+        Args: { listing_id_param: string }
+        Returns: number
+      }
       ensure_admin_role: { Args: never; Returns: undefined }
       get_next_set_to_sync: {
         Args: never
