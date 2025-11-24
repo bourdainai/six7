@@ -27,6 +27,7 @@ interface AdminLayoutProps {
 
 const adminMenuItems = [
   { title: "Dashboard", url: "/admin", icon: Home },
+  { title: "Live Stats", url: "/admin/live", icon: BarChart3 },
   { title: "Card Restoration", url: "/admin/restore-cards", icon: Database },
   { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
   { title: "Moderation", url: "/admin/moderation", icon: Shield },

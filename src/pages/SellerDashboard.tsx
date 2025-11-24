@@ -16,6 +16,7 @@ import { OnboardingStatusCards } from "@/components/seller/OnboardingStatusCards
 import { BalanceCards } from "@/components/seller/BalanceCards";
 import { ListingsManagement } from "@/components/seller/ListingsManagement";
 import { CollectrImportDialog } from "@/components/import/CollectrImportDialog";
+import { CreditsBanner } from "@/components/seller/CreditsBanner";
 
 const SellerDashboard = () => {
   const { user } = useAuth();
@@ -167,6 +168,8 @@ const SellerDashboard = () => {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
+            <CreditsBanner />
+            
             <OnboardingStatusCards 
               profile={profile}
               onStartOnboarding={() => onboardMutation.mutate()}

@@ -30,6 +30,7 @@ const SellerOnboarding = lazy(() => import("./pages/SellerOnboarding"));
 const SellerAccountManagement = lazy(() => import("./pages/SellerAccountManagement"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminAnalytics = lazy(() => import("./pages/AdminAnalytics"));
+const AdminLiveStats = lazy(() => import("./pages/AdminLiveStats"));
 const AdminCardRestoration = lazy(() => import("./pages/AdminCardRestoration"));
 const AdminShipping = lazy(() => import("./pages/AdminShipping"));
 const ModerationDashboard = lazy(() => import("./pages/ModerationDashboard"));
@@ -89,6 +90,7 @@ const AppRoutes = () => {
       <Route path="/seller/verification" element={<Suspense fallback={<PageSkeleton />}><SellerVerification /></Suspense>} />
       <Route path="/admin" element={<Suspense fallback={<DashboardSkeleton />}><AdminDashboard /></Suspense>} />
       <Route path="/admin/analytics" element={<Suspense fallback={<DashboardSkeleton />}><AdminAnalytics /></Suspense>} />
+      <Route path="/admin/live" element={<Suspense fallback={<DashboardSkeleton />}><AdminLiveStats /></Suspense>} />
       <Route path="/admin/restore-cards" element={<Suspense fallback={<DashboardSkeleton />}><AdminCardRestoration /></Suspense>} />
       <Route path="/admin/shipping" element={<Suspense fallback={<DashboardSkeleton />}><AdminShipping /></Suspense>} />
       <Route path="/admin/moderation" element={<Suspense fallback={<DashboardSkeleton />}><ModerationDashboard /></Suspense>} />
