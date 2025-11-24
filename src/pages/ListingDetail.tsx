@@ -397,8 +397,139 @@ const ListingDetail = () => {
               <p className="text-sm text-muted-foreground font-normal">{listing?.brand}</p>
             </div>
 
-            {/* Variant Selector - Show if has_variants is true */}
-            {listing?.has_variants && variants && variants.length > 0 && (
+            {/* BUNDLE WITH DISCOUNT MODE - Special Bundle Purchase UI */}
+            {listing?.bundle_type === 'bundle_with_discount' && listing?.has_variants && variants && variants.length > 0 && (
+              <div className="space-y-4">
+                {/* Primary: Buy Bundle Option */}
+                <div className="border-2 border-primary/50 rounded-lg p-5 bg-primary/5">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="space-y-1">
+                      <Badge variant="default" className="mb-2">Best Value - Bundle Deal</Badge>
+                      <h3 className="text-lg font-semibold text-foreground">
+                        Buy All {variants.filter(v => v.is_available && !v.is_sold).length} Cards Together
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Save money with our exclusive bundle price
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-baseline gap-3 mb-4">
+                    <span className="text-4xl font-bold text-primary">
+                      £{Number(listing.remaining_bundle_price || listing.bundle_price).toFixed(2)}
+                    </span>
+                    {listing.bundle_discount_percentage && listing.bundle_discount_percentage > 0 && (
+                      <Badge variant="secondary" className="text-base px-3 py-1">
+                        Save {listing.bundle_discount_percentage}%
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Show original price if cards have been sold */}
+                  {listing.original_bundle_price && 
+                   listing.remaining_bundle_price && 
+                   listing.original_bundle_price !== listing.remaining_bundle_price && (
+                    <div className="mb-3 text-sm text-muted-foreground">
+                      <span className="line-through">Originally £{Number(listing.original_bundle_price).toFixed(2)}</span>
+                      <span className="ml-2 text-orange-600 font-medium">
+                        ({variants.filter(v => v.is_sold).length} card(s) already sold)
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="space-y-2 mb-4">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Bundle includes:
+                    </p>
+                    {variants.filter(v => v.is_available && !v.is_sold).map((variant) => (
+                      <div key={variant.id} className="flex items-center justify-between text-sm bg-background/50 rounded px-3 py-2">
+                        <span className="font-medium truncate flex-1">{variant.variant_name}</span>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs">
+                            {formatCondition(variant.variant_condition)}
+                          </Badge>
+                          <span className="text-muted-foreground">£{Number(variant.variant_price).toFixed(2)}</span>
+                        </div>
+                      </div>
+                    ))}
+                    <div className="flex items-center justify-between text-sm font-semibold pt-2 border-t">
+                      <span>Individual total:</span>
+                      <span className="line-through text-muted-foreground">
+                        £{variants.filter(v => v.is_available && !v.is_sold)
+                          .reduce((sum, v) => sum + Number(v.variant_price), 0).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <Button
+                    onClick={handleBuyNow}
+                    className="w-full h-12 text-base font-semibold"
+                    size="lg"
+                    disabled={listing.status !== "active"}
+                  >
+                    <ShoppingBag className="mr-2 h-5 w-5" />
+                    Buy Bundle Now
+                  </Button>
+                </div>
+
+                {/* Secondary: Buy Individual Cards */}
+                <div className="border border-border/50 rounded-lg p-4 bg-secondary/5">
+                  <h4 className="text-sm font-semibold text-foreground mb-3">
+                    Or Buy Individual Cards
+                  </h4>
+                  <div className="space-y-2 mb-3">
+                    <label className="text-sm text-muted-foreground">Select a card:</label>
+                    <Select value={selectedVariant || undefined} onValueChange={setSelectedVariant}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Choose a card..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {variants.filter(v => v.is_available && !v.is_sold).map((variant) => (
+                          <SelectItem key={variant.id} value={variant.id}>
+                            <div className="flex items-center justify-between gap-4 w-full pr-4">
+                              <span className="font-medium truncate">{variant.variant_name}</span>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <Badge variant="secondary" className="text-xs">
+                                  {formatCondition(variant.variant_condition)}
+                                </Badge>
+                                <span className="font-semibold text-sm">£{Number(variant.variant_price).toFixed(2)}</span>
+                              </div>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {selectedVariant && currentVariant && (
+                    <div className="mb-3 p-3 bg-background rounded border border-border/50">
+                      <div className="flex items-baseline gap-2 mb-1">
+                        <span className="text-2xl font-semibold">
+                          £{Number(currentVariant.variant_price).toFixed(2)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Quantity available: {currentVariant.variant_quantity}
+                      </p>
+                    </div>
+                  )}
+
+                  <Button
+                    onClick={handleBuyNow}
+                    variant="outline"
+                    className="w-full h-11"
+                    size="lg"
+                    disabled={!selectedVariant || listing.status !== "active"}
+                  >
+                    <ShoppingBag className="mr-2 h-4 w-4" />
+                    Buy Selected Card Only
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* VARIANTS ONLY MODE - Standard Variant Selector */}
+            {((listing?.bundle_type === 'variants_only' || listing?.bundle_type === 'none') && listing?.has_variants && variants && variants.length > 0) && (
               <div className="space-y-2 border border-border/50 rounded-lg p-4 bg-secondary/10">
                 <label className="text-sm font-semibold text-foreground">Select Card</label>
                 <Select value={selectedVariant || undefined} onValueChange={setSelectedVariant}>
@@ -435,7 +566,11 @@ const ListingDetail = () => {
             <div className="space-y-2">
               <div className="flex items-baseline gap-3">
                 <span className="text-4xl font-light text-foreground tracking-tight">
-                  {listing?.has_variants && !selectedVariant ? 'From ' : ''}£{Number(displayPrice).toFixed(2)}
+                  {/* Show bundle price if bundle_with_discount, otherwise show variant/listing price */}
+                  {listing?.bundle_type === 'bundle_with_discount' && listing?.remaining_bundle_price
+                    ? `£${Number(listing.remaining_bundle_price).toFixed(2)}`
+                    : (listing?.has_variants && !selectedVariant ? 'From ' : '') + `£${Number(displayPrice).toFixed(2)}`
+                  }
                 </span>
                 {listing?.original_rrp && (
                   <>
@@ -448,7 +583,12 @@ const ListingDetail = () => {
                   </>
                 )}
               </div>
-              {listing.original_rrp && (
+              {listing?.bundle_type === 'bundle_with_discount' && (
+                <p className="text-sm text-muted-foreground font-normal">
+                  Bundle price for all available cards
+                </p>
+              )}
+              {listing?.original_rrp && listing?.bundle_type !== 'bundle_with_discount' && (
                 <p className="text-xs text-muted-foreground font-normal">
                   Original price: £{Number(listing.original_rrp).toFixed(2)}
                 </p>
@@ -699,18 +839,21 @@ const ListingDetail = () => {
                   Make Trade Offer
                 </Button>
 
-                <Button
-                  onClick={handleBuyNow}
-                  className="w-full h-12 text-base font-medium"
-                  size="lg"
-                  disabled={listing.status !== "active" || (listing.has_variants && !selectedVariant)}
-                >
-                  <ShoppingBag className="mr-2 h-5 w-5" />
-                  {listing.status === "active" ? "Buy Now" : "Sold"}
-                </Button>
+                {/* Only show standard Buy Now button for non-bundle or variants-only mode */}
+                {listing?.bundle_type !== 'bundle_with_discount' && (
+                  <Button
+                    onClick={handleBuyNow}
+                    className="w-full h-12 text-base font-medium"
+                    size="lg"
+                    disabled={listing.status !== "active" || (listing.has_variants && !selectedVariant)}
+                  >
+                    <ShoppingBag className="mr-2 h-5 w-5" />
+                    {listing.status === "active" ? "Buy Now" : "Sold"}
+                  </Button>
+                )}
 
-                {/* Bulk Purchase Button - Show for variant listings */}
-                {listing.has_variants && variants && variants.length > 1 && (
+                {/* Bulk Purchase Button - Show for variants_only mode with multiple cards */}
+                {listing.bundle_type === 'variants_only' && listing.has_variants && variants && variants.length > 1 && (
                   <Button
                     onClick={() => setBulkPurchaseOpen(true)}
                     variant="outline"
