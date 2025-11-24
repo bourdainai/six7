@@ -161,3 +161,18 @@ verify_jwt = false
 
 [functions.validate-card-images]
 verify_jwt = false
+
+[functions.send-verification-email]
+verify_jwt = true
+
+[functions.credit-check-balance]
+verify_jwt = true
+
+[functions.credit-activate-promo]
+verify_jwt = true
+
+[functions.track-user-session]
+verify_jwt = true
+
+[functions.admin-live-stats]
+verify_jwt = true
