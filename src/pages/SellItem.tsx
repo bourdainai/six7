@@ -754,6 +754,21 @@ const SellItem = () => {
               variantImageUrls.push(card.cardData.image_url);
             }
             
+            // Validate card_id exists in pokemon_card_attributes before using it
+            let validCardId: string | null = null;
+            if (card.cardData.card_number && card.cardData.set_code) {
+              const constructedCardId = `${card.cardData.set_code}-${card.cardData.card_number}`;
+              const { data: cardExists } = await supabase
+                .from('pokemon_card_attributes')
+                .select('card_id')
+                .eq('card_id', constructedCardId)
+                .single();
+              
+              if (cardExists) {
+                validCardId = constructedCardId;
+              }
+            }
+            
             // Insert variant into database
             const { data: newVariant, error: variantError } = await supabase
               .from('listing_variants')
@@ -764,7 +779,7 @@ const SellItem = () => {
                 variant_condition: card.condition as ConditionType,
                 variant_quantity: card.quantity,
                 variant_images: variantImageUrls,
-                card_id: card.cardData.card_number ? `${card.cardData.set_code}-${card.cardData.card_number}` : null,
+                card_id: validCardId,
                 is_available: true,
                 is_sold: false,
                 display_order: idx
