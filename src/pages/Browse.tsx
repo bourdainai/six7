@@ -40,9 +40,10 @@ const Browse = () => {
   const [page, setPage] = useState(1);
   const itemsPerPage = 24;
 
-  const { data: listings, isLoading } = useQuery<ListingSummary[]>({
+  const { data: listings, isLoading, error } = useQuery<ListingSummary[]>({
     queryKey: ["active-listings", page, filters, sortBy],
     queryFn: async () => {
+      console.log("Browse query executing with filters:", filters);
       const from = (page - 1) * itemsPerPage;
       const to = from + itemsPerPage - 1;
 
@@ -123,12 +124,35 @@ const Browse = () => {
 
       query = query.range(from, to);
 
-      const { data, error } = await query;
-
-      if (error) throw error;
+      const { data, error: queryError } = await query;
+      
+      console.log("Browse query completed:", { 
+        dataCount: data?.length, 
+        error: queryError,
+        hasData: !!data 
+      });
+      
+      if (queryError) {
+        console.error("Browse query error:", queryError);
+        throw queryError;
+      }
       return data as ListingSummary[];
     },
     staleTime: 1000 * 60, // 1 minute
+    retry: 1,
+  });
+
+  // Log error for debugging
+  if (error) {
+    console.error("Browse page query error:", error);
+  }
+
+  // Log loading state
+  console.log("Browse state:", { 
+    isLoading, 
+    hasListings: !!listings, 
+    listingsCount: listings?.length,
+    hasError: !!error 
   });
 
   // For semantic/vibe search results, use those directly
