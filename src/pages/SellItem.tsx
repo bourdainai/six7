@@ -1676,6 +1676,19 @@ const SellItem = () => {
                     />
                   </div>
 
+                  {/* Important: Bundle Discount Rule */}
+                  {bundleDiscountEnabled && (
+                    <Alert className="border-blue-200 bg-blue-50">
+                      <Info className="h-4 w-4 text-blue-600" />
+                      <AlertTitle className="text-blue-900">Bundle Discount Rule</AlertTitle>
+                      <AlertDescription className="text-blue-800">
+                        Your discount percentage will <strong>only apply when 2 or more cards remain available</strong>. 
+                        Once only 1 card is left, buyers will pay the individual card price without discount.
+                        This ensures fair pricing as your bundle reduces in size.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
                   {/* Individual Card Prices Summary */}
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Individual Card Prices:</Label>

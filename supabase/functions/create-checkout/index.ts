@@ -154,7 +154,17 @@ serve(async (req) => {
     if (offerId && offerAmount !== null) {
       itemPrice = offerAmount;
     } else if (purchaseType === 'bundle') {
-      itemPrice = Number(listing.remaining_bundle_price || 0);
+      // For bundle purchases, calculate based on available variants
+      const availableVariants = bundleVariants.filter(v => v.is_available && !v.is_sold);
+      const individualTotal = availableVariants.reduce((sum, v) => sum + Number(v.variant_price), 0);
+      
+      // Only apply discount if 2+ cards remain
+      if (availableVariants.length >= 2 && listing.bundle_discount_percentage && listing.bundle_discount_percentage > 0) {
+        itemPrice = individualTotal * (1 - listing.bundle_discount_percentage / 100);
+      } else {
+        // No discount applied, use sum of individual prices
+        itemPrice = individualTotal;
+      }
     } else if (variant) {
       itemPrice = Number(variant.variant_price);
     } else {
