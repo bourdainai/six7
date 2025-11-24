@@ -895,7 +895,17 @@ const SellItem = () => {
 
       setPublishedListingId(listing.id);
       
-      const bundleMode = isMultiCard 
+      // Try to activate promotional credits if eligible
+      try {
+        await supabase.functions.invoke('credit-activate-promo', {
+          body: { listingId: listing.id }
+        });
+      } catch (promoError) {
+        // Silently fail - promo activation is not critical
+        console.log('Promo activation not applicable or failed:', promoError);
+      }
+      
+      const bundleMode = isMultiCard
         ? (bundleDiscountEnabled ? 'bundle with discount' : 'individual variants')
         : null;
       

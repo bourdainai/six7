@@ -794,9 +794,21 @@ const ListingDetail = () => {
                   </div>
                 </div>
                 <div className="space-y-3">
-                  <SellerReputation sellerId={listing.seller_id} compact />
+                  <button
+                    onClick={() => navigate(`/seller/${listing.seller_id}`)}
+                    className="w-full hover:opacity-70 transition-opacity"
+                  >
+                    <SellerReputation sellerId={listing.seller_id} compact />
+                  </button>
                   <SellerBadges sellerId={listing.seller_id} size="sm" />
                   <TrustScore sellerId={listing.seller_id} compact />
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => navigate(`/seller/${listing.seller_id}`)}
+                  >
+                    View Seller Profile
+                  </Button>
                 </div>
               </div>
             </div>
