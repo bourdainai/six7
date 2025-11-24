@@ -33,7 +33,9 @@ interface CardEntry {
   cardData: MagicCardData;
   condition: ConditionType | "";
   quantity: number;
+  price: number; // Individual price for this variant
   notes: string;
+  uploadedImages?: File[]; // Variant-specific images
 }
 
 interface ListingData {
@@ -191,13 +193,15 @@ const SellItem = () => {
 
   const handleMagicSearchSelect = (cardData: MagicCardData) => {
     if (isMultiCard) {
-      // Add to cards array
+      // Add to cards array with price
       const newCard: CardEntry = {
         id: `card-${Date.now()}-${Math.random()}`,
         cardData,
         condition: "",
         quantity: 1,
-        notes: ""
+        price: cardData.original_rrp || 0,
+        notes: "",
+        uploadedImages: []
       };
       setCards(prev => [...prev, newCard]);
       setShowCardSearch(false);
@@ -258,6 +262,25 @@ const SellItem = () => {
 
   const updateCardEntry = (cardId: string, updates: Partial<CardEntry>) => {
     setCards(prev => prev.map(c => c.id === cardId ? { ...c, ...updates } : c));
+  };
+
+  const handleVariantImageUpload = (cardId: string, files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    
+    const newFiles = Array.from(files);
+    setCards(prev => prev.map(card => 
+      card.id === cardId 
+        ? { ...card, uploadedImages: [...(card.uploadedImages || []), ...newFiles] }
+        : card
+    ));
+  };
+
+  const removeVariantImage = (cardId: string, index: number) => {
+    setCards(prev => prev.map(card => 
+      card.id === cardId 
+        ? { ...card, uploadedImages: card.uploadedImages?.filter((_, i) => i !== index) || [] }
+        : card
+    ));
   };
 
   // Description grouping options
@@ -515,11 +538,11 @@ const SellItem = () => {
       }
 
       // Check all cards have required fields
-      const invalidCards = cards.filter(c => !c.condition || c.quantity < 1);
+      const invalidCards = cards.filter(c => !c.condition || c.quantity < 1 || !c.price || c.price <= 0);
       if (invalidCards.length > 0) {
         toast({
           title: "Incomplete card details",
-          description: "All cards must have a condition and quantity of at least 1.",
+          description: "All cards must have a condition, quantity, and price greater than 0.",
           variant: "destructive"
         });
         return;
@@ -577,12 +600,16 @@ const SellItem = () => {
     setPublishing(true);
 
     try {
+      // For multi-card bundles, calculate the lowest variant price for the parent listing
+      const lowestPrice = isMultiCard ? Math.min(...cards.map(c => c.price)) : Number(selectedPrice);
+      
       const listingPayload: ListingInsert = {
         seller_id: user.id,
         title: listingData.title,
         description: listingData.description,
         category: listingData.category,
         subcategory: isMultiCard ? "Multi-Card Bundle" : (listingData.subcategory || null),
+        has_variants: isMultiCard, // Flag this as a variant-based listing
 
         // Card specific fields (only for single card Trading Cards)
         set_code: (isCardCategory && !isMultiCard) ? (listingData.set_code || null) : null,
@@ -598,18 +625,9 @@ const SellItem = () => {
         
         category_attributes: isMultiCard ? {
           is_bundle: true,
+          has_variants: true,
           card_count: cards.length,
-          cards: cards.map(c => ({
-            name: c.cardData.title,
-            set_code: c.cardData.set_code,
-            card_number: c.cardData.card_number,
-            condition: c.condition,
-            quantity: c.quantity,
-            rarity: c.cardData.rarity,
-            notes: c.notes || null,
-            image_url: c.cardData.image_url || null,
-            market_price: c.cardData.original_rrp || null
-          }))
+          total_value: cards.reduce((sum, c) => sum + (c.price * c.quantity), 0)
         } : (isCardCategory ? {
           rarity: listingData.rarity || null,
           is_graded: listingData.is_graded || false,
@@ -619,7 +637,7 @@ const SellItem = () => {
           quantity: listingData.quantity || 1,
         } : {})),
 
-        seller_price: Number(selectedPrice),
+        seller_price: lowestPrice,
         status: "active",
         published_at: new Date().toISOString(),
         ai_answer_engines_enabled: aiAnswerEnginesEnabled,
@@ -640,48 +658,93 @@ const SellItem = () => {
 
       if (listingError) throw listingError;
 
-      // Image handling for multi-card bundles vs single items
+      // Image handling and variant creation for multi-card bundles vs single items
       if (isMultiCard && cards.length > 0) {
-        // Multi-card bundle: Auto-pull card images from database
-        const cardImages = cards
-          .filter(c => c.cardData.image_url)
-          .map(c => c.cardData.image_url!)
-          .slice(0, 6); // Take first 6 card images
-
-        // Insert card images as listing images
-        for (let i = 0; i < cardImages.length; i++) {
-          await supabase.from('listing_images').insert({
-            listing_id: listing.id,
-            image_url: cardImages[i],
-            display_order: i,
-            is_stock_photo: true
-          });
-        }
-
-        // If user uploaded additional photos, add them after card images
-        if (imageFiles.length > 0) {
-          for (let i = 0; i < imageFiles.length; i++) {
-            const file = imageFiles[i];
-            const fileName = `${listing.id}/${Date.now()}-${i}.jpg`;
-
-            const { error: uploadError } = await supabase.storage
-              .from('listing-images')
-              .upload(fileName, file);
-
-            if (uploadError) {
-              if (import.meta.env.DEV) console.error("Image upload error:", uploadError);
-              continue;
+        // Create variants for each card in the bundle
+        for (let idx = 0; idx < cards.length; idx++) {
+          const card = cards[idx];
+          
+          // Upload variant-specific images if any
+          const variantImageUrls: string[] = [];
+          
+          if (card.uploadedImages && card.uploadedImages.length > 0) {
+            for (let imgIdx = 0; imgIdx < card.uploadedImages.length; imgIdx++) {
+              const file = card.uploadedImages[imgIdx];
+              const fileName = `${listing.id}/variants/${card.id}-${Date.now()}-${imgIdx}.jpg`;
+              
+              const { error: uploadError } = await supabase.storage
+                .from('listing-images')
+                .upload(fileName, file);
+              
+              if (!uploadError) {
+                const { data: { publicUrl } } = supabase.storage
+                  .from('listing-images')
+                  .getPublicUrl(fileName);
+                variantImageUrls.push(publicUrl);
+              }
             }
-
-            const { data: { publicUrl } } = supabase.storage
-              .from('listing-images')
-              .getPublicUrl(fileName);
-
+          }
+          
+          // Add stock photo if no uploaded images
+          if (variantImageUrls.length === 0 && card.cardData.image_url) {
+            variantImageUrls.push(card.cardData.image_url);
+          }
+          
+          // Insert variant into database
+          const { error: variantError } = await supabase
+            .from('listing_variants')
+            .insert({
+              listing_id: listing.id,
+              variant_name: card.cardData.title,
+              variant_price: card.price,
+              variant_condition: card.condition as ConditionType,
+              variant_quantity: card.quantity,
+              variant_images: variantImageUrls,
+              card_id: card.cardData.card_number ? `${card.cardData.set_code}-${card.cardData.card_number}` : null,
+              is_available: true,
+              display_order: idx
+            });
+          
+          if (variantError) {
+            console.error("Variant creation error:", variantError);
+          }
+        }
+        
+        // Use first card's images for parent listing display
+        const firstCardImages = cards[0].uploadedImages && cards[0].uploadedImages.length > 0
+          ? cards[0].uploadedImages
+          : (cards[0].cardData.image_url ? [cards[0].cardData.image_url] : []);
+        
+        // Insert parent listing images (first variant's images)
+        for (let i = 0; i < Math.min(firstCardImages.length, 6); i++) {
+          const imageSource = firstCardImages[i];
+          
+          if (typeof imageSource === 'string') {
+            // Stock photo URL
             await supabase.from('listing_images').insert({
               listing_id: listing.id,
-              image_url: publicUrl,
-              display_order: cardImages.length + i,
-              is_stock_photo: false
+              image_url: imageSource,
+              display_order: i,
+              is_stock_photo: true
+            });
+          } else {
+            // File object - already uploaded above, skip parent listing images
+          }
+        }
+        
+        // If no images at all, use aggregated card images
+        if (firstCardImages.length === 0) {
+          const cardImages = cards
+            .filter(c => c.cardData.image_url)
+            .map(c => c.cardData.image_url!)
+            .slice(0, 6);
+          
+          for (let i = 0; i < cardImages.length; i++) {
+            await supabase.from('listing_images').insert({
+              listing_id: listing.id,
+              image_url: cardImages[i],
+              display_order: i,
+              is_stock_photo: true
             });
           }
         }
@@ -940,17 +1003,70 @@ const SellItem = () => {
                                       className={`h-9 ${card.quantity < 1 ? 'border-destructive' : ''}`}
                                     />
                                   </div>
+
+                                  {/* Price - Required */}
+                                  <div className="space-y-1.5 col-span-2">
+                                    <Label className="text-xs font-semibold flex items-center gap-1">
+                                      Price (£)
+                                      <span className="text-destructive">*</span>
+                                    </Label>
+                                    <Input
+                                      type="number"
+                                      min="0.01"
+                                      step="0.01"
+                                      value={card.price || ""}
+                                      onChange={(e) => updateCardEntry(card.id, { price: parseFloat(e.target.value) || 0 })}
+                                      className={`h-9 ${!card.price || card.price <= 0 ? 'border-destructive' : ''}`}
+                                      placeholder="0.00"
+                                    />
+                                  </div>
                                 </div>
 
-                                {/* Notes */}
+                                {/* Variant Images (Optional) */}
                                 <div className="space-y-1.5">
-                                  <Label className="text-xs">Notes (optional)</Label>
-                                  <Input
-                                    placeholder="e.g., Minor edge wear..."
-                                    value={card.notes}
-                                    onChange={(e) => updateCardEntry(card.id, { notes: e.target.value })}
-                                    className="h-9 text-sm"
-                                  />
+                                  <Label className="text-xs">Variant Photos (optional)</Label>
+                                  <div className="space-y-2">
+                                    {card.uploadedImages && card.uploadedImages.length > 0 && (
+                                      <div className="flex flex-wrap gap-2">
+                                        {card.uploadedImages.map((file, idx) => (
+                                          <div key={idx} className="relative group">
+                                            <img
+                                              src={URL.createObjectURL(file)}
+                                              alt={`Variant ${idx + 1}`}
+                                              className="w-16 h-16 object-cover rounded border"
+                                            />
+                                            <Button
+                                              type="button"
+                                              size="icon"
+                                              variant="destructive"
+                                              className="absolute -top-2 -right-2 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                              onClick={() => removeVariantImage(card.id, idx)}
+                                            >
+                                              <X className="h-3 w-3" />
+                                            </Button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      className="w-full h-8"
+                                      onClick={() => document.getElementById(`variant-upload-${card.id}`)?.click()}
+                                    >
+                                      <Camera className="w-3 h-3 mr-2" />
+                                      {card.uploadedImages?.length ? 'Add More Photos' : 'Add Photos'}
+                                    </Button>
+                                    <input
+                                      id={`variant-upload-${card.id}`}
+                                      type="file"
+                                      accept="image/*"
+                                      multiple
+                                      className="hidden"
+                                      onChange={(e) => handleVariantImageUpload(card.id, e.target.files)}
+                                    />
+                                  </div>
                                 </div>
                               </div>
 
