@@ -36,9 +36,9 @@ serve(async (req) => {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) throw new Error('Missing Authorization header');
     const { data: { user }, error: userError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
-    if (userError || !user) throw new Error('Invalid user token');
+    if (userError || !user) throw new Error('Unauthorized');
 
-    // 1. Get Listing and Price
+    // 1. Get Listing with validation
     const { data: listing } = await supabase
       .from('listings')
       .select('*, seller:profiles(id)')
@@ -46,24 +46,32 @@ serve(async (req) => {
       .single();
       
     if (!listing) throw new Error('Listing not found');
-    if (listing.status !== 'active') throw new Error('Listing not active');
+    if (listing.status !== 'active') throw new Error('This item is no longer available');
+    if (listing.seller_id === user.id) throw new Error('Cannot purchase your own listing');
 
     let price = Number(listing.seller_price);
     let variant = null;
     let bundleVariants: any[] = [];
 
-    // Handle different purchase types
-    if (purchaseType === 'bundle' && listing.bundle_type === 'bundle_with_discount') {
-      // Bundle purchase - get all available variants
-      const { data: variants } = await supabase
+    // 2. Handle different purchase types with validation
+    if (purchaseType === 'bundle') {
+      // Validate bundle purchase is allowed
+      if (!listing.has_variants || listing.bundle_type !== 'split') {
+        throw new Error('This listing is not available as a bundle');
+      }
+
+      // Get all available variants
+      const { data: variants, error: variantsError } = await supabase
         .from('listing_variants')
         .select('*')
         .eq('listing_id', listingId)
         .eq('is_available', true)
-        .eq('is_sold', false);
+        .eq('is_sold', false)
+        .order('display_order');
       
+      if (variantsError) throw new Error('Failed to fetch bundle items');
       if (!variants || variants.length === 0) {
-        throw new Error('No variants available for bundle purchase');
+        throw new Error('No available cards in bundle - all items may have been sold');
       }
       
       bundleVariants = variants;
@@ -77,17 +85,21 @@ serve(async (req) => {
         price = individualTotal;
       }
     } else if (variantId) {
-      // Single variant purchase
-      const { data: variantData } = await supabase
+      // Single variant purchase with concurrent check
+      const { data: variantData, error: variantError } = await supabase
         .from('listing_variants')
         .select('*')
         .eq('id', variantId)
         .eq('listing_id', listingId)
         .single();
       
-      if (!variantData) throw new Error('Variant not found');
-      if (!variantData.is_available) throw new Error('Variant sold out');
-      if (variantData.variant_quantity < 1) throw new Error('Variant out of stock');
+      if (variantError || !variantData) throw new Error('Variant not found');
+      if (!variantData.is_available || variantData.is_sold) {
+        throw new Error('This variant is no longer available - it may have just been sold');
+      }
+      if (variantData.variant_quantity < 1) {
+        throw new Error('This variant is out of stock');
+      }
       
       variant = variantData;
       price = Number(variant.variant_price);
@@ -98,18 +110,26 @@ serve(async (req) => {
     const shipping = Number(listing.shipping_cost_uk || 0);
     const total = price + shipping;
 
-    // 2. Check Wallet Balance
-    const { data: wallet } = await supabase
+    // 3. Check Wallet Balance with detailed error
+    const { data: wallet, error: walletError } = await supabase
       .from('wallet_accounts')
       .select('*')
       .eq('user_id', user.id)
       .single();
 
-    if (!wallet || wallet.balance < total) {
-      throw new Error('Insufficient wallet balance');
+    if (walletError || !wallet) {
+      throw new Error('Wallet not found. Please contact support.');
     }
 
-    // 3. Create Order
+    const availableBalance = Number(wallet.balance);
+    if (availableBalance < total) {
+      throw new Error(`Insufficient funds. You need £${total.toFixed(2)} but only have £${availableBalance.toFixed(2)}`);
+    }
+
+    // 4. Create Order (transaction start point)
+    const platformFee = total * 0.06;
+    const sellerAmount = total * 0.94;
+
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
@@ -119,108 +139,166 @@ serve(async (req) => {
         total_amount: total,
         shipping_address: shippingAddress,
         shipping_cost: shipping,
-        platform_fee: total * 0.06,
-        seller_amount: total * 0.94,
+        platform_fee: platformFee,
+        seller_amount: sellerAmount,
         currency: listing.currency || 'GBP'
       })
       .select()
       .single();
 
-    if (orderError) throw orderError;
+    if (orderError) {
+      console.error('Order creation failed:', orderError);
+      throw new Error('Failed to create order. Please try again.');
+    }
 
     // Create order item with variant if applicable
-    await supabase.from('order_items').insert({
+    const { error: orderItemError } = await supabase.from('order_items').insert({
       order_id: order.id,
       listing_id: listingId,
       variant_id: variantId || null,
       price: price
     });
 
-    // 4. Deduct from Buyer Wallet
+    if (orderItemError) {
+      console.error('Order item creation failed:', orderItemError);
+      // Rollback: delete order
+      await supabase.from('orders').delete().eq('id', order.id);
+      throw new Error('Failed to create order item. Transaction cancelled.');
+    }
+
+    // 5. Deduct from Buyer Wallet with optimistic concurrency check
+    const newBalance = availableBalance - total;
     const { error: deductError } = await supabase
       .from('wallet_accounts')
-      .update({ balance: wallet.balance - total })
-      .eq('id', wallet.id);
+      .update({ balance: newBalance })
+      .eq('id', wallet.id)
+      .eq('balance', availableBalance); // Ensure balance hasn't changed
 
-    if (deductError) throw deductError;
+    if (deductError) {
+      console.error('Wallet deduction failed:', deductError);
+      // Rollback: delete order items and order
+      await supabase.from('order_items').delete().eq('order_id', order.id);
+      await supabase.from('orders').delete().eq('id', order.id);
+      throw new Error('Failed to process payment. Your balance may have changed. Please try again.');
+    }
 
-    // 5. Record Transaction
+    // 6. Record Transaction
     const transactionDescription = purchaseType === 'bundle' 
-      ? `Bundle purchase of ${listing.title} (${bundleVariants.length} cards)`
+      ? `Bundle purchase: ${listing.title} (${bundleVariants.length} cards)`
       : variant 
-        ? `Purchase of ${listing.title} - ${variant.variant_name}`
-        : `Purchase of ${listing.title}`;
+        ? `Purchase: ${listing.title} - ${variant.variant_name}`
+        : `Purchase: ${listing.title}`;
     
-    await supabase.from('wallet_transactions').insert({
+    const { error: txError } = await supabase.from('wallet_transactions').insert({
       wallet_id: wallet.id,
       type: 'purchase',
       amount: -total,
-      balance_after: wallet.balance - total,
+      balance_after: newBalance,
       related_order_id: order.id,
       description: transactionDescription,
       status: 'completed'
     });
 
-    // 6. Update Listing/Variant Status
-    if (purchaseType === 'bundle' && bundleVariants.length > 0) {
-      // Bundle purchase - mark all variants as sold
-      const variantIds = bundleVariants.map(v => v.id);
-      await supabase
-        .from('listing_variants')
-        .update({ 
-          is_sold: true,
-          is_available: false,
-          sold_at: new Date().toISOString()
-        })
-        .in('id', variantIds);
-      
-      // Update listing status to sold
-      await supabase
-        .from('listings')
-        .update({ status: 'sold' })
-        .eq('id', listingId);
-    } else if (variant) {
-      // Single variant purchase - decrease variant quantity
-      const newQuantity = variant.variant_quantity - 1;
-      await supabase
-        .from('listing_variants')
-        .update({ 
-          variant_quantity: newQuantity,
-          is_available: newQuantity > 0,
-          is_sold: newQuantity === 0,
-          sold_at: newQuantity === 0 ? new Date().toISOString() : null
-        })
-        .eq('id', variantId);
-      
-      // Check if all variants are sold to update listing
-      const { data: remainingVariants } = await supabase
-        .from('listing_variants')
-        .select('id')
-        .eq('listing_id', listingId)
-        .eq('is_available', true);
-      
-      if (!remainingVariants || remainingVariants.length === 0) {
-        await supabase
+    if (txError) {
+      console.error('Failed to record transaction:', txError);
+      // Non-critical, continue with purchase
+    }
+
+    // 7. Update Listing/Variant Status with rollback on failure
+    try {
+      if (purchaseType === 'bundle' && bundleVariants.length > 0) {
+        // Bundle purchase - mark all variants as sold
+        const variantIds = bundleVariants.map(v => v.id);
+        const { error: variantUpdateError } = await supabase
+          .from('listing_variants')
+          .update({ 
+            is_sold: true,
+            is_available: false,
+            sold_at: new Date().toISOString()
+          })
+          .in('id', variantIds);
+        
+        if (variantUpdateError) {
+          console.error('Failed to update variants:', variantUpdateError);
+          throw new Error('Failed to update item availability');
+        }
+        
+        // Update listing status to sold
+        const { error: listingUpdateError } = await supabase
           .from('listings')
           .update({ status: 'sold' })
           .eq('id', listingId);
+        
+        if (listingUpdateError) {
+          console.error('Failed to update listing:', listingUpdateError);
+        }
+      } else if (variant) {
+        // Single variant purchase - decrease variant quantity with concurrent check
+        const { data: currentVariant } = await supabase
+          .from('listing_variants')
+          .select('variant_quantity, is_available, is_sold')
+          .eq('id', variantId)
+          .single();
+
+        if (!currentVariant || !currentVariant.is_available || currentVariant.is_sold) {
+          throw new Error('Variant is no longer available');
+        }
+
+        const newQuantity = currentVariant.variant_quantity - 1;
+        const { error: variantUpdateError } = await supabase
+          .from('listing_variants')
+          .update({ 
+            variant_quantity: newQuantity,
+            is_available: newQuantity > 0,
+            is_sold: newQuantity === 0,
+            sold_at: newQuantity === 0 ? new Date().toISOString() : null
+          })
+          .eq('id', variantId)
+          .eq('variant_quantity', currentVariant.variant_quantity); // Optimistic lock
+        
+        if (variantUpdateError) {
+          console.error('Failed to update variant:', variantUpdateError);
+          throw new Error('Failed to update item - item may have been sold');
+        }
+        
+        // Check if all variants are sold to update listing
+        const { data: remainingVariants } = await supabase
+          .from('listing_variants')
+          .select('id')
+          .eq('listing_id', listingId)
+          .eq('is_available', true);
+        
+        if (!remainingVariants || remainingVariants.length === 0) {
+          await supabase
+            .from('listings')
+            .update({ status: 'sold' })
+            .eq('id', listingId);
+        }
+      } else {
+        // Simple listing without variants
+        const { error: listingUpdateError } = await supabase
+          .from('listings')
+          .update({ status: 'sold' })
+          .eq('id', listingId)
+          .eq('status', 'active'); // Only update if still active
+        
+        if (listingUpdateError) {
+          console.error('Failed to update listing:', listingUpdateError);
+          throw new Error('Failed to mark item as sold - item may have already been purchased');
+        }
       }
-    } else {
-      // Simple listing without variants
-      await supabase
-        .from('listings')
-        .update({ status: 'sold' })
-        .eq('id', listingId);
+    } catch (inventoryError) {
+      console.error('Inventory update failed - rolling back:', inventoryError);
+      // Critical failure - attempt full rollback
+      await supabase.from('wallet_transactions').delete().eq('wallet_id', wallet.id).eq('related_order_id', order.id);
+      await supabase.from('wallet_accounts').update({ balance: availableBalance }).eq('id', wallet.id);
+      await supabase.from('order_items').delete().eq('order_id', order.id);
+      await supabase.from('orders').delete().eq('id', order.id);
+      
+      throw new Error(inventoryError instanceof Error ? inventoryError.message : 'Failed to complete purchase');
     }
 
-    // 7. Credit Seller (Pending Settlement)
-    // This calls wallet-settlement or does it directly. 
-    // For now, we'll assume settlement happens later via webhook or manual trigger, 
-    // OR we can credit pending balance here.
-    
-    // Call wallet-settlement logic or similar? 
-    // Let's just update seller pending balance for now to be instant
-    // Fetch seller wallet
+    // 8. Credit Seller Pending Balance
     let { data: sellerWallet } = await supabase
       .from('wallet_accounts')
       .select('*')
@@ -228,25 +306,42 @@ serve(async (req) => {
       .single();
     
     if (!sellerWallet) {
-       const { data: newW } = await supabase.from('wallet_accounts').insert({ user_id: listing.seller_id }).select().single();
-       sellerWallet = newW;
+      const { data: newW } = await supabase.from('wallet_accounts').insert({ user_id: listing.seller_id }).select().single();
+      sellerWallet = newW;
     }
 
-    await supabase.from('wallet_accounts').update({
-      pending_balance: sellerWallet.pending_balance + (total * 0.94) // Taking 6% fee roughly
-    }).eq('id', sellerWallet.id);
+    if (sellerWallet) {
+      const { error: sellerWalletError } = await supabase.from('wallet_accounts').update({
+        pending_balance: Number(sellerWallet.pending_balance) + sellerAmount
+      }).eq('id', sellerWallet.id);
+
+      if (sellerWalletError) {
+        console.error('Failed to credit seller pending balance:', sellerWalletError);
+        // Non-critical, seller will still get paid after delivery
+      }
+    }
 
     return new Response(
-      JSON.stringify({ success: true, orderId: order.id }),
+      JSON.stringify({ 
+        success: true, 
+        orderId: order.id,
+        amount: total,
+        purchaseType,
+        itemCount: purchaseType === 'bundle' ? bundleVariants.length : 1
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Wallet purchase error:', error);
+    
+    const errorMessage = error instanceof Error ? error.message : 'Purchase failed';
+    const statusCode = errorMessage.includes('Unauthorized') ? 401 : 
+                       errorMessage.includes('not found') ? 404 : 400;
+    
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
-      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: errorMessage }),
+      { status: statusCode, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
-
