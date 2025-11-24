@@ -40,9 +40,10 @@ const Browse = () => {
   const [page, setPage] = useState(1);
   const itemsPerPage = 24;
 
-  const { data: listings, isLoading } = useQuery<ListingSummary[]>({
+  const { data: listings, isLoading, error } = useQuery<ListingSummary[]>({
     queryKey: ["active-listings", page, filters, sortBy],
     queryFn: async () => {
+      console.log("🔍 Browse query starting...");
       const from = (page - 1) * itemsPerPage;
       const to = from + itemsPerPage - 1;
 
@@ -54,6 +55,8 @@ const Browse = () => {
           seller:profiles!seller_id(id, full_name, trust_score)
         `)
         .eq("status", "active");
+      
+      console.log("🔍 Query built, applying filters...");
       
       // Note: Both regular listings (has_variants=false/null) and 
       // parent variant listings (has_variants=true) appear in search.
@@ -122,13 +125,29 @@ const Browse = () => {
 
       query = query.range(from, to);
 
+      console.log("🔍 Executing query...");
       const { data, error } = await query;
       
-      if (error) throw error;
+      console.log("🔍 Query result:", { 
+        hasData: !!data, 
+        count: data?.length,
+        hasError: !!error,
+        errorMessage: error?.message,
+        errorDetails: error
+      });
+      
+      if (error) {
+        console.error("❌ Browse query error:", error);
+        throw error;
+      }
+      
+      console.log("✅ Query successful, returning data");
       return data as ListingSummary[];
     },
     staleTime: 1000 * 60, // 1 minute
   });
+
+  console.log("📊 Browse component state:", { isLoading, hasListings: !!listings, count: listings?.length, hasError: !!error });
 
   // For semantic/vibe search results, use those directly
   const filteredListings = useMemo((): ListingSummary[] => {
