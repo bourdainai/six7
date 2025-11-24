@@ -651,6 +651,72 @@ export type Database = {
           },
         ]
       }
+      listing_variants: {
+        Row: {
+          card_id: string | null
+          created_at: string | null
+          display_order: number | null
+          id: string
+          is_available: boolean | null
+          listing_id: string
+          updated_at: string | null
+          variant_condition:
+            | Database["public"]["Enums"]["condition_type"]
+            | null
+          variant_images: Json | null
+          variant_name: string
+          variant_price: number
+          variant_quantity: number
+        }
+        Insert: {
+          card_id?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_available?: boolean | null
+          listing_id: string
+          updated_at?: string | null
+          variant_condition?:
+            | Database["public"]["Enums"]["condition_type"]
+            | null
+          variant_images?: Json | null
+          variant_name: string
+          variant_price: number
+          variant_quantity?: number
+        }
+        Update: {
+          card_id?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_available?: boolean | null
+          listing_id?: string
+          updated_at?: string | null
+          variant_condition?:
+            | Database["public"]["Enums"]["condition_type"]
+            | null
+          variant_images?: Json | null
+          variant_name?: string
+          variant_price?: number
+          variant_quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_variants_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "pokemon_card_attributes"
+            referencedColumns: ["card_id"]
+          },
+          {
+            foreignKeyName: "listing_variants_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listings: {
         Row: {
           ai_answer_engines_enabled: boolean | null
@@ -669,6 +735,7 @@ export type Database = {
           embedding_id: string | null
           estimated_delivery_days: number | null
           free_shipping: boolean | null
+          has_variants: boolean | null
           id: string
           import_job_id: string | null
           import_metadata: Json | null
@@ -718,6 +785,7 @@ export type Database = {
           embedding_id?: string | null
           estimated_delivery_days?: number | null
           free_shipping?: boolean | null
+          has_variants?: boolean | null
           id?: string
           import_job_id?: string | null
           import_metadata?: Json | null
@@ -767,6 +835,7 @@ export type Database = {
           embedding_id?: string | null
           estimated_delivery_days?: number | null
           free_shipping?: boolean | null
+          has_variants?: boolean | null
           id?: string
           import_job_id?: string | null
           import_metadata?: Json | null
@@ -1067,6 +1136,7 @@ export type Database = {
           listing_id: string
           order_id: string
           price: number
+          variant_id: string | null
         }
         Insert: {
           created_at?: string
@@ -1074,6 +1144,7 @@ export type Database = {
           listing_id: string
           order_id: string
           price: number
+          variant_id?: string | null
         }
         Update: {
           created_at?: string
@@ -1081,6 +1152,7 @@ export type Database = {
           listing_id?: string
           order_id?: string
           price?: number
+          variant_id?: string | null
         }
         Relationships: [
           {
@@ -1095,6 +1167,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "listing_variants"
             referencedColumns: ["id"]
           },
         ]
