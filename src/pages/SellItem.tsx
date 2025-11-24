@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Upload, Check, Loader2, X, AlertCircle, ArrowRight, ExternalLink, Camera, PoundSterling, Info, Sparkles, Plus, GripVertical, Trash2 } from "lucide-react";
+import { Upload, Check, Loader2, X, AlertCircle, ArrowRight, ExternalLink, Camera, PoundSterling, Info, Sparkles, Plus, GripVertical, Trash2, Truck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +23,7 @@ import { useEmailVerification } from "@/hooks/useEmailVerification";
 import { MagicCardSearch, type MagicCardData } from "@/components/listing/MagicCardSearch";
 import { AIAnswerEnginesToggle } from "@/components/listings/AIAnswerEnginesToggle";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useShippingCarriers } from "@/hooks/useShippingCarriers";
 
 type ConditionType = Database["public"]["Enums"]["condition_type"];
 type ListingInsert = Database["public"]["Tables"]["listings"]["Insert"];
@@ -135,6 +136,14 @@ const SellItem = () => {
     shipping_cost_uk: 2.99,
     free_shipping: false,
     estimated_delivery_days: 3,
+  });
+
+  // Fetch available shipping carriers
+  const [selectedCarrier, setSelectedCarrier] = useState<string>('');
+  const { data: carrierData, isLoading: loadingCarriers } = useShippingCarriers({
+    toCountry: 'GB',
+    weight: 100, // Default weight, will be calculated based on items
+    enabled: true
   });
 
   // Check seller profile and Stripe Connect status
@@ -801,105 +810,152 @@ const SellItem = () => {
         {/* Multi-Card Bundle Interface */}
         {isCardCategory && isMultiCard && (
           <div className="mb-10 space-y-6">
-            {/* Cards Summary Panel */}
+            {/* Cards Summary Panel - Improved UI */}
             {cards.length > 0 && (
               <Card>
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-medium">Cards in Bundle</h3>
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                      <GripVertical className="w-5 h-5 text-muted-foreground" />
+                      Cards in Bundle
+                    </h3>
                     <Badge variant="secondary" className="text-sm">
                       {cards.length} / 30 cards
                     </Badge>
                   </div>
 
-                  <ScrollArea className="h-[400px] pr-4">
-                    <div className="space-y-3">
-                      {cards.map((card, index) => (
-                        <Card key={card.id} className="border-border/50">
-                          <CardContent className="p-4">
-                            <div className="flex gap-4">
-                              {/* Card Image */}
-                              <div className="flex-shrink-0 w-16 h-20 rounded overflow-hidden bg-secondary">
-                                {card.cardData.image_url && (
-                                  <img 
-                                    src={card.cardData.image_url} 
+                  {/* Cards Grid - No scrolling, better visibility */}
+                  <div className="space-y-4">
+                    {cards.map((card, index) => (
+                      <Card key={card.id} className="border-2 hover:border-primary/50 transition-colors">
+                        <CardContent className="p-4">
+                          <div className="grid grid-cols-[140px_1fr] gap-4">
+                            {/* Card Image Preview - Larger */}
+                            <div className="flex flex-col gap-2">
+                              {card.cardData.image_url ? (
+                                <div className="aspect-[2.5/3.5] bg-muted rounded-lg overflow-hidden border-2 border-border shadow-sm">
+                                  <img
+                                    src={card.cardData.image_url}
                                     alt={card.cardData.title}
-                                    className="w-full h-full object-cover"
+                                    className="w-full h-full object-contain"
+                                    loading="lazy"
                                   />
+                                </div>
+                              ) : (
+                                <div className="aspect-[2.5/3.5] bg-muted rounded-lg flex items-center justify-center border-2 border-dashed border-border">
+                                  <span className="text-xs text-muted-foreground">No image</span>
+                                </div>
+                              )}
+                              <Badge variant="outline" className="text-xs justify-center">
+                                Card {index + 1}
+                              </Badge>
+                            </div>
+
+                            {/* Card Details & Form */}
+                            <div className="space-y-3">
+                              {/* Card Info Header */}
+                              <div className="pb-3 border-b">
+                                <h4 className="font-semibold text-base line-clamp-2">{card.cardData.title}</h4>
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                  <Badge variant="secondary" className="text-xs">
+                                    #{card.cardData.card_number}
+                                  </Badge>
+                                  <Badge variant="secondary" className="text-xs">
+                                    {card.cardData.set_code}
+                                  </Badge>
+                                  {card.cardData.rarity && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {card.cardData.rarity}
+                                    </Badge>
+                                  )}
+                                </div>
+                                {card.cardData.original_rrp && (
+                                  <p className="text-sm text-muted-foreground mt-2">
+                                    Market Value: <span className="font-semibold text-foreground">£{card.cardData.original_rrp.toFixed(2)}</span>
+                                  </p>
                                 )}
                               </div>
 
-                              {/* Card Info */}
-                              <div className="flex-1 min-w-0 space-y-3">
-                                <div>
-                                  <h4 className="font-medium text-sm truncate">{card.cardData.title}</h4>
-                                  <p className="text-xs text-muted-foreground">
-                                    {card.cardData.set_code} • #{card.cardData.card_number}
-                                  </p>
+                              {/* Required Fields - Prominent */}
+                              <Alert variant="destructive" className={`${card.condition && card.quantity >= 1 ? 'hidden' : ''}`}>
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertDescription className="text-sm">
+                                  Condition and quantity are required for this card
+                                </AlertDescription>
+                              </Alert>
+
+                              {/* Form Grid */}
+                              <div className="grid grid-cols-2 gap-3">
+                                {/* Condition - Required */}
+                                <div className="space-y-2">
+                                  <Label className="text-sm font-semibold flex items-center gap-1">
+                                    Condition
+                                    <span className="text-destructive">*</span>
+                                  </Label>
+                                  <Select
+                                    value={card.condition}
+                                    onValueChange={(val) => updateCardEntry(card.id, { condition: val as ConditionType })}
+                                  >
+                                    <SelectTrigger className={`h-10 ${!card.condition ? 'border-destructive border-2' : ''}`}>
+                                      <SelectValue placeholder="Choose condition..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="new_with_tags">Mint (M)</SelectItem>
+                                      <SelectItem value="like_new">Near Mint (NM)</SelectItem>
+                                      <SelectItem value="excellent">Lightly Played (LP)</SelectItem>
+                                      <SelectItem value="good">Moderately Played (MP)</SelectItem>
+                                      <SelectItem value="fair">Heavily Played (HP)</SelectItem>
+                                      <SelectItem value="poor">Damaged (DMG)</SelectItem>
+                                    </SelectContent>
+                                  </Select>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-2">
-                                  {/* Condition */}
-                                  <div className="space-y-1">
-                                    <Label className="text-xs">Condition</Label>
-                                    <Select
-                                      value={card.condition}
-                                      onValueChange={(val) => updateCardEntry(card.id, { condition: val as ConditionType })}
-                                    >
-                                      <SelectTrigger className="h-8 text-xs">
-                                        <SelectValue placeholder="Select" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="new_with_tags">Mint</SelectItem>
-                                        <SelectItem value="like_new">Near Mint</SelectItem>
-                                        <SelectItem value="excellent">Lightly Played</SelectItem>
-                                        <SelectItem value="good">Moderately Played</SelectItem>
-                                        <SelectItem value="fair">Heavily Played</SelectItem>
-                                        <SelectItem value="poor">Damaged</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-
-                                  {/* Quantity */}
-                                  <div className="space-y-1">
-                                    <Label className="text-xs">Quantity</Label>
-                                    <Input
-                                      type="number"
-                                      min="1"
-                                      value={card.quantity}
-                                      onChange={(e) => updateCardEntry(card.id, { quantity: parseInt(e.target.value) || 1 })}
-                                      className="h-8 text-xs"
-                                    />
-                                  </div>
-                                </div>
-
-                                {/* Notes */}
-                                <div className="space-y-1">
-                                  <Label className="text-xs">Notes (optional)</Label>
+                                {/* Quantity - Required */}
+                                <div className="space-y-2">
+                                  <Label className="text-sm font-semibold flex items-center gap-1">
+                                    Quantity
+                                    <span className="text-destructive">*</span>
+                                  </Label>
                                   <Input
-                                    placeholder="Special notes about this card..."
-                                    value={card.notes}
-                                    onChange={(e) => updateCardEntry(card.id, { notes: e.target.value })}
-                                    className="h-8 text-xs"
+                                    type="number"
+                                    min="1"
+                                    max="99"
+                                    value={card.quantity}
+                                    onChange={(e) => updateCardEntry(card.id, { quantity: parseInt(e.target.value) || 1 })}
+                                    className={`h-10 ${card.quantity < 1 ? 'border-destructive border-2' : ''}`}
                                   />
                                 </div>
                               </div>
 
+                              {/* Notes - Full Width */}
+                              <div className="space-y-2">
+                                <Label className="text-sm">Additional Notes (Optional)</Label>
+                                <Input
+                                  placeholder="e.g., Minor edge wear on top right corner..."
+                                  value={card.notes}
+                                  onChange={(e) => updateCardEntry(card.id, { notes: e.target.value })}
+                                  className="h-10"
+                                />
+                              </div>
+
                               {/* Remove Button */}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 flex-shrink-0"
-                                onClick={() => removeCard(card.id)}
-                              >
-                                <Trash2 className="h-4 w-4 text-muted-foreground" />
-                              </Button>
+                              <div className="pt-2 flex justify-end">
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => removeCard(card.id)}
+                                  className="gap-2"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  Remove Card
+                                </Button>
+                              </div>
                             </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </ScrollArea>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             )}
@@ -1474,8 +1530,12 @@ const SellItem = () => {
 
           {/* Shipping */}
           <section className="space-y-4">
-            <h2 className="text-xl font-medium border-b pb-2">Shipping</h2>
+            <h2 className="text-xl font-medium border-b pb-2 flex items-center gap-2">
+              <Truck className="w-5 h-5" />
+              Shipping
+            </h2>
             <div className="space-y-4">
+              {/* Free Shipping Toggle */}
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="free-shipping"
@@ -1488,20 +1548,90 @@ const SellItem = () => {
               </div>
 
               {!shipping.free_shipping && (
-                <div className="space-y-2 pl-6 border-l-2 border-border">
-                  <Label>UK Shipping Cost (£)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={shipping.shipping_cost_uk}
-                    onChange={e => setShipping(prev => ({ ...prev, shipping_cost_uk: parseFloat(e.target.value) || 0 }))}
-                    className="max-w-[200px]"
-                  />
+                <div className="space-y-4 pl-6 border-l-2 border-border">
+                  {/* Carrier Selection */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">
+                      Shipping Service
+                      <span className="text-muted-foreground font-normal ml-2">(Select your preferred carrier)</span>
+                    </Label>
+                    {loadingCarriers ? (
+                      <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span className="text-sm text-muted-foreground">Loading shipping options...</span>
+                      </div>
+                    ) : carrierData?.rates && carrierData.rates.length > 0 ? (
+                      <Select
+                        value={selectedCarrier}
+                        onValueChange={(value) => {
+                          setSelectedCarrier(value);
+                          const carrier = carrierData.rates.find(r => r.carrierCode === value);
+                          if (carrier) {
+                            setShipping(prev => ({
+                              ...prev,
+                              shipping_cost_uk: carrier.rate,
+                              estimated_delivery_days: carrier.estimatedDays
+                            }));
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="h-11">
+                          <SelectValue placeholder="Choose shipping service..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {carrierData.rates.map((carrier) => (
+                            <SelectItem key={carrier.carrierCode} value={carrier.carrierCode}>
+                              <div className="flex items-center justify-between w-full gap-4">
+                                <div className="flex flex-col items-start">
+                                  <span className="font-medium">{carrier.carrierName}</span>
+                                  <span className="text-xs text-muted-foreground">{carrier.serviceName}</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <Badge variant="secondary" className="text-xs">
+                                    {carrier.estimatedDays} days
+                                  </Badge>
+                                  <span className="font-semibold">£{carrier.rate.toFixed(2)}</span>
+                                </div>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Alert>
+                        <Info className="h-4 w-4" />
+                        <AlertDescription>
+                          Shipping rates will be calculated automatically. You can set a custom rate below.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
+
+                  {/* Manual Price Override */}
+                  <div className="space-y-2">
+                    <Label className="text-sm">
+                      UK Shipping Cost (£)
+                      {selectedCarrier && (
+                        <span className="text-muted-foreground ml-2">(Auto-filled from selected service)</span>
+                      )}
+                    </Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={shipping.shipping_cost_uk}
+                      onChange={e => setShipping(prev => ({ ...prev, shipping_cost_uk: parseFloat(e.target.value) || 0 }))}
+                      className="max-w-[200px]"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      You can override the auto-filled price if needed
+                    </p>
+                  </div>
                 </div>
               )}
 
+              {/* Estimated Delivery */}
               <div className="space-y-2">
-                <Label>Estimated Delivery (Days)</Label>
+                <Label className="text-sm">Estimated Delivery (Days)</Label>
                 <Input
                   type="number"
                   value={shipping.estimated_delivery_days}
