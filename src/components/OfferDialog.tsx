@@ -20,6 +20,8 @@ interface OfferDialogProps {
   listingId: string;
   listingPrice: number;
   sellerId: string;
+  variantId?: string | null;
+  variantName?: string;
   onOfferCreated?: () => void;
 }
 
@@ -27,6 +29,8 @@ export const OfferDialog = ({
   listingId,
   listingPrice,
   sellerId,
+  variantId,
+  variantName,
   onOfferCreated,
 }: OfferDialogProps) => {
   const [open, setOpen] = useState(false);
@@ -90,8 +94,8 @@ export const OfferDialog = ({
         conversationId = newConv.id;
       }
 
-      // Create offer
-      const { error: offerError } = await supabase.from("offers").insert({
+      // Create offer with variant metadata if applicable
+      const offerData: any = {
         conversation_id: conversationId,
         listing_id: listingId,
         buyer_id: user.id,
@@ -99,15 +103,29 @@ export const OfferDialog = ({
         amount: offerAmount,
         message: offerMessage,
         status: "pending",
-      });
+      };
+
+      // Store variant info in metadata if provided
+      if (variantId) {
+        offerData.metadata = {
+          variant_id: variantId,
+          variant_name: variantName,
+        };
+      }
+
+      const { error: offerError } = await supabase.from("offers").insert(offerData);
 
       if (offerError) throw offerError;
 
-      // Send notification message
+      // Send notification message with variant info
+      const messageContent = variantName
+        ? `📦 Made an offer of £${offerAmount} for ${variantName}${offerMessage ? `\n\n"${offerMessage}"` : ""}`
+        : `📦 Made an offer of £${offerAmount}${offerMessage ? `\n\n"${offerMessage}"` : ""}`;
+
       await supabase.from("messages").insert({
         conversation_id: conversationId,
         sender_id: user.id,
-        content: `📦 Made an offer of £${offerAmount}${offerMessage ? `\n\n"${offerMessage}"` : ""}`,
+        content: messageContent,
       });
 
       toast({
@@ -143,6 +161,7 @@ export const OfferDialog = ({
         <DialogHeader>
           <DialogTitle>Make an Offer</DialogTitle>
           <DialogDescription>
+            {variantName && <span className="block font-medium mb-1">For: {variantName}</span>}
             The seller is asking £{listingPrice}. Make a reasonable offer below.
           </DialogDescription>
         </DialogHeader>

@@ -14,7 +14,8 @@ import { CreateBundleDialog } from "@/components/bundles/CreateBundleDialog";
 import { ReportDialog } from "@/components/moderation/ReportDialog";
 import { BundleRecommendation } from "@/components/BundleRecommendation";
 import { AgentFeedbackButtons } from "@/components/AgentFeedbackButtons";
-import { ArrowLeft, ShoppingBag, PackagePlus, Flag, Heart, ArrowLeftRight } from "lucide-react";
+import { BulkPurchaseDialog } from "@/components/listings/BulkPurchaseDialog";
+import { ArrowLeft, ShoppingBag, PackagePlus, Flag, Heart, ArrowLeftRight, ShoppingCart } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
@@ -46,6 +47,7 @@ const ListingDetail = () => {
   const [bundleDialogOpen, setBundleDialogOpen] = useState(false);
   const [tradeOfferOpen, setTradeOfferOpen] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [bulkPurchaseOpen, setBulkPurchaseOpen] = useState(false);
   
   // Extract actual listing ID from URL (supports both old and new formats)
   const extractedId = rawId ? extractListingId(rawId) : null;
@@ -680,8 +682,10 @@ const ListingDetail = () => {
 
                 <OfferDialog
                   listingId={listing.id}
-                  listingPrice={listing.seller_price}
+                  listingPrice={displayPrice}
                   sellerId={listing.seller_id}
+                  variantId={selectedVariant}
+                  variantName={currentVariant?.variant_name}
                 />
                 
                 <Button
@@ -689,6 +693,7 @@ const ListingDetail = () => {
                   variant="outline"
                   className="w-full h-12 text-base font-medium"
                   size="lg"
+                  disabled={listing.has_variants && !selectedVariant}
                 >
                   <ArrowLeftRight className="mr-2 h-5 w-5" />
                   Make Trade Offer
@@ -698,11 +703,24 @@ const ListingDetail = () => {
                   onClick={handleBuyNow}
                   className="w-full h-12 text-base font-medium"
                   size="lg"
-                  disabled={listing.status !== "active"}
+                  disabled={listing.status !== "active" || (listing.has_variants && !selectedVariant)}
                 >
                   <ShoppingBag className="mr-2 h-5 w-5" />
                   {listing.status === "active" ? "Buy Now" : "Sold"}
                 </Button>
+
+                {/* Bulk Purchase Button - Show for variant listings */}
+                {listing.has_variants && variants && variants.length > 1 && (
+                  <Button
+                    onClick={() => setBulkPurchaseOpen(true)}
+                    variant="outline"
+                    className="w-full h-12 text-base font-medium"
+                    size="lg"
+                  >
+                    <ShoppingCart className="mr-2 h-5 w-5" />
+                    Buy Multiple Cards
+                  </Button>
+                )}
 
                 <Button
                   onClick={() => setReportDialogOpen(true)}
@@ -742,6 +760,8 @@ const ListingDetail = () => {
           open={tradeOfferOpen}
           onOpenChange={setTradeOfferOpen}
           listingId={listing.id}
+          variantId={selectedVariant}
+          variantName={currentVariant?.variant_name}
         />
       )}
 
@@ -750,6 +770,15 @@ const ListingDetail = () => {
         onOpenChange={setReportDialogOpen}
         reportedListingId={listing.id}
       />
+
+      {listing.has_variants && variants && (
+        <BulkPurchaseDialog
+          open={bulkPurchaseOpen}
+          onOpenChange={setBulkPurchaseOpen}
+          listingId={listing.id}
+          variants={variants}
+        />
+      )}
     </PageLayout>
   );
 };
