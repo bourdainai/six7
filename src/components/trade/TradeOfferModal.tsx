@@ -11,9 +11,11 @@ interface TradeOfferModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   listingId: string;
+  variantId?: string | null;
+  variantName?: string;
 }
 
-export function TradeOfferModal({ open, onOpenChange, listingId }: TradeOfferModalProps) {
+export function TradeOfferModal({ open, onOpenChange, listingId, variantId, variantName }: TradeOfferModalProps) {
   const [cashAmount, setCashAmount] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
@@ -64,12 +66,22 @@ export function TradeOfferModal({ open, onOpenChange, listingId }: TradeOfferMod
         }
       }
 
-      await createOffer.mutateAsync({
+      const offerData: any = {
         target_listing_id: listingId,
         cash_amount: amount,
-        trade_items: [], // For now we only support cash + uploaded photos
+        trade_items: [],
         photos: uploadedUrls,
-      });
+      };
+
+      // Include variant info in metadata if provided
+      if (variantId) {
+        offerData.metadata = {
+          variant_id: variantId,
+          variant_name: variantName,
+        };
+      }
+
+      await createOffer.mutateAsync(offerData);
 
       // Clean up previews and close
       previewUrls.forEach((url) => URL.revokeObjectURL(url));
@@ -88,6 +100,9 @@ export function TradeOfferModal({ open, onOpenChange, listingId }: TradeOfferMod
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Make a Trade Offer</DialogTitle>
+          {variantName && (
+            <p className="text-sm text-muted-foreground">For: {variantName}</p>
+          )}
         </DialogHeader>
         <div className="space-y-4">
           <div>
