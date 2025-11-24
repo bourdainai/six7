@@ -55,6 +55,10 @@ const Browse = () => {
           card:pokemon_card_attributes!card_id(rarity, set_name, artist)
         `, { count: 'exact' })
         .eq("status", "active");
+      
+      // Note: Both regular listings (has_variants=false/null) and 
+      // parent variant listings (has_variants=true) appear in search.
+      // Individual variants don't have their own listing entries.
 
       // Server-side filtering
       if (filters.category) {
