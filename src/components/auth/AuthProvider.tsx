@@ -22,9 +22,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     // Set up listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+      
+      // Track user session when they sign in
+      if (session?.user && _event === 'SIGNED_IN') {
+        try {
+          await supabase.functions.invoke('track-user-session');
+        } catch (error) {
+          console.error('Failed to track session:', error);
+        }
+      }
     });
 
     // THEN check existing session

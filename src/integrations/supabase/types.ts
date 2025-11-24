@@ -328,6 +328,51 @@ export type Database = {
           },
         ]
       }
+      credit_transactions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          description: string | null
+          id: string
+          related_order_id: string | null
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          related_order_id?: string | null
+          type: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          related_order_id?: string | null
+          type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_transactions_related_order_id_fkey"
+            columns: ["related_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       disputes: {
         Row: {
           admin_notes: string | null
@@ -1581,6 +1626,9 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          avg_response_time_hours: number | null
+          bio: string | null
+          business_name: string | null
           business_verified: boolean | null
           can_receive_payments: boolean | null
           country: string | null
@@ -1590,19 +1638,30 @@ export type Database = {
           full_name: string | null
           id: string
           id_verified: boolean | null
+          instagram_url: string | null
           is_banned: boolean | null
           kyc_status: boolean | null
+          last_city: string | null
+          last_country: string | null
+          last_ip_address: unknown
           notification_preferences: Json | null
           phone_number: string | null
           phone_verified: boolean | null
+          preferred_currency: string | null
           stripe_connect_account_id: string | null
           stripe_onboarding_complete: boolean | null
+          tiktok_url: string | null
           trust_score: number | null
+          twitter_url: string | null
           updated_at: string | null
           verification_level: string | null
+          youtube_url: string | null
         }
         Insert: {
           avatar_url?: string | null
+          avg_response_time_hours?: number | null
+          bio?: string | null
+          business_name?: string | null
           business_verified?: boolean | null
           can_receive_payments?: boolean | null
           country?: string | null
@@ -1612,19 +1671,30 @@ export type Database = {
           full_name?: string | null
           id: string
           id_verified?: boolean | null
+          instagram_url?: string | null
           is_banned?: boolean | null
           kyc_status?: boolean | null
+          last_city?: string | null
+          last_country?: string | null
+          last_ip_address?: unknown
           notification_preferences?: Json | null
           phone_number?: string | null
           phone_verified?: boolean | null
+          preferred_currency?: string | null
           stripe_connect_account_id?: string | null
           stripe_onboarding_complete?: boolean | null
+          tiktok_url?: string | null
           trust_score?: number | null
+          twitter_url?: string | null
           updated_at?: string | null
           verification_level?: string | null
+          youtube_url?: string | null
         }
         Update: {
           avatar_url?: string | null
+          avg_response_time_hours?: number | null
+          bio?: string | null
+          business_name?: string | null
           business_verified?: boolean | null
           can_receive_payments?: boolean | null
           country?: string | null
@@ -1634,18 +1704,71 @@ export type Database = {
           full_name?: string | null
           id?: string
           id_verified?: boolean | null
+          instagram_url?: string | null
           is_banned?: boolean | null
           kyc_status?: boolean | null
+          last_city?: string | null
+          last_country?: string | null
+          last_ip_address?: unknown
           notification_preferences?: Json | null
           phone_number?: string | null
           phone_verified?: boolean | null
+          preferred_currency?: string | null
           stripe_connect_account_id?: string | null
           stripe_onboarding_complete?: boolean | null
+          tiktok_url?: string | null
           trust_score?: number | null
+          twitter_url?: string | null
           updated_at?: string | null
           verification_level?: string | null
+          youtube_url?: string | null
         }
         Relationships: []
+      }
+      promotional_signups: {
+        Row: {
+          activated_at: string | null
+          created_at: string | null
+          credits_awarded: number | null
+          first_listing_id: string | null
+          id: string
+          promo_code: string | null
+          user_id: string | null
+        }
+        Insert: {
+          activated_at?: string | null
+          created_at?: string | null
+          credits_awarded?: number | null
+          first_listing_id?: string | null
+          id?: string
+          promo_code?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          activated_at?: string | null
+          created_at?: string | null
+          credits_awarded?: number | null
+          first_listing_id?: string | null
+          id?: string
+          promo_code?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotional_signups_first_listing_id_fkey"
+            columns: ["first_listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotional_signups_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ratings: {
         Row: {
@@ -2209,6 +2332,44 @@ export type Database = {
             foreignKeyName: "seller_balances_seller_id_fkey"
             columns: ["seller_id"]
             isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seller_credits: {
+        Row: {
+          balance: number | null
+          created_at: string | null
+          id: string
+          lifetime_earned: number | null
+          lifetime_used: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          balance?: number | null
+          created_at?: string | null
+          id?: string
+          lifetime_earned?: number | null
+          lifetime_used?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          balance?: number | null
+          created_at?: string | null
+          id?: string
+          lifetime_earned?: number | null
+          lifetime_used?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_credits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -3652,6 +3813,65 @@ export type Database = {
           },
         ]
       }
+      user_sessions: {
+        Row: {
+          browser: string | null
+          city: string | null
+          country: string | null
+          device_type: string | null
+          id: string
+          ip_address: unknown
+          is_active: boolean | null
+          last_activity_at: string | null
+          latitude: number | null
+          login_at: string | null
+          longitude: number | null
+          region: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          device_type?: string | null
+          id?: string
+          ip_address?: unknown
+          is_active?: boolean | null
+          last_activity_at?: string | null
+          latitude?: number | null
+          login_at?: string | null
+          longitude?: number | null
+          region?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          device_type?: string | null
+          id?: string
+          ip_address?: unknown
+          is_active?: boolean | null
+          last_activity_at?: string | null
+          latitude?: number | null
+          login_at?: string | null
+          longitude?: number | null
+          region?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wallet_accounts: {
         Row: {
           balance: number | null
@@ -3731,6 +3951,17 @@ export type Database = {
       }
     }
     Views: {
+      admin_live_stats: {
+        Row: {
+          active_listings: number | null
+          messages_24h: number | null
+          new_users_24h: number | null
+          orders_24h: number | null
+          total_gmv: number | null
+          trades_24h: number | null
+        }
+        Relationships: []
+      }
       listing_facets: {
         Row: {
           avg_price: number | null
@@ -3754,14 +3985,14 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "listings_seller_id_fkey"
-            columns: ["potential_partner_id"]
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "listings_seller_id_fkey"
-            columns: ["user_id"]
+            columns: ["potential_partner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -3782,6 +4013,24 @@ export type Database = {
           priority_tier: number
           set_code: string
           set_name: string
+        }[]
+      }
+      get_top_buyers: {
+        Args: { limit_count?: number }
+        Returns: {
+          id: string
+          name: string
+          order_count: number
+          spend: number
+        }[]
+      }
+      get_top_sellers: {
+        Args: { limit_count?: number }
+        Returns: {
+          id: string
+          name: string
+          order_count: number
+          revenue: number
         }[]
       }
       increment_card_popularity: {
