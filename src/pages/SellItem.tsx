@@ -660,54 +660,88 @@ const SellItem = () => {
 
       // Image handling and variant creation for multi-card bundles vs single items
       if (isMultiCard && cards.length > 0) {
-        // Create variants for each card in the bundle
-        for (let idx = 0; idx < cards.length; idx++) {
-          const card = cards[idx];
-          
-          // Upload variant-specific images if any
-          const variantImageUrls: string[] = [];
-          
-          if (card.uploadedImages && card.uploadedImages.length > 0) {
-            for (let imgIdx = 0; imgIdx < card.uploadedImages.length; imgIdx++) {
-              const file = card.uploadedImages[imgIdx];
-              const fileName = `${listing.id}/variants/${card.id}-${Date.now()}-${imgIdx}.jpg`;
-              
-              const { error: uploadError } = await supabase.storage
-                .from('listing-images')
-                .upload(fileName, file);
-              
-              if (!uploadError) {
-                const { data: { publicUrl } } = supabase.storage
+        // Create variants for each card in the bundle with progress tracking
+        const variantsCreated: string[] = [];
+        
+        try {
+          for (let idx = 0; idx < cards.length; idx++) {
+            const card = cards[idx];
+            
+            // Show progress toast
+            toast({
+              title: `Creating variants... (${idx + 1}/${cards.length})`,
+              description: `Processing: ${card.cardData.title}`,
+            });
+            
+            // Upload variant-specific images if any
+            const variantImageUrls: string[] = [];
+            
+            if (card.uploadedImages && card.uploadedImages.length > 0) {
+              for (let imgIdx = 0; imgIdx < card.uploadedImages.length; imgIdx++) {
+                const file = card.uploadedImages[imgIdx];
+                const fileName = `${listing.id}/variants/${card.id}-${Date.now()}-${imgIdx}.jpg`;
+                
+                const { error: uploadError } = await supabase.storage
                   .from('listing-images')
-                  .getPublicUrl(fileName);
-                variantImageUrls.push(publicUrl);
+                  .upload(fileName, file);
+                
+                if (!uploadError) {
+                  const { data: { publicUrl } } = supabase.storage
+                    .from('listing-images')
+                    .getPublicUrl(fileName);
+                  variantImageUrls.push(publicUrl);
+                }
               }
+            }
+            
+            // Add stock photo if no uploaded images
+            if (variantImageUrls.length === 0 && card.cardData.image_url) {
+              variantImageUrls.push(card.cardData.image_url);
+            }
+            
+            // Insert variant into database
+            const { data: newVariant, error: variantError } = await supabase
+              .from('listing_variants')
+              .insert({
+                listing_id: listing.id,
+                variant_name: card.cardData.title,
+                variant_price: card.price,
+                variant_condition: card.condition as ConditionType,
+                variant_quantity: card.quantity,
+                variant_images: variantImageUrls,
+                card_id: card.cardData.card_number ? `${card.cardData.set_code}-${card.cardData.card_number}` : null,
+                is_available: true,
+                is_sold: false,
+                display_order: idx
+              })
+              .select()
+              .single();
+            
+            if (variantError) {
+              console.error("Variant creation error for", card.cardData.title, ":", variantError);
+              throw new Error(`Failed to create variant for ${card.cardData.title}: ${variantError.message}`);
+            }
+            
+            if (newVariant) {
+              variantsCreated.push(newVariant.id);
             }
           }
           
-          // Add stock photo if no uploaded images
-          if (variantImageUrls.length === 0 && card.cardData.image_url) {
-            variantImageUrls.push(card.cardData.image_url);
-          }
+          // Success! Show final confirmation
+          toast({
+            title: "✅ All variants created!",
+            description: `Successfully created ${variantsCreated.length} variants.`,
+          });
           
-          // Insert variant into database
-          const { error: variantError } = await supabase
-            .from('listing_variants')
-            .insert({
-              listing_id: listing.id,
-              variant_name: card.cardData.title,
-              variant_price: card.price,
-              variant_condition: card.condition as ConditionType,
-              variant_quantity: card.quantity,
-              variant_images: variantImageUrls,
-              card_id: card.cardData.card_number ? `${card.cardData.set_code}-${card.cardData.card_number}` : null,
-              is_available: true,
-              display_order: idx
-            });
+        } catch (variantCreationError) {
+          // Rollback: Delete the listing if variants failed
+          console.error("Critical variant creation failure:", variantCreationError);
           
-          if (variantError) {
-            console.error("Variant creation error:", variantError);
-          }
+          await supabase.from('listings').delete().eq('id', listing.id);
+          
+          throw new Error(
+            `Failed to create variants. ${variantCreationError instanceof Error ? variantCreationError.message : 'Unknown error'}. The listing has been rolled back.`
+          );
         }
         
         // Use first card's images for parent listing display
