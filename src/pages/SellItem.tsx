@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageLayout } from "@/components/PageLayout";
 import { Button } from "@/components/ui/button";
@@ -104,6 +104,7 @@ const SellItem = () => {
   const [isMultiCard, setIsMultiCard] = useState(false);
   const [cards, setCards] = useState<CardEntry[]>([]);
   const [showCardSearch, setShowCardSearch] = useState(false);
+  const cardsScrollRef = useRef<HTMLDivElement>(null);
 
   const [listingData, setListingData] = useState<ListingData>({
     title: "",
@@ -200,6 +201,19 @@ const SellItem = () => {
       };
       setCards(prev => [...prev, newCard]);
       setShowCardSearch(false);
+      
+      // Scroll to bottom to show the new card
+      setTimeout(() => {
+        if (cardsScrollRef.current) {
+          const scrollContainer = cardsScrollRef.current.querySelector('[data-radix-scroll-area-viewport]');
+          if (scrollContainer) {
+            scrollContainer.scrollTo({ 
+              top: scrollContainer.scrollHeight, 
+              behavior: 'smooth' 
+            });
+          }
+        }
+      }, 100);
       
       toast({
         title: "Card Added!",
@@ -815,22 +829,30 @@ const SellItem = () => {
               <Card>
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <div className="flex items-center gap-2">
                       <GripVertical className="w-5 h-5 text-muted-foreground" />
-                      Cards in Bundle
-                    </h3>
-                    <Badge variant="secondary" className="text-sm">
-                      {cards.length} / 30 cards
-                    </Badge>
+                      <h3 className="text-lg font-semibold">
+                        Cards in Bundle
+                      </h3>
+                      <Badge variant="secondary" className="text-sm font-semibold">
+                        {cards.length} / 30 cards
+                      </Badge>
+                    </div>
+                    {cards.length > 2 && (
+                      <p className="text-xs text-muted-foreground">
+                        ↓ Scroll to see all cards
+                      </p>
+                    )}
                   </div>
 
                   {/* Scrollable Container with Better Card Visibility */}
-                  <ScrollArea className="h-[500px] pr-4">
-                    <div className="space-y-4">
-                      {cards.map((card, index) => (
-                        <Card key={card.id} className="border-2 hover:border-primary/50 transition-colors">
-                          <CardContent className="p-4">
-                            <div className="grid grid-cols-[100px_1fr_auto] gap-4 items-start">
+                  <div className="relative">
+                    <ScrollArea ref={cardsScrollRef} className="h-[500px] pr-4">
+                      <div className="space-y-4">
+                        {cards.map((card, index) => (
+                          <Card key={card.id} className="border-2 hover:border-primary/50 transition-colors">
+                            <CardContent className="p-4">
+                              <div className="grid grid-cols-[100px_1fr_auto] gap-4 items-start">
                               {/* Card Image Preview - Medium Size */}
                               <div className="flex flex-col gap-2">
                                 {card.cardData.image_url ? (
@@ -946,8 +968,14 @@ const SellItem = () => {
                           </CardContent>
                         </Card>
                       ))}
-                    </div>
-                  </ScrollArea>
+                      </div>
+                    </ScrollArea>
+                    
+                    {/* Bottom fade indicator when there's overflow */}
+                    {cards.length > 2 && (
+                      <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none" />
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             )}
