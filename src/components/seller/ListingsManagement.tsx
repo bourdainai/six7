@@ -1,8 +1,10 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Trash2, Edit } from "lucide-react";
+import { ExternalLink, Trash2, Edit, Layers } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { generateListingUrl } from "@/lib/listing-url";
+import { VariantManager } from "./VariantManager";
+import { Badge } from "@/components/ui/badge";
 
 interface ListingImage {
   image_url: string;
@@ -20,6 +22,7 @@ interface Listing {
   set_code?: string | null;
   card_number?: string | null;
   card_id?: string | null;
+  has_variants?: boolean | null;
 }
  
 interface ListingsManagementProps {
@@ -83,7 +86,8 @@ export const ListingsManagement = ({ listings, onDelete, isDeleting }: ListingsM
         
         return (
           <Card key={listing.id}>
-            <CardContent className="p-4 flex items-center justify-between gap-4">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 {firstImage ? (
                   <div className="aspect-[5/7] w-12 flex-shrink-0 bg-soft-neutral border border-divider-gray overflow-hidden">
@@ -100,10 +104,22 @@ export const ListingsManagement = ({ listings, onDelete, isDeleting }: ListingsM
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-normal truncate tracking-tight">{listing.title}</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-normal truncate tracking-tight">{listing.title}</h3>
+                    {listing.has_variants && (
+                      <Badge variant="secondary" className="gap-1">
+                        <Layers className="h-3 w-3" />
+                        Multi-Card
+                      </Badge>
+                    )}
+                  </div>
                   <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
                     <span className="capitalize">{listing.status}</span>
-                    <span>£{Number(listing.seller_price).toFixed(2)}</span>
+                    {listing.has_variants ? (
+                      <span>From £{Number(listing.seller_price).toFixed(2)}</span>
+                    ) : (
+                      <span>£{Number(listing.seller_price).toFixed(2)}</span>
+                    )}
                     {listing.created_at && (
                       <span>{new Date(listing.created_at).toLocaleDateString()}</span>
                     )}
@@ -148,6 +164,15 @@ export const ListingsManagement = ({ listings, onDelete, isDeleting }: ListingsM
                 Delete
               </Button>
               </div>
+              </div>
+              
+              {/* Variant Manager for multi-card listings */}
+              {listing.has_variants && (
+                <VariantManager 
+                  listingId={listing.id} 
+                  listingTitle={listing.title}
+                />
+              )}
             </CardContent>
           </Card>
         );
