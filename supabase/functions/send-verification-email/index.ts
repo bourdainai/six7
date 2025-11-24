@@ -64,7 +64,7 @@ serve(async (req) => {
 
     // Send email via Resend
     const { data: emailData, error: emailError } = await resend.emails.send({
-      from: "Grail Central <noreply@grailcentral.com>",
+      from: "Grail Central <noreply@6seven.io>",
       to: [user.email!],
       subject: "Verify your email address",
       html: `
@@ -83,11 +83,20 @@ serve(async (req) => {
     });
 
     if (emailError) {
-      console.error("❌ Error sending email:", emailError);
-      throw new Error("Failed to send verification email");
+      console.error("❌ Resend API Error:", {
+        error: emailError,
+        message: emailError.message,
+        name: emailError.name || 'Unknown',
+        to: user.email
+      });
+      throw new Error(`Failed to send verification email: ${emailError.message}`);
     }
 
-    console.log("✅ Verification email sent successfully:", emailData);
+    console.log("✅ Verification email sent successfully:", {
+      emailId: emailData?.id,
+      to: user.email,
+      from: "noreply@6seven.io"
+    });
 
     return new Response(
       JSON.stringify({ 
