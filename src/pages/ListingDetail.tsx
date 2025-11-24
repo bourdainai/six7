@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageLayout } from "@/components/PageLayout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { OfferDialog } from "@/components/OfferDialog";
@@ -41,6 +42,7 @@ const ListingDetail = () => {
   const { isSaved, toggleSave, isSaving } = useSavedListings();
   const { isMobile } = useMobileDetect();
   const [selectedImage, setSelectedImage] = useState(0);
+  const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
   const [bundleDialogOpen, setBundleDialogOpen] = useState(false);
   const [tradeOfferOpen, setTradeOfferOpen] = useState(false);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
@@ -117,6 +119,40 @@ const ListingDetail = () => {
     staleTime: 1000 * 60 * 2, // 2 minutes
   });
   
+  // Fetch variants if listing has them
+  const { data: variants } = useQuery({
+    queryKey: ["listing-variants", listing?.id],
+    enabled: !!listing?.id && listing?.has_variants === true,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("listing_variants")
+        .select("*")
+        .eq("listing_id", listing!.id)
+        .eq("is_available", true)
+        .order("display_order");
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+  
+  // Auto-select first variant when variants load
+  useEffect(() => {
+    if (variants && variants.length > 0 && !selectedVariant) {
+      setSelectedVariant(variants[0].id);
+    }
+  }, [variants, selectedVariant]);
+  
+  // Get current variant data
+  const currentVariant = variants?.find(v => v.id === selectedVariant);
+  
+  // Update images when variant changes
+  useEffect(() => {
+    if (currentVariant && currentVariant.variant_images && Array.isArray(currentVariant.variant_images) && currentVariant.variant_images.length > 0) {
+      setSelectedImage(0); // Reset to first image when variant changes
+    }
+  }, [currentVariant]);
+  
   // Redirect old UUID format to new SEO-friendly format
   useEffect(() => {
     if (listing && rawId && isOldFormatUrl(rawId)) {
@@ -147,8 +183,22 @@ const ListingDetail = () => {
       });
       return;
     }
+    
+    // For variant listings, ensure a variant is selected
+    if (listing?.has_variants && !selectedVariant) {
+      toast({
+        title: "Please select a variant",
+        description: "Choose which card you want to purchase",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    navigate(`/checkout/${listing?.id}`);
+    // Navigate to checkout with variant ID if applicable
+    const checkoutUrl = selectedVariant 
+      ? `/checkout/${listing?.id}?variant=${selectedVariant}`
+      : `/checkout/${listing?.id}`;
+    navigate(checkoutUrl);
   };
 
   if (isLoading) {
@@ -190,9 +240,18 @@ const ListingDetail = () => {
     );
   }
 
-  const images = listing.images?.sort((a, b) => a.display_order - b.display_order) || [];
-  const mainImage = images[0]?.image_url || "";
-  const seoUrl = generateListingUrl(listing.id, listing.title, listing.seller?.full_name);
+  // Determine which images to show: variant images or parent listing images
+  const displayImages = currentVariant?.variant_images && Array.isArray(currentVariant.variant_images) && currentVariant.variant_images.length > 0
+    ? currentVariant.variant_images.map((url, idx) => ({ image_url: url, display_order: idx }))
+    : (listing?.images?.sort((a, b) => a.display_order - b.display_order) || []);
+  
+  const mainImage = displayImages[0]?.image_url || "";
+  
+  // Determine displayed price: variant price or parent listing price
+  const displayPrice = currentVariant?.variant_price || listing?.seller_price || 0;
+  const displayCondition = currentVariant?.variant_condition || listing?.condition;
+  
+  const seoUrl = generateListingUrl(listing?.id || "", listing?.title || "", listing?.seller?.full_name);
   const listingUrl = `https://6seven.io${seoUrl}`;
   
   // Build product structured data
@@ -224,50 +283,51 @@ const ListingDetail = () => {
   const productStructuredData: ProductStructuredData = {
     "@context": "https://schema.org",
     "@type": "Product",
-    "name": listing.title,
-    "description": listing.description || listing.title,
-    "image": images.map(img => img.image_url),
+    "name": listing?.title || "",
+    "description": listing?.description || listing?.title || "",
+    "image": displayImages.map(img => img.image_url),
     "offers": {
       "@type": "Offer",
       "url": listingUrl,
       "priceCurrency": "GBP",
-      "price": listing.seller_price.toString(),
-      "availability": listing.status === "active" ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      "price": displayPrice.toString(),
+      "availability": listing?.status === "active" ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
       "seller": {
         "@type": "Person",
-        "name": listing.seller?.full_name || "Seller"
+        "name": listing?.seller?.full_name || "Seller"
       }
     },
-    "category": listing.category
+    "category": listing?.category || ""
   };
   
   // Add optional fields only if they exist
-  if (listing.brand) {
+  if (listing?.brand) {
     productStructuredData.brand = {
       "@type": "Brand",
       "name": listing.brand
     };
   }
   
-  if (listing.condition) {
+  if (displayCondition) {
     const conditionMap: Record<string, string> = {
       "new": "NewCondition",
+      "new_with_tags": "NewCondition",
       "like_new": "NewCondition",
       "excellent": "ExcellentCondition",
       "good": "GoodCondition",
       "fair": "FairCondition",
       "poor": "PoorCondition"
     };
-    const conditionType = conditionMap[listing.condition] || "UsedCondition";
+    const conditionType = conditionMap[displayCondition] || "UsedCondition";
     productStructuredData.condition = `https://schema.org/${conditionType}`;
   }
 
   return (
     <PageLayout>
       <SEO
-        title={`${listing.title} | ${listing.category} | 6Seven`}
-        description={listing.description || `Buy ${listing.title} on 6Seven. ${listing.category}${listing.brand ? ` by ${listing.brand}` : ''}. ${listing.condition ? `Condition: ${formatCondition(listing.condition)}.` : ''} Price: £${listing.seller_price}.`}
-        keywords={`${listing.title}, ${listing.category}, ${listing.brand || ''}, buy ${listing.category}, ${listing.category} marketplace, 6Seven, resale, secondhand`}
+        title={`${listing?.title} | ${listing?.category} | 6Seven`}
+        description={listing?.description || `Buy ${listing?.title} on 6Seven. ${listing?.category}${listing?.brand ? ` by ${listing.brand}` : ''}. ${displayCondition ? `Condition: ${formatCondition(displayCondition)}.` : ''} ${listing?.has_variants ? `From £${displayPrice}` : `Price: £${displayPrice}`}.`}
+        keywords={`${listing?.title}, ${listing?.category}, ${listing?.brand || ''}, buy ${listing?.category}, ${listing?.category} marketplace, 6Seven, resale, secondhand`}
         image={mainImage}
         url={listingUrl}
         canonical={listingUrl}
@@ -286,10 +346,10 @@ const ListingDetail = () => {
           {/* Images */}
           <div className="space-y-4">
             <div className="aspect-[5/7] bg-soft-neutral border border-divider-gray overflow-hidden relative">
-              {images.length > 0 ? (
+              {displayImages.length > 0 ? (
                 <img
-                  src={images[selectedImage]?.image_url}
-                  alt={listing.title}
+                  src={displayImages[selectedImage]?.image_url}
+                  alt={listing?.title}
                   className="w-full h-full object-contain"
                   loading="eager"
                   decoding="async"
@@ -303,9 +363,9 @@ const ListingDetail = () => {
               )}
             </div>
 
-            {images.length > 1 && (
+            {displayImages.length > 1 && (
               <div className="grid grid-cols-4 gap-2">
-                {images.map((img, idx) => (
+                {displayImages.map((img, idx) => (
                   <button
                     key={idx}
                     onClick={() => setSelectedImage(idx)}
@@ -315,7 +375,7 @@ const ListingDetail = () => {
                   >
                     <img
                       src={img.image_url}
-                      alt={`${listing.title} ${idx + 1}`}
+                      alt={`${listing?.title} ${idx + 1}`}
                       className="w-full h-full object-contain"
                       loading="lazy"
                       decoding="async"
@@ -331,22 +391,57 @@ const ListingDetail = () => {
           {/* Details */}
           <div className="space-y-6">
             <div>
-              <h1 className="text-3xl font-light text-foreground mb-2 tracking-tight">{listing.title}</h1>
-              <p className="text-sm text-muted-foreground font-normal">{listing.brand}</p>
+              <h1 className="text-3xl font-light text-foreground mb-2 tracking-tight">{listing?.title}</h1>
+              <p className="text-sm text-muted-foreground font-normal">{listing?.brand}</p>
             </div>
+
+            {/* Variant Selector - Show if has_variants is true */}
+            {listing?.has_variants && variants && variants.length > 0 && (
+              <div className="space-y-2 border border-border/50 rounded-lg p-4 bg-secondary/10">
+                <label className="text-sm font-semibold text-foreground">Select Card</label>
+                <Select value={selectedVariant || undefined} onValueChange={setSelectedVariant}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Choose a card..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {variants.map((variant) => (
+                      <SelectItem key={variant.id} value={variant.id}>
+                        <div className="flex items-center justify-between gap-4 w-full pr-4">
+                          <span className="font-medium truncate">{variant.variant_name}</span>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <Badge variant="secondary" className="text-xs">
+                              {formatCondition(variant.variant_condition)}
+                            </Badge>
+                            <span className="font-semibold text-sm">£{Number(variant.variant_price).toFixed(2)}</span>
+                            {variant.variant_quantity === 0 && (
+                              <Badge variant="destructive" className="text-xs">Sold Out</Badge>
+                            )}
+                          </div>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {currentVariant && (
+                  <div className="flex items-center justify-between text-xs text-muted-foreground mt-2">
+                    <span>Quantity available: {currentVariant.variant_quantity}</span>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="space-y-2">
               <div className="flex items-baseline gap-3">
                 <span className="text-4xl font-light text-foreground tracking-tight">
-                  £{Number(listing.seller_price).toFixed(2)}
+                  {listing?.has_variants && !selectedVariant ? 'From ' : ''}£{Number(displayPrice).toFixed(2)}
                 </span>
-                {listing.original_rrp && (
+                {listing?.original_rrp && (
                   <>
                     <span className="text-lg text-muted-foreground line-through font-normal">
                       £{Number(listing.original_rrp).toFixed(2)}
                     </span>
                     <Badge variant="secondary" className="ml-2">
-                      {Math.round((1 - Number(listing.seller_price) / Number(listing.original_rrp)) * 100)}% off
+                      {Math.round((1 - Number(displayPrice) / Number(listing.original_rrp)) * 100)}% off
                     </Badge>
                   </>
                 )}
@@ -359,11 +454,14 @@ const ListingDetail = () => {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {listing.condition && <Badge variant="secondary">{formatCondition(listing.condition)}</Badge>}
-              {listing.size && <Badge variant="outline">Size: {listing.size}</Badge>}
-              {listing.color && <Badge variant="outline">{listing.color}</Badge>}
-              {listing.category && <Badge variant="outline">{listing.category}</Badge>}
-              {listing.subcategory && <Badge variant="outline">{listing.subcategory}</Badge>}
+              {displayCondition && <Badge variant="secondary">{formatCondition(displayCondition)}</Badge>}
+              {listing?.size && <Badge variant="outline">Size: {listing.size}</Badge>}
+              {listing?.color && <Badge variant="outline">{listing.color}</Badge>}
+              {listing?.category && <Badge variant="outline">{listing.category}</Badge>}
+              {listing?.subcategory && <Badge variant="outline">{listing.subcategory}</Badge>}
+              {listing?.has_variants && variants && (
+                <Badge variant="outline">{variants.length} variants available</Badge>
+              )}
             </div>
 
             {listing.style_tags && Array.isArray(listing.style_tags) && listing.style_tags.length > 0 && (
