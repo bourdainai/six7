@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Star } from "lucide-react";
+import { Star, Upload, X } from "lucide-react";
 
 interface RatingDialogProps {
   open: boolean;
@@ -30,12 +30,23 @@ export function RatingDialog({
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
+  const [reviewImages, setReviewImages] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
   const queryClient = useQueryClient();
 
   const createRating = useMutation({
     mutationFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
+
+      // Check if order exists and is delivered for verified purchase
+      const { data: orderData } = await supabase
+        .from("orders")
+        .select("status")
+        .eq("id", orderId)
+        .single();
+
+      const isVerifiedPurchase = orderData?.status === "delivered" || orderData?.status === "completed";
 
       const { error } = await supabase.from("ratings").insert({
         order_id: orderId,
@@ -45,6 +56,8 @@ export function RatingDialog({
         rating: rating,
         review_text: reviewText || null,
         review_type: reviewType,
+        review_images: reviewImages,
+        verified_purchase: isVerifiedPurchase,
       });
 
       if (error) throw error;
@@ -52,14 +65,57 @@ export function RatingDialog({
     onSuccess: () => {
       toast.success("Review submitted successfully");
       queryClient.invalidateQueries({ queryKey: ["ratings"] });
+      queryClient.invalidateQueries({ queryKey: ["reviews"] });
       onOpenChange(false);
       setRating(0);
       setReviewText("");
+      setReviewImages([]);
     },
     onError: (error) => {
       toast.error("Failed to submit review: " + error.message);
     },
   });
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const uploadPromises = Array.from(files).map(async (file) => {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user.id}-${Date.now()}-${Math.random()}.${fileExt}`;
+        const filePath = `review-images/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('listing-images')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('listing-images')
+          .getPublicUrl(filePath);
+
+        return publicUrl;
+      });
+
+      const urls = await Promise.all(uploadPromises);
+      setReviewImages([...reviewImages, ...urls]);
+      toast.success("Images uploaded successfully");
+    } catch (error: any) {
+      toast.error("Failed to upload images: " + error.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setReviewImages(reviewImages.filter((_, i) => i !== index));
+  };
 
   const handleSubmit = () => {
     if (rating === 0) {
@@ -113,6 +169,44 @@ export function RatingDialog({
               onChange={(e) => setReviewText(e.target.value)}
               rows={5}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Photos (Optional)</Label>
+            <div className="flex flex-wrap gap-2">
+              {reviewImages.map((url, index) => (
+                <div key={index} className="relative group">
+                  <img
+                    src={url}
+                    alt={`Review ${index + 1}`}
+                    className="w-20 h-20 object-cover rounded-lg"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index)}
+                    className="absolute -top-2 -right-2 p-1 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+              {reviewImages.length < 3 && (
+                <label className="w-20 h-20 border-2 border-dashed border-border rounded-lg flex items-center justify-center cursor-pointer hover:border-primary transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageUpload}
+                    disabled={uploading}
+                    className="hidden"
+                  />
+                  <Upload className="h-6 w-6 text-muted-foreground" />
+                </label>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Add up to 3 photos to your review
+            </p>
           </div>
         </div>
 
