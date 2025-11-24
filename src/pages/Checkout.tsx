@@ -259,6 +259,11 @@ const Checkout = () => {
 
   const walletPurchaseMutation = useMutation({
     mutationFn: async () => {
+      // Validate bundle availability before purchase
+      if (purchaseType === 'bundle' && bundleVariants && bundleVariants.length === 0) {
+        throw new Error('All items in this bundle have been sold.');
+      }
+
       const { data, error } = await supabase.functions.invoke("wallet-purchase", {
         body: {
           listingId: id,
@@ -273,19 +278,30 @@ const Checkout = () => {
       return data;
     },
     onSuccess: (data) => {
+      const itemCount = data?.itemCount || 1;
+      const purchaseAmount = data?.amount || 0;
+
       toast({
-        title: "Purchase successful!",
-        description: "Your order has been placed using your wallet balance.",
+        title: "Purchase Complete! 🎉",
+        description: purchaseType === 'bundle' 
+          ? `Successfully purchased ${itemCount} cards for £${purchaseAmount.toFixed(2)}`
+          : `Your order has been placed for £${purchaseAmount.toFixed(2)}`,
       });
       navigate(`/orders?success=true&order=${data.orderId}`);
     },
     onError: (error) => {
       const message = error instanceof Error ? error.message : "An unexpected error occurred";
+      
       toast({
-        title: "Wallet purchase failed",
+        title: "Purchase Failed",
         description: message,
         variant: "destructive",
       });
+
+      // If item is no longer available, redirect to browse after a delay
+      if (message.includes('no longer available') || message.includes('have been sold') || message.includes('already been sold')) {
+        setTimeout(() => navigate('/browse'), 2000);
+      }
     },
   });
 
@@ -436,6 +452,11 @@ const Checkout = () => {
     validationErrors.push("The seller cannot receive payments at this time");
   }
 
+  // Check bundle availability
+  if (purchaseType === 'bundle' && (!bundleVariants || bundleVariants.length === 0)) {
+    validationErrors.push("Bundle is no longer available - all items have been sold");
+  }
+
   const canProceed = validationErrors.length === 0;
 
   return (
@@ -521,6 +542,17 @@ const Checkout = () => {
                         </p>
                       )}
                     </div>
+                  </div>
+                )}
+
+                {purchaseType === 'bundle' && (!bundleVariants || bundleVariants.length === 0) && (
+                  <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                    <p className="text-sm font-medium text-destructive">
+                      ⚠️ Bundle No Longer Available
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      All items in this bundle have been sold. Please check other listings.
+                    </p>
                   </div>
                 )}
                 
