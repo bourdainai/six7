@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Navigation } from "@/components/Navigation";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useState } from "react";
@@ -168,6 +169,25 @@ const Checkout = () => {
     enabled: !!variantId,
   });
 
+  // Fetch all variants for bundle purchase
+  const { data: bundleVariants } = useQuery({
+    queryKey: ["bundle-variants", id],
+    queryFn: async () => {
+      if (purchaseType !== 'bundle') return null;
+      const { data, error } = await supabase
+        .from("listing_variants")
+        .select("*")
+        .eq("listing_id", id)
+        .eq("is_available", true)
+        .eq("is_sold", false)
+        .order("display_order");
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: purchaseType === 'bundle',
+  });
+
   const { data: offer } = useQuery({
     queryKey: ["offer", offerId],
     queryFn: async () => {
@@ -196,9 +216,19 @@ const Checkout = () => {
   // Calculate item price based on purchase type
   const calculateItemPrice = () => {
     if (offer) return Number(offer.amount);
-    if (purchaseType === 'bundle' && listing?.remaining_bundle_price) {
-      return Number(listing.remaining_bundle_price);
+    
+    if (purchaseType === 'bundle' && bundleVariants && bundleVariants.length > 0) {
+      // Calculate bundle price with discount logic
+      const individualTotal = bundleVariants.reduce((sum, v) => sum + Number(v.variant_price), 0);
+      
+      // Only apply discount if 2+ cards remain
+      if (bundleVariants.length >= 2 && listing?.bundle_discount_percentage && listing.bundle_discount_percentage > 0) {
+        return individualTotal * (1 - listing.bundle_discount_percentage / 100);
+      }
+      
+      return individualTotal;
     }
+    
     if (variant) return Number(variant.variant_price);
     return Number(listing?.seller_price || 0);
   };
@@ -467,14 +497,30 @@ const Checkout = () => {
                   </div>
                 )}
                 
-                {purchaseType === 'bundle' && (
-                  <div className="mb-4 p-3 bg-primary/10 border border-primary/20">
-                    <p className="text-sm font-normal text-primary">
-                      🎁 Bundle Deal - All Remaining Cards
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1 font-normal">
-                      Original bundle: £{Number(listing?.original_bundle_price || 0).toFixed(2)}
-                    </p>
+                {purchaseType === 'bundle' && bundleVariants && (
+                  <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <p className="text-sm font-medium text-primary">
+                        🎁 Bundle Deal - {bundleVariants.length} Cards
+                      </p>
+                      {bundleVariants.length >= 2 && listing?.bundle_discount_percentage && listing.bundle_discount_percentage > 0 && (
+                        <Badge variant="secondary" className="text-xs">
+                          Save {listing.bundle_discount_percentage}%
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="space-y-1">
+                      {bundleVariants.slice(0, 3).map((v) => (
+                        <p key={v.id} className="text-xs text-primary/80">
+                          • {v.variant_name} - £{Number(v.variant_price).toFixed(2)}
+                        </p>
+                      ))}
+                      {bundleVariants.length > 3 && (
+                        <p className="text-xs text-primary/80">
+                          + {bundleVariants.length - 3} more cards
+                        </p>
+                      )}
+                    </div>
                   </div>
                 )}
                 
