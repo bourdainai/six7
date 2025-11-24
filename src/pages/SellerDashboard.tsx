@@ -147,12 +147,6 @@ const SellerDashboard = () => {
               </p>
             </div>
             <div className="flex gap-2">
-              {isAdmin && (
-                <Button onClick={() => navigate("/admin/live")} variant="default" className="gap-2">
-                  <Shield className="h-4 w-4" />
-                  Admin Dashboard
-                </Button>
-              )}
               <Button onClick={() => setShowImportDialog(true)} variant="outline" className="gap-2">
                 <Upload className="h-4 w-4" />
                 Import from Collectr

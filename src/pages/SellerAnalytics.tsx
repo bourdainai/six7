@@ -93,19 +93,11 @@ const SellerAnalytics = () => {
       <Navigation />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-[72px]">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-light text-foreground mb-2">Analytics Dashboard</h1>
-            <p className="text-base text-muted-foreground font-light">
-              Last 30 days performance overview
-            </p>
-          </div>
-          {isAdmin && (
-            <Button onClick={() => navigate("/admin/live")} variant="default" className="gap-2">
-              <Shield className="h-4 w-4" />
-              Admin Dashboard
-            </Button>
-          )}
+        <div className="mb-8">
+          <h1 className="text-3xl font-light text-foreground mb-2">Analytics Dashboard</h1>
+          <p className="text-base text-muted-foreground font-light">
+            Last 30 days performance overview
+          </p>
         </div>
 
         {/* Summary Cards */}
