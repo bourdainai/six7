@@ -20,6 +20,8 @@ const checkoutSchema = z.object({
     country: z.string().length(2).regex(/^[A-Z]{2}$/, 'Invalid country code'),
   }),
   offerId: z.string().uuid().optional(),
+  purchaseType: z.enum(['bundle']).optional(),
+  variantId: z.string().uuid().optional(),
 });
 
 serve(async (req) => {
@@ -29,7 +31,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { listingId, shippingAddress, offerId } = checkoutSchema.parse(body);
+    const { listingId, shippingAddress, offerId, purchaseType, variantId } = checkoutSchema.parse(body);
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -55,6 +57,40 @@ serve(async (req) => {
 
     if (listingError || !listing) {
       throw new Error('Listing not found');
+    }
+
+    // Handle variant purchase
+    let variant = null;
+    if (variantId) {
+      const { data: variantData, error: variantError } = await supabaseClient
+        .from('listing_variants')
+        .select('*')
+        .eq('id', variantId)
+        .eq('listing_id', listingId)
+        .eq('is_available', true)
+        .eq('is_sold', false)
+        .single();
+
+      if (variantError || !variantData) {
+        throw new Error('Variant not found or no longer available');
+      }
+      variant = variantData;
+    }
+
+    // Handle bundle purchase - get all unsold variants
+    let bundleVariants = [];
+    if (purchaseType === 'bundle') {
+      const { data: variants, error: variantsError } = await supabaseClient
+        .from('listing_variants')
+        .select('*')
+        .eq('listing_id', listingId)
+        .eq('is_sold', false)
+        .eq('is_available', true);
+
+      if (variantsError || !variants || variants.length === 0) {
+        throw new Error('No variants available for bundle purchase');
+      }
+      bundleVariants = variants;
     }
 
     // Validate listing status
@@ -113,8 +149,17 @@ serve(async (req) => {
       }
     }
 
-    // Use offer amount if available, otherwise use listing price
-    const itemPrice = offerAmount !== null ? offerAmount : Number(listing.seller_price);
+    // Calculate item price based on purchase type
+    let itemPrice;
+    if (offerId && offerAmount !== null) {
+      itemPrice = offerAmount;
+    } else if (purchaseType === 'bundle') {
+      itemPrice = Number(listing.remaining_bundle_price || 0);
+    } else if (variant) {
+      itemPrice = Number(variant.variant_price);
+    } else {
+      itemPrice = Number(listing.seller_price);
+    }
 
     // Calculate fees using the calculate-fees function
     const feesResponse = await fetch(
@@ -169,6 +214,9 @@ serve(async (req) => {
         buyerTier: fees.buyerTier,
         sellerTier: fees.sellerTier,
         sellerRiskTier: fees.sellerRiskTier,
+        purchaseType: purchaseType || 'single',
+        variantId: variantId || '',
+        isBundle: purchaseType === 'bundle' ? 'true' : 'false',
       },
     });
 
@@ -194,12 +242,48 @@ serve(async (req) => {
       throw new Error(`Failed to create order: ${orderError.message}`);
     }
 
-    // Create order item
-    await supabaseClient.from('order_items').insert({
-      order_id: order.id,
-      listing_id: listing.id,
-      price: itemPrice,
-    });
+    // Create order item(s)
+    if (purchaseType === 'bundle') {
+      // Create order items for all bundle variants
+      const orderItems = bundleVariants.map(v => ({
+        order_id: order.id,
+        listing_id: listing.id,
+        variant_id: v.id,
+        price: Number(v.variant_price),
+      }));
+      
+      await supabaseClient.from('order_items').insert(orderItems);
+      
+      // Mark all bundle variants as sold
+      const variantIds = bundleVariants.map(v => v.id);
+      await supabaseClient
+        .from('listing_variants')
+        .update({ is_sold: true, sold_at: new Date().toISOString() })
+        .in('id', variantIds);
+        
+    } else if (variant) {
+      // Single variant purchase
+      await supabaseClient.from('order_items').insert({
+        order_id: order.id,
+        listing_id: listing.id,
+        variant_id: variant.id,
+        price: itemPrice,
+      });
+      
+      // Mark variant as sold
+      await supabaseClient
+        .from('listing_variants')
+        .update({ is_sold: true, sold_at: new Date().toISOString() })
+        .eq('id', variant.id);
+        
+    } else {
+      // Regular single item purchase
+      await supabaseClient.from('order_items').insert({
+        order_id: order.id,
+        listing_id: listing.id,
+        price: itemPrice,
+      });
+    }
 
     // Create payment record
     await supabaseClient.from('payments').insert({

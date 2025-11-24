@@ -121,9 +121,11 @@ const Checkout = () => {
     country: "GB",
   });
 
-  // Check for offer in URL params
+  // Check for offer/bundle/variant in URL params
   const searchParams = new URLSearchParams(window.location.search);
   const offerId = searchParams.get('offer');
+  const purchaseType = searchParams.get('type'); // 'bundle' or undefined
+  const variantId = searchParams.get('variant'); // variant ID or undefined
 
   const { data: listing, isLoading: isLoadingListing } = useQuery({
     queryKey: ["listing", id],
@@ -145,6 +147,25 @@ const Checkout = () => {
       if (error) throw error;
       return data;
     },
+  });
+
+  // Fetch variant if specified
+  const { data: variant } = useQuery({
+    queryKey: ["variant", variantId],
+    queryFn: async () => {
+      if (!variantId) return null;
+      const { data, error } = await supabase
+        .from("listing_variants")
+        .select("*")
+        .eq("id", variantId)
+        .eq("is_available", true)
+        .eq("is_sold", false)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!variantId,
   });
 
   const { data: offer } = useQuery({
@@ -171,7 +192,18 @@ const Checkout = () => {
   };
 
   const shippingCost = calculateShippingCost();
-  const itemPrice = offer ? Number(offer.amount) : Number(listing?.seller_price || 0);
+  
+  // Calculate item price based on purchase type
+  const calculateItemPrice = () => {
+    if (offer) return Number(offer.amount);
+    if (purchaseType === 'bundle' && listing?.remaining_bundle_price) {
+      return Number(listing.remaining_bundle_price);
+    }
+    if (variant) return Number(variant.variant_price);
+    return Number(listing?.seller_price || 0);
+  };
+  
+  const itemPrice = calculateItemPrice();
   
   const { data: feeData } = useQuery({
     queryKey: ["fees", user?.id, listing?.seller_id, itemPrice],
@@ -202,6 +234,8 @@ const Checkout = () => {
           listingId: id,
           shippingAddress,
           servicePointId: selectedServicePoint?.id,
+          purchaseType,
+          variantId,
         },
       });
 
@@ -232,6 +266,8 @@ const Checkout = () => {
           listingId: id,
           shippingAddress,
           servicePointId: selectedServicePoint?.id,
+          purchaseType,
+          variantId,
         },
       });
 
@@ -431,10 +467,32 @@ const Checkout = () => {
                   </div>
                 )}
                 
+                {purchaseType === 'bundle' && (
+                  <div className="mb-4 p-3 bg-primary/10 border border-primary/20">
+                    <p className="text-sm font-normal text-primary">
+                      🎁 Bundle Deal - All Remaining Cards
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1 font-normal">
+                      Original bundle: £{Number(listing?.original_bundle_price || 0).toFixed(2)}
+                    </p>
+                  </div>
+                )}
+                
+                {variant && (
+                  <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20">
+                    <p className="text-sm font-normal text-blue-600 dark:text-blue-400">
+                      🃏 Single Card Purchase
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1 font-normal">
+                      {variant.variant_name} - {variant.variant_condition}
+                    </p>
+                  </div>
+                )}
+                
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">
-                      {offer ? 'Agreed Price' : 'Item Price'}
+                      {offer ? 'Agreed Price' : purchaseType === 'bundle' ? 'Bundle Price' : variant ? 'Card Price' : 'Item Price'}
                     </span>
                     <span className="text-foreground">£{itemPrice.toFixed(2)}</span>
                   </div>
