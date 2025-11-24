@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
-import { Package, DollarSign, ShoppingCart, TrendingUp, Award, CheckCircle2, Upload, User } from "lucide-react";
+import { Package, DollarSign, ShoppingCart, TrendingUp, Award, CheckCircle2, Upload, User, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { SellerCopilot } from "@/components/SellerCopilot";
@@ -17,6 +17,7 @@ import { BalanceCards } from "@/components/seller/BalanceCards";
 import { ListingsManagement } from "@/components/seller/ListingsManagement";
 import { CollectrImportDialog } from "@/components/import/CollectrImportDialog";
 import { CreditsBanner } from "@/components/seller/CreditsBanner";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 
 const SellerDashboard = () => {
   const { user } = useAuth();
@@ -24,6 +25,7 @@ const SellerDashboard = () => {
   const navigate = useNavigate();
   const [selectedListingForCopilot, setSelectedListingForCopilot] = useState<string | null>(null);
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const { data: isAdmin } = useAdminCheck();
   
   // Read tab from URL query params
   const searchParams = new URLSearchParams(window.location.search);
@@ -145,6 +147,12 @@ const SellerDashboard = () => {
               </p>
             </div>
             <div className="flex gap-2">
+              {isAdmin && (
+                <Button onClick={() => navigate("/admin/live")} variant="default" className="gap-2">
+                  <Shield className="h-4 w-4" />
+                  Admin Dashboard
+                </Button>
+              )}
               <Button onClick={() => setShowImportDialog(true)} variant="outline" className="gap-2">
                 <Upload className="h-4 w-4" />
                 Import from Collectr
