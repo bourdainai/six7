@@ -1773,39 +1773,54 @@ export type Database = {
       ratings: {
         Row: {
           created_at: string | null
+          helpful_count: number | null
           id: string
           listing_id: string
           order_id: string
           rating: number
+          review_images: Json | null
           review_text: string | null
           review_type: string
           reviewee_id: string
           reviewer_id: string
+          seller_response: string | null
+          seller_response_at: string | null
           updated_at: string | null
+          verified_purchase: boolean | null
         }
         Insert: {
           created_at?: string | null
+          helpful_count?: number | null
           id?: string
           listing_id: string
           order_id: string
           rating: number
+          review_images?: Json | null
           review_text?: string | null
           review_type: string
           reviewee_id: string
           reviewer_id: string
+          seller_response?: string | null
+          seller_response_at?: string | null
           updated_at?: string | null
+          verified_purchase?: boolean | null
         }
         Update: {
           created_at?: string | null
+          helpful_count?: number | null
           id?: string
           listing_id?: string
           order_id?: string
           rating?: number
+          review_images?: Json | null
           review_text?: string | null
           review_type?: string
           reviewee_id?: string
           reviewer_id?: string
+          seller_response?: string | null
+          seller_response_at?: string | null
           updated_at?: string | null
+          verified_purchase?: boolean | null
         }
         Relationships: [
           {
@@ -2008,6 +2023,42 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      review_votes: {
+        Row: {
+          created_at: string | null
+          id: string
+          review_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          review_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          review_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_votes_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "ratings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_votes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
