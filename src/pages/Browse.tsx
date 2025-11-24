@@ -43,93 +43,105 @@ const Browse = () => {
   const { data: listings, isLoading, error } = useQuery<ListingSummary[]>({
     queryKey: ["active-listings", page, JSON.stringify(filters), sortBy],
     queryFn: async () => {
-      const from = (page - 1) * itemsPerPage;
-      const to = from + itemsPerPage - 1;
+      try {
+        console.log("🔍 Starting browse query...");
+        const from = (page - 1) * itemsPerPage;
+        const to = from + itemsPerPage - 1;
 
-      let query = supabase
-        .from("listings")
-        .select(`
-          *,
-          images:listing_images(image_url, display_order),
-          seller:profiles!seller_id(id, full_name, trust_score)
-        `)
-        .eq("status", "active");
-      
-      // Note: Both regular listings (has_variants=false/null) and 
-      // parent variant listings (has_variants=true) appear in search.
-      // Individual variants don't have their own listing entries.
+        let query = supabase
+          .from("listings")
+          .select(`
+            *,
+            images:listing_images(image_url, display_order),
+            seller:profiles!seller_id(id, full_name, trust_score)
+          `)
+          .eq("status", "active");
 
-      // Server-side filtering
-      if (filters.category) {
-        query = query.eq("category", filters.category);
-      }
-      if (filters.subcategory) {
-        query = query.eq("subcategory", filters.subcategory);
-      }
-      if (filters.condition) {
-        query = query.eq("condition", filters.condition as any);
-      }
-      if (filters.minPrice) {
-        query = query.gte("seller_price", Number(filters.minPrice));
-      }
-      if (filters.maxPrice) {
-        query = query.lte("seller_price", Number(filters.maxPrice));
-      }
-      if (filters.brand) {
-        query = query.ilike("brand", `%${filters.brand}%`);
-      }
-      if (filters.size) {
-        query = query.ilike("size", `%${filters.size}%`);
-      }
-      if (filters.color) {
-        query = query.ilike("color", `%${filters.color}%`);
-      }
-      if (filters.material) {
-        query = query.ilike("material", `%${filters.material}%`);
-      }
-      if (filters.setCode) {
-        query = query.ilike("set_code", `%${filters.setCode}%`);
-      }
-      if (filters.tradeEnabled) {
-        query = query.eq("trade_enabled", filters.tradeEnabled === "true");
-      }
-      if (filters.freeShipping) {
-        query = query.eq("free_shipping", filters.freeShipping === "true");
-      }
-      if (filters.maxDeliveryDays) {
-        query = query.lte("estimated_delivery_days", Number(filters.maxDeliveryDays));
-      }
-      if (filters.search) {
-        query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%,brand.ilike.%${filters.search}%`);
-      }
+        // Server-side filtering
+        if (filters.category) {
+          query = query.eq("category", filters.category);
+        }
+        if (filters.subcategory) {
+          query = query.eq("subcategory", filters.subcategory);
+        }
+        if (filters.condition) {
+          query = query.eq("condition", filters.condition as any);
+        }
+        if (filters.minPrice) {
+          query = query.gte("seller_price", Number(filters.minPrice));
+        }
+        if (filters.maxPrice) {
+          query = query.lte("seller_price", Number(filters.maxPrice));
+        }
+        if (filters.brand) {
+          query = query.ilike("brand", `%${filters.brand}%`);
+        }
+        if (filters.size) {
+          query = query.ilike("size", `%${filters.size}%`);
+        }
+        if (filters.color) {
+          query = query.ilike("color", `%${filters.color}%`);
+        }
+        if (filters.material) {
+          query = query.ilike("material", `%${filters.material}%`);
+        }
+        if (filters.setCode) {
+          query = query.ilike("set_code", `%${filters.setCode}%`);
+        }
+        if (filters.tradeEnabled) {
+          query = query.eq("trade_enabled", filters.tradeEnabled === "true");
+        }
+        if (filters.freeShipping) {
+          query = query.eq("free_shipping", filters.freeShipping === "true");
+        }
+        if (filters.maxDeliveryDays) {
+          query = query.lte("estimated_delivery_days", Number(filters.maxDeliveryDays));
+        }
+        if (filters.search) {
+          query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%,brand.ilike.%${filters.search}%`);
+        }
 
-      // Server-side sorting
-      switch (sortBy) {
-        case 'price_low':
-          query = query.order("seller_price", { ascending: true });
-          break;
-        case 'price_high':
-          query = query.order("seller_price", { ascending: false });
-          break;
-        case 'popular':
-          query = query.order("views", { ascending: false, nullsFirst: false });
-          break;
-        case 'newest':
-        default:
-          query = query.order("created_at", { ascending: false });
-          break;
+        // Server-side sorting
+        switch (sortBy) {
+          case 'price_low':
+            query = query.order("seller_price", { ascending: true });
+            break;
+          case 'price_high':
+            query = query.order("seller_price", { ascending: false });
+            break;
+          case 'popular':
+            query = query.order("views", { ascending: false, nullsFirst: false });
+            break;
+          case 'newest':
+          default:
+            query = query.order("created_at", { ascending: false });
+            break;
+        }
+
+        query = query.range(from, to);
+
+        console.log("🔍 Executing query...");
+        const { data, error } = await query;
+        
+        console.log("🔍 Query result:", { data, error });
+        
+        if (error) {
+          console.error("❌ Browse query error:", error);
+          throw error;
+        }
+        
+        console.log("✅ Query successful, returning", data?.length, "listings");
+        return data as ListingSummary[];
+      } catch (err) {
+        console.error("❌ Browse query exception:", err);
+        throw err;
       }
-
-      query = query.range(from, to);
-
-      const { data, error } = await query;
-      
-      if (error) throw error;
-      
-      return data as ListingSummary[];
     },
     staleTime: 1000 * 60, // 1 minute
+    retry: false,
   });
+
+  console.log("📊 Browse state:", { isLoading, hasListings: !!listings, count: listings?.length, hasError: !!error, error });
 
   // For semantic/vibe search results, use those directly
   const filteredListings = useMemo((): ListingSummary[] => {
