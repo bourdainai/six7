@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Mail, X, CheckCircle2, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 
 export const EmailVerificationBanner = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [dismissed, setDismissed] = useState(false);
+  const { data: isAdmin } = useAdminCheck();
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -60,8 +62,8 @@ export const EmailVerificationBanner = () => {
   // Check if email is verified
   const isVerified = authUser?.email_confirmed_at !== null && authUser?.email_confirmed_at !== undefined;
 
-  // Don't show if verified or dismissed
-  if (!user || isVerified || dismissed) {
+  // Don't show if verified, dismissed, or user is admin
+  if (!user || isVerified || dismissed || isAdmin) {
     return null;
   }
 
