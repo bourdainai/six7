@@ -1,7 +1,7 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Heart, Package } from "lucide-react";
+import { Heart, Package, Layers } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatCondition, formatStatus } from "@/lib/format";
 import { SellerReputation } from "@/components/seller/SellerReputation";
@@ -55,7 +55,10 @@ export const ListingCard = React.memo(
                           listing.category?.includes("Card") || 
                           listing.category?.includes("Pokémon");
 
-    // Check if this is a multi-card bundle
+    // Check if this is a variant-based listing (multi-card bundle)
+    const hasVariants = listing.has_variants === true;
+    
+    // Legacy bundle check for backwards compatibility
     const isBundle = listing.category_attributes && 
       typeof listing.category_attributes === 'object' && 
       'is_bundle' in listing.category_attributes &&
@@ -90,8 +93,17 @@ export const ListingCard = React.memo(
               No image
             </div>
           )}
-          {/* Bundle Badge */}
-          {isBundle && bundleCardCount > 0 && (
+          {/* Multi-Card Badge */}
+          {hasVariants && (
+            <div className="absolute top-2 left-2">
+              <Badge className="bg-primary text-primary-foreground flex items-center gap-1">
+                <Layers className="w-3 h-3" />
+                Multi-Card
+              </Badge>
+            </div>
+          )}
+          {/* Legacy Bundle Badge */}
+          {!hasVariants && isBundle && bundleCardCount > 0 && (
             <div className="absolute top-2 left-2">
               <Badge className="bg-primary text-primary-foreground flex items-center gap-1">
                 <Package className="w-3 h-3" />
@@ -128,7 +140,11 @@ export const ListingCard = React.memo(
 
             <div className="flex items-baseline gap-2">
             <p className="text-base font-normal text-foreground tracking-tight">
-                £{Number(listing.seller_price).toFixed(2)}
+              {hasVariants ? (
+                <>From £{Number(listing.seller_price).toFixed(2)}</>
+              ) : (
+                <>£{Number(listing.seller_price).toFixed(2)}</>
+              )}
             </p>
             {listing.original_rrp && (
               <p className="text-xs text-muted-foreground line-through font-normal">
