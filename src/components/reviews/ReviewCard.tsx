@@ -15,9 +15,6 @@ interface ReviewCardProps {
   review: {
     id: string;
     rating: number;
-    communication_rating: number | null;
-    packaging_rating: number | null;
-    speed_rating: number | null;
     review_text: string | null;
     created_at: string;
     helpful_count: number;
@@ -121,64 +118,7 @@ export function ReviewCard({ review, userVoted = false, isSellerView = false }: 
 
         {/* Review Text */}
         {review.review_text && (
-          <p className="text-foreground mb-4 whitespace-pre-wrap leading-relaxed">{review.review_text}</p>
-        )}
-
-        {/* Detailed Ratings */}
-        {(review.communication_rating || review.packaging_rating || review.speed_rating) && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4 p-3 bg-muted/30 rounded-lg">
-            {review.communication_rating && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Communication</span>
-                <div className="flex">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star
-                      key={star}
-                      className={`h-3 w-3 ${
-                        star <= review.communication_rating!
-                          ? "fill-primary text-primary"
-                          : "text-muted-foreground"
-                      }`}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-            {review.packaging_rating && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Packaging</span>
-                <div className="flex">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star
-                      key={star}
-                      className={`h-3 w-3 ${
-                        star <= review.packaging_rating!
-                          ? "fill-primary text-primary"
-                          : "text-muted-foreground"
-                      }`}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-            {review.speed_rating && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Delivery Speed</span>
-                <div className="flex">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star
-                      key={star}
-                      className={`h-3 w-3 ${
-                        star <= review.speed_rating!
-                          ? "fill-primary text-primary"
-                          : "text-muted-foreground"
-                      }`}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          <p className="text-foreground mb-4 whitespace-pre-wrap">{review.review_text}</p>
         )}
 
         {/* Review Images */}
@@ -189,7 +129,7 @@ export function ReviewCard({ review, userVoted = false, isSellerView = false }: 
                 key={index}
                 src={imageUrl}
                 alt={`Review ${index + 1}`}
-                className="rounded-lg object-cover aspect-square w-full hover:scale-105 transition-transform cursor-pointer"
+                className="rounded-lg object-cover aspect-square w-full"
               />
             ))}
           </div>
