@@ -69,7 +69,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signUp = async (email: string, password: string, fullName: string) => {
     const redirectUrl = `${window.location.origin}/`;
     
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -79,6 +79,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     if (error) throw error;
+    
+    // Send branded verification email via our custom edge function
+    if (data.user && !data.user.email_confirmed_at) {
+      try {
+        await supabase.functions.invoke("send-verification-email", {
+          body: {},
+        });
+        console.log("✅ [Auth] Verification email sent to:", email);
+      } catch (emailError) {
+        console.error("⚠️ [Auth] Failed to send verification email:", emailError);
+        // Don't throw - account is still created, user can resend later
+      }
+    }
     
     toast({
       title: "Account created!",
