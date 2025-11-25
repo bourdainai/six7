@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, RotateCcw } from "lucide-react";
+import { logger } from "@/lib/logger";
 
 interface ReturnLabelButtonProps {
   orderId: string;
@@ -44,7 +45,7 @@ export const ReturnLabelButton = ({ orderId, onSuccess }: ReturnLabelButtonProps
       setOpen(false);
       onSuccess?.();
     } catch (error) {
-      console.error('Return label error:', error);
+      logger.error('Return label error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to create return label');
     } finally {
       setIsCreating(false);

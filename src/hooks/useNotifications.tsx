@@ -4,6 +4,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Json } from "@/integrations/supabase/types";
+import { logger } from "@/lib/logger";
 
 export interface NotificationRecord {
   id: string;
@@ -41,7 +42,7 @@ export const useNotifications = () => {
         .limit(50);
 
       if (error) {
-        console.error("Error fetching notifications:", error);
+        logger.error("Error fetching notifications:", error);
         return;
       }
 
@@ -115,7 +116,7 @@ export const useNotifications = () => {
       .eq("user_id", user.id);
 
     if (error) {
-      console.error("Error marking notification as read:", error);
+      logger.error("Error marking notification as read:", error);
       return;
     }
 
@@ -135,7 +136,7 @@ export const useNotifications = () => {
       .eq("read", false);
 
     if (error) {
-      console.error("Error marking all notifications as read:", error);
+      logger.error("Error marking all notifications as read:", error);
       return;
     }
 

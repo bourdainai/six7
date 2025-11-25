@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useTradeOffers } from "@/hooks/useTradeOffers";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/lib/logger";
 
 interface TradeOfferModalProps {
   open: boolean;
@@ -89,7 +90,7 @@ export function TradeOfferModal({ open, onOpenChange, listingId, variantId, vari
       setSelectedFiles([]);
       onOpenChange(false);
     } catch (e) {
-      console.error(e);
+      logger.error('Trade offer creation error:', e);
     } finally {
       setIsSubmitting(false);
     }

@@ -9,6 +9,7 @@ import { Loader2, Plus, X, ArrowRight, ChevronDown, ChevronUp } from 'lucide-rea
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import type { Database } from '@/integrations/supabase/types';
 import { FairnessMeter } from './FairnessMeter';
+import { logger } from '@/lib/logger';
 
 type Listing = Database['public']['Tables']['listings']['Row'];
 
@@ -106,7 +107,7 @@ export function MobileTradeBuilder({ open, onOpenChange, targetListing }: Mobile
           setAiSuggestions(fairness.suggestions || []);
         }
       } catch (error) {
-        console.error('Valuation error:', error);
+        logger.error('Valuation error:', error);
       } finally {
         setIsValuating(false);
       }
@@ -173,7 +174,7 @@ export function MobileTradeBuilder({ open, onOpenChange, targetListing }: Mobile
       setCashOffer(0);
       setNotes('');
     } catch (error) {
-      console.error('Error creating trade:', error);
+      logger.error('Error creating trade:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to create trade offer",

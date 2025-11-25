@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { Search, Loader2 } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
+import { logger } from '@/lib/logger';
 
 type Listing = Database['public']['Tables']['listings']['Row'];
 
@@ -57,7 +58,7 @@ export function CardSelector({ open, onOpenChange, onSelectCard, excludeIds = []
       if (error) throw error;
       setListings(data || []);
     } catch (error) {
-      console.error('Error fetching listings:', error);
+      logger.error('Error fetching listings:', error);
     } finally {
       setLoading(false);
     }

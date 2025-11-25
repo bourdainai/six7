@@ -10,6 +10,7 @@ import { Loader2, TrendingUp, TrendingDown, Minus, Plus, X } from 'lucide-react'
 import { CardSelector } from './CardSelector';
 import { FairnessMeter } from './FairnessMeter';
 import type { Database } from '@/integrations/supabase/types';
+import { logger } from '@/lib/logger';
 
 type Listing = Database['public']['Tables']['listings']['Row'];
 
@@ -90,7 +91,7 @@ export function TradeBuilderModal({ open, onOpenChange, targetListing }: TradeBu
           setAiSuggestions(fairness.suggestions || []);
         }
       } catch (error) {
-        console.error('Valuation error:', error);
+        logger.error('Valuation error:', error);
       } finally {
         setIsValuating(false);
       }
@@ -162,7 +163,7 @@ export function TradeBuilderModal({ open, onOpenChange, targetListing }: TradeBu
       setCashOffer(0);
       setNotes('');
     } catch (error) {
-      console.error('Error creating trade:', error);
+      logger.error('Error creating trade:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to create trade offer",

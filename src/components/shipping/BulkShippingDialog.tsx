@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Loader2, Package, CheckCircle2, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { logger } from "@/lib/logger";
 
 interface BulkShippingDialogProps {
   open: boolean;
@@ -71,7 +72,7 @@ export const BulkShippingDialog = ({ open, onOpenChange, orders, onSuccess }: Bu
         toast.error('Failed to create any shipping labels');
       }
     } catch (error) {
-      console.error('Bulk shipping error:', error);
+      logger.error('Bulk shipping error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to create bulk labels');
     } finally {
       setIsProcessing(false);

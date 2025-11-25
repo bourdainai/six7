@@ -87,7 +87,7 @@ export const ServicePointPicker = ({
         });
       }
     } catch (error) {
-      console.error('Failed to fetch service points:', error);
+      logger.error('Failed to fetch service points:', error);
       toast.error('Failed to load pickup points');
       setServicePoints([]);
     } finally {
@@ -125,12 +125,12 @@ export const ServicePointPicker = ({
         const { data, error } = await supabase.functions.invoke('mapbox-public-token');
         if (error) throw error;
         if (!data?.token) {
-          console.error('Mapbox token response missing token');
+          logger.error('Mapbox token response missing token');
           return;
         }
         setMapboxToken(data.token);
       } catch (err) {
-        console.error('Failed to load Mapbox token', err);
+        logger.error('Failed to load Mapbox token', err);
       }
     };
 
