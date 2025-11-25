@@ -80,7 +80,7 @@ serve(async (req) => {
 
     // Send test email via Resend
     const { data: emailData, error: emailError } = await resend.emails.send({
-      from: "Grail Central <noreply@grailcentral.com>",
+      from: "6seven.io <noreply@6seven.io>",
       to: [testEmail],
       subject: "[TEST] Verify your email address",
       html: `

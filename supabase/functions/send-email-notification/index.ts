@@ -1,10 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+import { Resend } from "https://esm.sh/resend@4.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 interface EmailNotificationRequest {
   userId: string;
@@ -165,12 +168,23 @@ serve(async (req) => {
       ? emailTemplates[template](data)
       : emailTemplates[type]?.(data) || `<p>${data.message || 'You have a new notification.'}</p>`;
 
-    // Use Supabase's built-in email service or integrate with your email provider
-    // For now, we'll use Supabase's email function
-    // In production, you'd integrate with SendGrid, Mailgun, AWS SES, etc.
-    
-    const baseUrl = Deno.env.get("SUPABASE_URL")?.replace("/rest/v1", "") || "";
-    const siteUrl = Deno.env.get("SITE_URL") || "https://6seven.ai";
+    // Send email via Resend
+    const emailResult = await resend.emails.send({
+      from: "6seven.io <noreply@6seven.io>",
+      to: [profile.email],
+      subject: subject,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          ${emailBody}
+          <hr style="border: none; border-top: 1px solid #ddd; margin: 40px 0 20px;" />
+          <p style="color: #999; font-size: 12px; text-align: center;">
+            6seven.io - The Trading Card Marketplace
+          </p>
+        </div>
+      `,
+    });
+
+    console.log("Email sent successfully:", emailResult);
 
     // Create in-app notification
     await supabaseClient
@@ -184,14 +198,6 @@ serve(async (req) => {
         metadata: data,
         read: false,
       });
-
-    // In production, send actual email via your email service
-    // For now, we'll log it (you can integrate SendGrid, Mailgun, etc. here)
-    console.log("Email would be sent:", {
-      to: profile.email,
-      subject,
-      body: emailBody,
-    });
 
     return new Response(
       JSON.stringify({ 
