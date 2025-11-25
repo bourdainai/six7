@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { Package, TrendingUp, DollarSign, AlertCircle } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
+import { useMarketplace } from "@/contexts/MarketplaceContext";
 
 type OrderRow = Database["public"]["Tables"]["orders"]["Row"];
 type OrderItemRow = Database["public"]["Tables"]["order_items"]["Row"];
@@ -30,6 +31,7 @@ interface AdminOrderWithRelations extends OrderRow {
 }
 
 export function AdminOrderView() {
+  const { currencySymbol } = useMarketplace();
   const { data: allOrders, isLoading } = useQuery<AdminOrderWithRelations[]>({
     queryKey: ["admin-orders"],
     queryFn: async () => {
@@ -105,7 +107,7 @@ export function AdminOrderView() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">£{totalRevenue.toFixed(2)}</div>
+            <div className="text-2xl font-bold">{currencySymbol}{totalRevenue.toFixed(2)}</div>
           </CardContent>
         </Card>
 
@@ -149,7 +151,7 @@ export function AdminOrderView() {
 
             <TabsContent value="all" className="space-y-4 mt-4">
               {allOrders?.map((order) => (
-                <OrderCard key={order.id} order={order} getStatusColor={getStatusColor} />
+                <OrderCard key={order.id} order={order} getStatusColor={getStatusColor} currencySymbol={currencySymbol} />
               ))}
             </TabsContent>
 
@@ -157,7 +159,7 @@ export function AdminOrderView() {
               {allOrders
                 ?.filter(o => o.order_items.some(item => item.listing.bundle_type === 'bundle_with_discount'))
                 .map((order) => (
-                  <OrderCard key={order.id} order={order} getStatusColor={getStatusColor} />
+                  <OrderCard key={order.id} order={order} getStatusColor={getStatusColor} currencySymbol={currencySymbol} />
                 ))}
             </TabsContent>
 
@@ -165,7 +167,7 @@ export function AdminOrderView() {
               {allOrders
                 ?.filter(o => !o.order_items.some(item => item.listing.bundle_type === 'bundle_with_discount'))
                 .map((order) => (
-                  <OrderCard key={order.id} order={order} getStatusColor={getStatusColor} />
+                  <OrderCard key={order.id} order={order} getStatusColor={getStatusColor} currencySymbol={currencySymbol} />
                 ))}
             </TabsContent>
           </Tabs>
@@ -177,10 +179,12 @@ export function AdminOrderView() {
 
 function OrderCard({ 
   order, 
-  getStatusColor 
+  getStatusColor,
+  currencySymbol 
 }: { 
   order: AdminOrderWithRelations; 
   getStatusColor: (status: string) => string;
+  currencySymbol: string;
 }) {
   return (
     <div className="border rounded-lg p-4 space-y-3">
@@ -235,7 +239,7 @@ function OrderCard({
                   </p>
                 )}
               </div>
-              <p className="font-medium">£{Number(item.price).toFixed(2)}</p>
+              <p className="font-medium">{currencySymbol}{Number(item.price).toFixed(2)}</p>
             </div>
           );
         })}
@@ -244,15 +248,15 @@ function OrderCard({
       <div className="border-t pt-3 flex justify-between items-center">
         <div className="text-sm">
           <span className="text-muted-foreground">Platform Fee: </span>
-          <span className="font-medium">£{Number(order.platform_fee).toFixed(2)}</span>
+          <span className="font-medium">{currencySymbol}{Number(order.platform_fee).toFixed(2)}</span>
         </div>
         <div className="text-sm">
           <span className="text-muted-foreground">Seller Amount: </span>
-          <span className="font-medium">£{Number(order.seller_amount).toFixed(2)}</span>
+          <span className="font-medium">{currencySymbol}{Number(order.seller_amount).toFixed(2)}</span>
         </div>
         <div className="text-sm">
           <span className="text-muted-foreground">Total: </span>
-          <span className="font-medium text-lg">£{Number(order.total_amount).toFixed(2)}</span>
+          <span className="font-medium text-lg">{currencySymbol}{Number(order.total_amount).toFixed(2)}</span>
         </div>
       </div>
 

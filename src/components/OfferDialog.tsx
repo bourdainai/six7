@@ -15,6 +15,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { BadgeDollarSign } from "lucide-react";
+import { useMarketplace } from "@/contexts/MarketplaceContext";
+import { logger } from "@/lib/logger";
 
 interface OfferDialogProps {
   listingId: string;
@@ -39,6 +41,7 @@ export const OfferDialog = ({
   const [submitting, setSubmitting] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+  const { currencySymbol } = useMarketplace();
 
   const handleSubmit = async () => {
     if (!user) {
@@ -119,8 +122,8 @@ export const OfferDialog = ({
 
       // Send notification message with variant info
       const messageContent = variantName
-        ? `📦 Made an offer of £${offerAmount} for ${variantName}${offerMessage ? `\n\n"${offerMessage}"` : ""}`
-        : `📦 Made an offer of £${offerAmount}${offerMessage ? `\n\n"${offerMessage}"` : ""}`;
+        ? `📦 Made an offer of ${currencySymbol}${offerAmount} for ${variantName}${offerMessage ? `\n\n"${offerMessage}"` : ""}`
+        : `📦 Made an offer of ${currencySymbol}${offerAmount}${offerMessage ? `\n\n"${offerMessage}"` : ""}`;
 
       await supabase.from("messages").insert({
         conversation_id: conversationId,
@@ -138,7 +141,7 @@ export const OfferDialog = ({
       setOfferMessage("");
       onOfferCreated?.();
     } catch (error) {
-      console.error("Error creating offer:", error);
+      logger.error("Error creating offer:", error);
       toast({
         title: "Error",
         description: "Failed to create offer",
@@ -162,13 +165,13 @@ export const OfferDialog = ({
           <DialogTitle>Make an Offer</DialogTitle>
           <DialogDescription>
             {variantName && <span className="block font-medium mb-1">For: {variantName}</span>}
-            The seller is asking £{listingPrice}. Make a reasonable offer below.
+            The seller is asking {currencySymbol}{listingPrice}. Make a reasonable offer below.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 pt-4">
           <div>
-            <Label htmlFor="offer-amount">Your Offer (£)</Label>
+            <Label htmlFor="offer-amount">Your Offer ({currencySymbol})</Label>
             <Input
               id="offer-amount"
               type="number"

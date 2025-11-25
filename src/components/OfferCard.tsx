@@ -6,6 +6,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { DollarSign, Check, X, ShoppingBag } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useMarketplace } from "@/contexts/MarketplaceContext";
+import { logger } from "@/lib/logger";
 
 interface OfferCardProps {
   offer: {
@@ -27,6 +29,7 @@ export const OfferCard = ({ offer, userRole, userId, onOfferUpdate }: OfferCardP
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
+  const { currencySymbol } = useMarketplace();
 
   const handleAcceptOffer = async () => {
     setIsProcessing(true);
@@ -51,7 +54,7 @@ export const OfferCard = ({ offer, userRole, userId, onOfferUpdate }: OfferCardP
         await supabase.from("messages").insert({
           conversation_id: conversation.id,
           sender_id: userId,
-          content: `✅ Offer accepted! Buyer can now proceed to checkout at £${offer.amount}.`,
+          content: `✅ Offer accepted! Buyer can now proceed to checkout at ${currencySymbol}${offer.amount}.`,
         });
       }
 
@@ -62,7 +65,7 @@ export const OfferCard = ({ offer, userRole, userId, onOfferUpdate }: OfferCardP
 
       onOfferUpdate?.();
     } catch (error) {
-      console.error("Error accepting offer:", error);
+      logger.error("Error accepting offer:", error);
       toast({
         title: "Error",
         description: "Failed to accept offer",
@@ -107,7 +110,7 @@ export const OfferCard = ({ offer, userRole, userId, onOfferUpdate }: OfferCardP
 
       onOfferUpdate?.();
     } catch (error) {
-      console.error("Error rejecting offer:", error);
+      logger.error("Error rejecting offer:", error);
       toast({
         title: "Error",
         description: "Failed to reject offer",
@@ -146,7 +149,7 @@ export const OfferCard = ({ offer, userRole, userId, onOfferUpdate }: OfferCardP
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium text-foreground">
-                Offer: £{offer.amount.toFixed(2)}
+                Offer: {currencySymbol}{offer.amount.toFixed(2)}
               </p>
               <p className="text-xs text-muted-foreground">
                 {new Date(offer.created_at).toLocaleDateString()}

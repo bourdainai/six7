@@ -10,6 +10,8 @@ import { CardSelector } from './CardSelector';
 import { FairnessMeter } from './FairnessMeter';
 import { ArrowLeftRight, Plus, Minus } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
+import { useMarketplace } from '@/contexts/MarketplaceContext';
+import { logger } from '@/lib/logger';
 
 type TradeOfferWithDetails = Database["public"]["Tables"]["trade_offers"]["Row"] & {
   target_listing: Database["public"]["Tables"]["listings"]["Row"] | null;
@@ -32,6 +34,7 @@ export function CounterOfferDialog({ open, onOpenChange, originalOffer, userRole
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCardSelector, setShowCardSelector] = useState(false);
+  const { currencySymbol } = useMarketplace();
 
   const targetValue = originalOffer.target_listing?.seller_price || 0;
   const offeredValue = selectedCards.reduce((sum, card) => sum + (card.value || 0), 0) + cashAmount;
@@ -55,7 +58,7 @@ export function CounterOfferDialog({ open, onOpenChange, originalOffer, userRole
       setFairnessScore(data.scorePercentage);
       setAiSuggestions(data.suggestions || []);
     } catch (error) {
-      console.error('Fairness calculation error:', error);
+      logger.error('Fairness calculation error:', error);
     } finally {
       setIsCalculating(false);
     }
@@ -98,7 +101,7 @@ export function CounterOfferDialog({ open, onOpenChange, originalOffer, userRole
       onOpenChange(false);
       window.location.reload(); // Refresh to show new offer
     } catch (error) {
-      console.error('Submit error:', error);
+      logger.error('Submit error:', error);
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to send counter offer',
@@ -144,7 +147,7 @@ export function CounterOfferDialog({ open, onOpenChange, originalOffer, userRole
                       <div className="flex-1">
                         <p className="text-sm font-medium line-clamp-1">{card.title}</p>
                         <p className="text-xs text-muted-foreground">
-                          £{card.value?.toFixed(2) || '0.00'}
+                          {currencySymbol}{card.value?.toFixed(2) || '0.00'}
                         </p>
                       </div>
                       <Button
@@ -203,19 +206,19 @@ export function CounterOfferDialog({ open, onOpenChange, originalOffer, userRole
 
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={() => quickAdjustCash(10)}>
-                    +£10
+                    +{currencySymbol}10
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => quickAdjustCash(25)}>
-                    +£25
+                    +{currencySymbol}25
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => quickAdjustCash(50)}>
-                    +£50
+                    +{currencySymbol}50
                   </Button>
                 </div>
 
                 <div className="pt-2 border-t">
                   <p className="text-sm font-semibold">
-                    Total Offering: £{offeredValue.toFixed(2)}
+                    Total Offering: {currencySymbol}{offeredValue.toFixed(2)}
                   </p>
                 </div>
               </div>
@@ -245,7 +248,7 @@ export function CounterOfferDialog({ open, onOpenChange, originalOffer, userRole
                   {originalOffer.target_listing.condition}
                 </p>
                 <p className="text-lg font-bold mt-2">
-                  £{targetValue.toFixed(2)}
+                  {currencySymbol}{targetValue.toFixed(2)}
                 </p>
               </div>
             )}
