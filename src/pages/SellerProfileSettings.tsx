@@ -10,8 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Loader2, Instagram, Twitter, Youtube, User } from "lucide-react";
+import { Loader2, Instagram, Twitter, Youtube, User, Facebook, Linkedin } from "lucide-react";
 import { SEO } from "@/components/SEO";
+import { AvatarUpload } from "@/components/profile/AvatarUpload";
 
 export default function SellerProfileSettings() {
   const { user } = useAuth();
@@ -21,8 +22,11 @@ export default function SellerProfileSettings() {
   const [formData, setFormData] = useState({
     business_name: "",
     bio: "",
+    avatar_url: "",
     instagram_url: "",
     twitter_url: "",
+    facebook_url: "",
+    linkedin_url: "",
     youtube_url: "",
     tiktok_url: "",
   });
@@ -33,7 +37,7 @@ export default function SellerProfileSettings() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("business_name, bio, instagram_url, twitter_url, youtube_url, tiktok_url")
+        .select("business_name, bio, avatar_url, instagram_url, twitter_url, facebook_url, linkedin_url, youtube_url, tiktok_url")
         .eq("id", user!.id)
         .single();
 
@@ -42,8 +46,11 @@ export default function SellerProfileSettings() {
       setFormData({
         business_name: data.business_name || "",
         bio: data.bio || "",
+        avatar_url: data.avatar_url || "",
         instagram_url: data.instagram_url || "",
         twitter_url: data.twitter_url || "",
+        facebook_url: data.facebook_url || "",
+        linkedin_url: data.linkedin_url || "",
         youtube_url: data.youtube_url || "",
         tiktok_url: data.tiktok_url || "",
       });
@@ -115,9 +122,27 @@ export default function SellerProfileSettings() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Profile Picture Section */}
           <Card>
             <CardHeader>
-              <CardTitle>Public Profile</CardTitle>
+              <CardTitle>Profile Picture</CardTitle>
+              <CardDescription>
+                Upload a professional photo to build trust with buyers
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AvatarUpload
+                currentAvatarUrl={formData.avatar_url}
+                userName={user.email}
+                onUploadComplete={(url) => setFormData({ ...formData, avatar_url: url })}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Basic Info Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Basic Information</CardTitle>
               <CardDescription>
                 This information will be visible to all buyers
               </CardDescription>
@@ -190,6 +215,38 @@ export default function SellerProfileSettings() {
                   value={formData.twitter_url}
                   onChange={(e) =>
                     setFormData({ ...formData, twitter_url: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="facebook_url" className="flex items-center gap-2">
+                  <Facebook className="h-4 w-4" />
+                  Facebook
+                </Label>
+                <Input
+                  id="facebook_url"
+                  type="url"
+                  placeholder="https://facebook.com/yourprofile"
+                  value={formData.facebook_url}
+                  onChange={(e) =>
+                    setFormData({ ...formData, facebook_url: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="linkedin_url" className="flex items-center gap-2">
+                  <Linkedin className="h-4 w-4" />
+                  LinkedIn
+                </Label>
+                <Input
+                  id="linkedin_url"
+                  type="url"
+                  placeholder="https://linkedin.com/in/yourprofile"
+                  value={formData.linkedin_url}
+                  onChange={(e) =>
+                    setFormData({ ...formData, linkedin_url: e.target.value })
                   }
                 />
               </div>
