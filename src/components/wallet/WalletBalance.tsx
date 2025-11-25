@@ -7,11 +7,13 @@ import { useState } from "react";
 import { WalletDeposit } from "./WalletDeposit";
 import { WalletWithdraw } from "./WalletWithdraw";
 import { WalletErrorBoundary } from "./WalletErrorBoundary";
+import { useMarketplace } from "@/contexts/MarketplaceContext";
 
 export function WalletBalance() {
   const { wallet, isLoading } = useWallet();
   const [isDepositOpen, setIsDepositOpen] = useState(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
+  const { currencySymbol } = useMarketplace();
 
   if (isLoading) {
     return <Skeleton className="h-[150px] w-full" />;
@@ -25,9 +27,9 @@ export function WalletBalance() {
           <Wallet className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">£{wallet?.balance?.toFixed(2) || '0.00'}</div>
+          <div className="text-2xl font-bold">{currencySymbol}{wallet?.balance?.toFixed(2) || '0.00'}</div>
           <p className="text-xs text-muted-foreground">
-            +£{wallet?.pending_balance?.toFixed(2) || '0.00'} pending
+            +{currencySymbol}{wallet?.pending_balance?.toFixed(2) || '0.00'} pending
           </p>
           <div className="mt-4 flex space-x-2">
             <Button size="sm" className="flex-1" onClick={() => setIsDepositOpen(true)}>

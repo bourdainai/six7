@@ -97,9 +97,9 @@ export const useWallet = () => {
   });
 
   const withdrawMutation = useMutation({
-    mutationFn: async ({ amount, destinationId }: { amount: number, destinationId?: string }) => {
+    mutationFn: async ({ amount, bank_account_id }: { amount: number, bank_account_id: string }) => {
       const { data, error } = await supabase.functions.invoke('wallet-withdraw', {
-        body: { amount, destination_account_id: destinationId },
+        body: { amount, bank_account_id },
       });
       if (error) throw error;
       return data;
