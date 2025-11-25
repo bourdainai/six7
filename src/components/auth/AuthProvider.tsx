@@ -23,23 +23,43 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     // Set up listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      console.log("🔐 [Auth] State change:", _event, "User:", !!session?.user);
+      
       setSession(session);
       setUser(session?.user ?? null);
       
-      // Track user session when they sign in
+      // Track user session when they sign in (non-blocking, fire and forget)
       if (session?.user && _event === 'SIGNED_IN') {
-        try {
-          await supabase.functions.invoke('track-user-session');
-        } catch (error) {
-          console.error('Failed to track session:', error);
-        }
+        // Use Promise.resolve to make this truly non-blocking
+        Promise.resolve().then(async () => {
+          try {
+            console.log("📊 [Auth] Tracking user session...");
+            await supabase.functions.invoke('track-user-session');
+            console.log("✅ [Auth] Session tracked successfully");
+          } catch (error) {
+            console.error('⚠️ [Auth] Failed to track session (non-critical):', error);
+            // Don't throw - this is a background task
+          }
+        });
+      }
+      
+      // Mark loading as complete after auth state is set
+      if (_event === 'INITIAL_SESSION' || _event === 'SIGNED_IN' || _event === 'SIGNED_OUT') {
+        setLoading(false);
       }
     });
 
     // THEN check existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error("❌ [Auth] Error getting session:", error);
+      }
+      console.log("🔐 [Auth] Initial session check:", !!session?.user);
       setSession(session);
       setUser(session?.user ?? null);
+      setLoading(false);
+    }).catch((error) => {
+      console.error("💥 [Auth] Unexpected error getting session:", error);
       setLoading(false);
     });
 

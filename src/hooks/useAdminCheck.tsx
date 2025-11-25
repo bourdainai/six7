@@ -9,15 +9,35 @@ export const useAdminCheck = () => {
     queryKey: ["admin-check", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user!.id)
-        .eq("role", "admin")
-        .single();
+      if (!user) {
+        console.log("👤 [Admin Check] No user, returning false");
+        return false;
+      }
 
-      if (error && error.code !== 'PGRST116') throw error;
-      return !!data;
+      console.log("🔍 [Admin Check] Checking admin status for user:", user.id);
+
+      try {
+        const { data, error } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id)
+          .eq("role", "admin")
+          .maybeSingle(); // Use maybeSingle to avoid errors when no row exists
+
+        if (error && error.code !== 'PGRST116') {
+          console.error("❌ [Admin Check] Error:", error);
+          throw error;
+        }
+
+        const isAdmin = !!data;
+        console.log(isAdmin ? "✅ [Admin Check] User is admin" : "👤 [Admin Check] User is not admin");
+        return isAdmin;
+      } catch (err) {
+        console.error("💥 [Admin Check] Unexpected error:", err);
+        return false;
+      }
     },
+    retry: 2,
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
   });
 };

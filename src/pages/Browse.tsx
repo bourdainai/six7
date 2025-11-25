@@ -45,108 +45,131 @@ const Browse = () => {
     queryKey: ["active-listings", page, JSON.stringify(filters), sortBy],
     refetchOnMount: 'always',
     staleTime: 0,
+    networkMode: 'always',
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
     queryFn: async () => {
       console.log("🔍 [Browse] Starting query with filters:", filters);
       console.log("🔍 [Browse] Page:", page, "Sort:", sortBy);
       
-      const from = (page - 1) * itemsPerPage;
-      const to = from + itemsPerPage - 1;
+      try {
+        // Health check: Verify Supabase connection
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) {
+          console.error("❌ [Browse] Session error:", sessionError);
+        } else {
+          console.log("✅ [Browse] Session valid:", !!session);
+        }
 
-      let query = supabase
-        .from("listings")
-        .select(`
-          *,
-          images:listing_images(image_url, display_order)
-        `)
-        .eq("status", "active");
+        const from = (page - 1) * itemsPerPage;
+        const to = from + itemsPerPage - 1;
 
-      // Server-side filtering
-      if (filters.category) {
-        console.log("🔍 [Browse] Applying category filter:", filters.category);
-        query = query.eq("category", filters.category);
-      }
-      if (filters.subcategory) {
-        console.log("🔍 [Browse] Applying subcategory filter:", filters.subcategory);
-        query = query.eq("subcategory", filters.subcategory);
-      }
-      if (filters.condition) {
-        console.log("🔍 [Browse] Applying condition filter:", filters.condition);
-        query = query.eq("condition", filters.condition as any);
-      }
-      if (filters.minPrice) {
-        console.log("🔍 [Browse] Applying minPrice filter:", filters.minPrice);
-        query = query.gte("seller_price", Number(filters.minPrice));
-      }
-      if (filters.maxPrice) {
-        console.log("🔍 [Browse] Applying maxPrice filter:", filters.maxPrice);
-        query = query.lte("seller_price", Number(filters.maxPrice));
-      }
-      if (filters.brand) {
-        console.log("🔍 [Browse] Applying brand filter:", filters.brand);
-        query = query.ilike("brand", `%${filters.brand}%`);
-      }
-      if (filters.size) {
-        query = query.ilike("size", `%${filters.size}%`);
-      }
-      if (filters.color) {
-        query = query.ilike("color", `%${filters.color}%`);
-      }
-      if (filters.material) {
-        query = query.ilike("material", `%${filters.material}%`);
-      }
-      if (filters.setCode) {
-        query = query.ilike("set_code", `%${filters.setCode}%`);
-      }
-      if (filters.tradeEnabled) {
-        query = query.eq("trade_enabled", filters.tradeEnabled === "true");
-      }
-      if (filters.freeShipping) {
-        query = query.eq("free_shipping", filters.freeShipping === "true");
-      }
-      if (filters.maxDeliveryDays) {
-        query = query.lte("estimated_delivery_days", Number(filters.maxDeliveryDays));
-      }
-      if (filters.search) {
-        console.log("🔍 [Browse] Applying search filter:", filters.search);
-        query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%,brand.ilike.%${filters.search}%`);
-      }
+        let query = supabase
+          .from("listings")
+          .select(`
+            *,
+            images:listing_images(image_url, display_order)
+          `)
+          .eq("status", "active");
 
-      // Server-side sorting
-      switch (sortBy) {
-        case 'price_low':
-          query = query.order("seller_price", { ascending: true });
-          break;
-        case 'price_high':
-          query = query.order("seller_price", { ascending: false });
-          break;
-        case 'popular':
-          query = query.order("views", { ascending: false, nullsFirst: false });
-          break;
-        case 'newest':
-        default:
-          query = query.order("created_at", { ascending: false });
-          break;
-      }
+        // Server-side filtering
+        if (filters.category) {
+          console.log("🔍 [Browse] Applying category filter:", filters.category);
+          query = query.eq("category", filters.category);
+        }
+        if (filters.subcategory) {
+          console.log("🔍 [Browse] Applying subcategory filter:", filters.subcategory);
+          query = query.eq("subcategory", filters.subcategory);
+        }
+        if (filters.condition) {
+          console.log("🔍 [Browse] Applying condition filter:", filters.condition);
+          query = query.eq("condition", filters.condition as any);
+        }
+        if (filters.minPrice) {
+          console.log("🔍 [Browse] Applying minPrice filter:", filters.minPrice);
+          query = query.gte("seller_price", Number(filters.minPrice));
+        }
+        if (filters.maxPrice) {
+          console.log("🔍 [Browse] Applying maxPrice filter:", filters.maxPrice);
+          query = query.lte("seller_price", Number(filters.maxPrice));
+        }
+        if (filters.brand) {
+          console.log("🔍 [Browse] Applying brand filter:", filters.brand);
+          query = query.ilike("brand", `%${filters.brand}%`);
+        }
+        if (filters.size) {
+          query = query.ilike("size", `%${filters.size}%`);
+        }
+        if (filters.color) {
+          query = query.ilike("color", `%${filters.color}%`);
+        }
+        if (filters.material) {
+          query = query.ilike("material", `%${filters.material}%`);
+        }
+        if (filters.setCode) {
+          query = query.ilike("set_code", `%${filters.setCode}%`);
+        }
+        if (filters.tradeEnabled) {
+          query = query.eq("trade_enabled", filters.tradeEnabled === "true");
+        }
+        if (filters.freeShipping) {
+          query = query.eq("free_shipping", filters.freeShipping === "true");
+        }
+        if (filters.maxDeliveryDays) {
+          query = query.lte("estimated_delivery_days", Number(filters.maxDeliveryDays));
+        }
+        if (filters.search) {
+          console.log("🔍 [Browse] Applying search filter:", filters.search);
+          query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%,brand.ilike.%${filters.search}%`);
+        }
 
-      query = query.range(from, to);
+        // Server-side sorting
+        switch (sortBy) {
+          case 'price_low':
+            query = query.order("seller_price", { ascending: true });
+            break;
+          case 'price_high':
+            query = query.order("seller_price", { ascending: false });
+            break;
+          case 'popular':
+            query = query.order("views", { ascending: false, nullsFirst: false });
+            break;
+          case 'newest':
+          default:
+            query = query.order("created_at", { ascending: false });
+            break;
+        }
 
-      const { data, error } = await query;
-      
-      if (error) {
-        console.error("❌ [Browse] Query error:", error);
-        console.error("❌ [Browse] Error details:", {
-          message: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint
-        });
-        throw error;
+        query = query.range(from, to);
+
+        const { data, error: queryError, status, statusText } = await query;
+        
+        if (queryError) {
+          console.error("❌ [Browse] Query error:", queryError);
+          console.error("❌ [Browse] Error details:", {
+            message: queryError.message,
+            code: queryError.code,
+            details: queryError.details,
+            hint: queryError.hint,
+            status,
+            statusText,
+          });
+          throw new Error(`Database query failed: ${queryError.message || "Unknown error"}`);
+        }
+        
+        console.log("✅ [Browse] Query successful. Results:", data?.length || 0);
+        console.log("📊 [Browse] Response status:", status, statusText);
+        
+        if (!data) {
+          console.warn("⚠️ [Browse] No data returned (null/undefined)");
+          return [];
+        }
+        
+        return data as ListingSummary[];
+      } catch (err) {
+        console.error("💥 [Browse] Unexpected error:", err);
+        throw err;
       }
-      
-      console.log("✅ [Browse] Query successful. Results:", data?.length || 0);
-      console.log("✅ [Browse] Data:", data);
-      
-      return (data || []) as ListingSummary[];
     },
   });
 
@@ -250,7 +273,14 @@ const Browse = () => {
             ) : error ? (
               <span className="text-destructive">Error loading results</span>
             ) : (
-              <span>{filteredListings.length} {filteredListings.length === 1 ? 'result' : 'results'} found</span>
+              <span>
+                {filteredListings.length} {filteredListings.length === 1 ? 'result' : 'results'} found
+              </span>
+            )}
+            {import.meta.env.DEV && (
+              <span className="ml-2 text-xs opacity-50">
+                [Query: {isLoading ? 'loading' : error ? 'error' : 'success'}]
+              </span>
             )}
           </p>
           <div className="flex items-center gap-2">
@@ -280,7 +310,10 @@ const Browse = () => {
         <ErrorDisplay
           title="Unable to load listings"
           message={error instanceof Error ? error.message : "An error occurred while fetching listings. Please try refreshing the page."}
-          onRetry={() => refetch()}
+          onRetry={() => {
+            console.log("🔄 [Browse] Manual retry triggered");
+            refetch();
+          }}
         />
       ) : isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

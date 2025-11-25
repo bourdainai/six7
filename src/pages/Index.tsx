@@ -14,40 +14,87 @@ import { supabase } from "@/integrations/supabase/client";
 import { SEO } from "@/components/SEO";
 
 const Index = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [hasPreferences, setHasPreferences] = useState<boolean | null>(null);
+  const [checkingPreferences, setCheckingPreferences] = useState(false);
 
   useEffect(() => {
     const checkPreferences = async () => {
+      // Don't check preferences while auth is still loading
+      if (authLoading) {
+        console.log("⏳ [Index] Waiting for auth to complete...");
+        return;
+      }
+
       if (!user) {
+        console.log("👤 [Index] No user, showing marketing page");
         setHasPreferences(null);
         return;
       }
 
-      const { data } = await supabase
-        .from('user_preferences')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
+      console.log("🔍 [Index] Checking user preferences for user:", user.id);
+      setCheckingPreferences(true);
 
-      setHasPreferences(!!data);
+      try {
+        const { data, error } = await supabase
+          .from('user_preferences')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle(); // Use maybeSingle instead of single to avoid errors when no row exists
 
-      // Show onboarding if user is logged in but has no preferences
-      if (!data) {
+        if (error) {
+          console.error("❌ [Index] Error checking preferences:", error);
+          // On error, assume no preferences and show onboarding
+          setHasPreferences(false);
+          setShowOnboarding(true);
+          return;
+        }
+
+        const hasPref = !!data;
+        console.log("✅ [Index] Has preferences:", hasPref);
+        setHasPreferences(hasPref);
+
+        // Show onboarding if user is logged in but has no preferences
+        if (!hasPref) {
+          console.log("📝 [Index] No preferences, showing onboarding");
+          setShowOnboarding(true);
+        } else {
+          // Add a small delay before redirect to prevent race conditions
+          console.log("🔄 [Index] Has preferences, redirecting to browse...");
+          setTimeout(() => {
+            navigate('/browse', { replace: true });
+          }, 100);
+        }
+      } catch (err) {
+        console.error("💥 [Index] Unexpected error checking preferences:", err);
+        setHasPreferences(false);
         setShowOnboarding(true);
-      } else {
-        // Redirect to browse if user has preferences
-        navigate('/browse');
+      } finally {
+        setCheckingPreferences(false);
       }
     };
 
     checkPreferences();
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
+
+  // Show loading state while checking auth or preferences
+  if (authLoading || checkingPreferences) {
+    console.log("⏳ [Index] Loading state - auth:", authLoading, "prefs:", checkingPreferences);
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Show onboarding dialog if needed
   if (user && showOnboarding && hasPreferences === false) {
+    console.log("📝 [Index] Rendering onboarding");
     return (
       <div className="min-h-screen bg-background">
         <SEO
@@ -56,18 +103,27 @@ const Index = () => {
         />
         <Navigation />
         <BuyerOnboarding onComplete={() => {
+          console.log("✅ [Index] Onboarding complete");
           setShowOnboarding(false);
           setHasPreferences(true);
-          navigate('/browse');
+          navigate('/browse', { replace: true });
         }} />
       </div>
     );
   }
 
-  // If user is logged in with preferences, redirect to browse
+  // If user is logged in with preferences, they should already be redirected
+  // This is just a safety check to prevent flash of content
   if (user && hasPreferences === true) {
-    navigate('/browse');
-    return null;
+    console.log("🔄 [Index] User with preferences detected, redirecting...");
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Redirecting...</p>
+        </div>
+      </div>
+    );
   }
 
   // If not logged in, show marketing pages
