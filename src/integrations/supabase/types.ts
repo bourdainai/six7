@@ -847,6 +847,7 @@ export type Database = {
           import_job_id: string | null
           import_metadata: Json | null
           last_view_at: string | null
+          marketplace: Database["public"]["Enums"]["marketplace_type"] | null
           material: string | null
           original_bundle_price: number | null
           original_rrp: number | null
@@ -903,6 +904,7 @@ export type Database = {
           import_job_id?: string | null
           import_metadata?: Json | null
           last_view_at?: string | null
+          marketplace?: Database["public"]["Enums"]["marketplace_type"] | null
           material?: string | null
           original_bundle_price?: number | null
           original_rrp?: number | null
@@ -959,6 +961,7 @@ export type Database = {
           import_job_id?: string | null
           import_metadata?: Json | null
           last_view_at?: string | null
+          marketplace?: Database["public"]["Enums"]["marketplace_type"] | null
           material?: string | null
           original_bundle_price?: number | null
           original_rrp?: number | null
@@ -1701,6 +1704,7 @@ export type Database = {
           last_country: string | null
           last_ip_address: unknown
           linkedin_url: string | null
+          marketplace: Database["public"]["Enums"]["marketplace_type"] | null
           notification_preferences: Json | null
           phone_number: string | null
           phone_verified: boolean | null
@@ -1736,6 +1740,7 @@ export type Database = {
           last_country?: string | null
           last_ip_address?: unknown
           linkedin_url?: string | null
+          marketplace?: Database["public"]["Enums"]["marketplace_type"] | null
           notification_preferences?: Json | null
           phone_number?: string | null
           phone_verified?: boolean | null
@@ -1771,6 +1776,7 @@ export type Database = {
           last_country?: string | null
           last_ip_address?: unknown
           linkedin_url?: string | null
+          marketplace?: Database["public"]["Enums"]["marketplace_type"] | null
           notification_preferences?: Json | null
           phone_number?: string | null
           phone_verified?: boolean | null
@@ -4264,6 +4270,7 @@ export type Database = {
         | "sold"
         | "cancelled"
         | "disputed"
+      marketplace_type: "UK" | "US"
       membership_tier: "free" | "pro" | "enterprise"
       risk_tier: "A" | "B" | "C"
       sync_source_type:
@@ -4418,6 +4425,7 @@ export const Constants = {
         "cancelled",
         "disputed",
       ],
+      marketplace_type: ["UK", "US"],
       membership_tier: ["free", "pro", "enterprise"],
       risk_tier: ["A", "B", "C"],
       sync_source_type: [

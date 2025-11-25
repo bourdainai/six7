@@ -35,17 +35,19 @@ serve(async (req) => {
     // Check if user already has a Connect account
     const { data: profile } = await supabaseClient
       .from('profiles')
-      .select('stripe_connect_account_id, stripe_onboarding_complete')
+      .select('stripe_connect_account_id, stripe_onboarding_complete, marketplace')
       .eq('id', user.id)
       .single();
 
     let accountId = profile?.stripe_connect_account_id;
+    const userMarketplace = profile?.marketplace || 'UK';
+    const country = userMarketplace === 'US' ? 'US' : 'GB';
 
     // Create Connect account if doesn't exist
     if (!accountId) {
       const account = await stripe.accounts.create({
         type: 'express',
-        country: 'GB',
+        country: country,
         email: user.email,
         capabilities: {
           card_payments: { requested: true },

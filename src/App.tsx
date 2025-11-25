@@ -11,6 +11,7 @@ import { CookieConsent } from "@/components/CookieConsent";
 import { PageSkeleton } from "@/components/skeletons/PageSkeleton";
 import { ListingSkeleton } from "@/components/skeletons/ListingSkeleton";
 import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
+import { MarketplaceProvider } from "@/contexts/MarketplaceContext";
 
 // Lazy load routes for code splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -127,16 +128,18 @@ const App = () => (
   <ErrorBoundary>
     <HelmetProvider>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <AppRoutes />
-              <CookieConsent />
-            </BrowserRouter>
-          </TooltipProvider>
-        </AuthProvider>
+        <TooltipProvider>
+          <Sonner />
+          <Toaster />
+          <BrowserRouter>
+            <AuthProvider>
+              <MarketplaceProvider>
+                <AppRoutes />
+                <CookieConsent />
+              </MarketplaceProvider>
+            </AuthProvider>
+          </BrowserRouter>
+        </TooltipProvider>
       </QueryClientProvider>
     </HelmetProvider>
   </ErrorBoundary>
