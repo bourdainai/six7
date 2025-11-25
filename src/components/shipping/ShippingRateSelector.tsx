@@ -5,6 +5,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Loader2, Package, Truck } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
+import { logger } from "@/lib/logger";
 
 interface ShippingRateSelectorProps {
   toCountry: string;
@@ -49,7 +50,7 @@ export const ShippingRateSelector = ({
           onRateSelected(fetchedRates[0]);
         }
       } catch (error) {
-        console.error('Error fetching rates:', error);
+        logger.error('Error fetching rates:', error);
       } finally {
         setLoading(false);
       }

@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { ShippingRateSelector } from "./ShippingRateSelector";
 import { Loader2, Package, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 import { formatCurrency } from "@/lib/format";
 
 interface EnhancedShipOrderDialogProps {
@@ -80,7 +81,7 @@ export const EnhancedShipOrderDialog = ({
         window.open(parcel.label_url, '_blank');
       }
     } catch (error) {
-      console.error('Error creating label:', error);
+      logger.error('Error creating label:', error);
     }
   };
 

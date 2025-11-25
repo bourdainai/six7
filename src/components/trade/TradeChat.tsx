@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Send, Smile } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { logger } from '@/lib/logger';
 
 interface TradeChatProps {
   tradeOfferId: string;
@@ -64,7 +65,7 @@ export function TradeChat({ tradeOfferId, currentUserId }: TradeChatProps) {
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('Error loading messages:', error);
+      logger.error('Error loading messages:', error);
       return;
     }
 
@@ -94,7 +95,7 @@ export function TradeChat({ tradeOfferId, currentUserId }: TradeChatProps) {
       });
 
     if (error) {
-      console.error('Error sending message:', error);
+      logger.error('Error sending message:', error);
       return;
     }
 
