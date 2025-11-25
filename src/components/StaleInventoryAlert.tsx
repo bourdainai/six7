@@ -5,50 +5,93 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, TrendingDown, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
-interface StaleRecommendation {
-  type: string;
-  message: string;
-  priority: "high" | "medium" | "low";
-}
+import { useAuth } from "@/components/auth/AuthProvider";
 
 interface StaleListing {
   id: string;
   title: string;
+  created_at: string;
+  views: number;
   stale_risk_score: number;
-  views_per_day: string;
   days_since_listed: number;
-  recommendations?: StaleRecommendation[];
-}
-
-interface StaleInventoryResponse {
-  staleListings: StaleListing[];
-  totalListings: number;
-  staleCount: number;
+  views_per_day: number;
 }
 
 export const StaleInventoryAlert = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-    const { data, isLoading } = useQuery<StaleInventoryResponse>({
-    queryKey: ['stale-inventory'],
+  const { data, isLoading } = useQuery({
+    queryKey: ['stale-inventory-simple', user?.id],
     queryFn: async () => {
-        const { data, error } = await supabase.functions.invoke<{ data: StaleInventoryResponse }>('seller-copilot-stale-detector');
-      
+      if (!user) return { staleListings: [], staleCount: 0 };
+
+      // Get listings older than 30 days
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const { data: listings, error } = await supabase
+        .from('listings')
+        .select('id, title, created_at, views, saves')
+        .eq('seller_id', user.id)
+        .eq('status', 'active')
+        .lt('created_at', thirtyDaysAgo.toISOString());
+
       if (error) throw error;
-        return data?.data || { staleListings: [], totalListings: 0, staleCount: 0 };
+
+      // Calculate simple stale risk scores
+      const staleListings = (listings || [])
+        .map((listing) => {
+          const createdDate = new Date(listing.created_at);
+          const daysSinceListed = Math.floor(
+            (Date.now() - createdDate.getTime()) / (1000 * 60 * 60 * 24)
+          );
+          const viewsPerDay = daysSinceListed > 0 ? listing.views / daysSinceListed : 0;
+
+          // Simple scoring: older + fewer views = higher risk
+          let staleRiskScore = 0;
+          
+          if (daysSinceListed > 90) staleRiskScore += 40;
+          else if (daysSinceListed > 60) staleRiskScore += 30;
+          else if (daysSinceListed > 30) staleRiskScore += 20;
+
+          if (viewsPerDay < 0.5) staleRiskScore += 30;
+          else if (viewsPerDay < 1) staleRiskScore += 20;
+          else if (viewsPerDay < 2) staleRiskScore += 10;
+
+          if (listing.views < 10) staleRiskScore += 20;
+          if (listing.saves === 0) staleRiskScore += 10;
+
+          return {
+            id: listing.id,
+            title: listing.title,
+            created_at: listing.created_at,
+            views: listing.views,
+            stale_risk_score: staleRiskScore,
+            days_since_listed: daysSinceListed,
+            views_per_day: viewsPerDay.toFixed(1),
+          };
+        })
+        .filter((l) => l.stale_risk_score >= 50) // Only show if score >= 50
+        .sort((a, b) => b.stale_risk_score - a.stale_risk_score);
+
+      return {
+        staleListings,
+        staleCount: staleListings.length,
+      };
     },
-    refetchInterval: 60000 * 30, // Check every 30 minutes
+    enabled: !!user,
+    // No auto-refresh to save resources
   });
 
-    const staleListings = data?.staleListings || [];
-    const staleCount = data?.staleCount || 0;
+  const staleListings = data?.staleListings || [];
+  const staleCount = data?.staleCount || 0;
 
   if (isLoading || staleCount === 0) {
     return null;
   }
 
-    const criticalListings = staleListings.filter((l) => l.stale_risk_score >= 70);
+  const criticalListings = staleListings.filter((l) => l.stale_risk_score >= 70);
 
   return (
     <Card className="p-4 mb-6 border-orange-200 bg-orange-50/50 dark:bg-orange-950/20 dark:border-orange-900">
@@ -70,7 +113,7 @@ export const StaleInventoryAlert = () => {
           </p>
 
           <div className="space-y-2 mb-4">
-              {staleListings.slice(0, 2).map((listing) => (
+            {staleListings.slice(0, 2).map((listing) => (
               <div
                 key={listing.id}
                 className="flex items-center justify-between gap-4 p-2 rounded-lg bg-background/80"
@@ -85,11 +128,9 @@ export const StaleInventoryAlert = () => {
                     <span>•</span>
                     <span>{listing.days_since_listed} days listed</span>
                   </div>
-                  {listing.recommendations?.[0] && (
-                    <p className="text-xs text-orange-600 mt-1">
-                      → {listing.recommendations[0].message}
-                    </p>
-                  )}
+                  <p className="text-xs text-orange-600 mt-1">
+                    → Consider reducing price or updating photos
+                  </p>
                 </div>
                 <Badge
                   variant="outline"
