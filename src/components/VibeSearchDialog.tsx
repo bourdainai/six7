@@ -7,6 +7,7 @@ import { Image, Upload, Sparkles, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { ListingSummary } from "@/types/listings";
+import { logger } from "@/lib/logger";
 
 interface VibeSearchDialogProps {
   open: boolean;
@@ -62,7 +63,7 @@ export const VibeSearchDialog = ({ open, onOpenChange, onResults }: VibeSearchDi
       } catch (error) {
         const message = error instanceof Error ? error.message : "Please try again";
       if (import.meta.env.DEV) {
-        console.error("Vibe search error:", error);
+        logger.error("Vibe search error:", error);
       }
       toast({
         title: "Search Failed",

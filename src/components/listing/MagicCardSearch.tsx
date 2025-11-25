@@ -276,8 +276,8 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
       );
 
       setResults(dedupedCards);
-    } catch (error) {
-      console.error("Card search error:", error);
+      } catch (error) {
+        logger.error("Card search error:", error);
     } finally {
       setIsSearching(false);
     }

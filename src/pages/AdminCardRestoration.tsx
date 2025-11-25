@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Play, Pause, CheckCircle2, AlertCircle, Clock, Database } from "lucide-react";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 interface ImportProgress {
   set_code: string;
@@ -37,7 +38,7 @@ export default function AdminCardRestoration() {
   const { data: setsToRestore, isLoading, error: queryError } = useQuery({
     queryKey: ['japanese-sets-to-restore'],
     queryFn: async () => {
-      console.log('🔍 Fetching TCGdex sets...');
+      logger.debug('🔍 Fetching TCGdex sets...');
       
       // Get all TCGdex cards with aggregated counts
       const { data: allSets, error } = await supabase
@@ -46,11 +47,11 @@ export default function AdminCardRestoration() {
         .eq('sync_source', 'tcgdex');
 
       if (error) {
-        console.error('❌ Error fetching sets:', error);
+        logger.error('❌ Error fetching sets:', error);
         throw error;
       }
 
-      console.log(`✅ Found ${allSets?.length || 0} TCGdex cards total`);
+      logger.debug(`✅ Found ${allSets?.length || 0} TCGdex cards total`);
 
       // Group by set and count cards
       const setMap = new Map<string, { name: string; count: number }>();
@@ -59,7 +60,7 @@ export default function AdminCardRestoration() {
         setMap.set(card.set_code, { name: existing.name, count: existing.count + 1 });
       });
 
-      console.log(`📦 Grouped into ${setMap.size} unique sets`);
+      logger.debug(`📦 Grouped into ${setMap.size} unique sets`);
 
       // Get import progress
       const setCodes = Array.from(setMap.keys());
@@ -85,7 +86,7 @@ export default function AdminCardRestoration() {
         } as SetInfo;
       });
 
-      console.log(`📊 Final result: ${result.length} sets processed`);
+      logger.debug(`📊 Final result: ${result.length} sets processed`);
       return result;
     },
     refetchInterval: isRestoring ? 3000 : false,
@@ -94,25 +95,14 @@ export default function AdminCardRestoration() {
   // Log query state for debugging
   useEffect(() => {
     if (queryError) {
-      console.error('Query Error:', queryError);
+      logger.error('❌ Query Error:', queryError);
       toast.error('Failed to load sets: ' + (queryError as Error).message);
     }
     if (setsToRestore) {
-      console.log('Sets loaded:', setsToRestore.length);
-    }
-  }, [queryError, setsToRestore]);
-
-  // Log query state for debugging
-  useEffect(() => {
-    if (queryError) {
-      console.error('❌ Query Error:', queryError);
-      toast.error('Failed to load sets: ' + (queryError as Error).message);
-    }
-    if (setsToRestore) {
-      console.log('✅ Sets loaded:', setsToRestore.length, 'sets');
+      logger.info('✅ Sets loaded:', setsToRestore.length, 'sets');
     }
     if (isLoading) {
-      console.log('⏳ Loading sets...');
+      logger.debug('⏳ Loading sets...');
     }
   }, [queryError, setsToRestore, isLoading]);
 
@@ -196,7 +186,7 @@ export default function AdminCardRestoration() {
         // Small delay between imports to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 2000));
       } catch (error) {
-        console.error(`Failed to import ${set.set_code}:`, error);
+        logger.error(`Failed to import ${set.set_code}:`, error);
         // Continue with next set even if one fails
       }
     }

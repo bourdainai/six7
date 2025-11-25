@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Heart, EyeOff, ThumbsUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { logger } from "@/lib/logger";
 
 interface AgentFeedbackButtonsProps {
   listingId: string;
@@ -41,7 +42,7 @@ export const AgentFeedbackButtons = ({
       });
     } catch (error) {
       if (import.meta.env.DEV) {
-        console.error('Error recording feedback:', error);
+        logger.error('Error recording feedback:', error);
       }
       toast({
         title: "Error",

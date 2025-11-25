@@ -18,6 +18,7 @@ import {
   SheetTrigger,
 } from "./ui/sheet";
 import type { ListingSummary } from "@/types/listings";
+import { logger } from "@/lib/logger";
 
 interface SearchFiltersProps {
   onFilterChange: (filters: FilterState) => void;
@@ -187,7 +188,7 @@ export const SearchFilters = ({
         onFilterChange(localFilters);
       }
     } catch (error) {
-      console.error("Search error:", error);
+      logger.error("Search error:", error);
       toast({
         title: "Search failed",
         description: "Please try again.",
