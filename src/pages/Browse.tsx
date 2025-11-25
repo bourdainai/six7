@@ -11,6 +11,7 @@ import type { ListingSummary } from "@/types/listings";
 import { SEO } from "@/components/SEO";
 import { useLocation } from "react-router-dom";
 import { Search } from "lucide-react";
+import { ErrorDisplay } from "@/components/ErrorDisplay";
 
 const Browse = () => {
   const [filters, setFilters] = useState<FilterState>({
@@ -40,9 +41,14 @@ const Browse = () => {
   const [page, setPage] = useState(1);
   const itemsPerPage = 24;
 
-  const { data: listings, isLoading, error } = useQuery({
+  const { data: listings, isLoading, error, refetch } = useQuery({
     queryKey: ["active-listings", page, JSON.stringify(filters), sortBy],
+    refetchOnMount: 'always',
+    staleTime: 0,
     queryFn: async () => {
+      console.log("🔍 [Browse] Starting query with filters:", filters);
+      console.log("🔍 [Browse] Page:", page, "Sort:", sortBy);
+      
       const from = (page - 1) * itemsPerPage;
       const to = from + itemsPerPage - 1;
 
@@ -54,75 +60,91 @@ const Browse = () => {
         `)
         .eq("status", "active");
 
-        // Server-side filtering
-        if (filters.category) {
-          query = query.eq("category", filters.category);
-        }
-        if (filters.subcategory) {
-          query = query.eq("subcategory", filters.subcategory);
-        }
-        if (filters.condition) {
-          query = query.eq("condition", filters.condition as any);
-        }
-        if (filters.minPrice) {
-          query = query.gte("seller_price", Number(filters.minPrice));
-        }
-        if (filters.maxPrice) {
-          query = query.lte("seller_price", Number(filters.maxPrice));
-        }
-        if (filters.brand) {
-          query = query.ilike("brand", `%${filters.brand}%`);
-        }
-        if (filters.size) {
-          query = query.ilike("size", `%${filters.size}%`);
-        }
-        if (filters.color) {
-          query = query.ilike("color", `%${filters.color}%`);
-        }
-        if (filters.material) {
-          query = query.ilike("material", `%${filters.material}%`);
-        }
-        if (filters.setCode) {
-          query = query.ilike("set_code", `%${filters.setCode}%`);
-        }
-        if (filters.tradeEnabled) {
-          query = query.eq("trade_enabled", filters.tradeEnabled === "true");
-        }
-        if (filters.freeShipping) {
-          query = query.eq("free_shipping", filters.freeShipping === "true");
-        }
-        if (filters.maxDeliveryDays) {
-          query = query.lte("estimated_delivery_days", Number(filters.maxDeliveryDays));
-        }
-        if (filters.search) {
-          query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%,brand.ilike.%${filters.search}%`);
-        }
+      // Server-side filtering
+      if (filters.category) {
+        console.log("🔍 [Browse] Applying category filter:", filters.category);
+        query = query.eq("category", filters.category);
+      }
+      if (filters.subcategory) {
+        console.log("🔍 [Browse] Applying subcategory filter:", filters.subcategory);
+        query = query.eq("subcategory", filters.subcategory);
+      }
+      if (filters.condition) {
+        console.log("🔍 [Browse] Applying condition filter:", filters.condition);
+        query = query.eq("condition", filters.condition as any);
+      }
+      if (filters.minPrice) {
+        console.log("🔍 [Browse] Applying minPrice filter:", filters.minPrice);
+        query = query.gte("seller_price", Number(filters.minPrice));
+      }
+      if (filters.maxPrice) {
+        console.log("🔍 [Browse] Applying maxPrice filter:", filters.maxPrice);
+        query = query.lte("seller_price", Number(filters.maxPrice));
+      }
+      if (filters.brand) {
+        console.log("🔍 [Browse] Applying brand filter:", filters.brand);
+        query = query.ilike("brand", `%${filters.brand}%`);
+      }
+      if (filters.size) {
+        query = query.ilike("size", `%${filters.size}%`);
+      }
+      if (filters.color) {
+        query = query.ilike("color", `%${filters.color}%`);
+      }
+      if (filters.material) {
+        query = query.ilike("material", `%${filters.material}%`);
+      }
+      if (filters.setCode) {
+        query = query.ilike("set_code", `%${filters.setCode}%`);
+      }
+      if (filters.tradeEnabled) {
+        query = query.eq("trade_enabled", filters.tradeEnabled === "true");
+      }
+      if (filters.freeShipping) {
+        query = query.eq("free_shipping", filters.freeShipping === "true");
+      }
+      if (filters.maxDeliveryDays) {
+        query = query.lte("estimated_delivery_days", Number(filters.maxDeliveryDays));
+      }
+      if (filters.search) {
+        console.log("🔍 [Browse] Applying search filter:", filters.search);
+        query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%,brand.ilike.%${filters.search}%`);
+      }
 
-        // Server-side sorting
-        switch (sortBy) {
-          case 'price_low':
-            query = query.order("seller_price", { ascending: true });
-            break;
-          case 'price_high':
-            query = query.order("seller_price", { ascending: false });
-            break;
-          case 'popular':
-            query = query.order("views", { ascending: false, nullsFirst: false });
-            break;
-          case 'newest':
-          default:
-            query = query.order("created_at", { ascending: false });
-            break;
-        }
+      // Server-side sorting
+      switch (sortBy) {
+        case 'price_low':
+          query = query.order("seller_price", { ascending: true });
+          break;
+        case 'price_high':
+          query = query.order("seller_price", { ascending: false });
+          break;
+        case 'popular':
+          query = query.order("views", { ascending: false, nullsFirst: false });
+          break;
+        case 'newest':
+        default:
+          query = query.order("created_at", { ascending: false });
+          break;
+      }
 
       query = query.range(from, to);
 
       const { data, error } = await query;
       
       if (error) {
-        console.error("Browse query error:", error);
+        console.error("❌ [Browse] Query error:", error);
+        console.error("❌ [Browse] Error details:", {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        });
         throw error;
       }
+      
+      console.log("✅ [Browse] Query successful. Results:", data?.length || 0);
+      console.log("✅ [Browse] Data:", data);
       
       return (data || []) as ListingSummary[];
     },
@@ -223,7 +245,13 @@ const Browse = () => {
         {/* Results Header & Sorting */}
         <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-0">
           <p className="text-sm text-muted-foreground font-normal">
-            {filteredListings.length} {filteredListings.length === 1 ? 'result' : 'results'} found
+            {isLoading ? (
+              <span className="text-muted-foreground/50">Loading...</span>
+            ) : error ? (
+              <span className="text-destructive">Error loading results</span>
+            ) : (
+              <span>{filteredListings.length} {filteredListings.length === 1 ? 'result' : 'results'} found</span>
+            )}
           </p>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground font-normal hidden sm:inline">Sort by:</span>
@@ -248,7 +276,13 @@ const Browse = () => {
         onResults={handleVibeResults}
       />
 
-      {isLoading ? (
+      {error ? (
+        <ErrorDisplay
+          title="Unable to load listings"
+          message={error instanceof Error ? error.message : "An error occurred while fetching listings. Please try refreshing the page."}
+          onRetry={() => refetch()}
+        />
+      ) : isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
             <ListingCardSkeleton key={i} />
