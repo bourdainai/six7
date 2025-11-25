@@ -86,94 +86,100 @@ const Browse = () => {
           `)
           .eq("status", "active");
 
-        if (fetchError) throw fetchError;
+        // If region-specific query fails, log and fall back to global query below
+        if (!fetchError && allListings) {
+          // Filter in JS for now (we can optimize with a view later)
+          const filteredByRegion =
+            allListings.filter((listing: any) => listing.seller?.country === profile.country) || [];
 
-        // Filter in JS for now (we can optimize with a view later)
-        const filteredByRegion = allListings?.filter((listing: any) => 
-          listing.seller?.country === profile.country
-        ) || [];
+          // Only apply region filtering when we actually have results
+          if (filteredByRegion.length > 0) {
+            let filteredData = filteredByRegion;
 
-        // Now apply other filters to this subset
-        let filteredData = filteredByRegion;
+            // Apply filters
+            if (filters.category) {
+              filteredData = filteredData.filter((l: any) => l.category === filters.category);
+            }
+            if (filters.subcategory) {
+              filteredData = filteredData.filter((l: any) => l.subcategory === filters.subcategory);
+            }
+            if (filters.condition) {
+              filteredData = filteredData.filter((l: any) => l.condition === filters.condition);
+            }
+            if (filters.minPrice) {
+              filteredData = filteredData.filter((l: any) => l.seller_price >= Number(filters.minPrice));
+            }
+            if (filters.maxPrice) {
+              filteredData = filteredData.filter((l: any) => l.seller_price <= Number(filters.maxPrice));
+            }
+            if (filters.brand) {
+              filteredData = filteredData.filter((l: any) =>
+                l.brand?.toLowerCase().includes(filters.brand.toLowerCase())
+              );
+            }
+            if (filters.size) {
+              filteredData = filteredData.filter((l: any) =>
+                l.size?.toLowerCase().includes(filters.size.toLowerCase())
+              );
+            }
+            if (filters.color) {
+              filteredData = filteredData.filter((l: any) =>
+                l.color?.toLowerCase().includes(filters.color.toLowerCase())
+              );
+            }
+            if (filters.material) {
+              filteredData = filteredData.filter((l: any) =>
+                l.material?.toLowerCase().includes(filters.material.toLowerCase())
+              );
+            }
+            if (filters.setCode) {
+              filteredData = filteredData.filter((l: any) =>
+                l.set_code?.toLowerCase().includes(filters.setCode.toLowerCase())
+              );
+            }
+            if (filters.tradeEnabled) {
+              filteredData = filteredData.filter(
+                (l: any) => l.trade_enabled === (filters.tradeEnabled === "true")
+              );
+            }
+            if (filters.freeShipping) {
+              filteredData = filteredData.filter(
+                (l: any) => l.free_shipping === (filters.freeShipping === "true")
+              );
+            }
+            if (filters.maxDeliveryDays) {
+              filteredData = filteredData.filter(
+                (l: any) => (l.estimated_delivery_days || 0) <= Number(filters.maxDeliveryDays)
+              );
+            }
+            if (filters.search) {
+              const searchLower = filters.search.toLowerCase();
+              filteredData = filteredData.filter((l: any) =>
+                l.title?.toLowerCase().includes(searchLower) ||
+                l.description?.toLowerCase().includes(searchLower) ||
+                l.brand?.toLowerCase().includes(searchLower)
+              );
+            }
 
-        // Apply filters
-        if (filters.category) {
-          filteredData = filteredData.filter((l: any) => l.category === filters.category);
-        }
-        if (filters.subcategory) {
-          filteredData = filteredData.filter((l: any) => l.subcategory === filters.subcategory);
-        }
-        if (filters.condition) {
-          filteredData = filteredData.filter((l: any) => l.condition === filters.condition);
-        }
-        if (filters.minPrice) {
-          filteredData = filteredData.filter((l: any) => l.seller_price >= Number(filters.minPrice));
-        }
-        if (filters.maxPrice) {
-          filteredData = filteredData.filter((l: any) => l.seller_price <= Number(filters.maxPrice));
-        }
-        if (filters.brand) {
-          filteredData = filteredData.filter((l: any) => 
-            l.brand?.toLowerCase().includes(filters.brand.toLowerCase())
-          );
-        }
-        if (filters.size) {
-          filteredData = filteredData.filter((l: any) => 
-            l.size?.toLowerCase().includes(filters.size.toLowerCase())
-          );
-        }
-        if (filters.color) {
-          filteredData = filteredData.filter((l: any) => 
-            l.color?.toLowerCase().includes(filters.color.toLowerCase())
-          );
-        }
-        if (filters.material) {
-          filteredData = filteredData.filter((l: any) => 
-            l.material?.toLowerCase().includes(filters.material.toLowerCase())
-          );
-        }
-        if (filters.setCode) {
-          filteredData = filteredData.filter((l: any) => 
-            l.set_code?.toLowerCase().includes(filters.setCode.toLowerCase())
-          );
-        }
-        if (filters.tradeEnabled) {
-          filteredData = filteredData.filter((l: any) => l.trade_enabled === (filters.tradeEnabled === "true"));
-        }
-        if (filters.freeShipping) {
-          filteredData = filteredData.filter((l: any) => l.free_shipping === (filters.freeShipping === "true"));
-        }
-        if (filters.maxDeliveryDays) {
-          filteredData = filteredData.filter((l: any) => 
-            (l.estimated_delivery_days || 0) <= Number(filters.maxDeliveryDays)
-          );
-        }
-        if (filters.search) {
-          const searchLower = filters.search.toLowerCase();
-          filteredData = filteredData.filter((l: any) => 
-            l.title?.toLowerCase().includes(searchLower) ||
-            l.description?.toLowerCase().includes(searchLower) ||
-            l.brand?.toLowerCase().includes(searchLower)
-          );
-        }
+            // Apply sorting
+            filteredData.sort((a: any, b: any) => {
+              switch (sortBy) {
+                case "price_low":
+                  return a.seller_price - b.seller_price;
+                case "price_high":
+                  return b.seller_price - a.seller_price;
+                case "popular":
+                  return (b.views || 0) - (a.views || 0);
+                case "newest":
+                default:
+                  return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+              }
+            });
 
-        // Apply sorting
-        filteredData.sort((a: any, b: any) => {
-          switch (sortBy) {
-            case 'price_low':
-              return a.seller_price - b.seller_price;
-            case 'price_high':
-              return b.seller_price - a.seller_price;
-            case 'popular':
-              return (b.views || 0) - (a.views || 0);
-            case 'newest':
-            default:
-              return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+            // Apply pagination
+            return filteredData.slice(from, to + 1) as unknown as ListingSummary[];
           }
-        });
-
-        // Apply pagination
-        return filteredData.slice(from, to + 1) as unknown as ListingSummary[];
+        }
       }
 
       // If no user region, show all listings (fallback for non-logged-in users)
