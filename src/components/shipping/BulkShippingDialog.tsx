@@ -9,11 +9,13 @@ import { Loader2, Package, CheckCircle2, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { logger } from "@/lib/logger";
+import type { OrderData, BulkLabelResult } from "@/types/shipping";
+import { BulkShippingPresets } from "./BulkShippingPresets";
 
 interface BulkShippingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  orders: any[];
+  orders: unknown[];
   onSuccess?: () => void;
 }
 
@@ -21,13 +23,13 @@ export const BulkShippingDialog = ({ open, onOpenChange, orders, onSuccess }: Bu
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [presetId, setPresetId] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [results, setResults] = useState<any>(null);
+  const [results, setResults] = useState<BulkLabelResult | null>(null);
 
-  const eligibleOrders = orders.filter(o => o.status === 'paid' && !o.shipped_at);
+  const eligibleOrders = orders.filter((o: any) => o.status === 'paid' && !o.shipped_at);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedOrders(eligibleOrders.map(o => o.id));
+      setSelectedOrders(eligibleOrders.map((o: any) => o.id));
     } else {
       setSelectedOrders([]);
     }
@@ -106,7 +108,7 @@ export const BulkShippingDialog = ({ open, onOpenChange, orders, onSuccess }: Bu
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">No preset</SelectItem>
-                    {/* TODO: Load user's presets */}
+                    <BulkShippingPresets />
                   </SelectContent>
                 </Select>
               </div>
@@ -125,7 +127,7 @@ export const BulkShippingDialog = ({ open, onOpenChange, orders, onSuccess }: Bu
 
                 <ScrollArea className="h-[300px]">
                   <div className="space-y-2">
-                    {eligibleOrders.map((order) => (
+                    {eligibleOrders.map((order: any) => (
                       <div
                         key={order.id}
                         className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/5"
@@ -207,7 +209,7 @@ export const BulkShippingDialog = ({ open, onOpenChange, orders, onSuccess }: Bu
 
                 <ScrollArea className="h-[300px]">
                   <div className="space-y-2">
-                    {results.results?.map((result: any) => (
+                    {results.results?.map((result) => (
                       <div
                         key={result.orderId}
                         className="flex items-center gap-3 p-3 border rounded-lg bg-green-500/5 border-green-500/20"
@@ -218,7 +220,7 @@ export const BulkShippingDialog = ({ open, onOpenChange, orders, onSuccess }: Bu
                         </p>
                       </div>
                     ))}
-                    {results.errors?.map((error: any) => (
+                    {results.errors?.map((error) => (
                       <div
                         key={error.orderId}
                         className="flex items-start gap-3 p-3 border rounded-lg bg-red-500/5 border-red-500/20"

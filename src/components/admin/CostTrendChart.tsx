@@ -1,9 +1,10 @@
 import { useMemo } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { format, startOfMonth, subMonths } from "date-fns";
+import type { ParcelData } from "@/types/shipping";
 
 interface CostTrendChartProps {
-  parcels: any[];
+  parcels: ParcelData[];
 }
 
 export function CostTrendChart({ parcels }: CostTrendChartProps) {
