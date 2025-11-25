@@ -102,6 +102,14 @@ export const ListingCard = React.memo(
               </Badge>
             </div>
           )}
+          {/* Firm Price Badge */}
+          {listing.accepts_offers === false && (
+            <div className="absolute top-2 right-2">
+              <Badge variant="secondary" className="bg-background/90 backdrop-blur">
+                Firm Price
+              </Badge>
+            </div>
+          )}
           {/* Legacy Bundle Badge */}
           {!hasVariants && isBundle && bundleCardCount > 0 && (
             <div className="absolute top-2 left-2">

@@ -848,13 +848,22 @@ const ListingDetail = () => {
                   </Button>
                 )}
 
-                <OfferDialog
-                  listingId={listing.id}
-                  listingPrice={displayPrice}
-                  sellerId={listing.seller_id}
-                  variantId={selectedVariant}
-                  variantName={currentVariant?.variant_name}
-                />
+                {/* Show Make Offer only if seller accepts offers */}
+                {listing.accepts_offers ? (
+                  <OfferDialog
+                    listingId={listing.id}
+                    listingPrice={displayPrice}
+                    sellerId={listing.seller_id}
+                    variantId={selectedVariant}
+                    variantName={currentVariant?.variant_name}
+                  />
+                ) : (
+                  <div className="w-full p-3 bg-muted/50 rounded-lg border border-border">
+                    <p className="text-sm text-center text-muted-foreground font-medium">
+                      🔒 Firm Price - Seller does not accept offers
+                    </p>
+                  </div>
+                )}
                 
                 <Button
                   onClick={() => setTradeOfferOpen(true)}

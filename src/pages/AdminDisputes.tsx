@@ -17,6 +17,7 @@ export default function AdminDisputes() {
   const [selectedDispute, setSelectedDispute] = useState<any>(null);
   const [resolution, setResolution] = useState("");
   const [adminNotes, setAdminNotes] = useState("");
+  const [refundAmount, setRefundAmount] = useState<number>(0);
 
   const { data: disputes, isLoading } = useQuery({
     queryKey: ["admin-disputes"],
@@ -68,9 +69,42 @@ export default function AdminDisputes() {
   });
 
   const resolveMutation = useMutation({
-    mutationFn: async ({ disputeId, outcome }: { disputeId: string; outcome: string }) => {
+    mutationFn: async ({ disputeId, outcome, refundAmount }: { disputeId: string; outcome: string; refundAmount?: number }) => {
       const { data: { user } } = await supabase.auth.getUser();
       
+      // Get dispute details first
+      const { data: dispute } = await supabase
+        .from("disputes")
+        .select("*, order:orders!disputes_order_id_fkey(id, total_amount, buyer_id, seller_id)")
+        .eq("id", disputeId)
+        .single();
+
+      if (!dispute) throw new Error("Dispute not found");
+
+      // Process refund if applicable
+      if (outcome === "refund_buyer" || outcome === "partial_refund") {
+        const refundType = outcome === "refund_buyer" ? "full" : "partial";
+        const amount = outcome === "partial_refund" ? refundAmount : undefined;
+
+        const { data: refundData, error: refundError } = await supabase.functions.invoke("process-refund", {
+          body: {
+            orderId: dispute.order_id,
+            refundType,
+            refundAmount: amount,
+            reason: `Dispute resolved in favor of buyer: ${dispute.reason}`,
+            adminNotes,
+          },
+        });
+
+        if (refundError) {
+          console.error("Refund error:", refundError);
+          throw new Error(`Failed to process refund: ${refundError.message}`);
+        }
+
+        console.log("✅ Refund processed:", refundData);
+      }
+      
+      // Update dispute status
       const { error } = await supabase
         .from("disputes")
         .update({
@@ -90,6 +124,49 @@ export default function AdminDisputes() {
         .update({ status: "resolved" })
         .eq("item_id", disputeId)
         .eq("item_type", "dispute");
+
+      // Send email notifications to both parties
+      const outcomeMessage = outcome === "refund_buyer" 
+        ? "Your dispute has been resolved in your favor. A full refund has been processed."
+        : outcome === "partial_refund"
+        ? `Your dispute has been resolved. A partial refund of £${refundAmount} has been processed.`
+        : outcome === "favor_seller"
+        ? "The dispute has been resolved in the seller's favor."
+        : "The dispute has been resolved.";
+
+      // Notify buyer
+      await supabase.functions.invoke("send-email-notification", {
+        body: {
+          userId: dispute.order.buyer_id,
+          type: "dispute_created",
+          subject: "Dispute Resolved",
+          template: "dispute_created",
+          data: {
+            action: "resolved",
+            orderId: dispute.order_id,
+            reason: outcomeMessage,
+            disputeLink: `${window.location.origin}/orders`,
+          },
+        },
+      });
+
+      // Notify seller
+      await supabase.functions.invoke("send-email-notification", {
+        body: {
+          userId: dispute.order.seller_id,
+          type: "dispute_created",
+          subject: "Dispute Resolved",
+          template: "dispute_created",
+          data: {
+            action: "resolved",
+            orderId: dispute.order_id,
+            reason: outcome === "favor_seller" 
+              ? "The dispute has been resolved in your favor."
+              : "A refund has been processed for this dispute.",
+            disputeLink: `${window.location.origin}/seller/orders`,
+          },
+        },
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-disputes"] });
@@ -97,7 +174,7 @@ export default function AdminDisputes() {
       setSelectedDispute(null);
       setResolution("");
       setAdminNotes("");
-      toast({ title: "Dispute resolved successfully" });
+      toast({ title: "Dispute resolved and notifications sent" });
     },
   });
 
@@ -113,6 +190,25 @@ export default function AdminDisputes() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-disputes"] });
       toast({ title: "AI analysis completed" });
+    },
+  });
+
+  const triggerSLAMonitor = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("dispute-sla-monitor", {
+        body: {},
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-disputes"] });
+      queryClient.invalidateQueries({ queryKey: ["moderation-queue-disputes"] });
+      toast({ 
+        title: "SLA Check Complete",
+        description: `Checked ${data.stats.total} disputes. ${data.stats.critical} critical, ${data.stats.escalated} escalated.`
+      });
     },
   });
 
@@ -145,9 +241,18 @@ export default function AdminDisputes() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Dispute Management</h1>
-          <p className="text-muted-foreground">AI-powered dispute resolution and admin controls</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Dispute Management</h1>
+            <p className="text-muted-foreground">AI-powered dispute resolution and admin controls</p>
+          </div>
+          <Button 
+            onClick={() => triggerSLAMonitor.mutate()}
+            disabled={triggerSLAMonitor.isPending}
+            variant="outline"
+          >
+            {triggerSLAMonitor.isPending ? "Checking..." : "Run SLA Check"}
+          </Button>
         </div>
 
         {/* Stats */}
@@ -370,6 +475,22 @@ export default function AdminDisputes() {
                     </Select>
                   </div>
 
+                  {resolution === "partial_refund" && (
+                    <div>
+                      <label className="text-sm font-medium">Refund Amount (£)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max={selectedDispute.order.total_amount}
+                        value={refundAmount}
+                        onChange={(e) => setRefundAmount(parseFloat(e.target.value) || 0)}
+                        className="w-full px-3 py-2 border rounded-md"
+                        placeholder={`Max: £${selectedDispute.order.total_amount}`}
+                      />
+                    </div>
+                  )}
+
                   <div>
                     <label className="text-sm font-medium">Admin Notes</label>
                     <Textarea
@@ -385,10 +506,11 @@ export default function AdminDisputes() {
                       onClick={() => resolveMutation.mutate({
                         disputeId: selectedDispute.id,
                         outcome: resolution,
+                        refundAmount: resolution === "partial_refund" ? refundAmount : undefined,
                       })}
-                      disabled={!resolution || resolveMutation.isPending}
+                      disabled={!resolution || resolveMutation.isPending || (resolution === "partial_refund" && refundAmount <= 0)}
                     >
-                      {resolveMutation.isPending ? "Resolving..." : "Resolve Dispute"}
+                      {resolveMutation.isPending ? "Processing..." : "Resolve Dispute & Process Refund"}
                     </Button>
                     <Button variant="outline" onClick={() => setSelectedDispute(null)}>
                       Cancel

@@ -101,6 +101,7 @@ const SellItem = () => {
   const [suggestedPrice, setSuggestedPrice] = useState<{ price: number, low: number, high: number } | null>(null);
   const [selectedPrice, setSelectedPrice] = useState<number | "">("");
   const [aiAnswerEnginesEnabled, setAiAnswerEnginesEnabled] = useState(false);
+  const [acceptsOffers, setAcceptsOffers] = useState(true);
   
   // Multi-card state
   const [isMultiCard, setIsMultiCard] = useState(false);
@@ -696,6 +697,7 @@ const SellItem = () => {
         status: "active",
         published_at: new Date().toISOString(),
         ai_answer_engines_enabled: aiAnswerEnginesEnabled,
+        accepts_offers: acceptsOffers,
 
         // Shipping
         shipping_cost_uk: shipping.free_shipping ? 0 : shipping.shipping_cost_uk,
@@ -1854,6 +1856,31 @@ const SellItem = () => {
                   </div>
                 )}
               </div>
+            )}
+          </section>
+
+          {/* Offers Settings */}
+          <section className="space-y-4">
+            <h2 className="text-xl font-medium border-b pb-2">Offer Settings</h2>
+            <div className="flex items-start justify-between gap-4 p-4 bg-muted/30 rounded-lg">
+              <div className="space-y-1">
+                <Label className="text-base font-medium">Accept Offers on This Listing?</Label>
+                <p className="text-sm text-muted-foreground">
+                  Enable if you're open to negotiating the price. Disable for firm pricing only.
+                </p>
+              </div>
+              <Switch
+                checked={acceptsOffers}
+                onCheckedChange={setAcceptsOffers}
+              />
+            </div>
+            {!acceptsOffers && (
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  Buyers will only see "Buy Now" - no offer button will be shown.
+                </AlertDescription>
+              </Alert>
             )}
           </section>
 
