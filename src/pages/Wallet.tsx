@@ -1,10 +1,12 @@
 import { WalletBalance } from "@/components/wallet/WalletBalance";
 import { WalletTransactions } from "@/components/wallet/WalletTransactions";
 import { PageLayout } from "@/components/PageLayout";
+import { WalletErrorBoundary } from "@/components/wallet/WalletErrorBoundary";
 
 export default function WalletPage() {
   return (
-    <PageLayout>
+    <WalletErrorBoundary>
+      <PageLayout>
       <div className="container py-8 space-y-8 max-w-4xl">
         <div className="mb-8 space-y-2">
           <h1 className="text-3xl font-light text-foreground tracking-tight">My Wallet</h1>
@@ -28,9 +30,10 @@ export default function WalletPage() {
           <div className="space-y-6">
             <WalletTransactions />
           </div>
+          </div>
         </div>
-      </div>
-    </PageLayout>
+      </PageLayout>
+    </WalletErrorBoundary>
   );
 }
 
