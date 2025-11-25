@@ -98,14 +98,26 @@ export const OfferDialog = ({
       }
 
       // Create offer with variant metadata if applicable
-      const offerData: any = {
+      const offerData: {
+        conversation_id: string;
+        listing_id: string;
+        buyer_id: string;
+        seller_id: string;
+        amount: number;
+        message: string;
+        status: 'pending';
+        metadata?: {
+          variant_id: string;
+          variant_name?: string;
+        };
+      } = {
         conversation_id: conversationId,
         listing_id: listingId,
         buyer_id: user.id,
         seller_id: sellerId,
         amount: offerAmount,
         message: offerMessage,
-        status: "pending",
+        status: "pending" as const,
       };
 
       // Store variant info in metadata if provided

@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import type { ParcelData } from "@/types/shipping";
 
 interface CarrierData {
   carrier: string;
@@ -11,7 +12,7 @@ interface CarrierData {
 }
 
 interface CarrierPerformanceChartProps {
-  parcels: any[];
+  parcels: ParcelData[];
 }
 
 export function CarrierPerformanceChart({ parcels }: CarrierPerformanceChartProps) {

@@ -29,6 +29,8 @@ export default defineConfig(({ mode }) => ({
           'query-vendor': ['@tanstack/react-query'],
           'ui-vendor': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select'],
           'stripe-vendor': ['@stripe/connect-js', '@stripe/react-connect-js', '@stripe/stripe-js'],
+          'recharts': ['recharts'],
+          'mapbox': ['mapbox-gl'],
         },
       },
     },
