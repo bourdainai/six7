@@ -373,6 +373,58 @@ export type Database = {
           },
         ]
       }
+      dispute_assignments: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          assigned_to: string | null
+          dispute_id: string | null
+          id: string
+          notes: string | null
+          resolved_at: string | null
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          assigned_to?: string | null
+          dispute_id?: string | null
+          id?: string
+          notes?: string | null
+          resolved_at?: string | null
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          assigned_to?: string | null
+          dispute_id?: string | null
+          id?: string
+          notes?: string | null
+          resolved_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispute_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispute_assignments_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispute_assignments_dispute_id_fkey"
+            columns: ["dispute_id"]
+            isOneToOne: true
+            referencedRelation: "disputes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       disputes: {
         Row: {
           admin_notes: string | null
@@ -3777,6 +3829,47 @@ export type Database = {
           },
         ]
       }
+      user_activity_logs: {
+        Row: {
+          activity_type: string
+          city: string | null
+          country: string | null
+          created_at: string | null
+          id: string
+          ip_address: unknown
+          metadata: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          activity_type: string
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          activity_type?: string
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_activity_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_memberships: {
         Row: {
           created_at: string | null
@@ -4141,6 +4234,7 @@ export type Database = {
         Returns: undefined
       }
       is_admin: { Args: never; Returns: boolean }
+      refresh_admin_live_stats: { Args: never; Returns: undefined }
       refresh_listing_facets: { Args: never; Returns: undefined }
       refresh_trade_opportunities: { Args: never; Returns: undefined }
       show_limit: { Args: never; Returns: number }

@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { AlertCircle, CheckCircle2, Clock, TrendingUp, User } from "lucide-react";
+import { DisputeAssignment } from "@/components/admin/DisputeAssignment";
 
 export default function AdminDisputes() {
   const { toast } = useToast();
@@ -240,6 +241,14 @@ export default function AdminDisputes() {
                           <strong>AI Recommendation:</strong> {dispute.ai_recommended_outcome}
                         </div>
                       )}
+
+                      {/* Team Assignment */}
+                      <div className="mt-3">
+                        <DisputeAssignment 
+                          disputeId={dispute.id}
+                          currentAssignee={queueItem?.assigned_to}
+                        />
+                      </div>
                     </div>
 
                     <Button variant="outline" size="sm">
