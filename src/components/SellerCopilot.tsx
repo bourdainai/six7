@@ -45,7 +45,7 @@ const healthColors = {
 };
 
 export const SellerCopilot = ({ listingId }: SellerCopilotProps) => {
-  const { data, isLoading, error } = useQuery<CopilotData>({
+  const { data, isLoading, error, refetch, isFetching } = useQuery<CopilotData>({
     queryKey: ["seller-copilot", listingId],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke("seller-copilot", {
@@ -57,7 +57,7 @@ export const SellerCopilot = ({ listingId }: SellerCopilotProps) => {
       
       return data.data;
     },
-    refetchInterval: 60000 * 5, // Refresh every 5 minutes
+    // Auto-refresh disabled to save AI credits
   });
 
   if (isLoading) {
@@ -101,6 +101,15 @@ export const SellerCopilot = ({ listingId }: SellerCopilotProps) => {
           <h3 className="text-lg font-semibold">AI Copilot</h3>
         </div>
         <div className="flex items-center gap-2">
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={() => refetch()}
+            disabled={isFetching}
+          >
+            <Sparkles className="w-4 h-4 mr-2" />
+            {isFetching ? "Refreshing..." : "Refresh"}
+          </Button>
           <span className={`text-sm font-medium ${healthColors[data.overall_health]}`}>
             {data.health_score}/100
           </span>
