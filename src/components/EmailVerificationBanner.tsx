@@ -7,7 +7,6 @@ import { Mail, X, CheckCircle2, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
-import { Link } from "react-router-dom";
 
 export const EmailVerificationBanner = () => {
   const { user } = useAuth();
@@ -40,33 +39,18 @@ export const EmailVerificationBanner = () => {
 
   const sendVerificationMutation = useMutation({
     mutationFn: async () => {
-      console.log("🔄 Attempting to send verification email...");
-      
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error("Not authenticated");
-      }
-
-      console.log("✅ Session found, invoking edge function...");
-      
-      const { data, error } = await supabase.functions.invoke("send-verification-email", {
+      const { error } = await supabase.functions.invoke("send-verification-email", {
         body: {},
       });
-      
-      console.log("📧 Edge function response:", { data, error });
-      
       if (error) throw error;
-      return data;
     },
-    onSuccess: (data) => {
-      console.log("✅ Email sent successfully:", data);
+    onSuccess: () => {
       toast({
         title: "Verification email sent",
         description: "Please check your inbox and click the verification link.",
       });
     },
     onError: (error) => {
-      console.error("❌ Failed to send email:", error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to send verification email",
@@ -104,15 +88,6 @@ export const EmailVerificationBanner = () => {
                   <Mail className="h-4 w-4 mr-2" />
                   {sendVerificationMutation.isPending ? "Sending..." : "Resend Email"}
                 </Button>
-                {isAdmin && (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    asChild
-                  >
-                    <Link to="/admin/live">Test Admin Dashboard</Link>
-                  </Button>
-                )}
               </div>
             </AlertDescription>
           </div>

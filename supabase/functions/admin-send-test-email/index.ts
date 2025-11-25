@@ -80,61 +80,36 @@ serve(async (req) => {
 
     // Send test email via Resend
     const { data: emailData, error: emailError } = await resend.emails.send({
-      from: "Grail Central <noreply@6seven.io>",
+      from: "Grail Central <noreply@grailcentral.com>",
       to: [testEmail],
-      subject: "🧪 TEST: Email Verification System",
+      subject: "[TEST] Verify your email address",
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background-color: #ff4444; color: white; padding: 15px; border-radius: 8px 8px 0 0; text-align: center;">
-            <h1 style="margin: 0; font-size: 24px;">⚠️ TEST EMAIL ⚠️</h1>
-            <p style="margin: 10px 0 0 0; font-size: 14px;">This is a test of the email verification system</p>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 3px solid #ff0000; padding: 20px;">
+          <div style="background: #ff0000; color: white; padding: 10px; margin: -20px -20px 20px -20px; font-weight: bold;">
+            ⚠️ ADMIN TEST EMAIL - NOT FOR PRODUCTION USE
           </div>
-          
-          <div style="padding: 30px; background-color: #f9f9f9; border-radius: 0 0 8px 8px;">
-            <h2 style="color: #333; margin-top: 0;">Email System Test Successful! ✅</h2>
-            <p style="color: #666; font-size: 16px;">
-              If you're seeing this email, it means your email system is properly configured and working.
-            </p>
-            
-            <div style="background-color: white; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #4CAF50;">
-              <h3 style="color: #333; margin-top: 0;">Test Details:</h3>
-              <p style="margin: 5px 0; color: #666;"><strong>To:</strong> ${testEmail}</p>
-              <p style="margin: 5px 0; color: #666;"><strong>From:</strong> noreply@6seven.io</p>
-              <p style="margin: 5px 0; color: #666;"><strong>Domain:</strong> 6seven.io (Verified ✓)</p>
-              <p style="margin: 5px 0; color: #666;"><strong>Magic Link:</strong> <a href="${linkData.properties.action_link}" style="color: #1976d2;">Click to Test</a></p>
-              <p style="margin: 5px 0; color: #666;"><strong>Test Date:</strong> ${new Date().toLocaleString()}</p>
-            </div>
-            
-            <div style="background-color: #e3f2fd; padding: 15px; border-radius: 6px; margin: 20px 0;">
-              <p style="margin: 0; color: #1976d2; font-size: 14px;">
-                <strong>📝 Note:</strong> This is a test email sent from the admin dashboard. 
-                Real verification emails will have the same styling but without the red warning banner.
-              </p>
-            </div>
-            
-            <p style="color: #999; font-size: 12px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
-              This test email was sent by an administrator to verify the email delivery system is working correctly.
-            </p>
+          <h2 style="color: #333;">Verify Your Email</h2>
+          <p>This is a <strong>TEST EMAIL</strong> sent by an administrator.</p>
+          <p>Please verify your email address by clicking the button below:</p>
+          <a href="${linkData.properties.action_link}" 
+             style="display: inline-block; background-color: #000; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0;">
+            Verify Email
+          </a>
+          <p style="color: #666; font-size: 14px;">Or copy and paste this link into your browser:</p>
+          <p style="color: #666; font-size: 12px; word-break: break-all;">${linkData.properties.action_link}</p>
+          <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 10px; margin-top: 20px; border-radius: 4px;">
+            <strong>Note:</strong> This is a test email sent from the admin dashboard for verification testing purposes only.
           </div>
         </div>
       `,
     });
 
     if (emailError) {
-      console.error("❌ Resend API Error:", {
-        error: emailError,
-        message: emailError.message,
-        name: emailError.name || 'Unknown',
-        to: testEmail
-      });
-      throw new Error(`Failed to send test email: ${emailError.message}`);
+      console.error("❌ Error sending email:", emailError);
+      throw new Error("Failed to send verification email");
     }
 
-    console.log("✅ Test email sent successfully:", {
-      emailId: emailData?.id,
-      to: testEmail,
-      from: "noreply@6seven.io"
-    });
+    console.log("✅ Test verification email sent successfully:", emailData);
 
     return new Response(
       JSON.stringify({ 

@@ -27,8 +27,8 @@ serve(async (req) => {
 
     const itemsList = items.map(item => `<li>${item.title} - £${item.price}</li>`).join('');
 
-    const { data: emailData, error: emailError } = await resend.emails.send({
-      from: "Grail Central Orders <orders@6seven.io>",
+    const emailResponse = await resend.emails.send({
+      from: "Orders <onboarding@resend.dev>",
       to: [buyerEmail],
       subject: `Your order #${orderId.slice(0, 8)} has been shipped! 📦`,
       html: `
@@ -68,25 +68,10 @@ serve(async (req) => {
       `,
     });
 
-    if (emailError) {
-      console.error("❌ Resend API Error:", {
-        error: emailError,
-        message: emailError.message,
-        name: emailError.name || 'Unknown',
-        to: buyerEmail
-      });
-      throw new Error(`Failed to send shipping notification: ${emailError.message}`);
-    }
-
-    console.log("✅ Shipping notification sent successfully:", {
-      emailId: emailData?.id,
-      to: buyerEmail,
-      from: "orders@6seven.io",
-      orderId: orderId
-    });
+    console.log("Shipping notification sent successfully:", emailResponse);
 
     return new Response(
-      JSON.stringify({ success: true, emailId: emailData?.id }),
+      JSON.stringify({ success: true, emailResponse }),
       {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

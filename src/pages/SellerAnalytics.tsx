@@ -1,20 +1,15 @@
 import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { Loader2, TrendingUp, Package, Eye, Heart, MessageSquare, DollarSign, Shield } from "lucide-react";
+import { Loader2, TrendingUp, Package, Eye, Heart, MessageSquare, DollarSign } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, subDays } from "date-fns";
-import { useNavigate } from "react-router-dom";
-import { useAdminCheck } from "@/hooks/useAdminCheck";
 
 const SellerAnalytics = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const { data: isAdmin } = useAdminCheck();
 
   // Fetch seller analytics data for last 30 days
   const { data: analytics, isLoading } = useQuery({

@@ -1772,16 +1772,11 @@ export type Database = {
       }
       ratings: {
         Row: {
-          ai_moderation_reason: string | null
-          ai_moderation_status: string | null
-          ai_sentiment_score: number | null
-          communication_rating: number | null
           created_at: string | null
           helpful_count: number | null
           id: string
           listing_id: string
           order_id: string
-          packaging_rating: number | null
           rating: number
           review_images: Json | null
           review_text: string | null
@@ -1790,21 +1785,15 @@ export type Database = {
           reviewer_id: string
           seller_response: string | null
           seller_response_at: string | null
-          speed_rating: number | null
           updated_at: string | null
           verified_purchase: boolean | null
         }
         Insert: {
-          ai_moderation_reason?: string | null
-          ai_moderation_status?: string | null
-          ai_sentiment_score?: number | null
-          communication_rating?: number | null
           created_at?: string | null
           helpful_count?: number | null
           id?: string
           listing_id: string
           order_id: string
-          packaging_rating?: number | null
           rating: number
           review_images?: Json | null
           review_text?: string | null
@@ -1813,21 +1802,15 @@ export type Database = {
           reviewer_id: string
           seller_response?: string | null
           seller_response_at?: string | null
-          speed_rating?: number | null
           updated_at?: string | null
           verified_purchase?: boolean | null
         }
         Update: {
-          ai_moderation_reason?: string | null
-          ai_moderation_status?: string | null
-          ai_sentiment_score?: number | null
-          communication_rating?: number | null
           created_at?: string | null
           helpful_count?: number | null
           id?: string
           listing_id?: string
           order_id?: string
-          packaging_rating?: number | null
           rating?: number
           review_images?: Json | null
           review_text?: string | null
@@ -1836,7 +1819,6 @@ export type Database = {
           reviewer_id?: string
           seller_response?: string | null
           seller_response_at?: string | null
-          speed_rating?: number | null
           updated_at?: string | null
           verified_purchase?: boolean | null
         }
@@ -2044,36 +2026,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      review_notification_preferences: {
-        Row: {
-          created_at: string | null
-          id: string
-          notify_helpful_vote: boolean | null
-          notify_new_review: boolean | null
-          notify_seller_response: boolean | null
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          notify_helpful_vote?: boolean | null
-          notify_new_review?: boolean | null
-          notify_seller_response?: boolean | null
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          notify_helpful_vote?: boolean | null
-          notify_new_review?: boolean | null
-          notify_seller_response?: boolean | null
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
       }
       review_votes: {
         Row: {
