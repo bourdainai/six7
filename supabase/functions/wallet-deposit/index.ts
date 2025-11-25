@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
-// import Stripe from "https://esm.sh/stripe@13.10.0?target=deno"; // Placeholder for Stripe import
+import Stripe from "https://esm.sh/stripe@14.21.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,19 +23,9 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY') ?? '';
     
-    // Mock Stripe for now to avoid import errors if not set up
-    const Stripe = (key: string) => ({
-      paymentIntents: {
-        create: async (params: any) => ({
-          id: `pi_mock_${Math.random().toString(36).substring(7)}`,
-          client_secret: `secret_mock_${Math.random().toString(36).substring(7)}`,
-          amount: params.amount,
-          currency: params.currency,
-        })
-      }
+    const stripe = new Stripe(stripeKey, {
+      apiVersion: '2023-10-16',
     });
-
-    const stripe = Stripe(stripeKey);
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const body = await req.json();
@@ -53,53 +43,80 @@ serve(async (req) => {
 
     console.log(`Creating deposit for user ${user.id}, amount: ${amount}`);
 
-    // Create Stripe PaymentIntent
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // Convert to cents/pence
-      currency: currency.toLowerCase(),
-      metadata: {
-        user_id: user.id,
-        type: 'wallet_deposit'
-      },
-      automatic_payment_methods: {
-        enabled: true,
-      },
-    });
-
     // Get or create wallet
     let { data: wallet } = await supabase
       .from('wallet_accounts')
-      .select('id')
+      .select('id, pending_balance')
       .eq('user_id', user.id)
       .single();
 
     if (!wallet) {
       const { data: newWallet, error: walletError } = await supabase
         .from('wallet_accounts')
-        .insert({ user_id: user.id })
-        .select('id')
+        .insert({ 
+          user_id: user.id,
+          balance: 0,
+          pending_balance: 0,
+          currency: currency
+        })
+        .select('id, pending_balance')
         .single();
       
       if (walletError) throw walletError;
       wallet = newWallet;
     }
 
-    // Record pending deposit
-    const { error: depositError } = await supabase
+    // Create deposit record first
+    const { data: deposit, error: depositError } = await supabase
       .from('wallet_deposits')
       .insert({
         wallet_id: wallet.id,
         amount: amount,
-        stripe_payment_intent_id: paymentIntent.id,
+        currency: currency,
         status: 'pending'
-      });
+      })
+      .select('id')
+      .single();
 
-    if (depositError) throw depositError;
+    if (depositError || !deposit) {
+      throw new Error('Failed to create deposit record');
+    }
+
+    // Update pending balance
+    await supabase
+      .from('wallet_accounts')
+      .update({
+        pending_balance: (Number(wallet.pending_balance) || 0) + amount
+      })
+      .eq('id', wallet.id);
+
+    // Create Stripe PaymentIntent with deposit metadata
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(amount * 100), // Convert to cents/pence
+      currency: currency.toLowerCase(),
+      metadata: {
+        type: 'wallet_deposit',
+        deposit_id: deposit.id,
+        user_id: user.id,
+      },
+      automatic_payment_methods: {
+        enabled: true,
+      },
+    });
+
+    // Update deposit with payment intent ID
+    await supabase
+      .from('wallet_deposits')
+      .update({
+        stripe_payment_intent_id: paymentIntent.id
+      })
+      .eq('id', deposit.id);
 
     return new Response(
       JSON.stringify({ 
         clientSecret: paymentIntent.client_secret,
-        paymentIntentId: paymentIntent.id 
+        paymentIntentId: paymentIntent.id,
+        depositId: deposit.id
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

@@ -757,6 +757,8 @@ export type Database = {
           is_available: boolean | null
           is_sold: boolean | null
           listing_id: string
+          reserved_by: string | null
+          reserved_until: string | null
           sold_at: string | null
           updated_at: string | null
           variant_condition:
@@ -775,6 +777,8 @@ export type Database = {
           is_available?: boolean | null
           is_sold?: boolean | null
           listing_id: string
+          reserved_by?: string | null
+          reserved_until?: string | null
           sold_at?: string | null
           updated_at?: string | null
           variant_condition?:
@@ -793,6 +797,8 @@ export type Database = {
           is_available?: boolean | null
           is_sold?: boolean | null
           listing_id?: string
+          reserved_by?: string | null
+          reserved_until?: string | null
           sold_at?: string | null
           updated_at?: string | null
           variant_condition?:
@@ -4212,6 +4218,7 @@ export type Database = {
         Args: { listing_id_param: string }
         Returns: number
       }
+      cleanup_expired_variant_reservations: { Args: never; Returns: undefined }
       ensure_admin_role: { Args: never; Returns: undefined }
       get_next_set_to_sync: {
         Args: never

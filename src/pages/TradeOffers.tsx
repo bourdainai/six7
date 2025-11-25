@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PageLayout } from "@/components/PageLayout";
 import { useTradeOffers } from "@/hooks/useTradeOffers";
 import { EnhancedTradeOfferCard } from "@/components/trade/EnhancedTradeOfferCard";
@@ -21,11 +21,11 @@ export default function TradeOffersPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   // Get current user
-  useState(() => {
+  useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setCurrentUserId(data.user?.id || null);
     });
-  });
+  }, []);
 
   // Filter offers by type
   const incomingOffers = offers?.filter(o => o.seller_id === currentUserId && o.status === 'pending') || [];

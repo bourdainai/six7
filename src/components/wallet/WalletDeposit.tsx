@@ -4,11 +4,84 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { useWallet } from "@/hooks/useWallet";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle } from "lucide-react";
+import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
+import { useToast } from "@/hooks/use-toast";
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
 
 interface WalletDepositProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+}
+
+// Payment form component that uses Stripe Elements
+function DepositPaymentForm({ 
+  amount, 
+  onSuccess, 
+  onCancel 
+}: { 
+  amount: number; 
+  onSuccess: () => void; 
+  onCancel: () => void;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [isProcessing, setIsProcessing] = useState(false);
+  const { toast } = useToast();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!stripe || !elements) return;
+
+    setIsProcessing(true);
+
+    try {
+      const { error } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: `${window.location.origin}/wallet?deposit=success`,
+        },
+      });
+
+      if (error) {
+        toast({
+          title: "Payment Failed",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else {
+        onSuccess();
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Failed to process payment",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="py-4">
+        <PaymentElement />
+      </div>
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isProcessing}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={!stripe || isProcessing}>
+          {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Deposit £{amount.toFixed(2)}
+        </Button>
+      </DialogFooter>
+    </form>
+  );
 }
 
 export function WalletDeposit({ open, onOpenChange }: WalletDepositProps) {
@@ -16,8 +89,10 @@ export function WalletDeposit({ open, onOpenChange }: WalletDepositProps) {
   const { deposit } = useWallet();
   const [isLoading, setIsLoading] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [depositComplete, setDepositComplete] = useState(false);
+  const { toast } = useToast();
 
-  const handleDeposit = async () => {
+  const handleInitiateDeposit = async () => {
     const val = parseFloat(amount);
     if (isNaN(val) || val <= 0) return;
 
@@ -25,17 +100,44 @@ export function WalletDeposit({ open, onOpenChange }: WalletDepositProps) {
     try {
       const result = await deposit({ amount: val });
       setClientSecret(result.clientSecret);
-      // In a real app, you would now mount Stripe Elements with this clientSecret
     } catch (error) {
-      console.error(error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to initiate deposit",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleSuccess = () => {
+    setDepositComplete(true);
+    toast({
+      title: "Deposit Successful",
+      description: "Your wallet balance will be updated shortly"
+    });
+    setTimeout(() => {
+      onOpenChange(false);
+      setClientSecret(null);
+      setAmount("");
+      setDepositComplete(false);
+    }, 2000);
+  };
+
+  const handleCancel = () => {
+    setClientSecret(null);
+    setAmount("");
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+    <Dialog open={open} onOpenChange={(open) => {
+      if (!open) {
+        handleCancel();
+      }
+      onOpenChange(open);
+    }}>
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Deposit Funds</DialogTitle>
           <DialogDescription>
@@ -43,42 +145,50 @@ export function WalletDeposit({ open, onOpenChange }: WalletDepositProps) {
           </DialogDescription>
         </DialogHeader>
 
-        {!clientSecret ? (
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="amount" className="text-right">
-                Amount
-              </Label>
-              <div className="col-span-3 relative">
-                <span className="absolute left-3 top-2.5">£</span>
-                <Input
-                  id="amount"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="pl-7"
-                  type="number"
-                  min="1"
-                  placeholder="0.00"
-                />
+        {depositComplete ? (
+          <div className="py-8 text-center space-y-4">
+            <CheckCircle className="mx-auto h-16 w-16 text-green-500" />
+            <p className="text-lg font-medium">Deposit Successful!</p>
+            <p className="text-sm text-muted-foreground">Your wallet balance is being updated...</p>
+          </div>
+        ) : !clientSecret ? (
+          <>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="amount" className="text-right">
+                  Amount
+                </Label>
+                <div className="col-span-3 relative">
+                  <span className="absolute left-3 top-2.5">£</span>
+                  <Input
+                    id="amount"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    className="pl-7"
+                    type="number"
+                    min="1"
+                    step="0.01"
+                    placeholder="0.00"
+                  />
+                </div>
               </div>
             </div>
-          </div>
+            <DialogFooter>
+              <Button onClick={handleInitiateDeposit} disabled={isLoading || !amount}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Continue to Payment
+              </Button>
+            </DialogFooter>
+          </>
         ) : (
-          <div className="py-4 text-center">
-            <p className="mb-4">Stripe Payment Intent created!</p>
-            <p className="text-sm text-muted-foreground mb-4">Client Secret: {clientSecret.substring(0, 10)}...</p>
-            <Button variant="outline" className="w-full">Complete Payment with Stripe</Button>
-          </div>
+          <Elements stripe={stripePromise} options={{ clientSecret }}>
+            <DepositPaymentForm 
+              amount={parseFloat(amount)} 
+              onSuccess={handleSuccess}
+              onCancel={handleCancel}
+            />
+          </Elements>
         )}
-
-        <DialogFooter>
-          {!clientSecret && (
-            <Button onClick={handleDeposit} disabled={isLoading || !amount}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Continue to Payment
-            </Button>
-          )}
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
