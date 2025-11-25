@@ -1,11 +1,15 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Slider } from "@/components/ui/slider";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Camera, Loader2, Upload } from "lucide-react";
+import { Camera, Loader2, ZoomIn, ZoomOut } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import Cropper from "react-easy-crop";
+import getCroppedImg from "@/lib/cropImage";
 
 interface AvatarUploadProps {
   currentAvatarUrl?: string | null;
@@ -16,12 +20,19 @@ interface AvatarUploadProps {
 export function AvatarUpload({ currentAvatarUrl, userName, onUploadComplete }: AvatarUploadProps) {
   const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+  const [showCropper, setShowCropper] = useState(false);
+
+  const onCropComplete = useCallback((croppedArea: any, croppedAreaPixels: any) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    try {
-      const file = e.target.files?.[0];
-      if (!file) return;
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
 
       // Validate file type
       if (!file.type.startsWith("image/")) {
@@ -35,25 +46,31 @@ export function AvatarUpload({ currentAvatarUrl, userName, onUploadComplete }: A
         return;
       }
 
-      setUploading(true);
-
-      // Create preview
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewUrl(reader.result as string);
-      };
+      reader.addEventListener("load", () => {
+        setImageSrc(reader.result as string);
+        setShowCropper(true);
+      });
       reader.readAsDataURL(file);
+    }
+  };
 
-      // Generate unique file name
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${user!.id}/${Date.now()}.${fileExt}`;
+  const handleUpload = async () => {
+    if (!imageSrc || !croppedAreaPixels) return;
+
+    try {
+      setUploading(true);
+      const croppedImageBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
+
+      const fileName = `${user!.id}/${Date.now()}.jpg`;
+      const file = new File([croppedImageBlob], "avatar.jpg", { type: "image/jpeg" });
 
       // Upload to Supabase Storage
-      const { error: uploadError, data } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from("avatars")
         .upload(fileName, file, {
           upsert: true,
-          contentType: file.type,
+          contentType: "image/jpeg",
         });
 
       if (uploadError) throw uploadError;
@@ -73,24 +90,23 @@ export function AvatarUpload({ currentAvatarUrl, userName, onUploadComplete }: A
 
       toast.success("Profile picture updated");
       onUploadComplete(publicUrl);
+      setShowCropper(false);
+      setImageSrc(null);
     } catch (error: any) {
       console.error("Upload error:", error);
       toast.error(`Failed to upload image: ${error.message}`);
-      setPreviewUrl(null);
     } finally {
       setUploading(false);
     }
   };
 
-  const displayUrl = previewUrl || currentAvatarUrl;
-
   return (
     <div className="space-y-4">
       <Label>Profile Picture</Label>
       <div className="flex items-center gap-4">
-        <Avatar className="h-24 w-24 border-2 border-border">
-          <AvatarImage src={displayUrl || undefined} />
-          <AvatarFallback className="text-2xl">
+        <Avatar className="h-24 w-24 border-2 border-border rounded-lg">
+          <AvatarImage src={currentAvatarUrl || undefined} className="object-cover" />
+          <AvatarFallback className="text-2xl rounded-lg">
             {userName?.[0]?.toUpperCase() || "U"}
           </AvatarFallback>
         </Avatar>
@@ -128,6 +144,51 @@ export function AvatarUpload({ currentAvatarUrl, userName, onUploadComplete }: A
           </p>
         </div>
       </div>
+
+      <Dialog open={showCropper} onOpenChange={setShowCropper}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Adjust Profile Picture</DialogTitle>
+          </DialogHeader>
+
+          <div className="relative h-[300px] w-full mt-4 bg-black/5 rounded-lg overflow-hidden">
+            {imageSrc && (
+              <Cropper
+                image={imageSrc}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                onCropChange={setCrop}
+                onCropComplete={onCropComplete}
+                onZoomChange={setZoom}
+              />
+            )}
+          </div>
+
+          <div className="py-4 flex items-center gap-4">
+            <ZoomOut className="h-4 w-4 text-muted-foreground" />
+            <Slider
+              value={[zoom]}
+              min={1}
+              max={3}
+              step={0.1}
+              onValueChange={(value) => setZoom(value[0])}
+              className="flex-1"
+            />
+            <ZoomIn className="h-4 w-4 text-muted-foreground" />
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCropper(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpload} disabled={uploading}>
+              {uploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Picture
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

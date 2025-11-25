@@ -142,9 +142,9 @@ export default function SellerProfile() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex flex-col md:flex-row gap-6">
-              <Avatar className="h-24 w-24">
-                <AvatarImage src={seller.avatar_url || undefined} />
-                <AvatarFallback className="text-2xl">
+              <Avatar className="h-24 w-24 rounded-lg">
+                <AvatarImage src={seller.avatar_url || undefined} className="object-cover" />
+                <AvatarFallback className="text-2xl rounded-lg">
                   {(seller.full_name || seller.email)?.[0]?.toUpperCase()}
                 </AvatarFallback>
               </Avatar>
@@ -315,11 +315,10 @@ export default function SellerProfile() {
                         {[...Array(5)].map((_, i) => (
                           <Star
                             key={i}
-                            className={`h-4 w-4 ${
-                              i < review.rating
+                            className={`h-4 w-4 ${i < review.rating
                                 ? "fill-yellow-500 text-yellow-500"
                                 : "text-gray-300"
-                            }`}
+                              }`}
                           />
                         ))}
                       </div>
