@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { MessageSquare, Star, Package, Calendar, Instagram, Twitter, Youtube, Loader2 } from "lucide-react";
+import { MessageSquare, Star, Package, Calendar, Instagram, Twitter, Youtube, Loader2, Facebook, Linkedin } from "lucide-react";
 import { ListingCard } from "@/components/ListingCard";
 import { SEO } from "@/components/SEO";
 import { format } from "date-fns";
@@ -194,8 +194,8 @@ export default function SellerProfile() {
                 </div>
 
                 {/* Social Links */}
-                {(seller.instagram_url || seller.twitter_url || seller.youtube_url || seller.tiktok_url) && (
-                  <div className="flex gap-2">
+                {(seller.instagram_url || seller.twitter_url || seller.facebook_url || seller.linkedin_url || seller.youtube_url || seller.tiktok_url) && (
+                  <div className="flex flex-wrap gap-2">
                     {seller.instagram_url && (
                       <Button
                         variant="outline"
@@ -212,6 +212,24 @@ export default function SellerProfile() {
                         onClick={() => window.open(seller.twitter_url, "_blank")}
                       >
                         <Twitter className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {seller.facebook_url && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(seller.facebook_url, "_blank")}
+                      >
+                        <Facebook className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {seller.linkedin_url && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(seller.linkedin_url, "_blank")}
+                      >
+                        <Linkedin className="h-4 w-4" />
                       </Button>
                     )}
                     {seller.youtube_url && (

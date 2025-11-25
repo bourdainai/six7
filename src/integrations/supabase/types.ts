@@ -1690,6 +1690,7 @@ export type Database = {
           created_at: string | null
           email: string | null
           email_verified: boolean | null
+          facebook_url: string | null
           full_name: string | null
           id: string
           id_verified: boolean | null
@@ -1699,6 +1700,7 @@ export type Database = {
           last_city: string | null
           last_country: string | null
           last_ip_address: unknown
+          linkedin_url: string | null
           notification_preferences: Json | null
           phone_number: string | null
           phone_verified: boolean | null
@@ -1723,6 +1725,7 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           email_verified?: boolean | null
+          facebook_url?: string | null
           full_name?: string | null
           id: string
           id_verified?: boolean | null
@@ -1732,6 +1735,7 @@ export type Database = {
           last_city?: string | null
           last_country?: string | null
           last_ip_address?: unknown
+          linkedin_url?: string | null
           notification_preferences?: Json | null
           phone_number?: string | null
           phone_verified?: boolean | null
@@ -1756,6 +1760,7 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           email_verified?: boolean | null
+          facebook_url?: string | null
           full_name?: string | null
           id?: string
           id_verified?: boolean | null
@@ -1765,6 +1770,7 @@ export type Database = {
           last_city?: string | null
           last_country?: string | null
           last_ip_address?: unknown
+          linkedin_url?: string | null
           notification_preferences?: Json | null
           phone_number?: string | null
           phone_verified?: boolean | null
