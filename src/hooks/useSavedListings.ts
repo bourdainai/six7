@@ -52,7 +52,7 @@ export const useSavedListings = () => {
       }
     },
     onSuccess: (_, listingId) => {
-      // Invalidate and refetch saved listings
+      // Optimistically update saved listings cache
       queryClient.setQueryData(["saved-listings", user?.id], (old: string[] = []) => {
         if (!old.includes(listingId)) {
           return [...old, listingId];
@@ -60,9 +60,9 @@ export const useSavedListings = () => {
         return old;
       });
 
-      // Invalidate listing queries to update saves count
+      // Only invalidate the specific listing to update its saves count
+      // Don't invalidate the entire active-listings query to prevent unnecessary refetches
       queryClient.invalidateQueries({ queryKey: ["listing", listingId] });
-      queryClient.invalidateQueries({ queryKey: ["active-listings"] });
 
       toast({
         title: "Saved",
@@ -96,14 +96,14 @@ export const useSavedListings = () => {
       if (error) throw error;
     },
     onSuccess: (_, listingId) => {
-      // Update saved listings cache
+      // Optimistically update saved listings cache
       queryClient.setQueryData(["saved-listings", user?.id], (old: string[] = []) => {
         return old.filter((id) => id !== listingId);
       });
 
-      // Invalidate listing queries to update saves count
+      // Only invalidate the specific listing to update its saves count
+      // Don't invalidate the entire active-listings query to prevent unnecessary refetches
       queryClient.invalidateQueries({ queryKey: ["listing", listingId] });
-      queryClient.invalidateQueries({ queryKey: ["active-listings"] });
 
       toast({
         title: "Removed",
