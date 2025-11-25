@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { TrendingUp, Users, MessageSquare, Repeat2, DollarSign, Package, Gift, Mail } from "lucide-react";
 import { useState } from "react";
+import { UserActivityTable } from "@/components/admin/UserActivityTable";
 
 export default function AdminLiveStats() {
   const { toast } = useToast();
@@ -201,6 +202,9 @@ export default function AdminLiveStats() {
               </CardContent>
             </Card>
           </div>
+
+          {/* User Activity Section */}
+          <UserActivityTable />
 
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
