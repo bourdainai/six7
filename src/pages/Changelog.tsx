@@ -5,6 +5,139 @@ import { Badge } from "@/components/ui/badge";
 
 const changelogData = [
     {
+        date: "January 25, 2025",
+        title: "6Seven Wallet - Instant Payments & Lower Fees",
+        description: "Introducing the 6Seven Wallet system - a game-changer for both buyers and sellers. Deposit funds once and pay instantly for purchases with just 1% fees (vs 3% with cards). Sellers get instant settlements for trades, and buyers can split payments between wallet and card. Built-in credit system for refunds and promotions. Your money moves faster, fees stay lower.",
+        tags: ["New Feature", "Payments", "Wallet"],
+        version: "v2.0.0"
+    },
+    {
+        date: "January 24, 2025",
+        title: "Agentic Commerce Protocol (ACP) - AI Agents Can Now Shop",
+        description: "6Seven is the first marketplace where AI agents can autonomously browse, purchase, and complete transactions. Our ACP endpoints enable AI buyers to search products, create checkout sessions, process payments, and confirm orders - all without human intervention. Perfect for automated collection building, portfolio management, and AI-powered reselling operations.",
+        tags: ["New Feature", "AI", "Automation", "Platform"],
+        version: "v1.9.5"
+    },
+    {
+        date: "January 23, 2025",
+        title: "SendCloud Integration - Automated Shipping Labels",
+        description: "Full shipping automation is here. Generate print-at-home shipping labels directly from your dashboard with SendCloud integration. Automatic rate calculation, address validation, service point selection, and real-time tracking updates. Bulk label creation for power sellers. Return label generation. Shipping just got 10x easier.",
+        tags: ["New Feature", "Shipping", "Automation"],
+        version: "v1.9.0"
+    },
+    {
+        date: "January 22, 2025",
+        title: "AI-Powered Fake Card Detection",
+        description: "Protecting buyers with advanced AI counterfeit detection. Every listing image is automatically scanned for authenticity using computer vision. Suspicious cards trigger video verification requests. Admin review queue with AI-assisted analysis. Confidence scores and detailed issue reports. Shop with confidence knowing every card is verified.",
+        tags: ["New Feature", "AI", "Trust & Safety", "Security"],
+        version: "v1.8.8"
+    },
+    {
+        date: "January 21, 2025",
+        title: "Semantic & Image Search - Find Cards by Description",
+        description: "Revolutionary search capabilities that understand context, not just keywords. Describe what you're looking for in natural language - 'a rare Charizard with rainbow foil' - and AI finds it. Upload a photo of a card and find similar listings. Semantic search understands card relationships, set themes, and collector intent. Finding your grail just got magical.",
+        tags: ["New Feature", "AI", "Search"],
+        version: "v1.8.5"
+    },
+    {
+        date: "January 20, 2025",
+        title: "Complete Review & Rating System",
+        description: "Comprehensive feedback system with verified purchase badges, photo reviews, and seller responses. Buyers and sellers rate each other independently. Review images, detailed feedback, and response threads build trust. Your reputation is your currency - displayed prominently on profiles and listings.",
+        tags: ["New Feature", "Trust & Safety", "Community"],
+        version: "v1.8.3"
+    },
+    {
+        date: "January 19, 2025",
+        title: "Advanced Dispute Resolution with AI Assistance",
+        description: "Professional dispute management powered by AI. File disputes for non-delivery, condition issues, or counterfeits. AI automatically analyzes evidence, suggests resolutions, and prioritizes cases. Admin dashboard with SLA monitoring ensures fast resolution. Both parties can upload evidence, and AI provides fairness recommendations. Disputes resolved faster, more fairly.",
+        tags: ["New Feature", "AI", "Trust & Safety"],
+        version: "v1.8.0"
+    },
+    {
+        date: "January 18, 2025",
+        title: "Real-Time Messaging with AI Reply Suggestions",
+        description: "Full-featured messaging system with real-time updates, typing indicators, read receipts, and file attachments. AI-powered reply suggestions help you respond faster. Message safety scanning protects users. Image lightbox, emoji reactions, and conversation search. Communicate seamlessly without leaving the platform.",
+        tags: ["New Feature", "AI", "Communication"],
+        version: "v1.7.8"
+    },
+    {
+        date: "January 17, 2025",
+        title: "Pokémon TCG Database - 10,000+ Cards Auto-Synced",
+        description: "Massive Pokémon TCG database with automatic daily syncing from multiple sources. Every card, set, rarity, and attribute pre-loaded. Auto-fill listings from our database. Market price tracking, pricing comps, and set completeness verification. Import from Collectr, TCGdex, and JustTCG. Your collection management just leveled up.",
+        tags: ["New Feature", "Data", "Integration"],
+        version: "v1.7.5"
+    },
+    {
+        date: "January 16, 2025",
+        title: "Seller Analytics Dashboard",
+        description: "Deep insights into your selling performance. Track sales metrics, revenue trends, listing performance, and buyer behavior. See which cards sell fastest, optimal pricing windows, and inventory health. Stale inventory alerts with AI recommendations. Data-driven selling decisions at your fingertips.",
+        tags: ["New Feature", "Analytics", "Seller Tools"],
+        version: "v1.7.3"
+    },
+    {
+        date: "January 15, 2025",
+        title: "Auto-Relist Rules & Inventory Automation",
+        description: "Set it and forget it. Create automation rules that automatically reduce prices, mark as quick sale, or refresh listings based on days listed, views, or stale risk scores. Your inventory stays fresh and competitive without manual work. Perfect for sellers with large inventories who want to maximize sales velocity.",
+        tags: ["New Feature", "Automation", "Seller Tools"],
+        version: "v1.7.0"
+    },
+    {
+        date: "January 14, 2025",
+        title: "Buyer Agent - AI Shopping Assistant",
+        description: "Your personal AI shopping agent that learns your preferences and hunts for deals. Gets price drop alerts, bundle recommendations, and personalized suggestions. Learns from your purchases and feedback. Automatically matches listings to your collection goals and budget. Let AI do the hunting while you focus on collecting.",
+        tags: ["New Feature", "AI", "Buyer Tools"],
+        version: "v1.6.8"
+    },
+    {
+        date: "January 13, 2025",
+        title: "Admin Live Stats & Real-Time Monitoring",
+        description: "Real-time platform monitoring for admins. See active users, current transactions, revenue streams, and system health live. Fraud detection dashboard, moderation queue management, and dispute SLA tracking. Complete visibility into platform operations with actionable insights.",
+        tags: ["New Feature", "Admin", "Analytics"],
+        version: "v1.6.5"
+    },
+    {
+        date: "January 12, 2025",
+        title: "Seller Profile Pages & Public Storefronts",
+        description: "Every seller gets a beautiful public profile page showcasing their listings, reviews, reputation score, and seller badges. Customize your bio, social links, and storefront appearance. Build your brand and attract repeat buyers. Your profile is your storefront - make it shine.",
+        tags: ["New Feature", "Seller Tools", "Profile"],
+        version: "v1.6.3"
+    },
+    {
+        date: "January 11, 2025",
+        title: "Video Listings - Show Card Condition in Motion",
+        description: "Upload video to showcase your cards like never before. Demonstrate holographic effects, show corners and edges, rotate for texture visibility. Video listings get more views and higher conversion rates. Buyers see exactly what they're getting. Your listings stand out with motion.",
+        tags: ["New Feature", "Media", "Seller Tools"],
+        version: "v1.6.0"
+    },
+    {
+        date: "January 10, 2025",
+        title: "Price Drop Alerts & Saved Searches",
+        description: "Never miss a deal. Save searches with custom filters and get instant notifications when matching items are listed or prices drop. Set price alerts for specific cards, watch entire sets, and let 6Seven notify you the moment your grail appears. Your collection goals, automated.",
+        tags: ["New Feature", "Notifications", "Buyer Tools"],
+        version: "v1.5.8"
+    },
+    {
+        date: "January 9, 2025",
+        title: "API Key Management for Developers",
+        description: "Generate and manage API keys for programmatic access to 6Seven. Perfect for developers building tools, automation scripts, or integrations. Full MCP protocol support for AI agents. Rate limiting, usage monitoring, and scope-based permissions. Build on top of 6Seven's infrastructure.",
+        tags: ["New Feature", "Developer", "API"],
+        version: "v1.5.5"
+    },
+    {
+        date: "January 8, 2025",
+        title: "Seller Verification & Badge System",
+        description: "Build trust with verified seller status. Complete email, phone, ID, and business verification. Earn badges for fast shipping, high ratings, and volume sales. Your verification level and badges are prominently displayed, helping buyers shop with confidence. Verified sellers get priority in search results.",
+        tags: ["New Feature", "Trust & Safety", "Seller Tools"],
+        version: "v1.5.3"
+    },
+    {
+        date: "January 7, 2025",
+        title: "Multi-Variant Listings - One Listing, Multiple Conditions",
+        description: "List multiple conditions and quantities of the same card in a single listing. Buyers choose their preferred condition with individual pricing and dedicated photos. Streamlines inventory management for sellers with multiple copies. One listing, infinite possibilities.",
+        tags: ["New Feature", "Seller Tools", "UX"],
+        version: "v1.5.0"
+    },
+    {
         date: "November 25, 2025",
         title: "AI Cloud Platform Integration",
         description: "Introducing seamless AI capabilities powered by our new AI Cloud Platform (ACP). Access to advanced models including GPT-5, Gemini 2.5 Pro, and Gemini Flash for instant price suggestions, smart auto-listing, and trade valuation. No API keys required - all AI features are plug-and-play with usage-based pricing.",
@@ -193,7 +326,7 @@ const Changelog = () => {
         <div className="min-h-screen bg-background text-foreground">
             <SEO
                 title="Changelog - 6Seven"
-                description="Stay up to date with the latest features, improvements, and releases from the 6Seven team."
+                description="See how 6Seven is revolutionizing trading card marketplaces. AI-powered features, automated shipping, wallet payments, trade systems, and more. We ship new capabilities every week - watch us build the future."
             />
             <Navigation />
 
@@ -202,7 +335,11 @@ const Changelog = () => {
                     {/* Header */}
                     <div className="mb-12 pb-8 border-b border-border">
                         <h1 className="text-3xl md:text-4xl font-bold mb-3 tracking-tight">Changelog</h1>
-                        <p className="text-base text-muted-foreground">The latest updates and improvements to 6Seven.</p>
+                        <p className="text-base text-muted-foreground max-w-2xl">
+                            Watch 6Seven evolve in real-time. We ship new features, AI capabilities, and platform improvements every week. 
+                            From AI-powered listing tools to automated shipping, from wallet payments to trade systems - see what's new 
+                            and what's coming next. This is more than a changelog; it's the story of building the future of trading card marketplaces.
+                        </p>
                     </div>
 
                     {/* Changelog Entries */}
