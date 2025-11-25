@@ -28,7 +28,7 @@ serve(async (req) => {
     const itemsList = items.map(item => `<li>${item.title} - £${item.price}</li>`).join('');
 
     const emailResponse = await resend.emails.send({
-      from: "Orders <onboarding@resend.dev>",
+      from: "6seven.io Orders <orders@6seven.io>",
       to: [buyerEmail],
       subject: `Your order #${orderId.slice(0, 8)} has been shipped! 📦`,
       html: `
