@@ -822,6 +822,7 @@ export type Database = {
       }
       listings: {
         Row: {
+          accepts_offers: boolean
           ai_answer_engines_enabled: boolean | null
           ai_confidence: Json | null
           ambitious_price: number | null
@@ -877,6 +878,7 @@ export type Database = {
           views: number | null
         }
         Insert: {
+          accepts_offers?: boolean
           ai_answer_engines_enabled?: boolean | null
           ai_confidence?: Json | null
           ambitious_price?: number | null
@@ -932,6 +934,7 @@ export type Database = {
           views?: number | null
         }
         Update: {
+          accepts_offers?: boolean
           ai_answer_engines_enabled?: boolean | null
           ai_confidence?: Json | null
           ambitious_price?: number | null
