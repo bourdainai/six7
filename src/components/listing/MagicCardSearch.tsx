@@ -107,11 +107,11 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
         // Full number search with slash: "167/190"
         const normalizedInput = trimmedQuery.replace(/\s/g, "");
         const [numPart, totalPart] = normalizedInput.split('/');
-        
+
         logger.debug("📊 Parsed:", { numPart, totalPart, normalizedInput });
-        
+
         const queries = [];
-        
+
         // Search display_number with full format (e.g., "167/190")
         queries.push(
           supabase
@@ -120,11 +120,11 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
             .eq("display_number", normalizedInput)
             .limit(12)
         );
-        
+
         // If we have both parts, search by number + printed_total
         if (numPart && totalPart) {
           const totalNum = parseInt(totalPart);
-          
+
           // Try exact number match with printed_total
           queries.push(
             supabase
@@ -134,7 +134,7 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
               .eq("printed_total", totalNum)
               .limit(12)
           );
-          
+
           // Try with leading zeros (001, 002, etc.)
           const paddedNumber = numPart.padStart(3, '0');
           queries.push(
@@ -145,7 +145,7 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
               .eq("printed_total", totalNum)
               .limit(12)
           );
-          
+
           // Also try the full padded format
           const paddedFull = paddedNumber + '/' + totalPart;
           queries.push(
@@ -156,26 +156,21 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
               .limit(12)
           );
         }
-        
+
         // Execute searches
-        console.log("🔎 Executing", queries.length, "queries");
         const results = await Promise.all(queries);
-        
-        // Log each result
-        results.forEach((r, i) => {
-          console.log(`Query ${i}:`, r.data?.length || 0, "results", r.error || "");
-        });
-        
+
+
+
         const allCards = results.flatMap(r => r.data || []);
-        
+
         // Remove duplicates by card_id
         const uniqueCards = Array.from(
           new Map(allCards.map(card => [card.card_id, card])).values()
         );
-        
+
         dbCards = uniqueCards.slice(0, 12);
         error = results.find(r => r.error)?.error;
-        console.log("🎯 Full number search:", dbCards?.length || 0, "cards found");
       } else if (/^\d+$/.test(trimmedQuery)) {
         // Partial number search: "88"
         const result = await supabase
@@ -183,10 +178,9 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
           .select("*")
           .eq("number", trimmedQuery)
           .limit(12);
-        
+
         dbCards = result.data;
         error = result.error;
-        console.log("🔢 Number search:", dbCards?.length || 0, "cards found");
       } else {
         // Name search globally
         const result = await supabase
@@ -199,68 +193,67 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
           .limit(12);
         dbCards = result.data;
         error = result.error;
-        console.log("📝 Name search:", dbCards?.length || 0, "cards found");
       }
 
       if (error) throw error;
 
       // Transform database results to match PokemonCard interface
       const transformedCards: PokemonCard[] = (dbCards || []).map(card => {
-      const images = card.images as any;
-      const tcgplayerPrices = card.tcgplayer_prices as any;
-      const cardmarketPrices = card.cardmarket_prices as any;
-      const displayNumber = (card as any).display_number || card.number || '';
-      const metadata = card.metadata as any;
+        const images = card.images as Record<string, unknown>;
+        const tcgplayerPrices = card.tcgplayer_prices as Record<string, unknown>;
+        const cardmarketPrices = card.cardmarket_prices as Record<string, unknown>;
+        const displayNumber = (card as Record<string, unknown>).display_number as string || card.number || '';
+        const metadata = card.metadata as Record<string, unknown>;
 
-      // Normalize TCGdex image URLs
-      let smallImage: string | undefined;
-      let largeImage: string | undefined;
+        // Normalize TCGdex image URLs
+        let smallImage: string | undefined;
+        let largeImage: string | undefined;
 
-      if (images) {
-        const baseUrl =
-          images.small ||
-          images.large ||
-          images.tcgdex ||
-          images.base ||
-          null;
+        if (images) {
+          const baseUrl =
+            images.small ||
+            images.large ||
+            images.tcgdex ||
+            images.base ||
+            null;
 
-        if (typeof baseUrl === "string") {
-          if (/\.(png|webp|jpg|jpeg)$/i.test(baseUrl)) {
-            smallImage = baseUrl;
-            largeImage = baseUrl;
-          } else {
-            smallImage = `${baseUrl}/low.webp`;
-            largeImage = `${baseUrl}/high.webp`;
+          if (typeof baseUrl === "string") {
+            if (/\.(png|webp|jpg|jpeg)$/i.test(baseUrl)) {
+              smallImage = baseUrl;
+              largeImage = baseUrl;
+            } else {
+              smallImage = `${baseUrl}/low.webp`;
+              largeImage = `${baseUrl}/high.webp`;
+            }
           }
         }
-      }
 
-      return {
-        id: card.card_id,
-        name: card.name,
-        number: displayNumber,
-        rarity: card.rarity || undefined,
-        artist: card.artist || undefined,
-        set: {
-          id: card.set_code || '',
-          name: card.set_name,
-          ptcgoCode: card.set_code || undefined,
-        },
-        tcgplayer: tcgplayerPrices ? {
-          prices: tcgplayerPrices
-        } : undefined,
-        cardmarket: cardmarketPrices ? {
-          prices: cardmarketPrices
-        } : undefined,
-        images: smallImage || largeImage ? {
-          large: largeImage || smallImage,
-          small: smallImage || largeImage
-        } : undefined,
-        metadata: metadata ? {
-          image_ok: metadata.image_ok,
-          requires_user_upload: metadata.requires_user_upload
-        } : undefined
-      };
+        return {
+          id: card.card_id,
+          name: card.name,
+          number: displayNumber,
+          rarity: card.rarity || undefined,
+          artist: card.artist || undefined,
+          set: {
+            id: card.set_code || '',
+            name: card.set_name,
+            ptcgoCode: card.set_code || undefined,
+          },
+          tcgplayer: tcgplayerPrices ? {
+            prices: tcgplayerPrices
+          } : undefined,
+          cardmarket: cardmarketPrices ? {
+            prices: cardmarketPrices
+          } : undefined,
+          images: smallImage || largeImage ? {
+            large: largeImage || smallImage,
+            small: smallImage || largeImage
+          } : undefined,
+          metadata: metadata ? {
+            image_ok: metadata.image_ok,
+            requires_user_upload: metadata.requires_user_upload
+          } : undefined
+        };
       });
 
       // Deduplicate by (set_code, number), keeping the card with the highest score
@@ -276,8 +269,8 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
       );
 
       setResults(dedupedCards);
-      } catch (error) {
-        logger.error("Card search error:", error);
+    } catch (error) {
+      logger.error("Card search error:", error);
     } finally {
       setIsSearching(false);
     }
@@ -285,15 +278,15 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
 
   const handleSelect = (card: PokemonCard) => {
     let marketPrice = null;
-    
+
     if (card.tcgplayer?.prices) {
       const prices = card.tcgplayer.prices;
-      marketPrice = prices.holofoil?.market || 
-                   prices.reverseHolofoil?.market || 
-                   prices.normal?.market || 
-                   null;
+      marketPrice = prices.holofoil?.market ||
+        prices.reverseHolofoil?.market ||
+        prices.normal?.market ||
+        null;
     }
-    
+
     if (!marketPrice && card.cardmarket?.prices?.averageSellPrice) {
       marketPrice = card.cardmarket.prices.averageSellPrice;
     }
@@ -351,7 +344,7 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
             const imageHealthy = card.metadata?.image_ok !== false;
             const needsUpload = card.metadata?.requires_user_upload;
             const showImage = card.images?.small && imageHealthy;
-            
+
             return (
               <Card
                 key={card.id}
