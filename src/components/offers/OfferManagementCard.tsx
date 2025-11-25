@@ -8,6 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { useMarketplace } from "@/contexts/MarketplaceContext";
+import { logger } from "@/lib/logger";
 import type { Database } from "@/integrations/supabase/types";
 
 type OfferRow = Database["public"]["Tables"]["offers"]["Row"];
@@ -22,6 +24,7 @@ export const OfferManagementCard = ({ offer, userRole, onOfferUpdate }: OfferMan
   const [counterDialogOpen, setCounterDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const queryClient = useQueryClient();
+  const { currencySymbol } = useMarketplace();
 
   const handleAccept = async () => {
     setIsProcessing(true);
@@ -52,9 +55,7 @@ export const OfferManagementCard = ({ offer, userRole, onOfferUpdate }: OfferMan
       onOfferUpdate?.();
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to accept offer";
-      if (import.meta.env.DEV) {
-        console.error("Error accepting offer:", error);
-      }
+        logger.error("Error accepting offer:", error);
         toast.error(message);
     } finally {
       setIsProcessing(false);
@@ -90,9 +91,7 @@ export const OfferManagementCard = ({ offer, userRole, onOfferUpdate }: OfferMan
       onOfferUpdate?.();
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to reject offer";
-      if (import.meta.env.DEV) {
-        console.error("Error rejecting offer:", error);
-      }
+        logger.error("Error rejecting offer:", error);
         toast.error(message);
     } finally {
       setIsProcessing(false);
@@ -124,7 +123,7 @@ export const OfferManagementCard = ({ offer, userRole, onOfferUpdate }: OfferMan
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg">
-              £{Number(offer.amount).toFixed(2)}
+              {currencySymbol}{Number(offer.amount).toFixed(2)}
             </CardTitle>
             {getStatusBadge(offer.status)}
           </div>
