@@ -4,6 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Wallet, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { CreditBalance } from "@/components/wallet/CreditBalance";
+import { useMarketplace } from "@/contexts/MarketplaceContext";
 
 interface BalanceCardsProps {
   balance: {
@@ -16,6 +17,7 @@ interface BalanceCardsProps {
 
 export const BalanceCards = ({ balance, isLoading }: BalanceCardsProps) => {
   const navigate = useNavigate();
+  const { currencySymbol } = useMarketplace();
 
   if (isLoading || !balance) {
     return (
@@ -59,8 +61,7 @@ export const BalanceCards = ({ balance, isLoading }: BalanceCardsProps) => {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-light tracking-tight">
-            {balance.currency === "GBP" ? "£" : balance.currency || "£"}
-            {(balance.available_balance || 0).toFixed(2)}
+            {currencySymbol}{(balance.available_balance || 0).toFixed(2)}
           </div>
           <p className="text-xs text-muted-foreground mt-1 font-normal">Ready to withdraw</p>
           <Button
@@ -81,8 +82,7 @@ export const BalanceCards = ({ balance, isLoading }: BalanceCardsProps) => {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-light tracking-tight">
-            {balance.currency === "GBP" ? "£" : balance.currency || "£"}
-            {(balance.pending_balance || 0).toFixed(2)}
+            {currencySymbol}{(balance.pending_balance || 0).toFixed(2)}
           </div>
           <p className="text-xs text-muted-foreground mt-1 font-normal">Processing</p>
           <Button
