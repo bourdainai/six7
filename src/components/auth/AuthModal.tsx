@@ -13,6 +13,8 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "./AuthProvider";
 import { Loader2, ArrowRight } from "lucide-react";
 import { BuyerOnboarding } from "@/components/BuyerOnboarding";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface AuthModalProps {
   open: boolean;
@@ -22,6 +24,7 @@ interface AuthModalProps {
 
 export const AuthModal = ({ open, onOpenChange, defaultMode = "signin" }: AuthModalProps) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [mode, setMode] = useState<"signin" | "signup">(defaultMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,6 +32,7 @@ export const AuthModal = ({ open, onOpenChange, defaultMode = "signin" }: AuthMo
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showMarketplaceSelection, setShowMarketplaceSelection] = useState(false);
   const [showListingOption, setShowListingOption] = useState(false);
 
   const { signIn, signUp } = useAuth();
@@ -41,8 +45,7 @@ export const AuthModal = ({ open, onOpenChange, defaultMode = "signin" }: AuthMo
     try {
       if (mode === "signup") {
         await signUp(email, password, fullName);
-        // Note: Supabase automatically sends verification email on signup
-        setShowListingOption(true); // Show option to list or do onboarding
+        setShowMarketplaceSelection(true);
       } else {
         await signIn(email, password);
         onOpenChange(false);
@@ -53,6 +56,34 @@ export const AuthModal = ({ open, onOpenChange, defaultMode = "signin" }: AuthMo
       } catch (err) {
         const message = err instanceof Error ? err.message : "An error occurred";
         setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMarketplaceSelection = async (marketplace: 'UK' | 'US') => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          marketplace,
+          country: marketplace === 'US' ? 'US' : 'GB',
+          preferred_currency: marketplace === 'US' ? 'USD' : 'GBP',
+        })
+        .eq('id', (await supabase.auth.getUser()).data.user?.id);
+
+      if (error) throw error;
+
+      localStorage.setItem('marketplace', marketplace);
+      setShowMarketplaceSelection(false);
+      setShowListingOption(true);
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Failed to set marketplace. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -81,6 +112,47 @@ export const AuthModal = ({ open, onOpenChange, defaultMode = "signin" }: AuthMo
 
   if (showOnboarding) {
     return <BuyerOnboarding onComplete={handleOnboardingComplete} onSkip={handleSkipOnboarding} />;
+  }
+
+  if (showMarketplaceSelection) {
+    return (
+      <Dialog open={true} onOpenChange={() => {}}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Select Your Market</DialogTitle>
+            <DialogDescription>
+              Choose where you'll buy and sell. This determines your marketplace currency and listings.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 mt-6">
+            <Button
+              onClick={() => handleMarketplaceSelection('UK')}
+              disabled={loading}
+              className="w-full h-20 text-lg justify-start gap-4"
+              variant="outline"
+            >
+              <span className="text-4xl">🇬🇧</span>
+              <div className="text-left">
+                <div className="font-semibold">United Kingdom</div>
+                <div className="text-sm text-muted-foreground">Buy and sell in £ (GBP)</div>
+              </div>
+            </Button>
+            <Button
+              onClick={() => handleMarketplaceSelection('US')}
+              disabled={loading}
+              className="w-full h-20 text-lg justify-start gap-4"
+              variant="outline"
+            >
+              <span className="text-4xl">🇺🇸</span>
+              <div className="text-left">
+                <div className="font-semibold">United States</div>
+                <div className="text-sm text-muted-foreground">Buy and sell in $ (USD)</div>
+              </div>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
   }
 
   if (showListingOption) {

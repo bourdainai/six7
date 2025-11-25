@@ -30,10 +30,19 @@ export const formatForDisplay = (value: string | null | undefined): string => {
  * Formats currency values
  */
 export const formatCurrency = (amount: number, currency: string = 'GBP'): string => {
-  const formatter = new Intl.NumberFormat('en-GB', {
+  const locale = currency === 'USD' ? 'en-US' : 'en-GB';
+  const formatter = new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: currency,
   });
   return formatter.format(amount);
+};
+
+/**
+ * Formats currency for marketplace display
+ */
+export const formatMarketplaceCurrency = (amount: number, marketplace: 'UK' | 'US'): string => {
+  const currency = marketplace === 'US' ? 'USD' : 'GBP';
+  return formatCurrency(amount, currency);
 };
 

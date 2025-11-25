@@ -12,8 +12,10 @@ import { SEO } from "@/components/SEO";
 import { useLocation } from "react-router-dom";
 import { Search } from "lucide-react";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
+import { useMarketplace } from "@/contexts/MarketplaceContext";
 
 const Browse = () => {
+  const { marketplace, setMarketplace } = useMarketplace();
   const [filters, setFilters] = useState<FilterState>({
     search: "",
     category: "",
@@ -42,7 +44,7 @@ const Browse = () => {
   const itemsPerPage = 24;
 
   const { data: listings, isLoading, error, refetch } = useQuery({
-    queryKey: ["active-listings", page, JSON.stringify(filters), sortBy],
+    queryKey: ["active-listings", page, JSON.stringify(filters), sortBy, marketplace],
     refetchOnMount: 'always',
     staleTime: 0,
     networkMode: 'always',
@@ -50,7 +52,7 @@ const Browse = () => {
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
     queryFn: async () => {
       console.log("🔍 [Browse] Starting query with filters:", filters);
-      console.log("🔍 [Browse] Page:", page, "Sort:", sortBy);
+      console.log("🔍 [Browse] Page:", page, "Sort:", sortBy, "Marketplace:", marketplace);
       
       try {
         // Health check: Verify Supabase connection
@@ -70,7 +72,8 @@ const Browse = () => {
             *,
             images:listing_images(image_url, display_order)
           `)
-          .eq("status", "active");
+          .eq("status", "active")
+          .eq("marketplace", marketplace);
 
         // Server-side filtering
         if (filters.category) {
@@ -245,6 +248,30 @@ const Browse = () => {
       />
       
       <div className="mb-8 space-y-6">
+        {/* Marketplace Toggle */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-0 flex justify-end">
+          <div className="inline-flex items-center gap-2 bg-card border rounded-lg p-1">
+            <Button
+              variant={marketplace === 'UK' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setMarketplace('UK')}
+              className="gap-2"
+            >
+              <span className="text-lg">🇬🇧</span>
+              <span className="hidden sm:inline">UK (£)</span>
+            </Button>
+            <Button
+              variant={marketplace === 'US' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setMarketplace('US')}
+              className="gap-2"
+            >
+              <span className="text-lg">🇺🇸</span>
+              <span className="hidden sm:inline">US ($)</span>
+            </Button>
+          </div>
+        </div>
+
         {/* Magical Search Bar */}
         <div className="pt-4">
           <SearchFilters 

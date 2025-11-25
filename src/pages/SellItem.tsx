@@ -24,6 +24,7 @@ import { MagicCardSearch, type MagicCardData } from "@/components/listing/MagicC
 import { AIAnswerEnginesToggle } from "@/components/listings/AIAnswerEnginesToggle";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useShippingCarriers } from "@/hooks/useShippingCarriers";
+import { useMarketplace } from "@/contexts/MarketplaceContext";
 
 type ConditionType = Database["public"]["Enums"]["condition_type"];
 type ListingInsert = Database["public"]["Tables"]["listings"]["Insert"];
@@ -89,6 +90,7 @@ const SellItem = () => {
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
   const { isVerified: emailVerified } = useEmailVerification();
+  const { marketplace, currencySymbol } = useMarketplace();
 
   // State
   const [images, setImages] = useState<string[]>([]);
@@ -654,6 +656,8 @@ const SellItem = () => {
         category: listingData.category,
         subcategory: isMultiCard ? "Multi-Card Bundle" : (listingData.subcategory || null),
         has_variants: isMultiCard,
+        marketplace: marketplace,
+        currency: marketplace === 'US' ? 'USD' : 'GBP',
 
         // Bundle pricing fields
         bundle_type: isMultiCard 
