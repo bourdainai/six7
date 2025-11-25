@@ -4,193 +4,193 @@
         xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
         http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
   <url>
-    <loc>https://6seven.ai/</loc>
+    <loc>https://6seven.io/</loc>
     <lastmod>2025-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://6seven.ai/sell</loc>
+    <loc>https://6seven.io/sell</loc>
     <lastmod>2025-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://6seven.ai/browse</loc>
+    <loc>https://6seven.io/browse</loc>
     <lastmod>2025-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://6seven.ai/orders</loc>
+    <loc>https://6seven.io/orders</loc>
     <lastmod>2025-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://6seven.ai/messages</loc>
+    <loc>https://6seven.io/messages</loc>
     <lastmod>2025-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://6seven.ai/membership</loc>
+    <loc>https://6seven.io/membership</loc>
     <lastmod>2025-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://6seven.ai/saved</loc>
+    <loc>https://6seven.io/saved</loc>
     <lastmod>2025-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://6seven.ai/bundles</loc>
+    <loc>https://6seven.io/bundles</loc>
     <lastmod>2025-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://6seven.ai/dashboard/seller</loc>
+    <loc>https://6seven.io/dashboard/seller</loc>
     <lastmod>2025-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://6seven.ai/admin</loc>
+    <loc>https://6seven.io/admin</loc>
     <lastmod>2025-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://6seven.ai/admin/analytics</loc>
+    <loc>https://6seven.io/admin/analytics</loc>
     <lastmod>2025-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://6seven.ai/admin/live</loc>
+    <loc>https://6seven.io/admin/live</loc>
     <lastmod>2025-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://6seven.ai/admin/disputes</loc>
+    <loc>https://6seven.io/admin/disputes</loc>
     <lastmod>2025-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://6seven.ai/admin/restore-cards</loc>
+    <loc>https://6seven.io/admin/restore-cards</loc>
     <lastmod>2025-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://6seven.ai/admin/shipping</loc>
+    <loc>https://6seven.io/admin/shipping</loc>
     <lastmod>2025-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://6seven.ai/admin/moderation</loc>
+    <loc>https://6seven.io/admin/moderation</loc>
     <lastmod>2025-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://6seven.ai/admin/fraud</loc>
+    <loc>https://6seven.io/admin/fraud</loc>
     <lastmod>2025-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://6seven.ai/terms</loc>
+    <loc>https://6seven.io/terms</loc>
     <lastmod>2025-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://6seven.ai/privacy</loc>
+    <loc>https://6seven.io/privacy</loc>
     <lastmod>2025-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://6seven.ai/returns</loc>
+    <loc>https://6seven.io/returns</loc>
     <lastmod>2025-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://6seven.ai/cookies</loc>
+    <loc>https://6seven.io/cookies</loc>
     <lastmod>2025-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://6seven.ai/help</loc>
+    <loc>https://6seven.io/help</loc>
     <lastmod>2025-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://6seven.ai/settings/notifications</loc>
+    <loc>https://6seven.io/settings/notifications</loc>
     <lastmod>2025-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://6seven.ai/settings/api-keys</loc>
+    <loc>https://6seven.io/settings/api-keys</loc>
     <lastmod>2025-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://6seven.ai/docs/mcp</loc>
+    <loc>https://6seven.io/docs/mcp</loc>
     <lastmod>2025-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://6seven.ai/wallet</loc>
+    <loc>https://6seven.io/wallet</loc>
     <lastmod>2025-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://6seven.ai/trade-offers</loc>
+    <loc>https://6seven.io/trade-offers</loc>
     <lastmod>2025-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://6seven.ai/changelog</loc>
+    <loc>https://6seven.io/changelog</loc>
     <lastmod>2025-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://6seven.ai/listing/123</loc>
+    <loc>https://6seven.io/listing/123</loc>
     <lastmod>2025-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://6seven.ai/checkout/123</loc>
+    <loc>https://6seven.io/checkout/123</loc>
     <lastmod>2025-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://6seven.ai/bundle/123</loc>
+    <loc>https://6seven.io/bundle/123</loc>
     <lastmod>2025-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://6seven.ai/seller/123</loc>
+    <loc>https://6seven.io/seller/123</loc>
     <lastmod>2025-11-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
