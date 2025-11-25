@@ -10,7 +10,8 @@ import { Camera, Loader2, ZoomIn, ZoomOut } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import Cropper from "react-easy-crop";
 import getCroppedImg from "@/lib/cropImage";
-
+type Area = { x: number; y: number; width: number; height: number; };
+type CroppedAreaPixels = { x: number; y: number; width: number; height: number; };
 interface AvatarUploadProps {
   currentAvatarUrl?: string | null;
   userName?: string | null;
@@ -23,10 +24,10 @@ export function AvatarUpload({ currentAvatarUrl, userName, onUploadComplete }: A
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<CroppedAreaPixels | null>(null);
   const [showCropper, setShowCropper] = useState(false);
 
-  const onCropComplete = useCallback((croppedArea: any, croppedAreaPixels: any) => {
+  const onCropComplete = useCallback((croppedArea: Area, croppedAreaPixels: CroppedAreaPixels) => {
     setCroppedAreaPixels(croppedAreaPixels);
   }, []);
 
