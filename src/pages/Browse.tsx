@@ -248,13 +248,16 @@ const Browse = () => {
       />
       
       <div className="mb-8 space-y-6">
-        {/* Marketplace Toggle */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-0 flex justify-end">
+        {/* Marketplace Toggle - Fixed height to prevent shift */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-0 flex justify-end min-h-[40px]">
           <div className="inline-flex items-center gap-2 bg-card border rounded-lg p-1">
             <Button
               variant={marketplace === 'UK' ? 'default' : 'ghost'}
               size="sm"
-              onClick={() => setMarketplace('UK')}
+              onClick={() => {
+                setMarketplace('UK');
+                setPage(1); // Reset to page 1 when switching markets
+              }}
               className="gap-2"
             >
               <span className="text-lg">🇬🇧</span>
@@ -263,7 +266,10 @@ const Browse = () => {
             <Button
               variant={marketplace === 'US' ? 'default' : 'ghost'}
               size="sm"
-              onClick={() => setMarketplace('US')}
+              onClick={() => {
+                setMarketplace('US');
+                setPage(1); // Reset to page 1 when switching markets
+              }}
               className="gap-2"
             >
               <span className="text-lg">🇺🇸</span>
@@ -343,7 +349,7 @@ const Browse = () => {
           }}
         />
       ) : isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 min-h-[600px]">
           {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
             <ListingCardSkeleton key={i} />
           ))}

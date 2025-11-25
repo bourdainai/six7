@@ -7,6 +7,7 @@ import { formatCondition, formatStatus } from "@/lib/format";
 import { SellerReputation } from "@/components/seller/SellerReputation";
 import type { ListingImageSummary, ListingSummary } from "@/types/listings";
 import { generateListingUrl } from "@/lib/listing-url";
+import { useMarketplace } from "@/contexts/MarketplaceContext";
 
 interface ListingCardProps {
   listing: ListingSummary;
@@ -43,6 +44,7 @@ const getFirstImage = (listing: ListingSummary): string | null => {
 export const ListingCard = React.memo(
   ({ listing, onSaveClick, isSaved = false, isSaving = false, showSaveButton = true, className = "" }: ListingCardProps) => {
     const navigate = useNavigate();
+    const { currencySymbol } = useMarketplace();
     
     const listingUrl = generateListingUrl(
       listing.id,
@@ -149,14 +151,14 @@ export const ListingCard = React.memo(
             <div className="flex items-baseline gap-2">
             <p className="text-base font-normal text-foreground tracking-tight">
               {hasVariants ? (
-                <>From £{Number(listing.seller_price).toFixed(2)}</>
+                <>From {currencySymbol}{Number(listing.seller_price).toFixed(2)}</>
               ) : (
-                <>£{Number(listing.seller_price).toFixed(2)}</>
+                <>{currencySymbol}{Number(listing.seller_price).toFixed(2)}</>
               )}
             </p>
             {listing.original_rrp && (
               <p className="text-xs text-muted-foreground line-through font-normal">
-                £{Number(listing.original_rrp).toFixed(2)}
+                {currencySymbol}{Number(listing.original_rrp).toFixed(2)}
               </p>
             )}
           </div>
