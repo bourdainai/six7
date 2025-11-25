@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeftRight, ArrowRight, ArrowLeft, CheckCircle, XCircle, BarChart3 } from "lucide-react";
 import { TradeErrorBoundary } from "@/components/trade/TradeErrorBoundary";
+import { SkeletonTradeCard } from "@/components/ui/skeleton-card";
 
 import type { Database } from "@/integrations/supabase/types";
 
@@ -50,8 +51,9 @@ export default function TradeOffersPage() {
 
         {isLoading ? (
           <div className="space-y-4">
-            <Skeleton className="h-64 w-full" />
-            <Skeleton className="h-64 w-full" />
+            {[...Array(3)].map((_, i) => (
+              <SkeletonTradeCard key={i} />
+            ))}
           </div>
         ) : (
           <Tabs defaultValue="incoming" className="space-y-6">

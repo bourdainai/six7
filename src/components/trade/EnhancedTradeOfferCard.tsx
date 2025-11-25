@@ -9,6 +9,7 @@ import { FairnessMeter } from "./FairnessMeter";
 import { CounterOfferDialog } from "./CounterOfferDialog";
 import { TradeChat } from "./TradeChat";
 import { supabase } from "@/integrations/supabase/client";
+import { useMarketplace } from "@/contexts/MarketplaceContext";
 import type { Database } from "@/integrations/supabase/types";
 
 type TradeOfferWithDetails = Database["public"]["Tables"]["trade_offers"]["Row"] & {
@@ -26,6 +27,7 @@ interface EnhancedTradeOfferCardProps {
 
 export function EnhancedTradeOfferCard({ offer, userRole, onCounter, onViewDetails }: EnhancedTradeOfferCardProps) {
   const { acceptOffer, rejectOffer } = useTradeOffers();
+  const { currencySymbol } = useMarketplace();
   const [showCounterDialog, setShowCounterDialog] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>('');
@@ -92,19 +94,19 @@ export function EnhancedTradeOfferCard({ offer, userRole, onCounter, onViewDetai
                 <div className="flex-1">
                   <p className="text-sm font-medium line-clamp-1">{item.title}</p>
                   <p className="text-xs text-muted-foreground">
-                    £{(offer.trade_item_valuations as any[])?.[idx]?.valuation?.toFixed(2) || item.value?.toFixed(2)}
+                    {currencySymbol}{(offer.trade_item_valuations as any[])?.[idx]?.valuation?.toFixed(2) || item.value?.toFixed(2)}
                   </p>
                 </div>
               </div>
             ))}
             {offer.cash_amount && offer.cash_amount > 0 && (
               <div className="p-2 border rounded">
-                <p className="text-sm font-medium">Cash: £{offer.cash_amount.toFixed(2)}</p>
+                <p className="text-sm font-medium">Cash: {currencySymbol}{offer.cash_amount.toFixed(2)}</p>
               </div>
             )}
             <div className="pt-2 border-t">
               <p className="text-sm font-semibold">
-                Total: £{totalOfferedValue.toFixed(2)}
+                Total: {currencySymbol}{totalOfferedValue.toFixed(2)}
               </p>
             </div>
           </div>
@@ -121,7 +123,7 @@ export function EnhancedTradeOfferCard({ offer, userRole, onCounter, onViewDetai
                   {offer.target_listing.condition}
                 </p>
                 <p className="text-sm font-semibold mt-2">
-                  £{targetValue.toFixed(2)}
+                  {currencySymbol}{targetValue.toFixed(2)}
                 </p>
               </div>
             )}

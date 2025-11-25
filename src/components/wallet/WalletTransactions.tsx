@@ -3,12 +3,38 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { SkeletonTransactionRow } from "@/components/ui/skeleton-card";
+import { ErrorMessage } from "@/components/ui/error-message";
+import { useMarketplace } from "@/contexts/MarketplaceContext";
 
 export function WalletTransactions() {
   const { transactions, isLoading } = useWallet();
+  const { currencySymbol } = useMarketplace();
 
   if (isLoading) {
-    return <Skeleton className="h-[300px] w-full" />;
+    return (
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium">Recent Transactions</h3>
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead className="text-right">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {[...Array(5)].map((_, i) => (
+                <SkeletonTransactionRow key={i} />
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    );
   }
 
   const getStatusColor = (status: string) => {
@@ -48,7 +74,7 @@ export function WalletTransactions() {
                   <TableCell className="capitalize">{tx.type.replace('_', ' ')}</TableCell>
                   <TableCell>{tx.description || '-'}</TableCell>
                   <TableCell className={tx.amount > 0 ? "text-green-600 font-medium" : ""}>
-                    {tx.amount > 0 ? '+' : ''}£{Math.abs(tx.amount).toFixed(2)}
+                    {tx.amount > 0 ? '+' : ''}{currencySymbol}{Math.abs(tx.amount).toFixed(2)}
                   </TableCell>
                   <TableCell className="text-right">
                     <Badge variant={getStatusColor(tx.status) as "default" | "secondary" | "destructive" | "outline"}>
