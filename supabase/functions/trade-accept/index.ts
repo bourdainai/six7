@@ -1,10 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const acceptSchema = z.object({
+  offerId: z.string().uuid('Invalid offer ID format'),
+});
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -16,7 +21,8 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { offerId } = await req.json();
+    const body = await req.json();
+    const { offerId } = acceptSchema.parse(body);
     
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) throw new Error('Missing Authorization header');
@@ -37,40 +43,15 @@ serve(async (req) => {
       throw new Error('Not authorized to accept this offer');
     }
 
-    // Handle escrow if cash is involved
-    const updateData: any = { status: 'accepted' };
+    // Use transaction for atomic operations
+    const { error: txError } = await supabase.rpc('accept_trade_offer', {
+      p_offer_id: offerId,
+      p_cash_amount: offer.cash_amount || 0
+    });
 
-    if (offer.cash_amount && offer.cash_amount > 0) {
-      // Enable escrow for cash trades
-      updateData.escrow_enabled = true;
-      updateData.escrow_amount = offer.cash_amount;
-      console.log(`Escrow enabled for trade ${offerId}, amount: ${offer.cash_amount}`);
-    }
-
-    // Update Offer Status
-    const { error: updateError } = await supabase
-      .from('trade_offers')
-      .update(updateData)
-      .eq('id', offerId);
-
-    if (updateError) throw updateError;
-
-    // Create Orders / Lock Inventory
-    // 1. Mark target listing as sold
-    await supabase.from('listings').update({ status: 'sold' }).eq('id', offer.target_listing_id);
-
-    // 2. Mark trade items as sold (if they are listings in the system)
-    const tradeItems = offer.trade_items;
-    for (const item of tradeItems) {
-       if (item.listing_id) {
-         await supabase.from('listings').update({ status: 'sold' }).eq('id', item.listing_id);
-       }
-    }
-
-    // 3. Handle Cash Component (Create Payment Intent or Wallet Transfer)
-    if (offer.cash_amount > 0) {
-      // Logic to charge buyer
-      // For now, we assume this triggers a checkout flow or wallet deduction if pre-authorized
+    if (txError) {
+      console.error('Transaction error:', txError);
+      throw new Error('Failed to accept trade offer. Please try again.');
     }
 
     return new Response(

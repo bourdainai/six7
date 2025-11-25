@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeftRight, ArrowRight, ArrowLeft, CheckCircle, XCircle, BarChart3 } from "lucide-react";
+import { TradeErrorBoundary } from "@/components/trade/TradeErrorBoundary";
 
 import type { Database } from "@/integrations/supabase/types";
 
@@ -34,7 +35,8 @@ export default function TradeOffersPage() {
   const rejectedOffers = offers?.filter(o => o.status === 'rejected') || [];
 
   return (
-    <PageLayout>
+    <TradeErrorBoundary>
+      <PageLayout>
       <div className="container py-8 max-w-6xl">
         <div className="mb-8 space-y-2">
           <h1 className="text-3xl font-light text-foreground tracking-tight flex items-center gap-2">
@@ -147,6 +149,7 @@ export default function TradeOffersPage() {
         )}
       </div>
     </PageLayout>
+    </TradeErrorBoundary>
   );
 }
 

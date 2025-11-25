@@ -6,6 +6,7 @@ import { Wallet, ArrowUpFromLine, ArrowDownToLine } from "lucide-react";
 import { useState } from "react";
 import { WalletDeposit } from "./WalletDeposit";
 import { WalletWithdraw } from "./WalletWithdraw";
+import { WalletErrorBoundary } from "./WalletErrorBoundary";
 
 export function WalletBalance() {
   const { wallet, isLoading } = useWallet();
@@ -39,8 +40,13 @@ export function WalletBalance() {
         </CardContent>
       </Card>
 
-      <WalletDeposit open={isDepositOpen} onOpenChange={setIsDepositOpen} />
-      <WalletWithdraw open={isWithdrawOpen} onOpenChange={setIsWithdrawOpen} balance={wallet?.balance || 0} />
+      <WalletErrorBoundary onReset={() => setIsDepositOpen(false)}>
+        <WalletDeposit open={isDepositOpen} onOpenChange={setIsDepositOpen} />
+      </WalletErrorBoundary>
+      
+      <WalletErrorBoundary onReset={() => setIsWithdrawOpen(false)}>
+        <WalletWithdraw open={isWithdrawOpen} onOpenChange={setIsWithdrawOpen} balance={wallet?.balance || 0} />
+      </WalletErrorBoundary>
     </>
   );
 }
