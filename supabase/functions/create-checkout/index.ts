@@ -252,7 +252,9 @@ serve(async (req) => {
       throw new Error(`Failed to create order: ${orderError.message}`);
     }
 
-    // Create order item(s)
+    // Create order item(s) and RESERVE variants (don't mark as sold yet)
+    const reservationExpiry = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 minutes
+    
     if (purchaseType === 'bundle') {
       // Create order items for all bundle variants
       const orderItems = bundleVariants.map(v => ({
@@ -264,11 +266,14 @@ serve(async (req) => {
       
       await supabaseClient.from('order_items').insert(orderItems);
       
-      // Mark all bundle variants as sold
+      // RESERVE bundle variants instead of marking as sold
       const variantIds = bundleVariants.map(v => v.id);
       await supabaseClient
         .from('listing_variants')
-        .update({ is_sold: true, sold_at: new Date().toISOString() })
+        .update({ 
+          reserved_until: reservationExpiry,
+          reserved_by: user.id 
+        })
         .in('id', variantIds);
         
     } else if (variant) {
@@ -280,10 +285,13 @@ serve(async (req) => {
         price: itemPrice,
       });
       
-      // Mark variant as sold
+      // RESERVE variant instead of marking as sold
       await supabaseClient
         .from('listing_variants')
-        .update({ is_sold: true, sold_at: new Date().toISOString() })
+        .update({ 
+          reserved_until: reservationExpiry,
+          reserved_by: user.id 
+        })
         .eq('id', variant.id);
         
     } else {

@@ -64,17 +64,35 @@ serve(async (req) => {
               .update({ status: 'paid' })
               .eq('id', payment.order_id);
 
-            // Update listing status to sold
+            // Update listing status to sold AND mark variants as sold
             const { data: orderItems } = await supabaseAdmin
               .from('order_items')
-              .select('listing_id')
+              .select('listing_id, variant_id')
               .eq('order_id', payment.order_id);
 
             if (orderItems && orderItems.length > 0) {
+              // Mark listing as sold
               await supabaseAdmin
                 .from('listings')
                 .update({ status: 'sold' })
                 .eq('id', orderItems[0].listing_id);
+              
+              // Mark all variants in this order as sold (complete the reservation)
+              const variantIds = orderItems
+                .filter(item => item.variant_id)
+                .map(item => item.variant_id);
+              
+              if (variantIds.length > 0) {
+                await supabaseAdmin
+                  .from('listing_variants')
+                  .update({ 
+                    is_sold: true, 
+                    sold_at: new Date().toISOString(),
+                    reserved_until: null,
+                    reserved_by: null
+                  })
+                  .in('id', variantIds);
+              }
             }
 
             // Check if payout already exists to prevent duplicates
@@ -301,8 +319,94 @@ serve(async (req) => {
           .update({ status: 'failed' })
           .eq('stripe_payment_intent_id', paymentIntent.id);
 
+        // Release variant reservations on failed payment
+        const { data: payment } = await supabaseAdmin
+          .from('payments')
+          .select('order_id')
+          .eq('stripe_payment_intent_id', paymentIntent.id)
+          .single();
+
+        if (payment) {
+          const { data: orderItems } = await supabaseAdmin
+            .from('order_items')
+            .select('variant_id')
+            .eq('order_id', payment.order_id);
+
+          if (orderItems) {
+            const variantIds = orderItems
+              .filter(item => item.variant_id)
+              .map(item => item.variant_id);
+            
+            if (variantIds.length > 0) {
+              await supabaseAdmin
+                .from('listing_variants')
+                .update({ 
+                  reserved_until: null,
+                  reserved_by: null
+                })
+                .in('id', variantIds);
+            }
+          }
+        }
+
         console.log(`Payment failed for intent: ${paymentIntent.id}`);
         break;
+      }
+      
+      case 'payment_intent.succeeded': {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        
+        // Check if this is a wallet deposit
+        if (paymentIntent.metadata?.type === 'wallet_deposit') {
+          const depositId = paymentIntent.metadata.deposit_id;
+          const userId = paymentIntent.metadata.user_id;
+          const amount = Number(paymentIntent.amount) / 100; // Convert from pence to pounds
+          
+          if (depositId && userId) {
+            // Update deposit status
+            await supabaseAdmin
+              .from('wallet_deposits')
+              .update({ 
+                status: 'completed',
+                completed_at: new Date().toISOString(),
+                stripe_payment_intent_id: paymentIntent.id
+              })
+              .eq('id', depositId);
+            
+            // Update wallet balance
+            const { data: wallet } = await supabaseAdmin
+              .from('wallet_accounts')
+              .select('balance, pending_balance')
+              .eq('user_id', userId)
+              .single();
+            
+            if (wallet) {
+              await supabaseAdmin
+                .from('wallet_accounts')
+                .update({
+                  balance: (Number(wallet.balance) || 0) + amount,
+                  pending_balance: Math.max(0, (Number(wallet.pending_balance) || 0) - amount)
+                })
+                .eq('user_id', userId);
+              
+              // Create transaction record
+              await supabaseAdmin
+                .from('wallet_transactions')
+                .insert({
+                  wallet_id: userId,
+                  type: 'deposit',
+                  amount: amount,
+                  status: 'completed',
+                  description: 'Wallet deposit via card'
+                });
+            }
+            
+            console.log(`Wallet deposit completed: ${depositId} for user: ${userId}`);
+          }
+          break;
+        }
+        
+        // ... rest of existing payment_intent.succeeded handler
       }
 
       case 'transfer.failed':
