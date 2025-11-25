@@ -1,55 +1,49 @@
 const fs = require('fs');
 const path = require('path');
 
-// Simple list of static routes (could be generated dynamically)
+// Optimized sitemap with proper priorities and only public pages
 const routes = [
-    '/',
-    '/sell',
-    '/browse',
-    '/orders',
-    '/messages',
-    '/membership',
-    '/saved',
-    '/bundles',
-    '/dashboard/seller',
-    '/admin',
-    '/admin/analytics',
-    '/admin/live',
-    '/admin/disputes',
-    '/admin/restore-cards',
-    '/admin/shipping',
-    '/admin/moderation',
-    '/admin/fraud',
-    '/terms',
-    '/privacy',
-    '/returns',
-    '/cookies',
-    '/help',
-    '/settings/notifications',
-    '/settings/api-keys',
-    '/docs/mcp',
-    '/wallet',
-    '/trade-offers',
-    '/changelog',
+    // High priority public pages
+    { url: '/', priority: '1.0', changefreq: 'daily' },
+    { url: '/browse', priority: '0.9', changefreq: 'daily' },
+    { url: '/sell', priority: '0.8', changefreq: 'weekly' },
+
+    // Medium priority public pages
+    { url: '/bundles', priority: '0.7', changefreq: 'weekly' },
+    { url: '/help', priority: '0.7', changefreq: 'monthly' },
+    { url: '/changelog', priority: '0.6', changefreq: 'weekly' },
+
+    // Legal/Policy pages
+    { url: '/terms', priority: '0.3', changefreq: 'monthly' },
+    { url: '/privacy', priority: '0.3', changefreq: 'monthly' },
+    { url: '/returns', priority: '0.3', changefreq: 'monthly' },
+    { url: '/cookies', priority: '0.3', changefreq: 'monthly' },
 ];
+
+// Note: Removed auth-required pages (orders, messages, saved, dashboard, admin, settings, wallet, trade-offers)
+// Note: Removed placeholder dynamic routes with /123 - these should be generated from actual data
 
 const baseUrl = 'https://6seven.io';
 const today = new Date().toISOString().split('T')[0];
 
-let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"\n        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9\n        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">\n`;
+let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+`;
 
 routes.forEach(route => {
-    xml += `  <url>\n    <loc>${baseUrl}${route}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.5</priority>\n  </url>\n`;
-});
-
-// Add placeholder dynamic routes
-const dynamic = ['/listing/123', '/checkout/123', '/bundle/123', '/seller/123'];
-
-dynamic.forEach(route => {
-    xml += `  <url>\n    <loc>${baseUrl}${route}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.5</priority>\n  </url>\n`;
+    xml += `  <url>
+    <loc>${baseUrl}${route.url}</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>${route.changefreq}</changefreq>
+    <priority>${route.priority}</priority>
+  </url>
+`;
 });
 
 xml += '</urlset>';
 
 fs.writeFileSync(path.join(__dirname, '..', 'public', 'sitemap.xml'), xml, 'utf8');
-console.log('sitemap.xml generated');
+console.log(`✅ Sitemap generated with ${routes.length} optimized URLs`);
