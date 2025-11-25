@@ -5,6 +5,27 @@ import { Badge } from "@/components/ui/badge";
 
 const changelogData = [
     {
+        date: "November 25, 2025",
+        title: "Bulk Shipping Presets",
+        description: "Streamline your shipping workflow with saved presets. Define your most used package dimensions and weights (e.g., 'Small Bubble Mailer', 'Medium Box') and apply them instantly when generating bulk labels. Perfect for high-volume sellers shipping standard sizes.",
+        tags: ["New Feature", "Shipping", "Seller Tools"],
+        version: "v2.2.0"
+    },
+    {
+        date: "November 25, 2025",
+        title: "Advanced Shipping Analytics",
+        description: "New insights for platform administrators. Track carrier performance, delivery times, and shipping cost trends over time. Identify the most efficient carriers and optimize shipping routes for better margins and customer experience.",
+        tags: ["New Feature", "Admin", "Analytics"],
+        version: "v2.1.5"
+    },
+    {
+        date: "November 25, 2025",
+        title: "Admin Card Restoration Tools",
+        description: "Powerful new tools for database maintenance. Admins can now search, identify, and restore missing or corrupted card data from the TCGdex archive. Includes batch processing and automated image recovery to ensure the catalog remains complete and accurate.",
+        tags: ["New Feature", "Admin", "Database"],
+        version: "v2.1.0"
+    },
+    {
         date: "January 25, 2025",
         title: "6Seven Wallet - Instant Payments & Lower Fees",
         description: "Introducing the 6Seven Wallet system - a game-changer for both buyers and sellers. Deposit funds once and pay instantly for purchases with just 1% fees (vs 3% with cards). Sellers get instant settlements for trades, and buyers can split payments between wallet and card. Built-in credit system for refunds and promotions. Your money moves faster, fees stay lower.",
@@ -336,8 +357,8 @@ const Changelog = () => {
                     <div className="mb-12 pb-8 border-b border-border">
                         <h1 className="text-3xl md:text-4xl font-bold mb-3 tracking-tight">Changelog</h1>
                         <p className="text-base text-muted-foreground max-w-2xl">
-                            Watch 6Seven evolve in real-time. We ship new features, AI capabilities, and platform improvements every week. 
-                            From AI-powered listing tools to automated shipping, from wallet payments to trade systems - see what's new 
+                            Watch 6Seven evolve in real-time. We ship new features, AI capabilities, and platform improvements every week.
+                            From AI-powered listing tools to automated shipping, from wallet payments to trade systems - see what's new
                             and what's coming next. This is more than a changelog; it's the story of building the future of trading card marketplaces.
                         </p>
                     </div>
