@@ -27,6 +27,20 @@ const changelogData = [
     },
     {
         date: "November 24, 2025",
+        title: "Smart Trade System with AI Valuation",
+        description: "Revolutionary peer-to-peer trading platform that goes beyond traditional sales. Propose trades with any combination of cards and cash, powered by real-time AI fairness scoring. Our intelligent valuation engine analyzes market data to ensure equitable trades, while the fairness meter shows both parties exactly where the deal stands.",
+        tags: ["New Feature", "Trading", "AI"],
+        version: "v1.4.3"
+    },
+    {
+        date: "November 24, 2025",
+        title: "Trade Counter-Offers & Negotiations",
+        description: "Full negotiation workflow for trades with unlimited counter-offer rounds. Both parties can adjust card selections, cash amounts, and trade terms until reaching agreement. Real-time notifications keep all parties informed throughout the negotiation process.",
+        tags: ["New Feature", "Trading"],
+        version: "v1.4.3"
+    },
+    {
+        date: "November 24, 2025",
         title: "Enhanced Security & Rate Limiting",
         description: "Upgraded platform security with comprehensive rate limiting, API key management, and usage monitoring. New anti-fraud detection systems protect both buyers and sellers. All database functions now use secure search paths to prevent SQL injection attacks.",
         tags: ["Security", "Infrastructure"],
@@ -34,9 +48,9 @@ const changelogData = [
     },
     {
         date: "November 24, 2025",
-        title: "Seller Copilot Optimization",
-        description: "Seller Dashboard performance improvements with on-demand AI insights instead of auto-refresh. Manual refresh button for copilot suggestions and stale inventory alerts now use intelligent date-based logic. Reduced AI credit consumption by up to 70% while maintaining full functionality.",
-        tags: ["Enhancement", "Performance", "Seller Tools"],
+        title: "Seller Copilot with AI Insights",
+        description: "Your personal AI assistant for optimizing sales. Get instant recommendations on pricing adjustments, stale inventory alerts, photo quality improvements, and tag optimization. On-demand insights help you maximize visibility and sell faster without overwhelming you with notifications.",
+        tags: ["New Feature", "AI", "Seller Tools"],
         version: "v1.4.2"
     },
     {
@@ -48,9 +62,30 @@ const changelogData = [
     },
     {
         date: "November 23, 2025",
+        title: "Variant-Based Selling",
+        description: "List multiple conditions and quantities of the same card in one listing. Buyers can choose from Mint, Near Mint, Played conditions with individual pricing and dedicated photos for each variant. Streamlines inventory management for sellers with multiple copies.",
+        tags: ["New Feature", "Seller Tools"],
+        version: "v1.3.8"
+    },
+    {
+        date: "November 23, 2025",
+        title: "Smart Offer System",
+        description: "Enable offers on your listings and let buyers negotiate. Sellers can accept, decline, or counter any offer with custom pricing and messages. Full offer history tracking shows negotiation flow, with automatic expiration to keep your inbox clean.",
+        tags: ["New Feature", "Negotiation"],
+        version: "v1.3.5"
+    },
+    {
+        date: "November 23, 2025",
         title: "Advanced Search & Filtering",
         description: "Browse smarter with our new comprehensive filtering system. Filter by subcategory, rarity, set code, color, material, shipping options, and more. Find exactly what you're looking for with precision controls designed for serious collectors.",
         tags: ["Enhancement", "UX"],
+        version: "v1.3.0"
+    },
+    {
+        date: "November 23, 2025",
+        title: "Vibe-Based Search (AI-Powered)",
+        description: "Describe what you're looking for in natural language and let AI find it. Search by mood, theme, or aesthetic instead of just keywords. Our semantic search understands context and finds cards that match your vibe, even if you don't know the exact name.",
+        tags: ["New Feature", "AI", "Search"],
         version: "v1.3.0"
     },
     {
@@ -61,6 +96,34 @@ const changelogData = [
         version: "v1.3.0"
     },
     {
+        date: "November 22, 2025",
+        title: "Seller Reputation & Trust Score",
+        description: "Build your reputation with our comprehensive trust system. Earn points for fast shipping, accurate descriptions, and positive reviews. Your trust score is prominently displayed on your profile, helping buyers shop with confidence and rewarding reliable sellers.",
+        tags: ["New Feature", "Trust & Safety"],
+        version: "v1.2.8"
+    },
+    {
+        date: "November 22, 2025",
+        title: "Dispute Resolution Center",
+        description: "Built-in dispute management system for handling issues professionally. File disputes for non-delivery, item condition, or other concerns. AI-powered case analysis provides recommended resolutions, while admin review ensures fair outcomes for complex cases.",
+        tags: ["New Feature", "Trust & Safety"],
+        version: "v1.2.7"
+    },
+    {
+        date: "November 21, 2025",
+        title: "Direct Messaging System",
+        description: "Secure in-platform messaging between buyers and sellers. Ask questions, negotiate details, and share photos without leaving 6Seven. Real-time notifications, message threading, and conversation history keep everything organized.",
+        tags: ["New Feature", "Communication"],
+        version: "v1.2.5"
+    },
+    {
+        date: "November 21, 2025",
+        title: "Portfolio Tracker",
+        description: "Track your collection's value over time with automatic portfolio snapshots. Monitor total value, diversification score, and portfolio health. See which cards are appreciating and get insights on your top holdings. Perfect for serious collectors and investors.",
+        tags: ["New Feature", "Analytics"],
+        version: "v1.2.4"
+    },
+    {
         date: "November 20, 2025",
         title: "AI Listing Engine",
         description: "We've revolutionized how you list cards. Our new AI Listing Engine uses advanced computer vision to automatically identify your card, grade, and set from a single photo. It pre-fills all the details, making listing 10x faster.",
@@ -68,11 +131,60 @@ const changelogData = [
         version: "v1.2.0"
     },
     {
+        date: "November 20, 2025",
+        title: "Dynamic Price Suggestions",
+        description: "Get instant market-based pricing with our AI price suggestion engine. Analyzes recent sales, condition, rarity, and demand to recommend optimal pricing. Shows price ranges from conservative to ambitious, helping you price competitively while maximizing profit.",
+        tags: ["New Feature", "AI", "Pricing"],
+        version: "v1.2.0"
+    },
+    {
+        date: "November 18, 2025",
+        title: "Stripe Connect Integration",
+        description: "Seamless payments powered by Stripe Connect. Sellers receive payouts directly to their bank accounts with transparent fee structure. Buyers pay securely with any major card, Apple Pay, or Google Pay. All transactions are protected with buyer and seller guarantees.",
+        tags: ["New Feature", "Payments"],
+        version: "v1.1.8"
+    },
+    {
+        date: "November 17, 2025",
+        title: "Bulk Import from Collectr",
+        description: "Import your entire collection from Collectr with one click. Automatically creates listings from your collection data with smart pricing suggestions. Map your collection categories to 6Seven's marketplace structure and go live in minutes instead of hours.",
+        tags: ["New Feature", "Integration", "Seller Tools"],
+        version: "v1.1.7"
+    },
+    {
+        date: "November 16, 2025",
+        title: "Shipping Carrier Integration",
+        description: "Real-time shipping rates from major UK carriers including Royal Mail, DPD, and Evri. Automatic tracking number generation and buyer notifications. Sellers can print labels directly from the dashboard and buyers get live delivery updates.",
+        tags: ["New Feature", "Shipping"],
+        version: "v1.1.6"
+    },
+    {
         date: "November 15, 2025",
         title: "Marketplace Expansion",
         description: "6Seven is growing. We've expanded our marketplace to support new categories including sealed product, graded slabs from all major grading companies, and raw vintage cards. The new browse experience makes finding your holy grails easier than ever.",
         tags: ["Expansion", "Marketplace"],
         version: "v1.1.5"
+    },
+    {
+        date: "November 14, 2025",
+        title: "Saved Searches & Alerts",
+        description: "Never miss a listing again. Save your searches with custom filters and get instant notifications when matching items are listed. Set price alerts, watch specific sets or rarities, and let 6Seven do the hunting for you.",
+        tags: ["New Feature", "Notifications"],
+        version: "v1.1.3"
+    },
+    {
+        date: "November 12, 2025",
+        title: "Review & Rating System",
+        description: "Complete feedback system for buyers and sellers. Rate transactions on communication, shipping speed, and item accuracy. Leave detailed reviews with photos. Seller responses and verified purchase badges build trust and transparency.",
+        tags: ["New Feature", "Trust & Safety"],
+        version: "v1.1.0"
+    },
+    {
+        date: "November 10, 2025",
+        title: "Credit System",
+        description: "Flexible credit system for refunds, returns, and promotional bonuses. Credits can be used for any purchase on the platform. Track your credit balance, transaction history, and expiration dates in your wallet. Perfect for building buyer loyalty.",
+        tags: ["New Feature", "Payments"],
+        version: "v1.0.8"
     }
 ];
 
