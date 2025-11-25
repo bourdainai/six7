@@ -28,6 +28,7 @@ const POPULAR_BRANDS = [
 export const BuyerOnboarding = ({ onComplete, onSkip }: BuyerOnboardingProps) => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
+  const [region, setRegion] = useState<"UK" | "US" | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
   const [brands, setBrands] = useState<string[]>([]);
   const [budgetMin, setBudgetMin] = useState("");
@@ -54,11 +55,12 @@ export const BuyerOnboarding = ({ onComplete, onSkip }: BuyerOnboardingProps) =>
   };
 
   const handleSave = async () => {
-    if (!user) return;
+    if (!user || !region) return;
 
     setSaving(true);
     try {
-      const { error } = await supabase
+      // Save user preferences
+      const { error: prefError } = await supabase
         .from('user_preferences')
         .upsert({
           user_id: user.id,
@@ -68,7 +70,18 @@ export const BuyerOnboarding = ({ onComplete, onSkip }: BuyerOnboardingProps) =>
           budget_max: budgetMax ? parseFloat(budgetMax) : null,
         });
 
-      if (error) throw error;
+      if (prefError) throw prefError;
+
+      // Update profile with country and currency
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          country: region,
+          preferred_currency: region === "UK" ? "GBP" : "USD"
+        })
+        .eq('id', user.id);
+
+      if (profileError) throw profileError;
 
       toast({
         title: "Preferences saved!",
@@ -92,9 +105,10 @@ export const BuyerOnboarding = ({ onComplete, onSkip }: BuyerOnboardingProps) =>
 
   const canProceed = () => {
     switch(step) {
-      case 1: return categories.length > 0;
-      case 2: return true; // Brands are optional
-      case 3: return budgetMin && budgetMax && parseFloat(budgetMin) < parseFloat(budgetMax);
+      case 1: return region !== null;
+      case 2: return categories.length > 0;
+      case 3: return true; // Brands are optional
+      case 4: return budgetMin && budgetMax && parseFloat(budgetMin) < parseFloat(budgetMax);
       default: return false;
     }
   };
@@ -114,7 +128,7 @@ export const BuyerOnboarding = ({ onComplete, onSkip }: BuyerOnboardingProps) =>
         <CardContent>
           {/* Progress Indicators */}
           <div className="flex justify-between mb-8">
-            {[1, 2, 3].map((i) => (
+            {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
                 className={`h-2 flex-1 mx-1 rounded-full ${
@@ -124,8 +138,49 @@ export const BuyerOnboarding = ({ onComplete, onSkip }: BuyerOnboardingProps) =>
             ))}
           </div>
 
-          {/* Step 1: Categories */}
+          {/* Step 1: Region */}
           {step === 1 && (
+            <div className="space-y-6">
+              <div className="text-center">
+                <h3 className="text-2xl font-semibold mb-2">Choose Your Marketplace</h3>
+                <p className="text-sm text-muted-foreground">
+                  Select your primary marketplace region
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
+                <button
+                  onClick={() => setRegion("UK")}
+                  className={`p-6 rounded-lg border-2 transition-all ${
+                    region === "UK"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                >
+                  <div className="text-4xl mb-2">🇬🇧</div>
+                  <div className="font-semibold">UK</div>
+                  <div className="text-sm text-muted-foreground">Prices in GBP (£)</div>
+                </button>
+                <button
+                  onClick={() => setRegion("US")}
+                  className={`p-6 rounded-lg border-2 transition-all ${
+                    region === "US"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                >
+                  <div className="text-4xl mb-2">🇺🇸</div>
+                  <div className="font-semibold">US</div>
+                  <div className="text-sm text-muted-foreground">Prices in USD ($)</div>
+                </button>
+              </div>
+              <p className="text-xs text-center text-muted-foreground">
+                You'll only see listings from sellers in your chosen region
+              </p>
+            </div>
+          )}
+
+          {/* Step 2: Categories */}
+          {step === 2 && (
             <div className="space-y-4">
               <h3 className="text-lg font-medium">What are you interested in?</h3>
               <p className="text-sm text-muted-foreground">Select categories you'd like to browse</p>
@@ -144,8 +199,8 @@ export const BuyerOnboarding = ({ onComplete, onSkip }: BuyerOnboardingProps) =>
             </div>
           )}
 
-          {/* Step 2: Brands (Optional) */}
-          {step === 2 && (
+          {/* Step 3: Brands (Optional) */}
+          {step === 3 && (
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Favorite brands?</h3>
               <p className="text-sm text-muted-foreground">Add brands you're interested in (optional)</p>
@@ -196,14 +251,14 @@ export const BuyerOnboarding = ({ onComplete, onSkip }: BuyerOnboardingProps) =>
             </div>
           )}
 
-          {/* Step 3: Budget */}
-          {step === 3 && (
+          {/* Step 4: Budget */}
+          {step === 4 && (
             <div className="space-y-4">
               <h3 className="text-lg font-medium">What's your budget?</h3>
               <p className="text-sm text-muted-foreground">Set your price range</p>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">Min (£)</label>
+                  <label className="text-sm text-muted-foreground mb-2 block">Min ({region === "UK" ? "£" : "$"})</label>
                   <Input
                     type="number"
                     placeholder="0"
@@ -213,7 +268,7 @@ export const BuyerOnboarding = ({ onComplete, onSkip }: BuyerOnboardingProps) =>
                   />
                 </div>
                 <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">Max (£)</label>
+                  <label className="text-sm text-muted-foreground mb-2 block">Max ({region === "UK" ? "£" : "$"})</label>
                   <Input
                     type="number"
                     placeholder="100"
@@ -244,7 +299,7 @@ export const BuyerOnboarding = ({ onComplete, onSkip }: BuyerOnboardingProps) =>
               )}
             </div>
             <div>
-              {step < 3 ? (
+              {step < 4 ? (
                 <Button onClick={() => setStep(step + 1)} disabled={!canProceed()}>
                   Continue
                 </Button>

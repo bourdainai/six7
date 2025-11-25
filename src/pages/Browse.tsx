@@ -11,8 +11,10 @@ import type { ListingSummary } from "@/types/listings";
 import { SEO } from "@/components/SEO";
 import { useLocation } from "react-router-dom";
 import { Search } from "lucide-react";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 const Browse = () => {
+  const { user } = useAuth();
   const [filters, setFilters] = useState<FilterState>({
     search: "",
     category: "",
@@ -40,8 +42,24 @@ const Browse = () => {
   const [page, setPage] = useState(1);
   const itemsPerPage = 24;
 
+  // Get user's country for region filtering
+  const { data: profile } = useQuery({
+    queryKey: ["profile", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("country")
+        .eq("id", user!.id)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { data: listings, isLoading, error } = useQuery({
-    queryKey: ["active-listings", page, JSON.stringify(filters), sortBy],
+    queryKey: ["active-listings", page, JSON.stringify(filters), sortBy, profile?.country],
     queryFn: async () => {
       const from = (page - 1) * itemsPerPage;
       const to = from + itemsPerPage - 1;
@@ -50,10 +68,116 @@ const Browse = () => {
         .from("listings")
         .select(`
           *,
-          images:listing_images(image_url, display_order)
+          images:listing_images(image_url, display_order),
+          seller:profiles!listings_seller_id_fkey(id, country)
         `)
         .eq("status", "active");
 
+      // Filter by seller's country if user has a country set
+      if (profile?.country) {
+        // We need to filter where seller.country matches user's country
+        // Since we're doing a join, we need to check the nested seller.country
+        const { data: allListings, error: fetchError } = await supabase
+          .from("listings")
+          .select(`
+            *,
+            images:listing_images(image_url, display_order),
+            seller:profiles!listings_seller_id_fkey(id, full_name, trust_score, country)
+          `)
+          .eq("status", "active");
+
+        if (fetchError) throw fetchError;
+
+        // Filter in JS for now (we can optimize with a view later)
+        const filteredByRegion = allListings?.filter((listing: any) => 
+          listing.seller?.country === profile.country
+        ) || [];
+
+        // Now apply other filters to this subset
+        let filteredData = filteredByRegion;
+
+        // Apply filters
+        if (filters.category) {
+          filteredData = filteredData.filter((l: any) => l.category === filters.category);
+        }
+        if (filters.subcategory) {
+          filteredData = filteredData.filter((l: any) => l.subcategory === filters.subcategory);
+        }
+        if (filters.condition) {
+          filteredData = filteredData.filter((l: any) => l.condition === filters.condition);
+        }
+        if (filters.minPrice) {
+          filteredData = filteredData.filter((l: any) => l.seller_price >= Number(filters.minPrice));
+        }
+        if (filters.maxPrice) {
+          filteredData = filteredData.filter((l: any) => l.seller_price <= Number(filters.maxPrice));
+        }
+        if (filters.brand) {
+          filteredData = filteredData.filter((l: any) => 
+            l.brand?.toLowerCase().includes(filters.brand.toLowerCase())
+          );
+        }
+        if (filters.size) {
+          filteredData = filteredData.filter((l: any) => 
+            l.size?.toLowerCase().includes(filters.size.toLowerCase())
+          );
+        }
+        if (filters.color) {
+          filteredData = filteredData.filter((l: any) => 
+            l.color?.toLowerCase().includes(filters.color.toLowerCase())
+          );
+        }
+        if (filters.material) {
+          filteredData = filteredData.filter((l: any) => 
+            l.material?.toLowerCase().includes(filters.material.toLowerCase())
+          );
+        }
+        if (filters.setCode) {
+          filteredData = filteredData.filter((l: any) => 
+            l.set_code?.toLowerCase().includes(filters.setCode.toLowerCase())
+          );
+        }
+        if (filters.tradeEnabled) {
+          filteredData = filteredData.filter((l: any) => l.trade_enabled === (filters.tradeEnabled === "true"));
+        }
+        if (filters.freeShipping) {
+          filteredData = filteredData.filter((l: any) => l.free_shipping === (filters.freeShipping === "true"));
+        }
+        if (filters.maxDeliveryDays) {
+          filteredData = filteredData.filter((l: any) => 
+            (l.estimated_delivery_days || 0) <= Number(filters.maxDeliveryDays)
+          );
+        }
+        if (filters.search) {
+          const searchLower = filters.search.toLowerCase();
+          filteredData = filteredData.filter((l: any) => 
+            l.title?.toLowerCase().includes(searchLower) ||
+            l.description?.toLowerCase().includes(searchLower) ||
+            l.brand?.toLowerCase().includes(searchLower)
+          );
+        }
+
+        // Apply sorting
+        filteredData.sort((a: any, b: any) => {
+          switch (sortBy) {
+            case 'price_low':
+              return a.seller_price - b.seller_price;
+            case 'price_high':
+              return b.seller_price - a.seller_price;
+            case 'popular':
+              return (b.views || 0) - (a.views || 0);
+            case 'newest':
+            default:
+              return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+          }
+        });
+
+        // Apply pagination
+        return filteredData.slice(from, to + 1) as unknown as ListingSummary[];
+      }
+
+      // If no user region, show all listings (fallback for non-logged-in users)
+      
         // Server-side filtering
         if (filters.category) {
           query = query.eq("category", filters.category);
@@ -124,7 +248,7 @@ const Browse = () => {
         throw error;
       }
       
-      return (data || []) as ListingSummary[];
+      return (data || []) as unknown as ListingSummary[];
     },
   });
 
