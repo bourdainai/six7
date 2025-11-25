@@ -59,15 +59,91 @@ serve(async (req) => {
     if (action === "mark_shipped") {
       updateData.status = "shipped";
     } else if (action === "mark_received") {
+      // Validate that seller marked as shipped first
+      if (trade.status !== "shipped") {
+        return new Response(JSON.stringify({ error: "Seller must mark item as shipped before buyer can confirm receipt" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Validate that only buyer can mark received
+      if (user.id !== trade.buyer_id) {
+        return new Response(JSON.stringify({ error: "Only the buyer can mark item as received" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       updateData.status = "completed";
       
       // Release escrow if enabled
-      if (trade.escrow_enabled && !trade.escrow_released) {
+      if (trade.escrow_enabled && !trade.escrow_released && trade.escrow_amount > 0) {
         updateData.escrow_released = true;
         updateData.escrow_released_at = new Date().toISOString();
 
-        // TODO: Transfer funds from escrow to seller's wallet
-        console.log(`Releasing escrow of ${trade.escrow_amount} for trade ${tradeId}`);
+        // Transfer funds from escrow to seller's wallet using service role key
+        const supabaseAdmin = createClient(
+          Deno.env.get("SUPABASE_URL") ?? "",
+          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+        );
+
+        try {
+          // Get or create seller wallet
+          let { data: sellerWallet } = await supabaseAdmin
+            .from("wallet_accounts")
+            .select("*")
+            .eq("user_id", trade.seller_id)
+            .single();
+
+          if (!sellerWallet) {
+            const { data: newWallet, error: walletError } = await supabaseAdmin
+              .from("wallet_accounts")
+              .insert({ 
+                user_id: trade.seller_id,
+                balance: 0,
+                pending_balance: 0,
+                currency: "gbp"
+              })
+              .select()
+              .single();
+            
+            if (walletError) throw walletError;
+            sellerWallet = newWallet;
+          }
+
+          // Transfer escrow to seller's available balance
+          const { error: balanceError } = await supabaseAdmin
+            .from("wallet_accounts")
+            .update({
+              balance: Number(sellerWallet.balance) + Number(trade.escrow_amount),
+              pending_balance: Math.max(0, Number(sellerWallet.pending_balance) - Number(trade.escrow_amount))
+            })
+            .eq("user_id", trade.seller_id);
+
+          if (balanceError) throw balanceError;
+
+          // Create transaction record
+          const { error: txError } = await supabaseAdmin
+            .from("wallet_transactions")
+            .insert({
+              wallet_id: sellerWallet.id,
+              type: "escrow_release",
+              amount: trade.escrow_amount,
+              status: "completed",
+              description: `Escrow release for trade ${tradeId}`
+            });
+
+          if (txError) throw txError;
+
+          console.log(`✅ Released escrow of ${trade.escrow_amount} to seller ${trade.seller_id} for trade ${tradeId}`);
+        } catch (escrowError) {
+          console.error("❌ Escrow release error:", escrowError);
+          return new Response(JSON.stringify({ error: "Failed to release escrow funds" }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
       }
 
       // Update completion record

@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { AlertCircle, CheckCircle2, Clock, TrendingUp, User } from "lucide-react";
+import { logger } from "@/lib/logger";
 
 export default function AdminDisputes() {
   const { toast } = useToast();
@@ -97,11 +98,11 @@ export default function AdminDisputes() {
         });
 
         if (refundError) {
-          console.error("Refund error:", refundError);
+          logger.error("Refund error:", refundError);
           throw new Error(`Failed to process refund: ${refundError.message}`);
         }
 
-        console.log("✅ Refund processed:", refundData);
+        logger.info("✅ Refund processed:", refundData);
       }
       
       // Update dispute status

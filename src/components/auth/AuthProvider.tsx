@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { logger } from "@/lib/logger";
 
 interface AuthContextType {
   user: User | null;
@@ -23,7 +24,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     // Set up listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      console.log("🔐 [Auth] State change:", _event, "User:", !!session?.user);
+      logger.debug("🔐 [Auth] State change:", _event, "User:", !!session?.user);
       
       setSession(session);
       setUser(session?.user ?? null);
@@ -33,11 +34,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Use Promise.resolve to make this truly non-blocking
         Promise.resolve().then(async () => {
           try {
-            console.log("📊 [Auth] Tracking user session...");
+            logger.debug("📊 [Auth] Tracking user session...");
             await supabase.functions.invoke('track-user-session');
-            console.log("✅ [Auth] Session tracked successfully");
+            logger.debug("✅ [Auth] Session tracked successfully");
           } catch (error) {
-            console.error('⚠️ [Auth] Failed to track session (non-critical):', error);
+            logger.error('⚠️ [Auth] Failed to track session (non-critical):', error);
             // Don't throw - this is a background task
           }
         });
@@ -52,14 +53,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // THEN check existing session
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
-        console.error("❌ [Auth] Error getting session:", error);
+        logger.error("❌ [Auth] Error getting session:", error);
       }
-      console.log("🔐 [Auth] Initial session check:", !!session?.user);
+      logger.debug("🔐 [Auth] Initial session check:", !!session?.user);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     }).catch((error) => {
-      console.error("💥 [Auth] Unexpected error getting session:", error);
+      logger.error("💥 [Auth] Unexpected error getting session:", error);
       setLoading(false);
     });
 
@@ -86,9 +87,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         await supabase.functions.invoke("send-verification-email", {
           body: {},
         });
-        console.log("✅ [Auth] Verification email sent to:", email);
+        logger.info("✅ [Auth] Verification email sent to:", email);
       } catch (emailError) {
-        console.error("⚠️ [Auth] Failed to send verification email:", emailError);
+        logger.error("⚠️ [Auth] Failed to send verification email:", emailError);
         // Don't throw - account is still created, user can resend later
       }
     }

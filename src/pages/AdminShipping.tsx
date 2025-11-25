@@ -25,8 +25,11 @@ import {
 import { ShippingRateSelector } from '@/components/shipping/ShippingRateSelector';
 import { ServicePointPicker } from '@/components/shipping/ServicePointPicker';
 import { AddressValidationForm } from '@/components/shipping/AddressValidationForm';
+import { CarrierPerformanceChart } from '@/components/admin/CarrierPerformanceChart';
+import { CostTrendChart } from '@/components/admin/CostTrendChart';
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 const AdminShipping = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -54,7 +57,22 @@ const AdminShipping = () => {
 
       const totalShipments = parcels?.length || 0;
       const totalCost = parcels?.reduce((sum, p) => sum + (p.shipping_cost || 0), 0) || 0;
-      const avgDeliveryTime = 3.2; // TODO: Calculate from actual data
+      
+      // Calculate actual average delivery time from parcels with delivery dates
+      // Using created_at as ship date and updated_at for delivered parcels as approximation
+      const deliveredParcels = parcels?.filter(p => 
+        p.status === 'delivered' && p.created_at && p.updated_at
+      ) || [];
+      
+      const avgDeliveryTime = deliveredParcels.length > 0
+        ? deliveredParcels.reduce((sum, p) => {
+            const createdDate = new Date(p.created_at);
+            const updatedDate = new Date(p.updated_at);
+            const days = Math.ceil((updatedDate.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+            return sum + Math.max(1, days); // Min 1 day
+          }, 0) / deliveredParcels.length
+        : 0;
+      
       const failedShipments = parcels?.filter(p => p.status === 'delivery_failed').length || 0;
 
       return {
@@ -123,7 +141,7 @@ const AdminShipping = () => {
         window.open(data.labelUrl, '_blank');
       }
     } catch (error) {
-      console.error('Test label error:', error);
+      logger.error('Test label error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to create test label');
     }
   };
@@ -303,34 +321,24 @@ const AdminShipping = () => {
 
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4">
               <Card>
                 <CardHeader>
                   <CardTitle>Carrier Performance</CardTitle>
-                  <CardDescription>Delivery success rates by carrier</CardDescription>
+                  <CardDescription>Delivery success rates and average delivery times by carrier</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {/* TODO: Add carrier performance charts */}
-                    <p className="text-sm text-muted-foreground">
-                      Carrier analytics will be displayed here
-                    </p>
-                  </div>
+                  <CarrierPerformanceChart parcels={analytics?.parcels || []} />
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
                   <CardTitle>Cost Analysis</CardTitle>
-                  <CardDescription>Shipping costs over time</CardDescription>
+                  <CardDescription>Shipping costs over the last 6 months</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {/* TODO: Add cost trend charts */}
-                    <p className="text-sm text-muted-foreground">
-                      Cost trends will be displayed here
-                    </p>
-                  </div>
+                  <CostTrendChart parcels={analytics?.parcels || []} />
                 </CardContent>
               </Card>
             </div>
@@ -356,7 +364,7 @@ const AdminShipping = () => {
                   postalCode="1012AB"
                   city="Amsterdam"
                   onSelect={(point) => {
-                    console.log('Selected service point:', point);
+                    logger.debug('Selected service point:', point);
                     toast.success(`Selected: ${point.name}`, {
                       description: `${point.street} ${point.houseNumber}, ${point.city}`,
                     });
@@ -403,7 +411,7 @@ const AdminShipping = () => {
               <CardContent>
                 <AddressValidationForm
                   onValidated={(address, isValid) => {
-                    console.log('Validated address:', address, 'Valid:', isValid);
+                    logger.info('Validated address:', address, 'Valid:', isValid);
                     if (isValid) {
                       toast.success('Address validated successfully');
                     }
