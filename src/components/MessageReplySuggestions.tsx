@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Sparkles, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { logger } from "@/lib/logger";
 
 interface ReplySuggestion {
   text: string;
@@ -37,7 +38,7 @@ export const MessageReplySuggestions = ({
       setSuggestions(data.suggestions);
     } catch (error) {
       if (import.meta.env.DEV) {
-        console.error('Error generating suggestions:', error);
+        logger.error('Error generating suggestions:', error);
       }
       toast({
         title: "Error",

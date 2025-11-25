@@ -8,6 +8,7 @@ import { Sparkles, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { logger } from "@/lib/logger";
 
 interface BuyerOnboardingProps {
   onComplete: () => void;
@@ -78,7 +79,7 @@ export const BuyerOnboarding = ({ onComplete, onSkip }: BuyerOnboardingProps) =>
       setShowListingCTA(true);
     } catch (error) {
       if (import.meta.env.DEV) {
-        console.error('Error saving preferences:', error);
+        logger.error('Error saving preferences:', error);
       }
       toast({
         title: "Error",

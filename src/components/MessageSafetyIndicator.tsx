@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Shield, AlertTriangle, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/lib/logger";
 
 interface SafetyAnalysis {
   risk_level: 'safe' | 'low' | 'medium' | 'high' | 'critical';
@@ -37,7 +38,7 @@ export const MessageSafetyIndicator = ({ message, onBlock }: MessageSafetyIndica
         }
       } catch (error) {
         if (import.meta.env.DEV) {
-          console.error('Error scanning message:', error);
+          logger.error('Error scanning message:', error);
         }
       } finally {
         setIsScanning(false);

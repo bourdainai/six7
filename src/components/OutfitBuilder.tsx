@@ -6,6 +6,7 @@ import { Loader2, Sparkles, ShoppingBag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { logger } from "@/lib/logger";
 
 interface OutfitBuilderProps {
   listingId: string;
@@ -63,7 +64,7 @@ export const OutfitBuilder = ({ listingId, listingTitle }: OutfitBuilderProps) =
       }
       } catch (error) {
         const message = error instanceof Error ? error.message : "Please try again";
-      console.error('Outfit builder error:', error);
+      logger.error('Outfit builder error:', error);
       toast({
         title: "Failed to Build Outfit",
           description: message,

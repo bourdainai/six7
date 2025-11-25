@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import type { ListingSummary } from "@/types/listings";
 import { generateListingUrl } from "@/lib/listing-url";
+import { logger } from "@/lib/logger";
 
 interface ImageSearchDialogProps {
   open: boolean;
@@ -61,7 +62,7 @@ export function ImageSearchDialog({
       }
       } catch (error) {
       if (import.meta.env.DEV) {
-        console.error("Image search error:", error);
+        logger.error("Image search error:", error);
       }
       toast.error("Failed to search for similar items");
     } finally {
