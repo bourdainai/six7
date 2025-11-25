@@ -1016,10 +1016,10 @@ const SellItem = () => {
             {cards.length > 0 && (
               <Card>
                 <CardContent className="pt-6">
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0 mb-4">
                     <div className="flex items-center gap-2">
                       <GripVertical className="w-5 h-5 text-muted-foreground" />
-                      <h3 className="text-lg font-semibold">
+                      <h3 className="text-base sm:text-lg font-semibold">
                         Cards in Bundle
                       </h3>
                       <Badge variant="secondary" className="text-sm font-semibold">
@@ -1035,39 +1035,42 @@ const SellItem = () => {
 
                   {/* Scrollable Container with Better Card Visibility */}
                   <div className="relative">
-                    <ScrollArea ref={cardsScrollRef} className="h-[500px] pr-4">
-                      <div className="space-y-4">
+                    <ScrollArea ref={cardsScrollRef} className="h-[600px] sm:h-[500px] pr-2 sm:pr-4">
+                      <div className="space-y-3 sm:space-y-4">
                         {cards.map((card, index) => (
                           <Card key={card.id} className="border-2 hover:border-primary/50 transition-colors">
-                            <CardContent className="p-4">
-                              <div className="grid grid-cols-[100px_1fr_auto] gap-4 items-start">
-                              {/* Card Image Preview - Medium Size */}
-                              <div className="flex flex-col gap-2">
+                            <CardContent className="p-3 sm:p-4">
+                              {/* Mobile: Stack vertically, Desktop: Side by side */}
+                              <div className="flex flex-col sm:grid sm:grid-cols-[120px_1fr_auto] gap-3 sm:gap-4 items-start">
+                              {/* Card Image Preview */}
+                              <div className="flex flex-row sm:flex-col gap-2 items-center w-full sm:w-auto">
                                 {card.cardData.image_url ? (
-                                  <div className="aspect-[2.5/3.5] bg-muted rounded-lg overflow-hidden border-2 border-border shadow-sm">
+                                  <div className="w-20 h-28 sm:w-full sm:h-auto sm:aspect-[2.5/3.5] bg-muted rounded-lg overflow-hidden border-2 border-border shadow-sm flex-shrink-0">
                                     <img
                                       src={card.cardData.image_url}
                                       alt={card.cardData.title}
-                                      className="w-full h-full object-contain"
+                                      className="w-full h-full object-cover"
                                       loading="lazy"
                                     />
                                   </div>
                                 ) : (
-                                  <div className="aspect-[2.5/3.5] bg-muted rounded-lg flex items-center justify-center border-2 border-dashed border-border">
+                                  <div className="w-20 h-28 sm:w-full sm:h-auto sm:aspect-[2.5/3.5] bg-muted rounded-lg flex items-center justify-center border-2 border-dashed border-border flex-shrink-0">
                                     <span className="text-xs text-muted-foreground text-center p-2">No image</span>
                                   </div>
                                 )}
-                                <Badge variant="outline" className="text-xs justify-center">
-                                  #{index + 1}
-                                </Badge>
+                                <div className="flex-1 sm:flex-none sm:w-full">
+                                  <Badge variant="outline" className="text-xs sm:justify-center w-full">
+                                    #{index + 1}
+                                  </Badge>
+                                </div>
                               </div>
 
                               {/* Card Details & Form */}
-                              <div className="space-y-3 min-w-0">
+                              <div className="space-y-3 min-w-0 w-full">
                                 {/* Card Info Header */}
                                 <div>
-                                  <h4 className="font-semibold text-sm line-clamp-2">{card.cardData.title}</h4>
-                                  <div className="flex flex-wrap gap-1.5 mt-1.5">
+                                  <h4 className="font-semibold text-base sm:text-sm line-clamp-2">{card.cardData.title}</h4>
+                                  <div className="flex flex-wrap gap-1.5 mt-2">
                                     <Badge variant="secondary" className="text-xs">
                                       #{card.cardData.card_number}
                                     </Badge>
@@ -1081,17 +1084,17 @@ const SellItem = () => {
                                     )}
                                   </div>
                                   {card.cardData.original_rrp && (
-                                    <p className="text-xs text-muted-foreground mt-1.5">
+                                    <p className="text-sm sm:text-xs text-muted-foreground mt-2">
                                       Value: <span className="font-semibold text-foreground">£{card.cardData.original_rrp.toFixed(2)}</span>
                                     </p>
                                   )}
                                 </div>
 
-                                {/* Form Grid */}
-                                <div className="grid grid-cols-2 gap-2">
+                                {/* Form Grid - Mobile: 1 column, Tablet+: 2 columns */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2">
                                   {/* Condition - Required */}
                                   <div className="space-y-1.5">
-                                    <Label className="text-xs font-semibold flex items-center gap-1">
+                                    <Label className="text-sm sm:text-xs font-semibold flex items-center gap-1">
                                       Condition
                                       <span className="text-destructive">*</span>
                                     </Label>
@@ -1099,10 +1102,10 @@ const SellItem = () => {
                                       value={card.condition}
                                       onValueChange={(val) => updateCardEntry(card.id, { condition: val as ConditionType })}
                                     >
-                                      <SelectTrigger className={`h-9 text-sm ${!card.condition ? 'border-destructive' : ''}`}>
-                                        <SelectValue placeholder="Select..." />
+                                      <SelectTrigger className={`h-11 sm:h-9 text-base sm:text-sm ${!card.condition ? 'border-destructive' : ''}`}>
+                                        <SelectValue placeholder="Sel" />
                                       </SelectTrigger>
-                                      <SelectContent>
+                                      <SelectContent className="bg-background">
                                         <SelectItem value="new_with_tags">Mint</SelectItem>
                                         <SelectItem value="like_new">Near Mint</SelectItem>
                                         <SelectItem value="excellent">Lightly Played</SelectItem>
@@ -1115,7 +1118,7 @@ const SellItem = () => {
 
                                   {/* Quantity - Required */}
                                   <div className="space-y-1.5">
-                                    <Label className="text-xs font-semibold flex items-center gap-1">
+                                    <Label className="text-sm sm:text-xs font-semibold flex items-center gap-1">
                                       Qty
                                       <span className="text-destructive">*</span>
                                     </Label>
@@ -1125,13 +1128,13 @@ const SellItem = () => {
                                       max="99"
                                       value={card.quantity}
                                       onChange={(e) => updateCardEntry(card.id, { quantity: parseInt(e.target.value) || 1 })}
-                                      className={`h-9 ${card.quantity < 1 ? 'border-destructive' : ''}`}
+                                      className={`h-11 sm:h-9 text-base sm:text-sm ${card.quantity < 1 ? 'border-destructive' : ''}`}
                                     />
                                   </div>
 
                                   {/* Price - Required */}
-                                  <div className="space-y-1.5 col-span-2">
-                                    <Label className="text-xs font-semibold flex items-center gap-1">
+                                  <div className="space-y-1.5 sm:col-span-2">
+                                    <Label className="text-sm sm:text-xs font-semibold flex items-center gap-1">
                                       Price (£)
                                       <span className="text-destructive">*</span>
                                     </Label>
@@ -1141,15 +1144,15 @@ const SellItem = () => {
                                       step="0.01"
                                       value={card.price || ""}
                                       onChange={(e) => updateCardEntry(card.id, { price: parseFloat(e.target.value) || 0 })}
-                                      className={`h-9 ${!card.price || card.price <= 0 ? 'border-destructive' : ''}`}
+                                      className={`h-11 sm:h-9 text-base sm:text-sm ${!card.price || card.price <= 0 ? 'border-destructive' : ''}`}
                                       placeholder="0.00"
                                     />
                                   </div>
                                 </div>
 
                                 {/* Variant Images (Optional) */}
-                                <div className="space-y-1.5">
-                                  <Label className="text-xs">Variant Photos (optional)</Label>
+                                <div className="space-y-2">
+                                  <Label className="text-sm sm:text-xs">Variant Photos (optional)</Label>
                                   <div className="space-y-2">
                                     {card.uploadedImages && card.uploadedImages.length > 0 && (
                                       <div className="flex flex-wrap gap-2">
@@ -1158,49 +1161,49 @@ const SellItem = () => {
                                             <img
                                               src={URL.createObjectURL(file)}
                                               alt={`Variant ${idx + 1}`}
-                                              className="w-16 h-16 object-cover rounded border"
+                                              className="w-20 h-20 sm:w-16 sm:h-16 object-cover rounded border"
                                             />
                                             <Button
                                               type="button"
                                               size="icon"
                                               variant="destructive"
-                                              className="absolute -top-2 -right-2 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                              className="absolute -top-2 -right-2 h-6 w-6 sm:h-5 sm:w-5 opacity-0 group-hover:opacity-100 transition-opacity"
                                               onClick={() => removeVariantImage(card.id, idx)}
                                             >
                                               <X className="h-3 w-3" />
                                             </Button>
                                           </div>
                                         ))}
-                                      </div>
-                                    )}
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      className="w-full h-8"
-                                      onClick={() => document.getElementById(`variant-upload-${card.id}`)?.click()}
-                                    >
-                                      <Camera className="w-3 h-3 mr-2" />
-                                      {card.uploadedImages?.length ? 'Add More Photos' : 'Add Photos'}
-                                    </Button>
-                                    <input
-                                      id={`variant-upload-${card.id}`}
-                                      type="file"
-                                      accept="image/*"
-                                      multiple
-                                      className="hidden"
-                                      onChange={(e) => handleVariantImageUpload(card.id, e.target.files)}
-                                    />
-                                  </div>
-                                </div>
-                              </div>
+                                       </div>
+                                     )}
+                                     <Button
+                                       type="button"
+                                       variant="outline"
+                                       size="sm"
+                                       className="w-full h-11 sm:h-8 text-base sm:text-sm"
+                                       onClick={() => document.getElementById(`variant-upload-${card.id}`)?.click()}
+                                     >
+                                       <Camera className="w-4 h-4 sm:w-3 sm:h-3 mr-2" />
+                                       {card.uploadedImages?.length ? 'Add More Photos' : 'Add Photos'}
+                                     </Button>
+                                     <input
+                                       id={`variant-upload-${card.id}`}
+                                       type="file"
+                                       accept="image/*"
+                                       multiple
+                                       className="hidden"
+                                       onChange={(e) => handleVariantImageUpload(card.id, e.target.files)}
+                                     />
+                                   </div>
+                                 </div>
+                               </div>
 
-                              {/* Remove Button */}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 flex-shrink-0"
-                                onClick={() => removeCard(card.id)}
+                               {/* Remove Button */}
+                               <Button
+                                 variant="ghost"
+                                 size="icon"
+                                 className="h-10 w-10 sm:h-8 sm:w-8 flex-shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                 onClick={() => removeCard(card.id)}
                                 title="Remove card"
                               >
                                 <Trash2 className="h-4 w-4 text-destructive" />
@@ -1241,10 +1244,10 @@ const SellItem = () => {
                 ) : (
                   <Button
                     variant="outline"
-                    className="w-full"
+                    className="w-full h-12 sm:h-10 text-base sm:text-sm"
                     onClick={() => setShowCardSearch(true)}
                   >
-                    <Plus className="w-4 h-4 mr-2" />
+                    <Plus className="w-5 h-5 sm:w-4 sm:h-4 mr-2" />
                     Add Another Card ({cards.length}/30)
                   </Button>
                 )}
@@ -1269,11 +1272,11 @@ const SellItem = () => {
           <div className="lg:sticky lg:top-24 space-y-4">
             {/* Multi-Card Bundle Photo Info */}
             {isMultiCard && cards.length > 0 && (
-              <Alert className="bg-blue-50 border-blue-200">
-                <Info className="h-4 w-4 text-blue-600" />
-                <AlertTitle className="text-blue-900">Bundle Images</AlertTitle>
-                <AlertDescription className="text-blue-700 text-sm">
-                  We'll use the first 6 card images from your bundle. You can optionally upload additional photos of the entire bundle.
+              <Alert className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900">
+                <Info className="h-5 w-5 sm:h-4 sm:w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                <AlertTitle className="text-blue-900 dark:text-blue-100 text-base sm:text-sm">Bundle Images</AlertTitle>
+                <AlertDescription className="text-blue-700 dark:text-blue-300 text-sm sm:text-xs leading-relaxed">
+                  We'll use the first images from your bundle. You can optionally upload additional photos of the entire bundle.
                 </AlertDescription>
               </Alert>
             )}
