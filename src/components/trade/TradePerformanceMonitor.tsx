@@ -1,4 +1,5 @@
 import { useEffect, useRef, useMemo } from 'react';
+import { logger } from '@/lib/logger';
 
 interface PerformanceMetrics {
   renderTime: number;
@@ -37,7 +38,7 @@ export function useTradePerformanceMonitor(componentName: string) {
         };
         
         // Could send to analytics service here
-        console.log('[Performance Metrics]', metrics);
+        logger.debug('[Performance Metrics]', metrics);
       }
     };
   });

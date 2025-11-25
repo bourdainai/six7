@@ -25,6 +25,7 @@ import { AIAnswerEnginesToggle } from "@/components/listings/AIAnswerEnginesTogg
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useShippingCarriers } from "@/hooks/useShippingCarriers";
 import { useMarketplace } from "@/contexts/MarketplaceContext";
+import { logger } from "@/lib/logger";
 
 type ConditionType = Database["public"]["Enums"]["condition_type"];
 type ListingInsert = Database["public"]["Tables"]["listings"]["Insert"];
@@ -908,7 +909,7 @@ const SellItem = () => {
         });
       } catch (promoError) {
         // Silently fail - promo activation is not critical
-        console.log('Promo activation not applicable or failed:', promoError);
+        logger.debug('Promo activation not applicable or failed:', promoError);
       }
       
       const bundleMode = isMultiCard

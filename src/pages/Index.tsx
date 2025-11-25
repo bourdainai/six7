@@ -12,6 +12,7 @@ import { BuyerOnboarding } from "@/components/BuyerOnboarding";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { SEO } from "@/components/SEO";
+import { logger } from "@/lib/logger";
 
 const Index = () => {
   const { user, loading: authLoading } = useAuth();
@@ -24,17 +25,17 @@ const Index = () => {
     const checkPreferences = async () => {
       // Don't check preferences while auth is still loading
       if (authLoading) {
-        console.log("⏳ [Index] Waiting for auth to complete...");
+        logger.debug("⏳ [Index] Waiting for auth to complete...");
         return;
       }
 
       if (!user) {
-        console.log("👤 [Index] No user, showing marketing page");
+        logger.debug("👤 [Index] No user, showing marketing page");
         setHasPreferences(null);
         return;
       }
 
-      console.log("🔍 [Index] Checking user preferences for user:", user.id);
+      logger.debug("🔍 [Index] Checking user preferences for user:", user.id);
       setCheckingPreferences(true);
 
       try {
@@ -45,7 +46,7 @@ const Index = () => {
           .maybeSingle(); // Use maybeSingle instead of single to avoid errors when no row exists
 
         if (error) {
-          console.error("❌ [Index] Error checking preferences:", error);
+          logger.error("❌ [Index] Error checking preferences:", error);
           // On error, assume no preferences and show onboarding
           setHasPreferences(false);
           setShowOnboarding(true);
@@ -53,22 +54,22 @@ const Index = () => {
         }
 
         const hasPref = !!data;
-        console.log("✅ [Index] Has preferences:", hasPref);
+        logger.debug("✅ [Index] Has preferences:", hasPref);
         setHasPreferences(hasPref);
 
         // Show onboarding if user is logged in but has no preferences
         if (!hasPref) {
-          console.log("📝 [Index] No preferences, showing onboarding");
+          logger.debug("📝 [Index] No preferences, showing onboarding");
           setShowOnboarding(true);
         } else {
           // Add a small delay before redirect to prevent race conditions
-          console.log("🔄 [Index] Has preferences, redirecting to browse...");
+          logger.debug("🔄 [Index] Has preferences, redirecting to browse...");
           setTimeout(() => {
             navigate('/browse', { replace: true });
           }, 100);
         }
       } catch (err) {
-        console.error("💥 [Index] Unexpected error checking preferences:", err);
+        logger.error("💥 [Index] Unexpected error checking preferences:", err);
         setHasPreferences(false);
         setShowOnboarding(true);
       } finally {
@@ -81,7 +82,7 @@ const Index = () => {
 
   // Show loading state while checking auth or preferences
   if (authLoading || checkingPreferences) {
-    console.log("⏳ [Index] Loading state - auth:", authLoading, "prefs:", checkingPreferences);
+    logger.debug("⏳ [Index] Loading state - auth:", authLoading, "prefs:", checkingPreferences);
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -94,7 +95,7 @@ const Index = () => {
 
   // Show onboarding dialog if needed
   if (user && showOnboarding && hasPreferences === false) {
-    console.log("📝 [Index] Rendering onboarding");
+    logger.debug("📝 [Index] Rendering onboarding");
     return (
       <div className="min-h-screen bg-background">
         <SEO
@@ -103,7 +104,7 @@ const Index = () => {
         />
         <Navigation />
         <BuyerOnboarding onComplete={() => {
-          console.log("✅ [Index] Onboarding complete");
+          logger.debug("✅ [Index] Onboarding complete");
           setShowOnboarding(false);
           setHasPreferences(true);
           navigate('/browse', { replace: true });
@@ -115,7 +116,7 @@ const Index = () => {
   // If user is logged in with preferences, they should already be redirected
   // This is just a safety check to prevent flash of content
   if (user && hasPreferences === true) {
-    console.log("🔄 [Index] User with preferences detected, redirecting...");
+    logger.debug("🔄 [Index] User with preferences detected, redirecting...");
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">

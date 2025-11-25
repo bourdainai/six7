@@ -6,6 +6,7 @@ import { Search, Loader2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { logger } from "@/lib/logger";
 
 interface PokemonCard {
   id: string;
@@ -97,7 +98,7 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
       const trimmedQuery = searchQuery.trim();
       const hasSlash = trimmedQuery.includes("/");
 
-      console.log("🔍 Global search, query:", trimmedQuery);
+      logger.debug("🔍 Global search, query:", trimmedQuery);
 
       let dbCards;
       let error;
@@ -107,7 +108,7 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
         const normalizedInput = trimmedQuery.replace(/\s/g, "");
         const [numPart, totalPart] = normalizedInput.split('/');
         
-        console.log("📊 Parsed:", { numPart, totalPart, normalizedInput });
+        logger.debug("📊 Parsed:", { numPart, totalPart, normalizedInput });
         
         const queries = [];
         

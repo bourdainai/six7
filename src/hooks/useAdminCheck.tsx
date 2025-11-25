@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { logger } from "@/lib/logger";
 
 export const useAdminCheck = () => {
   const { user } = useAuth();
@@ -10,11 +11,11 @@ export const useAdminCheck = () => {
     enabled: !!user,
     queryFn: async () => {
       if (!user) {
-        console.log("👤 [Admin Check] No user, returning false");
+        logger.debug("👤 [Admin Check] No user, returning false");
         return false;
       }
 
-      console.log("🔍 [Admin Check] Checking admin status for user:", user.id);
+      logger.debug("🔍 [Admin Check] Checking admin status for user:", user.id);
 
       try {
         const { data, error } = await supabase
@@ -25,15 +26,15 @@ export const useAdminCheck = () => {
           .maybeSingle(); // Use maybeSingle to avoid errors when no row exists
 
         if (error && error.code !== 'PGRST116') {
-          console.error("❌ [Admin Check] Error:", error);
+          logger.error("❌ [Admin Check] Error:", error);
           throw error;
         }
 
         const isAdmin = !!data;
-        console.log(isAdmin ? "✅ [Admin Check] User is admin" : "👤 [Admin Check] User is not admin");
+        logger.debug(isAdmin ? "✅ [Admin Check] User is admin" : "👤 [Admin Check] User is not admin");
         return isAdmin;
       } catch (err) {
-        console.error("💥 [Admin Check] Unexpected error:", err);
+        logger.error("💥 [Admin Check] Unexpected error:", err);
         return false;
       }
     },

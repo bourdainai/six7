@@ -13,6 +13,7 @@ import { useLocation } from "react-router-dom";
 import { Search } from "lucide-react";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
 import { useMarketplace } from "@/contexts/MarketplaceContext";
+import { logger } from "@/lib/logger";
 
 const Browse = () => {
   const { marketplace, setMarketplace } = useMarketplace();
@@ -51,16 +52,16 @@ const Browse = () => {
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
     queryFn: async () => {
-      console.log("🔍 [Browse] Starting query with filters:", filters);
-      console.log("🔍 [Browse] Page:", page, "Sort:", sortBy, "Marketplace:", marketplace);
+      logger.debug("🔍 [Browse] Starting query with filters:", filters);
+      logger.debug("🔍 [Browse] Page:", page, "Sort:", sortBy, "Marketplace:", marketplace);
       
       try {
         // Health check: Verify Supabase connection
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         if (sessionError) {
-          console.error("❌ [Browse] Session error:", sessionError);
+          logger.error("❌ [Browse] Session error:", sessionError);
         } else {
-          console.log("✅ [Browse] Session valid:", !!session);
+          logger.debug("✅ [Browse] Session valid:", !!session);
         }
 
         const from = (page - 1) * itemsPerPage;
@@ -77,27 +78,27 @@ const Browse = () => {
 
         // Server-side filtering
         if (filters.category) {
-          console.log("🔍 [Browse] Applying category filter:", filters.category);
+          logger.debug("🔍 [Browse] Applying category filter:", filters.category);
           query = query.eq("category", filters.category);
         }
         if (filters.subcategory) {
-          console.log("🔍 [Browse] Applying subcategory filter:", filters.subcategory);
+          logger.debug("🔍 [Browse] Applying subcategory filter:", filters.subcategory);
           query = query.eq("subcategory", filters.subcategory);
         }
         if (filters.condition) {
-          console.log("🔍 [Browse] Applying condition filter:", filters.condition);
+          logger.debug("🔍 [Browse] Applying condition filter:", filters.condition);
           query = query.eq("condition", filters.condition as any);
         }
         if (filters.minPrice) {
-          console.log("🔍 [Browse] Applying minPrice filter:", filters.minPrice);
+          logger.debug("🔍 [Browse] Applying minPrice filter:", filters.minPrice);
           query = query.gte("seller_price", Number(filters.minPrice));
         }
         if (filters.maxPrice) {
-          console.log("🔍 [Browse] Applying maxPrice filter:", filters.maxPrice);
+          logger.debug("🔍 [Browse] Applying maxPrice filter:", filters.maxPrice);
           query = query.lte("seller_price", Number(filters.maxPrice));
         }
         if (filters.brand) {
-          console.log("🔍 [Browse] Applying brand filter:", filters.brand);
+          logger.debug("🔍 [Browse] Applying brand filter:", filters.brand);
           query = query.ilike("brand", `%${filters.brand}%`);
         }
         if (filters.size) {
@@ -122,7 +123,7 @@ const Browse = () => {
           query = query.lte("estimated_delivery_days", Number(filters.maxDeliveryDays));
         }
         if (filters.search) {
-          console.log("🔍 [Browse] Applying search filter:", filters.search);
+          logger.debug("🔍 [Browse] Applying search filter:", filters.search);
           query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%,brand.ilike.%${filters.search}%`);
         }
 
@@ -148,8 +149,8 @@ const Browse = () => {
         const { data, error: queryError, status, statusText } = await query;
         
         if (queryError) {
-          console.error("❌ [Browse] Query error:", queryError);
-          console.error("❌ [Browse] Error details:", {
+          logger.error("❌ [Browse] Query error:", queryError);
+          logger.error("❌ [Browse] Error details:", {
             message: queryError.message,
             code: queryError.code,
             details: queryError.details,
@@ -160,11 +161,11 @@ const Browse = () => {
           throw new Error(`Database query failed: ${queryError.message || "Unknown error"}`);
         }
         
-        console.log("✅ [Browse] Query successful. Results:", data?.length || 0);
-        console.log("📊 [Browse] Response status:", status, statusText);
+        logger.debug("✅ [Browse] Query successful. Results:", data?.length || 0);
+        logger.debug("📊 [Browse] Response status:", status, statusText);
         
         if (!data) {
-          console.warn("⚠️ [Browse] No data returned (null/undefined)");
+          logger.warn("⚠️ [Browse] No data returned (null/undefined)");
           return [];
         }
         
@@ -344,7 +345,7 @@ const Browse = () => {
           title="Unable to load listings"
           message={error instanceof Error ? error.message : "An error occurred while fetching listings. Please try refreshing the page."}
           onRetry={() => {
-            console.log("🔄 [Browse] Manual retry triggered");
+            logger.info("🔄 [Browse] Manual retry triggered");
             refetch();
           }}
         />
