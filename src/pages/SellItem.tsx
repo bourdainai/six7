@@ -91,7 +91,7 @@ const SellItem = () => {
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
   const { isVerified: emailVerified } = useEmailVerification();
-  const { marketplace, currencySymbol } = useMarketplace();
+  const { marketplace, setMarketplace, currencySymbol } = useMarketplace();
 
   // State
   const [images, setImages] = useState<string[]>([]);
