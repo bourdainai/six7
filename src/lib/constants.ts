@@ -47,7 +47,6 @@ export const ROUTES = {
   ACCOUNT: "/seller/account",
   ANALYTICS: "/seller/analytics",
   REPUTATION: "/seller/reputation",
-  AUTOMATION: "/seller/automation",
 } as const;
 
 // Error messages

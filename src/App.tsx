@@ -41,7 +41,6 @@ const ModerationDashboard = lazy(() => import("./pages/ModerationDashboard"));
 const FraudDashboard = lazy(() => import("./pages/FraudDashboard"));
 const Bundles = lazy(() => import("./pages/Bundles"));
 const BundleDetail = lazy(() => import("./pages/BundleDetail"));
-const AutoRelistRules = lazy(() => import("./pages/AutoRelistRules"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const ReturnPolicy = lazy(() => import("./pages/ReturnPolicy"));
@@ -90,7 +89,6 @@ const AppRoutes = () => {
       <Route path="/seller/account" element={<Suspense fallback={<DashboardSkeleton />}><SellerAccountManagement /></Suspense>} />
       <Route path="/seller/analytics" element={<Suspense fallback={<DashboardSkeleton />}><SellerAnalytics /></Suspense>} />
       <Route path="/seller/reputation" element={<Suspense fallback={<DashboardSkeleton />}><SellerReputation /></Suspense>} />
-      <Route path="/seller/automation" element={<Suspense fallback={<DashboardSkeleton />}><AutoRelistRules /></Suspense>} />
       <Route path="/seller/verification" element={<Suspense fallback={<PageSkeleton />}><SellerVerification /></Suspense>} />
       <Route path="/seller/profile/settings" element={<Suspense fallback={<PageSkeleton />}><SellerProfileSettings /></Suspense>} />
       <Route path="/seller/:sellerId" element={<Suspense fallback={<PageSkeleton />}><SellerProfile /></Suspense>} />

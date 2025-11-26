@@ -11,7 +11,6 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { SellerCopilot } from "@/components/SellerCopilot";
 import { StaleInventoryAlert } from "@/components/StaleInventoryAlert";
-import { AutomationRulesPanel } from "@/components/AutomationRulesPanel";
 import { OnboardingStatusCards } from "@/components/seller/OnboardingStatusCards";
 import { BalanceCards } from "@/components/seller/BalanceCards";
 import { ListingsManagement } from "@/components/seller/ListingsManagement";
@@ -221,7 +220,6 @@ const SellerDashboard = () => {
             )}
 
             <StaleInventoryAlert />
-            <AutomationRulesPanel />
           </TabsContent>
 
           <TabsContent value="listings">
