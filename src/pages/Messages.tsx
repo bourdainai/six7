@@ -326,7 +326,7 @@ const Messages = () => {
     if ((messageInput.trim() === '' && pendingAttachments.length === 0) || !selectedConversation || !user || shouldBlockMessage) return;
 
     try {
-      let contentToSend = messageInput.trim();
+      const contentToSend = messageInput.trim();
       
       // If editing, update existing message
       if (editingMessage) {

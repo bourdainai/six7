@@ -31,7 +31,7 @@ serve(async (req) => {
     const percentageDiff = ((difference / requested_value) * 100).toFixed(1);
 
     let label = 'Very Unbalanced';
-    let suggestions = [];
+    const suggestions = [];
 
     if (score >= 90) {
       label = 'Very Fair';

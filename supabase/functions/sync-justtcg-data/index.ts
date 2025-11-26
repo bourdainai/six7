@@ -66,7 +66,7 @@ serve(async (req) => {
 
     // Determine sync mode
     let targetSetId = setId;
-    let updateOnly = mode === 'prices';
+    const updateOnly = mode === 'prices';
 
     // If no set specified, auto-select based on mode
     if (!targetSetId) {

@@ -86,14 +86,18 @@ const RARITIES = [
 ];
 
 const COLORS = [
-  "Black", "White", "Red", "Blue", "Green", "Yellow", 
+  "Black", "White", "Red", "Blue", "Green", "Yellow",
   "Purple", "Pink", "Orange", "Brown", "Grey", "Multi-Color"
 ];
 
 const MATERIALS = [
-  "Cardboard", "Plastic", "Metal", "Fabric", 
+  "Cardboard", "Plastic", "Metal", "Fabric",
   "Acrylic", "Wood", "Rubber", "Mixed Materials"
 ];
+
+import { useMobileDetect } from "@/hooks/useMobileDetect";
+
+// ... existing imports ...
 
 export const SearchFilters = ({
   onFilterChange,
@@ -112,6 +116,7 @@ export const SearchFilters = ({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const { isMobile } = useMobileDetect();
 
   // Fetch autocomplete suggestions
   useEffect(() => {
@@ -297,8 +302,11 @@ export const SearchFilters = ({
                   )}
                 </Button>
               </SheetTrigger>
-              <SheetContent className="w-[350px] sm:w-[450px] border-l border-border overflow-y-auto">
-                <SheetHeader>
+              <SheetContent
+                side={isMobile ? "bottom" : "right"}
+                className={isMobile ? "h-[85vh] rounded-t-2xl px-4" : "w-[350px] sm:w-[450px] border-l border-border overflow-y-auto"}
+              >
+                <SheetHeader className={isMobile ? "text-left" : ""}>
                   <SheetTitle>Advanced Filters</SheetTitle>
                   <SheetDescription>
                     {activeFilterCount > 0 ? `${activeFilterCount} filter${activeFilterCount > 1 ? 's' : ''} active` : 'Refine your search'}
@@ -348,7 +356,7 @@ export const SearchFilters = ({
                   {localFilters.category === "Trading Cards" && (
                     <div className="space-y-4 pb-4 border-b border-border">
                       <h3 className="text-sm font-semibold text-primary">Card Details</h3>
-                      
+
                       <div className="space-y-2">
                         <Label className="text-sm">Rarity</Label>
                         <Select
@@ -377,7 +385,7 @@ export const SearchFilters = ({
                   {/* Price & Condition */}
                   <div className="space-y-4 pb-4 border-b border-border">
                     <h3 className="text-sm font-semibold text-primary">Price & Condition</h3>
-                    
+
                     <div className="space-y-2">
                       <Label className="text-sm">Condition</Label>
                       <Select
@@ -416,7 +424,7 @@ export const SearchFilters = ({
                   {/* Product Attributes */}
                   <div className="space-y-4 pb-4 border-b border-border">
                     <h3 className="text-sm font-semibold text-primary">Product Details</h3>
-                    
+
                     <div className="space-y-2">
                       <Label className="text-sm">Brand</Label>
                       <Input
@@ -467,7 +475,7 @@ export const SearchFilters = ({
                   {/* Shipping & Delivery */}
                   <div className="space-y-4 pb-4 border-b border-border">
                     <h3 className="text-sm font-semibold text-primary">Shipping & Delivery</h3>
-                    
+
                     <div className="space-y-2">
                       <Label className="text-sm">Shipping</Label>
                       <Select
@@ -506,7 +514,7 @@ export const SearchFilters = ({
                   {/* Trading Options */}
                   <div className="space-y-4">
                     <h3 className="text-sm font-semibold text-primary">Trading</h3>
-                    
+
                     <div className="space-y-2">
                       <Label className="text-sm">Trade Options</Label>
                       <Select
@@ -545,66 +553,70 @@ export const SearchFilters = ({
               {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
             </Button>
           </div>
-        </div>
+        </div >
 
         {/* Autocomplete Dropdown */}
-        {showSuggestions && suggestions.length > 0 && (
-          <div
-            ref={suggestionsRef}
-            className="absolute top-full left-0 right-0 mt-2 bg-background/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-2xl overflow-hidden z-50"
-          >
-            <Command>
-              <CommandList>
-                <CommandGroup heading="Suggestions">
-                  {suggestions.map((s, i) => (
-                    <CommandItem
-                      key={i}
-                      onSelect={() => {
-                        updateFilter("search", s.text);
-                        setShowSuggestions(false);
-                        handleSearch();
-                      }}
-                      className="cursor-pointer"
-                    >
-                      <span className="mr-2 text-lg">{s.icon}</span>
-                      <span>{s.text}</span>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </div>
-        )}
-      </div>
+        {
+          showSuggestions && suggestions.length > 0 && (
+            <div
+              ref={suggestionsRef}
+              className="absolute top-full left-0 right-0 mt-2 bg-background/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-2xl overflow-hidden z-50"
+            >
+              <Command>
+                <CommandList>
+                  <CommandGroup heading="Suggestions">
+                    {suggestions.map((s, i) => (
+                      <CommandItem
+                        key={i}
+                        onSelect={() => {
+                          updateFilter("search", s.text);
+                          setShowSuggestions(false);
+                          handleSearch();
+                        }}
+                        className="cursor-pointer"
+                      >
+                        <span className="mr-2 text-lg">{s.icon}</span>
+                        <span>{s.text}</span>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </div>
+          )
+        }
+      </div >
 
       {/* Active Filter Badges */}
-      {activeFilterCount > 0 && (
-        <div className="flex flex-wrap gap-2 mt-4 justify-center animate-in fade-in slide-in-from-top-2">
-          {Object.entries(localFilters).map(([key, value]) => {
-            if (!value || key === 'search') return null;
-            return (
-              <Badge key={key} variant="secondary" className="pl-2 pr-1 py-1 bg-secondary/50 hover:bg-secondary/70 transition-colors">
-                <span className="capitalize mr-1 text-muted-foreground">{key}:</span>
-                <span className="font-medium">{value}</span>
-                <button
-                  onClick={() => updateFilter(key as keyof FilterState, "")}
-                  className="ml-2 hover:bg-background/50 rounded-full p-0.5"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </Badge>
-            )
-          })}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 text-xs text-muted-foreground hover:text-foreground"
-            onClick={clearFilters}
-          >
-            Clear all
-          </Button>
-        </div>
-      )}
-    </div>
+      {
+        activeFilterCount > 0 && (
+          <div className="flex flex-wrap gap-2 mt-4 justify-center animate-in fade-in slide-in-from-top-2">
+            {Object.entries(localFilters).map(([key, value]) => {
+              if (!value || key === 'search') return null;
+              return (
+                <Badge key={key} variant="secondary" className="pl-2 pr-1 py-1 bg-secondary/50 hover:bg-secondary/70 transition-colors">
+                  <span className="capitalize mr-1 text-muted-foreground">{key}:</span>
+                  <span className="font-medium">{value}</span>
+                  <button
+                    onClick={() => updateFilter(key as keyof FilterState, "")}
+                    className="ml-2 hover:bg-background/50 rounded-full p-0.5"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              )
+            })}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 text-xs text-muted-foreground hover:text-foreground"
+              onClick={clearFilters}
+            >
+              Clear all
+            </Button>
+          </div>
+        )
+      }
+    </div >
   );
 };

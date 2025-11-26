@@ -28,7 +28,7 @@ serve(async (req) => {
     console.log(`Loaded ${sets.length} sets from GitHub`);
 
     let updatedSets = 0;
-    let errors = [];
+    const errors = [];
 
     // Update each set's printed_total
     for (const set of sets) {

@@ -19,7 +19,7 @@ serve(async (req) => {
 
     const { timeframe = '30d' } = await req.json();
 
-    let startDate = new Date();
+    const startDate = new Date();
     switch (timeframe) {
       case '7d':
         startDate.setDate(startDate.getDate() - 7);

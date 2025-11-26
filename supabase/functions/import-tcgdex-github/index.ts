@@ -205,7 +205,7 @@ serve(async (req) => {
         console.log(`   ${newCards.length} new cards to import, ${existingCards?.length || 0} already exist`);
         
         let setImported = 0;
-        let setSkipped = existingCards?.length || 0;
+        const setSkipped = existingCards?.length || 0;
         let setErrors = 0;
 
         // Process cards in batches

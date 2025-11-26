@@ -34,7 +34,7 @@ const Browse = () => {
     freeShipping: "",
     maxDeliveryDays: "",
   });
-  
+
   const [vibeSearchOpen, setVibeSearchOpen] = useState(false);
   const [semanticResults, setSemanticResults] = useState<ListingSummary[] | null>(null);
   const [searchMode, setSearchMode] = useState<'browse' | 'semantic' | 'vibe'>('browse');
@@ -54,7 +54,7 @@ const Browse = () => {
     queryFn: async () => {
       logger.debug("🔍 [Browse] Starting query with filters:", filters);
       logger.debug("🔍 [Browse] Page:", page, "Sort:", sortBy, "Marketplace:", marketplace);
-      
+
       try {
         // Health check: Verify Supabase connection
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -147,7 +147,7 @@ const Browse = () => {
         query = query.range(from, to);
 
         const { data, error: queryError, status, statusText } = await query;
-        
+
         if (queryError) {
           logger.error("❌ [Browse] Query error:", queryError);
           logger.error("❌ [Browse] Error details:", {
@@ -160,15 +160,15 @@ const Browse = () => {
           });
           throw new Error(`Database query failed: ${queryError.message || "Unknown error"}`);
         }
-        
+
         logger.debug("✅ [Browse] Query successful. Results:", data?.length || 0);
         logger.debug("📊 [Browse] Response status:", status, statusText);
-        
+
         if (!data) {
           logger.warn("⚠️ [Browse] No data returned (null/undefined)");
           return [];
         }
-        
+
         return data as ListingSummary[];
       } catch (err) {
         console.error("💥 [Browse] Unexpected error:", err);
@@ -211,25 +211,25 @@ const Browse = () => {
   const searchParams = new URLSearchParams(location.search);
   const searchQuery = searchParams.get('search') || filters.search;
   const categoryQuery = filters.category || '';
-  
+
   // Build dynamic SEO based on filters
-  const seoTitle = searchQuery 
+  const seoTitle = searchQuery
     ? `Search Results for "${searchQuery}" | 6Seven Pokémon Card Marketplace`
     : categoryQuery
-    ? `Shop ${categoryQuery} | 6Seven Pokémon Card Marketplace`
-    : "Browse Pokémon Cards | 6Seven Marketplace";
-    
+      ? `Shop ${categoryQuery} | 6Seven Pokémon Card Marketplace`
+      : "Browse Pokémon Cards | 6Seven Marketplace";
+
   const seoDescription = searchQuery
     ? `Find ${searchQuery} Pokémon cards on 6Seven. Browse graded and raw cards with AI-powered search and pricing comps.`
     : categoryQuery
-    ? `Shop ${categoryQuery} Pokémon cards on 6Seven. Discover great deals on singles, sealed product, and graded slabs.`
-    : "Browse thousands of Pokémon card listings on 6Seven. AI-powered search, pricing comps, and trade offers built for card collectors.";
+      ? `Shop ${categoryQuery} Pokémon cards on 6Seven. Discover great deals on singles, sealed product, and graded slabs.`
+      : "Browse thousands of Pokémon card listings on 6Seven. AI-powered search, pricing comps, and trade offers built for card collectors.";
 
   const seoKeywords = searchQuery
     ? `${searchQuery} pokemon cards, buy ${searchQuery}, sell ${searchQuery}, pokemon marketplace, 6Seven`
     : categoryQuery
-    ? `${categoryQuery} pokemon cards, buy ${categoryQuery}, ${categoryQuery} pokemon marketplace, 6Seven`
-    : "pokemon cards, pokemon tcg, graded pokemon cards, raw pokemon cards, card marketplace, trading cards, 6Seven";
+      ? `${categoryQuery} pokemon cards, buy ${categoryQuery}, ${categoryQuery} pokemon marketplace, 6Seven`
+      : "pokemon cards, pokemon tcg, graded pokemon cards, raw pokemon cards, card marketplace, trading cards, 6Seven";
 
   return (
     <PageLayout>
@@ -247,7 +247,7 @@ const Browse = () => {
           "url": `https://6seven.ai/browse${location.search}`
         }}
       />
-      
+
       <div className="mb-8 space-y-6">
         {/* Marketplace Toggle - Fixed height to prevent shift */}
         <div className="max-w-7xl mx-auto px-4 sm:px-0 flex justify-end min-h-[40px]">
@@ -281,7 +281,7 @@ const Browse = () => {
 
         {/* Magical Search Bar */}
         <div className="pt-4">
-          <SearchFilters 
+          <SearchFilters
             onFilterChange={setFilters}
             activeFilters={filters}
             onSemanticSearch={handleSemanticResults}
@@ -350,18 +350,18 @@ const Browse = () => {
           }}
         />
       ) : isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 min-h-[600px]">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6 min-h-[600px]">
           {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
             <ListingCardSkeleton key={i} />
           ))}
         </div>
       ) : filteredListings && filteredListings.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
           {filteredListings.map((listing) => (
             <ListingCard
               key={listing.id}
               listing={listing}
-              showSaveButton={false}
+              showSaveButton={true}
             />
           ))}
         </div>
@@ -372,13 +372,13 @@ const Browse = () => {
           </div>
           <h3 className="text-lg font-medium mb-2">No cards found</h3>
           <p className="text-muted-foreground mb-6">
-            {Object.values(filters).some(v => v) 
+            {Object.values(filters).some(v => v)
               ? "We couldn't find any cards matching your specific filters. Try broadening your search."
               : "There are no listings available at the moment."}
           </p>
           {Object.values(filters).some(v => v) && (
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setFilters({
                 search: "",
                 category: "",

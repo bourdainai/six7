@@ -54,7 +54,7 @@ serve(async (req) => {
       });
     }
 
-    let updateData: any = {};
+    const updateData: any = {};
 
     if (action === "mark_shipped") {
       updateData.status = "shipped";

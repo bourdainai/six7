@@ -77,7 +77,7 @@ serve(async (req) => {
     const isValid = issues.length === 0;
 
     // Additional validation rules by country with detailed checks
-    let validationDetails: any = {
+    const validationDetails: any = {
       checks: {
         hasAddress: !!addressData.address,
         hasCity: !!addressData.city,
