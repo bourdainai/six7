@@ -14,27 +14,27 @@ export const Hero = () => {
     </div>
 
     {/* Content */}
-    <div className="relative z-10 max-w-6xl mx-auto px-6 py-32 text-center">
-      <h1 className="text-5xl md:text-7xl lg:text-8xl font-light mb-8 tracking-tight leading-[1.1] animate-fade-up">
+    <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-20 md:py-32 text-center">
+      <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-light mb-6 md:mb-8 tracking-tight leading-[1.1] animate-fade-up">
         <span className="text-white font-extralight">The World's Premier</span>
         <br />
         <span className="text-white font-normal bg-gradient-to-r from-white via-cyan-200 to-white bg-clip-text text-transparent animate-gradient">Pokémon Marketplace.</span>
       </h1>
 
-      <p className="text-base md:text-lg text-zinc-400 mb-12 max-w-2xl mx-auto font-normal leading-relaxed tracking-tight animate-fade-up" style={{ animationDelay: '0.1s' }}>
+      <p className="text-sm sm:text-base md:text-lg text-zinc-400 mb-8 md:mb-12 max-w-2xl mx-auto font-normal leading-relaxed tracking-tight animate-fade-up" style={{ animationDelay: '0.1s' }}>
         Authenticated. Insured. Liquid.
         <br className="hidden md:block" />
         The only AI-native platform built for the modern collector.
       </p>
 
-      <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-20 animate-fade-up" style={{ animationDelay: '0.2s' }}>
-        <Button asChild size="lg" className="text-base px-8 h-12 font-normal bg-white text-black hover:bg-zinc-200 hover:scale-105 transition-all duration-200 border-0">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center mb-12 md:mb-20 animate-fade-up" style={{ animationDelay: '0.2s' }}>
+        <Button asChild size="lg" className="w-full sm:w-auto text-base px-8 h-12 font-normal bg-white text-black hover:bg-zinc-200 hover:scale-105 transition-all duration-200 border-0">
           <Link to="/sell">
             Start Selling
             <ArrowRight className="w-4 h-4 ml-2" />
           </Link>
         </Button>
-        <Button asChild size="lg" className="text-base px-8 h-12 font-normal bg-white text-black hover:bg-zinc-100 hover:scale-105 transition-all duration-200 border-0 shadow-lg">
+        <Button asChild size="lg" className="w-full sm:w-auto text-base px-8 h-12 font-normal bg-white text-black hover:bg-zinc-100 hover:scale-105 transition-all duration-200 border-0 shadow-lg">
           <Link to="/browse">
             Browse Items
           </Link>
@@ -42,18 +42,18 @@ export const Hero = () => {
       </div>
 
       {/* Stats - ultra-minimal design with hover effects */}
-      <div className="grid grid-cols-3 gap-8 max-w-3xl mx-auto pt-12 border-t border-zinc-900 animate-fade-up" style={{ animationDelay: '0.3s' }}>
+      <div className="grid grid-cols-3 gap-4 sm:gap-8 max-w-3xl mx-auto pt-8 md:pt-12 border-t border-zinc-900 animate-fade-up" style={{ animationDelay: '0.3s' }}>
         <div className="group cursor-default transition-all duration-300 hover:-translate-y-1">
-          <div className="text-3xl font-light text-white mb-1 tracking-tight group-hover:text-cyan-400 transition-colors">10s</div>
-          <div className="text-xs uppercase tracking-wider text-zinc-500 font-normal group-hover:text-zinc-400 transition-colors">Avg. list time</div>
+          <div className="text-2xl sm:text-3xl font-light text-white mb-1 tracking-tight group-hover:text-cyan-400 transition-colors">10s</div>
+          <div className="text-[10px] sm:text-xs uppercase tracking-wider text-zinc-500 font-normal group-hover:text-zinc-400 transition-colors">Avg. list time</div>
         </div>
         <div className="group cursor-default transition-all duration-300 hover:-translate-y-1">
-          <div className="text-3xl font-light text-white mb-1 tracking-tight group-hover:text-cyan-400 transition-colors">40%</div>
+          <div className="text-2xl sm:text-3xl font-light text-white mb-1 tracking-tight group-hover:text-cyan-400 transition-colors">40%</div>
           <div className="text-xs uppercase tracking-wider text-zinc-500 font-normal group-hover:text-zinc-400 transition-colors">CHEAPER SALES</div>
         </div>
         <div className="group cursor-default transition-all duration-300 hover:-translate-y-1">
-          <div className="text-3xl font-light text-white mb-1 tracking-tight group-hover:text-cyan-400 transition-colors">99.8%</div>
-          <div className="text-xs uppercase tracking-wider text-zinc-500 font-normal group-hover:text-zinc-400 transition-colors">AI accuracy</div>
+          <div className="text-2xl sm:text-3xl font-light text-white mb-1 tracking-tight group-hover:text-cyan-400 transition-colors">99.8%</div>
+          <div className="text-[10px] sm:text-xs uppercase tracking-wider text-zinc-500 font-normal group-hover:text-zinc-400 transition-colors">AI accuracy</div>
         </div>
       </div>
     </div>

@@ -34,39 +34,39 @@ export const ShowcaseSection = () => {
             <div className="absolute inset-0 z-10 bg-gradient-to-b from-background via-transparent to-black/90" />
 
             <div className="container relative z-20 mx-auto px-4 sm:px-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 items-center">
-                    <div className="space-y-6 md:space-y-8">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 md:gap-12 items-center">
+                    <div className="space-y-6 md:space-y-8 text-center lg:text-left order-2 lg:order-1">
                         <h2 className="text-4xl md:text-5xl lg:text-7xl font-bold tracking-tighter">
                             <span className="bg-gradient-to-r from-white via-cyan-200 to-white bg-clip-text text-transparent animate-gradient">
                                 The World's Most Desirable Cards.
                             </span>
                         </h2>
-                        <p className="text-lg md:text-xl text-gray-400 max-w-xl leading-relaxed">
+                        <p className="text-base md:text-xl text-gray-400 max-w-xl leading-relaxed mx-auto lg:mx-0">
                             Access a curated marketplace of high-end Pokémon TCG assets.
                             From vintage grails to modern chase cards, authenticated and ready for your collection.
                         </p>
-                        <div className="flex flex-wrap gap-3 md:gap-4">
-                            <Button asChild size="lg" className="bg-white text-black hover:bg-zinc-100 hover:scale-105 transition-all duration-200 px-6 md:px-8 h-12 md:h-14 text-base md:text-lg border-0 shadow-lg">
+                        <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center lg:justify-start">
+                            <Button asChild size="lg" className="w-full sm:w-auto bg-white text-black hover:bg-zinc-100 hover:scale-105 transition-all duration-200 px-6 md:px-8 h-12 md:h-14 text-base md:text-lg border-0 shadow-lg">
                                 <Link to="/browse">
                                     Explore the Vault <ArrowRight className="ml-2 h-4 w-4 md:h-5 md:w-5" />
                                 </Link>
                             </Button>
-                            <Button asChild size="lg" className="bg-white text-black hover:bg-zinc-100 hover:scale-105 transition-all duration-200 px-6 md:px-8 h-12 md:h-14 text-base md:text-lg border-0 shadow-lg">
+                            <Button asChild size="lg" className="w-full sm:w-auto bg-white text-black hover:bg-zinc-100 hover:scale-105 transition-all duration-200 px-6 md:px-8 h-12 md:h-14 text-base md:text-lg border-0 shadow-lg">
                                 <Link to="/sell">Start Selling</Link>
                             </Button>
                         </div>
                     </div>
 
-                    <div className="relative h-[400px] md:h-[600px] flex items-center justify-center perspective-1000" ref={containerRef}>
+                    <div className="relative h-[300px] sm:h-[400px] md:h-[600px] flex items-center justify-center perspective-1000 order-1 lg:order-2" ref={containerRef}>
                         {/* Floating Cards */}
-                        <div className="absolute top-0 right-0 w-56 md:w-80 transform rotate-12 hover:rotate-0 transition-all duration-700 ease-out z-10 hover:z-30 hover:scale-110">
+                        <div className="absolute top-0 right-10 sm:right-0 w-40 sm:w-56 md:w-80 transform rotate-12 hover:rotate-0 transition-all duration-700 ease-out z-10 hover:z-30 hover:scale-110">
                             <img
                                 src="/assets/home/charizard.png"
                                 alt="Charizard Grail"
                                 className="w-full h-auto drop-shadow-[0_20px_50px_rgba(255,100,0,0.3)]"
                             />
                         </div>
-                        <div className="absolute bottom-10 left-10 w-56 md:w-80 transform -rotate-12 hover:rotate-0 transition-all duration-700 ease-out z-20 hover:z-30 hover:scale-110">
+                        <div className="absolute bottom-0 sm:bottom-10 left-10 w-40 sm:w-56 md:w-80 transform -rotate-12 hover:rotate-0 transition-all duration-700 ease-out z-20 hover:z-30 hover:scale-110">
                             <img
                                 src="/assets/home/lugia.png"
                                 alt="Lugia Grail"

@@ -8,7 +8,13 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Shield, Heart, Bell } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Menu, X, Shield, Heart, Bell,
+  PlusCircle, Search, User, LogOut,
+  ShoppingBag, Wallet, RefreshCw, BarChart3, Star
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface NavLink {
   to: string;
@@ -40,120 +46,232 @@ export const MobileMenu = ({
     onOpenChange(false);
   };
 
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.05
+      }
+    }
+  };
+
+  const item = {
+    hidden: { opacity: 0, x: -20 },
+    show: { opacity: 1, x: 0 }
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-10 w-10">
-          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        <Button variant="ghost" size="icon" className="h-10 w-10 relative overflow-hidden rounded-full hover:bg-secondary/50 transition-all duration-300">
+          <AnimatePresence mode="wait">
+            {open ? (
+              <motion.div
+                key="close"
+                initial={{ rotate: -90, opacity: 0 }}
+                animate={{ rotate: 0, opacity: 1 }}
+                exit={{ rotate: 90, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <X className="h-5 w-5" />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="menu"
+                initial={{ rotate: 90, opacity: 0 }}
+                animate={{ rotate: 0, opacity: 1 }}
+                exit={{ rotate: -90, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Menu className="h-5 w-5" />
+              </motion.div>
+            )}
+          </AnimatePresence>
           <span className="sr-only">Toggle menu</span>
         </Button>
       </SheetTrigger>
-      <SheetContent side="right" className="w-[300px] sm:w-[400px] p-0 border-l border-divider-gray">
-        <SheetHeader className="px-6 py-4 border-b border-divider-gray">
-          <SheetTitle className="text-left font-normal">Menu</SheetTitle>
-        </SheetHeader>
-        <div className="flex flex-col h-full overflow-y-auto">
-          <nav className="flex-1 px-6 py-6 space-y-1">
-            {/* Main Navigation */}
-            {navLinks.map((link) => (
-              <Link
-                key={link.to}
-                to={link.to}
-                onClick={handleNavClick}
-                className="block px-4 py-3 text-base font-normal text-foreground hover:bg-soft-neutral transition-colors duration-fast rounded-sm"
-              >
-                {link.label}
-              </Link>
-            ))}
-            
+      <SheetContent
+        side="right"
+        className="w-full sm:w-[400px] p-0 border-l border-white/10 bg-background/80 backdrop-blur-xl shadow-2xl"
+      >
+        <div className="flex flex-col h-full overflow-y-auto no-scrollbar">
+          {/* Header Profile Section */}
+          <div className="pt-12 pb-6 px-6 bg-gradient-to-b from-secondary/50 to-transparent">
+            {user ? (
+              <div className="flex items-center gap-4">
+                <Avatar className="h-16 w-16 border-2 border-primary/20 shadow-lg ring-2 ring-background">
+                  <AvatarImage src={user?.user_metadata?.avatar_url} />
+                  <AvatarFallback className="bg-primary/10 text-primary text-xl">
+                    {user?.email?.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col">
+                  <span className="font-bold text-lg tracking-tight">
+                    {user?.user_metadata?.full_name || user?.email?.split('@')[0]}
+                  </span>
+                  <span className="text-xs text-muted-foreground font-medium bg-secondary/50 px-2 py-0.5 rounded-full w-fit mt-1">
+                    Member
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <h2 className="text-2xl font-bold tracking-tight">Welcome to 6Seven</h2>
+                <p className="text-muted-foreground">Join the marketplace for collectors.</p>
+              </div>
+            )}
+          </div>
+
+          {/* Quick Actions */}
+          <div className="px-6 py-4 grid grid-cols-2 gap-3">
+            <Link
+              to="/sell"
+              onClick={handleNavClick}
+              className="flex flex-col items-center justify-center p-4 rounded-2xl bg-primary/5 hover:bg-primary/10 border border-primary/10 transition-all active:scale-95 group"
+            >
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mb-2 group-hover:bg-primary group-hover:text-white transition-colors">
+                <PlusCircle className="h-5 w-5" />
+              </div>
+              <span className="font-semibold text-sm">Sell Item</span>
+            </Link>
+            <Link
+              to="/browse"
+              onClick={handleNavClick}
+              className="flex flex-col items-center justify-center p-4 rounded-2xl bg-secondary/50 hover:bg-secondary border border-white/5 transition-all active:scale-95 group"
+            >
+              <div className="h-10 w-10 rounded-full bg-background flex items-center justify-center mb-2 shadow-sm group-hover:scale-110 transition-transform">
+                <Search className="h-5 w-5" />
+              </div>
+              <span className="font-semibold text-sm">Browse</span>
+            </Link>
+          </div>
+
+          <motion.nav
+            variants={container}
+            initial="hidden"
+            animate="show"
+            className="flex-1 px-4 py-2 space-y-1"
+          >
             {user && (
               <>
-                <div className="border-t border-divider-gray my-4" />
-                
-                {/* User Section */}
-                <div className="px-4 py-2">
-                  <h3 className="text-xs font-normal text-muted-foreground uppercase tracking-wider">
-                    Account
+                <div className="px-4 py-2 mt-2">
+                  <h3 className="text-xs font-bold text-muted-foreground/70 uppercase tracking-wider flex items-center gap-2">
+                    <User className="w-3 h-3" /> Account
                   </h3>
                 </div>
-                
-                <Link to="/messages" onClick={handleNavClick} className="block px-4 py-3 text-base font-normal text-foreground hover:bg-soft-neutral transition-colors duration-fast rounded-sm flex items-center justify-between">
-                  <span>Messages</span>
-                  {unreadMessagesCount > 0 && (
-                    <Badge variant="destructive" className="rounded-full h-5 min-w-5 px-1.5 flex items-center justify-center text-xs">
-                      {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
-                    </Badge>
-                  )}
-                </Link>
-                <Link to="/orders" onClick={handleNavClick} className="block px-4 py-3 text-base font-normal text-foreground hover:bg-soft-neutral transition-colors duration-fast rounded-sm">
-                  Orders
-                </Link>
-                <Link to="/wallet" onClick={handleNavClick} className="block px-4 py-3 text-base font-normal text-foreground hover:bg-soft-neutral transition-colors duration-fast rounded-sm">
-                  Wallet
-                </Link>
-                <Link to="/trade-offers" onClick={handleNavClick} className="block px-4 py-3 text-base font-normal text-foreground hover:bg-soft-neutral transition-colors duration-fast rounded-sm">
-                  Trade Offers
-                </Link>
-                <Link to="/saved" onClick={handleNavClick} className="block px-4 py-3 text-base font-normal text-foreground hover:bg-soft-neutral transition-colors duration-fast rounded-sm flex items-center gap-2">
-                  <Heart className="w-4 h-4" />
-                  Saved Items
-                </Link>
-                
-                <button
-                  onClick={() => {
-                    handleNavClick();
-                    setTimeout(onNotificationsClick, 300);
-                  }}
-                  className="w-full text-left px-4 py-3 text-base font-normal text-foreground hover:bg-soft-neutral transition-colors duration-fast rounded-sm flex items-center gap-2"
-                >
-                  <Bell className="w-4 h-4" />
-                  Notifications
-                </button>
-                
-                <div className="border-t border-divider-gray my-4" />
-                
-                {/* Seller Section */}
+
+                <motion.div variants={item}>
+                  <Link to="/messages" onClick={handleNavClick} className="flex items-center justify-between px-4 py-3.5 rounded-xl hover:bg-secondary/50 active:bg-secondary transition-colors group">
+                    <span className="flex items-center gap-3 font-medium group-hover:translate-x-1 transition-transform">
+                      Messages
+                    </span>
+                    {unreadMessagesCount > 0 && (
+                      <Badge variant="destructive" className="rounded-full h-5 min-w-5 px-1.5 flex items-center justify-center text-xs shadow-sm">
+                        {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
+                      </Badge>
+                    )}
+                  </Link>
+                </motion.div>
+
+                <motion.div variants={item}>
+                  <Link to="/orders" onClick={handleNavClick} className="flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-secondary/50 active:bg-secondary transition-colors group">
+                    <ShoppingBag className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                    <span className="font-medium group-hover:translate-x-1 transition-transform">Orders</span>
+                  </Link>
+                </motion.div>
+
+                <motion.div variants={item}>
+                  <Link to="/wallet" onClick={handleNavClick} className="flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-secondary/50 active:bg-secondary transition-colors group">
+                    <Wallet className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                    <span className="font-medium group-hover:translate-x-1 transition-transform">Wallet</span>
+                  </Link>
+                </motion.div>
+
+                <motion.div variants={item}>
+                  <Link to="/trade-offers" onClick={handleNavClick} className="flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-secondary/50 active:bg-secondary transition-colors group">
+                    <RefreshCw className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                    <span className="font-medium group-hover:translate-x-1 transition-transform">Trade Offers</span>
+                  </Link>
+                </motion.div>
+
+                <motion.div variants={item}>
+                  <Link to="/saved" onClick={handleNavClick} className="flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-secondary/50 active:bg-secondary transition-colors group">
+                    <Heart className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                    <span className="font-medium group-hover:translate-x-1 transition-transform">Saved Items</span>
+                  </Link>
+                </motion.div>
+
+                <motion.div variants={item}>
+                  <button
+                    onClick={() => {
+                      handleNavClick();
+                      setTimeout(onNotificationsClick, 300);
+                    }}
+                    className="w-full text-left flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-secondary/50 active:bg-secondary transition-colors group"
+                  >
+                    <Bell className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                    <span className="font-medium group-hover:translate-x-1 transition-transform">Notifications</span>
+                  </button>
+                </motion.div>
+
+                <div className="my-4 border-t border-white/5 mx-4" />
+
                 <div className="px-4 py-2">
-                  <h3 className="text-xs font-normal text-muted-foreground uppercase tracking-wider">
-                    Seller
+                  <h3 className="text-xs font-bold text-muted-foreground/70 uppercase tracking-wider flex items-center gap-2">
+                    <BarChart3 className="w-3 h-3" /> Seller Center
                   </h3>
                 </div>
-                
-                <Link to="/dashboard/seller" onClick={handleNavClick} className="block px-4 py-3 text-base font-normal text-foreground hover:bg-soft-neutral transition-colors duration-fast rounded-sm">
-                  Seller Dashboard
-                </Link>
-                <Link to="/seller/analytics" onClick={handleNavClick} className="block px-4 py-3 text-base font-normal text-foreground hover:bg-soft-neutral transition-colors duration-fast rounded-sm">
-                  Analytics
-                </Link>
-                <Link to="/seller/reputation" onClick={handleNavClick} className="block px-4 py-3 text-base font-normal text-foreground hover:bg-soft-neutral transition-colors duration-fast rounded-sm">
-                  Reputation
-                </Link>
-                
+
+                <motion.div variants={item}>
+                  <Link to="/dashboard/seller" onClick={handleNavClick} className="flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-secondary/50 active:bg-secondary transition-colors group">
+                    <span className="font-medium group-hover:translate-x-1 transition-transform">Dashboard</span>
+                  </Link>
+                </motion.div>
+
+                <motion.div variants={item}>
+                  <Link to="/seller/analytics" onClick={handleNavClick} className="flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-secondary/50 active:bg-secondary transition-colors group">
+                    <span className="font-medium group-hover:translate-x-1 transition-transform">Analytics</span>
+                  </Link>
+                </motion.div>
+
+                <motion.div variants={item}>
+                  <Link to="/seller/reputation" onClick={handleNavClick} className="flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-secondary/50 active:bg-secondary transition-colors group">
+                    <Star className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                    <span className="font-medium group-hover:translate-x-1 transition-transform">Reputation</span>
+                  </Link>
+                </motion.div>
+
                 {isAdmin && (
                   <>
-                    <div className="border-t border-divider-gray my-4" />
+                    <div className="my-4 border-t border-white/5 mx-4" />
                     <div className="px-4 py-2">
-                      <h3 className="text-xs font-normal text-muted-foreground uppercase tracking-wider">
-                        Admin
+                      <h3 className="text-xs font-bold text-muted-foreground/70 uppercase tracking-wider flex items-center gap-2">
+                        <Shield className="w-3 h-3" /> Admin
                       </h3>
                     </div>
-                    <Link to="/admin" onClick={handleNavClick} className="block px-4 py-3 text-base font-normal text-foreground hover:bg-soft-neutral transition-colors duration-fast rounded-sm">
-                      <Shield className="w-4 h-4 inline mr-2" />
-                      Admin Dashboard
-                    </Link>
+                    <motion.div variants={item}>
+                      <Link to="/admin" onClick={handleNavClick} className="flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-secondary/50 active:bg-secondary transition-colors group">
+                        <span className="font-medium group-hover:translate-x-1 transition-transform">Admin Dashboard</span>
+                      </Link>
+                    </motion.div>
                   </>
                 )}
-                
-                <div className="border-t border-divider-gray my-4" />
-                <button
-                  onClick={onSignOut}
-                  className="w-full text-left px-4 py-3 text-base font-normal text-destructive hover:bg-soft-neutral transition-colors duration-fast rounded-sm"
-                >
-                  Sign Out
-                </button>
+
+                <div className="my-4 border-t border-white/5 mx-4" />
+
+                <motion.div variants={item}>
+                  <button
+                    onClick={onSignOut}
+                    className="w-full text-left flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-destructive/10 text-destructive active:bg-destructive/20 transition-colors group"
+                  >
+                    <LogOut className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    <span className="font-medium group-hover:translate-x-1 transition-transform">Sign Out</span>
+                  </button>
+                </motion.div>
               </>
             )}
-          </nav>
+          </motion.nav>
         </div>
       </SheetContent>
     </Sheet>
