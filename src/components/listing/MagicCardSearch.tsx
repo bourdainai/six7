@@ -309,19 +309,19 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
   };
 
   return (
-    <div className="w-full space-y-4">
+    <div className="w-full max-w-3xl mx-auto space-y-4">
       <div className="relative group">
-        <div className="absolute -inset-0.5 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 rounded-xl opacity-30 group-hover:opacity-50 transition duration-500 blur"></div>
-        <div className="relative bg-background rounded-xl border shadow-sm p-1 flex items-center gap-2">
+        <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 rounded-2xl opacity-20 group-hover:opacity-40 transition duration-500 blur"></div>
+        <div className="relative bg-background/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-1 flex items-center gap-2">
           <div className="pl-3 text-muted-foreground">
-            {isSearching ? <Loader2 className="h-5 w-5 animate-spin" /> : <Search className="h-5 w-5" />}
+            {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
           </div>
           <Input
             ref={searchInputRef}
-            placeholder="Magic Search: Type full number (167/190) or card name (Charizard)"
+            placeholder="Search card number"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="border-0 shadow-none focus-visible:ring-0 bg-transparent text-lg h-12"
+            className="border-0 shadow-none focus-visible:ring-0 bg-transparent text-base h-11"
           />
           {query && (
             <Button

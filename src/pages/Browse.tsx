@@ -249,36 +249,6 @@ const Browse = () => {
       />
 
       <div className="mb-8 space-y-6">
-        {/* Marketplace Toggle - Fixed height to prevent shift */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-0 flex justify-end min-h-[40px]">
-          <div className="inline-flex items-center gap-2 bg-card border rounded-lg p-1">
-            <Button
-              variant={marketplace === 'UK' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => {
-                setMarketplace('UK');
-                setPage(1); // Reset to page 1 when switching markets
-              }}
-              className="gap-2"
-            >
-              <span className="text-lg">🇬🇧</span>
-              <span className="hidden sm:inline">UK (£)</span>
-            </Button>
-            <Button
-              variant={marketplace === 'US' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => {
-                setMarketplace('US');
-                setPage(1); // Reset to page 1 when switching markets
-              }}
-              className="gap-2"
-            >
-              <span className="text-lg">🇺🇸</span>
-              <span className="hidden sm:inline">US ($)</span>
-            </Button>
-          </div>
-        </div>
-
         {/* Magical Search Bar */}
         <div className="pt-4">
           <SearchFilters
@@ -425,6 +395,36 @@ const Browse = () => {
           </Button>
         </div>
       )}
+
+      {/* Floating Marketplace Toggle */}
+      <div className="fixed bottom-6 right-6 z-40">
+        <div className="inline-flex items-center gap-1 bg-background border rounded-full shadow-lg p-1">
+          <Button
+            variant={marketplace === 'UK' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => {
+              setMarketplace('UK');
+              setPage(1);
+            }}
+            className="gap-1.5 h-9 px-3 rounded-full"
+          >
+            <span className="text-base">🇬🇧</span>
+            <span className="hidden sm:inline text-xs">UK</span>
+          </Button>
+          <Button
+            variant={marketplace === 'US' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => {
+              setMarketplace('US');
+              setPage(1);
+            }}
+            className="gap-1.5 h-9 px-3 rounded-full"
+          >
+            <span className="text-base">🇺🇸</span>
+            <span className="hidden sm:inline text-xs">US</span>
+          </Button>
+        </div>
+      </div>
     </PageLayout>
   );
 };

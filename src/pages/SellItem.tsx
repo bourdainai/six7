@@ -966,15 +966,6 @@ const SellItem = () => {
       <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} defaultMode="signup" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 pt-6">
-        <div className="mb-8 space-y-2">
-          <h1 className="text-3xl font-light text-foreground tracking-tight">
-            List Your Item
-          </h1>
-          <p className="text-base text-muted-foreground font-normal tracking-tight">
-            Add photos and details to start selling.
-          </p>
-        </div>
-
         {/* Multi-Card Toggle - Only for Trading Cards */}
         {isCardCategory && (
           <Card className="mb-6">
@@ -2046,6 +2037,30 @@ const SellItem = () => {
             </Button>
           </div>
 
+        </div>
+      </div>
+
+      {/* Floating Marketplace Toggle */}
+      <div className="fixed bottom-6 right-6 z-40">
+        <div className="inline-flex items-center gap-1 bg-background border rounded-full shadow-lg p-1">
+          <Button
+            variant={marketplace === 'UK' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setMarketplace('UK')}
+            className="gap-1.5 h-9 px-3 rounded-full"
+          >
+            <span className="text-base">🇬🇧</span>
+            <span className="hidden sm:inline text-xs">UK</span>
+          </Button>
+          <Button
+            variant={marketplace === 'US' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setMarketplace('US')}
+            className="gap-1.5 h-9 px-3 rounded-full"
+          >
+            <span className="text-base">🇺🇸</span>
+            <span className="hidden sm:inline text-xs">US</span>
+          </Button>
         </div>
       </div>
     </PageLayout>
