@@ -15,6 +15,8 @@ import {
   ShoppingBag, Wallet, RefreshCw, BarChart3, Star
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface NavLink {
   to: string;
@@ -42,6 +44,21 @@ export const MobileMenu = ({
   onNotificationsClick,
   unreadMessagesCount = 0,
 }: MobileMenuProps) => {
+  // Fetch user profile for avatar
+  const { data: profile } = useQuery({
+    queryKey: ["profile", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("avatar_url, full_name")
+        .eq("id", user!.id)
+        .single();
+      if (error && error.code !== "PGRST116") throw error;
+      return data;
+    },
+  });
+
   const handleNavClick = () => {
     onOpenChange(false);
   };
@@ -101,14 +118,14 @@ export const MobileMenu = ({
             {user ? (
               <div className="flex items-center gap-4">
                 <Avatar className="h-16 w-16 border-2 border-primary/20 shadow-lg ring-2 ring-background">
-                  <AvatarImage src={user?.user_metadata?.avatar_url} />
+                  <AvatarImage src={profile?.avatar_url || user?.user_metadata?.avatar_url} />
                   <AvatarFallback className="bg-primary/10 text-primary text-xl">
                     {user?.email?.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col">
                   <span className="font-bold text-lg tracking-tight">
-                    {user?.user_metadata?.full_name || user?.email?.split('@')[0]}
+                    {profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0]}
                   </span>
                   <span className="text-xs text-muted-foreground font-medium bg-secondary/50 px-2 py-0.5 rounded-full w-fit mt-1">
                     Member

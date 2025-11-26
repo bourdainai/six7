@@ -966,6 +966,13 @@ const SellItem = () => {
       <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} defaultMode="signup" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 pt-6">
+        {/* Search Section at Top - Only for Trading Cards */}
+        {isCardCategory && !isMultiCard && (
+          <div className="mb-8 pt-4">
+            <MagicCardSearch onSelect={handleMagicSearchSelect} />
+          </div>
+        )}
+
         {/* Multi-Card Toggle - Only for Trading Cards */}
         {isCardCategory && (
           <Card className="mb-6">
@@ -992,13 +999,6 @@ const SellItem = () => {
               </div>
             </CardContent>
           </Card>
-        )}
-
-        {/* Magic Search Section - Only for Trading Cards */}
-        {isCardCategory && !isMultiCard && (
-          <div className="mb-10">
-            <MagicCardSearch onSelect={handleMagicSearchSelect} />
-          </div>
         )}
 
         {/* Multi-Card Bundle Interface */}
