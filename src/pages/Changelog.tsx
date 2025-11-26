@@ -20,10 +20,38 @@ const changelogData = [
     },
     {
         date: "November 25, 2025",
+        title: "Fraud Detection Dashboard",
+        description: "Real-time fraud monitoring with AI-powered risk scoring. Automatically flags suspicious listings, users, and orders with confidence scores and actionable insights. Admin review queue prioritizes high-risk cases with detailed evidence and recommended actions for swift resolution.",
+        tags: ["New Feature", "Security", "Admin"],
+        version: "v2.1.3"
+    },
+    {
+        date: "November 25, 2025",
+        title: "Portfolio Analytics & Snapshots",
+        description: "Track your collection's value over time with automated portfolio snapshots. View diversification scores, portfolio health metrics, and identify your most valuable cards. Historical tracking shows how your collection has grown and helps make informed selling decisions.",
+        tags: ["New Feature", "Analytics", "Portfolio"],
+        version: "v2.1.2"
+    },
+    {
+        date: "November 25, 2025",
         title: "Admin Card Restoration Tools",
         description: "Powerful new tools for database maintenance. Admins can now search, identify, and restore missing or corrupted card data from the TCGdex archive. Includes batch processing and automated image recovery to ensure the catalog remains complete and accurate.",
         tags: ["New Feature", "Admin", "Database"],
         version: "v2.1.0"
+    },
+    {
+        date: "November 25, 2025",
+        title: "Bulk CSV Import & Export",
+        description: "Professional inventory management for power sellers. Import hundreds of listings at once via CSV with automatic card matching, price validation, and error reporting. Export your entire inventory for backup or analysis. Full support for variants, bundles, and custom attributes.",
+        tags: ["New Feature", "Import", "Seller Tools"],
+        version: "v2.0.8"
+    },
+    {
+        date: "November 25, 2025",
+        title: "Saved Listings & Watchlist",
+        description: "Never lose track of cards you love. Save listings to your personal watchlist and get notified of price drops, status changes, or when similar items are listed. Organize your saved items into custom collections for easy tracking and comparison shopping.",
+        tags: ["New Feature", "Buyer Tools", "UX"],
+        version: "v2.0.5"
     },
     {
         date: "January 25, 2025",
@@ -367,15 +395,15 @@ const Changelog = () => {
                     <div className="space-y-12">
                         {changelogData.map((item, index) => (
                             <article key={index} className="group">
-                                <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-8">
+                                <div className="grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-4 sm:gap-8">
                                     {/* Date & Version */}
-                                    <div className="flex-shrink-0 sm:w-44">
+                                    <div className="flex-shrink-0">
                                         <time className="text-sm font-medium text-muted-foreground block">{item.date}</time>
                                         <span className="inline-flex mt-2 text-xs font-mono text-primary bg-primary/10 px-2.5 py-1 rounded-md">{item.version}</span>
                                     </div>
 
                                     {/* Content */}
-                                    <div className="flex-1 min-w-0">
+                                    <div className="flex-1">
                                         {/* Tags */}
                                         <div className="flex flex-wrap gap-1.5 mb-3">
                                             {item.tags.map(tag => (
@@ -386,12 +414,12 @@ const Changelog = () => {
                                         </div>
 
                                         {/* Title */}
-                                        <h2 className="text-xl md:text-2xl font-semibold mb-2 tracking-tight">
+                                        <h2 className="text-xl md:text-2xl font-semibold mb-3 tracking-tight">
                                             {item.title}
                                         </h2>
 
                                         {/* Description */}
-                                        <p className="text-base text-muted-foreground leading-relaxed">
+                                        <p className="text-base text-muted-foreground leading-relaxed max-w-3xl">
                                             {item.description}
                                         </p>
                                     </div>
