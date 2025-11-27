@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageLayout } from "@/components/PageLayout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Upload, Check, Loader2, X, AlertCircle, ArrowRight, ExternalLink, Camera, PoundSterling, Info, Sparkles, Plus, GripVertical, Trash2, Truck } from "lucide-react";
+import { Upload, Check, Loader2, X, AlertCircle, ArrowRight, ExternalLink, Camera, PoundSterling, Info, Sparkles, Plus, GripVertical, Trash2, Truck, FileText, Tag, Layers, Package, DollarSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +26,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useShippingCarriers } from "@/hooks/useShippingCarriers";
 import { useMarketplace } from "@/contexts/MarketplaceContext";
 import { logger } from "@/lib/logger";
+import { Separator } from "@/components/ui/separator";
 
 type ConditionType = Database["public"]["Enums"]["condition_type"];
 type ListingInsert = Database["public"]["Tables"]["listings"]["Insert"];
@@ -1352,156 +1353,176 @@ const SellItem = () => {
         <div className="space-y-8">
 
           {/* Basics */}
-          <section className="space-y-4">
-            <h2 className="text-xl font-medium border-b pb-2">Basics</h2>
-
-            <div className="space-y-2">
-              <Label>Title</Label>
-              <Input
-                placeholder="e.g. Charizard Base Set Unlimited Holo"
-                value={listingData.title}
-                onChange={e => setListingData({ ...listingData, title: e.target.value })}
-                className="text-lg"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Category</Label>
-                <Select
-                  value={listingData.category}
-                  onValueChange={val => setListingData({ ...listingData, category: val, subcategory: "" })}
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+          <Card className="border-border/50 shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <FileText className="w-5 h-5 text-primary" />
+                Basics
+              </CardTitle>
+              <CardDescription>
+                Start with the main details of your item
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-3">
+                <Label className="text-base font-semibold">Title</Label>
+                <Input
+                  placeholder="e.g. Charizard Base Set Unlimited Holo"
+                  value={listingData.title}
+                  onChange={e => setListingData({ ...listingData, title: e.target.value })}
+                  className="text-lg h-12 shadow-sm"
+                />
               </div>
 
-              <div className="space-y-2">
-                <Label>Subcategory</Label>
-                <Select
-                  value={listingData.subcategory}
-                  onValueChange={val => setListingData({ ...listingData, subcategory: val })}
-                  disabled={!listingData.category}
-                >
-                  <SelectTrigger><SelectValue placeholder="Select type..." /></SelectTrigger>
-                  <SelectContent>
-                    {SUBCATEGORIES[listingData.category]?.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </section>
-
-          {/* Card Details - Only for Trading Cards */}
-          {isCardCategory && (
-            <section className="space-y-4">
-              <h2 className="text-xl font-medium border-b pb-2">Card Details</h2>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Set Name / Code</Label>
-                  <Input
-                    placeholder="e.g. BS 4/102"
-                    value={listingData.set_code}
-                    onChange={e => setListingData({ ...listingData, set_code: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Rarity</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <Label className="text-base font-semibold">Category</Label>
                   <Select
-                    value={listingData.rarity}
-                    onValueChange={val => setListingData({ ...listingData, rarity: val })}
+                    value={listingData.category}
+                    onValueChange={val => setListingData({ ...listingData, category: val, subcategory: "" })}
                   >
-                    <SelectTrigger><SelectValue placeholder="Select rarity" /></SelectTrigger>
+                    <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {[
-                        "Common",
-                        "Uncommon",
-                        "Rare",
-                        "Rare Holo",
-                        "Ultra Rare",
-                        "Secret Rare",
-                        "Special Illustration Rare",
-                        "Illustration Rare",
-                        "Hyper Rare",
-                        "Double Rare",
-                        "Radiant Rare",
-                        "Amazing Rare",
-                        "Rainbow Rare",
-                        "Shiny Rare",
-                        "ACE SPEC",
-                        "Promo"
-                      ].map(r => (
-                        <SelectItem key={r} value={r}>{r}</SelectItem>
-                      ))}
+                      {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-3">
+                  <Label className="text-base font-semibold">Subcategory</Label>
+                  <Select
+                    value={listingData.subcategory}
+                    onValueChange={val => setListingData({ ...listingData, subcategory: val })}
+                    disabled={!listingData.category}
+                  >
+                    <SelectTrigger className="h-11"><SelectValue placeholder="Select type..." /></SelectTrigger>
+                    <SelectContent>
+                      {SUBCATEGORIES[listingData.category]?.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>Condition</Label>
-                  {listingData.condition && (
-                    <Badge variant="secondary">{listingData.condition.replace(/_/g, ' ')}</Badge>
-                  )}
-                </div>
-                <Select
-                  value={listingData.condition}
-                  onValueChange={val => setListingData({ ...listingData, condition: val as ConditionType })}
-                >
-                  <SelectTrigger><SelectValue placeholder="Select condition" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="new_with_tags">Gem Mint / Mint (Sealed)</SelectItem>
-                    <SelectItem value="like_new">Near Mint (NM)</SelectItem>
-                    <SelectItem value="excellent">Lightly Played (LP)</SelectItem>
-                    <SelectItem value="good">Moderately Played (MP)</SelectItem>
-                    <SelectItem value="fair">Heavily Played (HP)</SelectItem>
-                    <SelectItem value="poor">Damaged (DMG)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-center space-x-2 pt-2">
-                <Switch
-                  id="graded"
-                  checked={listingData.is_graded}
-                  onCheckedChange={val => setListingData({ ...listingData, is_graded: val })}
-                />
-                <Label htmlFor="graded">This card is professionally graded</Label>
-              </div>
-
-              {listingData.is_graded && (
-                <div className="grid grid-cols-2 gap-4 p-4 bg-secondary/20 rounded-lg">
-                  <div className="space-y-2">
-                    <Label>Grading Company</Label>
+          {/* Card Details - Only for Trading Cards */}
+          {isCardCategory && (
+            <Card className="border-border/50 shadow-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <Layers className="w-5 h-5 text-primary" />
+                  Card Details
+                </CardTitle>
+                <CardDescription>
+                  Specifics about the card's condition and rarity
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <Label className="text-base font-semibold">Set Name / Code</Label>
+                    <Input
+                      placeholder="e.g. BS 4/102"
+                      value={listingData.set_code}
+                      onChange={e => setListingData({ ...listingData, set_code: e.target.value })}
+                      className="h-11"
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <Label className="text-base font-semibold">Rarity</Label>
                     <Select
-                      value={listingData.grading_service}
-                      onValueChange={val => setListingData({ ...listingData, grading_service: val })}
+                      value={listingData.rarity}
+                      onValueChange={val => setListingData({ ...listingData, rarity: val })}
                     >
-                      <SelectTrigger><SelectValue placeholder="Service" /></SelectTrigger>
+                      <SelectTrigger className="h-11"><SelectValue placeholder="Select rarity" /></SelectTrigger>
                       <SelectContent>
-                        {["PSA", "BGS", "CGC", "ACE", "Other"].map(s => (
-                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        {[
+                          "Common",
+                          "Uncommon",
+                          "Rare",
+                          "Rare Holo",
+                          "Ultra Rare",
+                          "Secret Rare",
+                          "Special Illustration Rare",
+                          "Illustration Rare",
+                          "Hyper Rare",
+                          "Double Rare",
+                          "Radiant Rare",
+                          "Amazing Rare",
+                          "Rainbow Rare",
+                          "Shiny Rare",
+                          "ACE SPEC",
+                          "Promo"
+                        ].map(r => (
+                          <SelectItem key={r} value={r}>{r}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Grade (0-10)</Label>
-                    <Input
-                      type="number"
-                      placeholder="10"
-                      value={listingData.grading_score}
-                      onChange={e => setListingData({ ...listingData, grading_score: e.target.value })}
-                    />
-                  </div>
                 </div>
-              )}
-            </section>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-base font-semibold">Condition</Label>
+                    {listingData.condition && (
+                      <Badge variant="secondary">{listingData.condition.replace(/_/g, ' ')}</Badge>
+                    )}
+                  </div>
+                  <Select
+                    value={listingData.condition}
+                    onValueChange={val => setListingData({ ...listingData, condition: val as ConditionType })}
+                  >
+                    <SelectTrigger className="h-11"><SelectValue placeholder="Select condition" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="new_with_tags">Gem Mint / Mint (Sealed)</SelectItem>
+                      <SelectItem value="like_new">Near Mint (NM)</SelectItem>
+                      <SelectItem value="excellent">Lightly Played (LP)</SelectItem>
+                      <SelectItem value="good">Moderately Played (MP)</SelectItem>
+                      <SelectItem value="fair">Heavily Played (HP)</SelectItem>
+                      <SelectItem value="poor">Damaged (DMG)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center space-x-2 pt-2">
+                  <Switch
+                    id="graded"
+                    checked={listingData.is_graded}
+                    onCheckedChange={val => setListingData({ ...listingData, is_graded: val })}
+                  />
+                  <Label htmlFor="graded" className="font-medium">This card is professionally graded</Label>
+                </div>
+
+                {listingData.is_graded && (
+                  <div className="grid grid-cols-2 gap-4 p-4 bg-secondary/20 rounded-lg border border-border/50">
+                    <div className="space-y-3">
+                      <Label className="font-semibold">Grading Company</Label>
+                      <Select
+                        value={listingData.grading_service}
+                        onValueChange={val => setListingData({ ...listingData, grading_service: val })}
+                      >
+                        <SelectTrigger className="h-11"><SelectValue placeholder="Service" /></SelectTrigger>
+                        <SelectContent>
+                          {["PSA", "BGS", "CGC", "ACE", "Other"].map(s => (
+                            <SelectItem key={s} value={s}>{s}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="font-semibold">Grade (0-10)</Label>
+                      <Input
+                        type="number"
+                        placeholder="10"
+                        value={listingData.grading_score}
+                        onChange={e => setListingData({ ...listingData, grading_score: e.target.value })}
+                        className="h-11"
+                      />
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           )}
 
           {/* Product Details - For Sealed Products & Accessories */}
@@ -1597,20 +1618,27 @@ const SellItem = () => {
           )}
 
           {/* Description */}
-          <section className="space-y-4">
-            <h2 className="text-xl font-medium border-b pb-2">Description</h2>
-
-            {/* Multi-Card Grouping Options */}
-            {isMultiCard && cards.length > 0 && (
-              <Card className="bg-secondary/20">
-                <CardContent className="pt-6 space-y-4">
+          <Card className="border-border/50 shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <FileText className="w-5 h-5 text-primary" />
+                Description
+              </CardTitle>
+              <CardDescription>
+                Provide details about your item to help buyers
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Multi-Card Grouping Options */}
+              {isMultiCard && cards.length > 0 && (
+                <div className="bg-secondary/20 rounded-lg p-4 space-y-4 border border-border/50">
                   <div className="space-y-2">
-                    <Label>Description Format</Label>
+                    <Label className="font-semibold">Description Format</Label>
                     <Select
                       value={descriptionGroupBy}
                       onValueChange={(val) => setDescriptionGroupBy(val as 'set' | 'rarity' | 'none')}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="h-11">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -1626,7 +1654,7 @@ const SellItem = () => {
 
                   {/* Description Preview */}
                   <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
+                    <Label className="flex items-center gap-2 font-semibold">
                       <Sparkles className="w-4 h-4 text-yellow-500" />
                       Auto-Generated Preview
                     </Label>
@@ -1636,45 +1664,53 @@ const SellItem = () => {
                       </pre>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            )}
-
-            <div className="space-y-2">
-              <Label>
-                {isMultiCard && cards.length > 0
-                  ? "Additional Notes (optional)"
-                  : "Description"
-                }
-              </Label>
-              <Textarea
-                placeholder={
-                  isMultiCard && cards.length > 0
-                    ? "Add any additional details or special instructions..."
-                    : "Any details about the item..."
-                }
-                rows={isMultiCard && cards.length > 0 ? 3 : 4}
-                value={listingData.description}
-                onChange={e => setListingData({ ...listingData, description: e.target.value })}
-              />
-              {isMultiCard && cards.length > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  The auto-generated description above will be used. Add any extra details here.
-                </p>
+                </div>
               )}
-            </div>
-          </section>
 
-          {/* Pricing */}
-          <section className="space-y-4">
-            <h2 className="text-xl font-medium border-b pb-2">Pricing</h2>
+              <div className="space-y-3">
+                <Label className="text-base font-semibold">
+                  {isMultiCard && cards.length > 0
+                    ? "Additional Notes (optional)"
+                    : "Description"
+                  }
+                </Label>
+                <Textarea
+                  placeholder={
+                    isMultiCard && cards.length > 0
+                      ? "Add any additional details or special instructions..."
+                      : "Any details about the item..."
+                  }
+                  rows={isMultiCard && cards.length > 0 ? 3 : 6}
+                  value={listingData.description}
+                  onChange={e => setListingData({ ...listingData, description: e.target.value })}
+                  className="resize-none text-base shadow-sm"
+                />
+                {isMultiCard && cards.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    The auto-generated description above will be used. Add any extra details here.
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-            {/* Multi-Card Bundle Pricing Options */}
-            {isMultiCard && cards.length > 0 && (
-              <Card className="border-primary/20">
-                <CardContent className="pt-6 space-y-5">
+          {/* Pricing & Offers */}
+          <Card className="border-border/50 shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <DollarSign className="w-5 h-5 text-primary" />
+                Pricing
+              </CardTitle>
+              <CardDescription>
+                Set your price and offer preferences
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-8">
+              {/* Multi-Card Bundle Pricing Options */}
+              {isMultiCard && cards.length > 0 && (
+                <div className="border border-primary/20 rounded-lg p-6 bg-primary/5 space-y-5">
                   {/* Bundle Discount Toggle */}
-                  <div className="flex items-start justify-between gap-4 pb-4 border-b">
+                  <div className="flex items-start justify-between gap-4 pb-4 border-b border-primary/10">
                     <div className="space-y-1">
                       <Label className="text-base font-medium">Enable Bundle Discount?</Label>
                       <p className="text-sm text-muted-foreground">
@@ -1703,7 +1739,7 @@ const SellItem = () => {
                   {/* Individual Card Prices Summary */}
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Individual Card Prices:</Label>
-                    <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+                    <div className="bg-background rounded-lg p-3 space-y-2 border">
                       {cards.map((card, idx) => (
                         <div key={card.id} className="flex items-center justify-between text-sm">
                           <span className="text-muted-foreground truncate max-w-[200px]">
@@ -1731,7 +1767,7 @@ const SellItem = () => {
                           type="number"
                           step="0.01"
                           min="0.01"
-                          className="pl-10 text-lg"
+                          className="pl-10 text-lg h-12 shadow-sm"
                           placeholder="0.00"
                           value={bundlePrice}
                           onChange={e => setBundlePrice(e.target.value ? parseFloat(e.target.value) : "")}
@@ -1788,127 +1824,134 @@ const SellItem = () => {
                   {!bundleDiscountEnabled && (
                     <Alert>
                       <Info className="h-4 w-4" />
-                      <AlertTitle>Variants Only Mode</AlertTitle>
                       <AlertDescription>
                         Cards will be listed separately. Buyers can purchase individual cards or use bulk checkout to buy multiple cards.
                       </AlertDescription>
                     </Alert>
                   )}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Single Item Pricing - Only show for non-multi-card listings */}
-            {!isMultiCard && (
-              <div className="space-y-2">
-                <Label className="text-base">
-                  Selling Price (£)
-                </Label>
-                <div className="relative">
-                  <PoundSterling className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    className="pl-10 text-lg"
-                    placeholder="0.00"
-                    value={selectedPrice}
-                    onChange={e => setSelectedPrice(e.target.value ? parseFloat(e.target.value) : "")}
-                  />
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  We recommend checking sold listings on eBay or 130point for accurate pricing.
-                </p>
+              )}
 
-                {/* Price Suggestion Button - Only for Cards */}
-                {isCardCategory && (
-                  <div className="pt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleGetPriceSuggestion()}
-                      disabled={gettingPrice}
-                      className="w-full sm:w-auto"
-                    >
-                      {gettingPrice ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2 text-yellow-500" />}
-                      Get Price Suggestion
-                    </Button>
+              {/* Single Item Pricing - Only show for non-multi-card listings */}
+              {!isMultiCard && (
+                <div className="space-y-4">
+                  <div className="space-y-3">
+                    <Label className="text-base font-semibold">
+                      Selling Price (£)
+                    </Label>
+                    <div className="relative">
+                      <PoundSterling className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        className="pl-10 text-lg h-12 shadow-sm"
+                        placeholder="0.00"
+                        value={selectedPrice}
+                        onChange={e => setSelectedPrice(e.target.value ? parseFloat(e.target.value) : "")}
+                      />
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      We recommend checking sold listings on eBay or 130point for accurate pricing.
+                    </p>
 
-                    {suggestedPrice && (
-                      <div className="mt-3 p-3 bg-green-50 border border-green-100 rounded-lg animate-in fade-in slide-in-from-top-2">
-                        <p className="text-sm font-medium text-green-800 mb-2">
-                          Market Price: ${suggestedPrice.price.toFixed(2)}
-                        </p>
-                        <p className="text-xs text-green-600 mb-3">
-                          Range: ${suggestedPrice.low.toFixed(2)} - ${suggestedPrice.high.toFixed(2)}
-                        </p>
+                    {/* Price Suggestion Button - Only for Cards */}
+                    {isCardCategory && (
+                      <div className="pt-2">
                         <Button
+                          variant="outline"
                           size="sm"
-                          variant="secondary"
-                          className="w-full bg-green-100 hover:bg-green-200 text-green-800 border-green-200"
-                          onClick={() => setSelectedPrice(suggestedPrice.price)}
+                          onClick={() => handleGetPriceSuggestion()}
+                          disabled={gettingPrice}
+                          className="w-full sm:w-auto h-10"
                         >
-                          Apply Price (${suggestedPrice.price})
+                          {gettingPrice ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2 text-yellow-500" />}
+                          Get Price Suggestion
                         </Button>
+
+                        {suggestedPrice && (
+                          <div className="mt-3 p-3 bg-green-50 border border-green-100 rounded-lg animate-in fade-in slide-in-from-top-2">
+                            <p className="text-sm font-medium text-green-800 mb-2">
+                              Market Price: ${suggestedPrice.price.toFixed(2)}
+                            </p>
+                            <p className="text-xs text-green-600 mb-3">
+                              Range: ${suggestedPrice.low.toFixed(2)} - ${suggestedPrice.high.toFixed(2)}
+                            </p>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              className="w-full bg-green-100 hover:bg-green-200 text-green-800 border-green-200"
+                              onClick={() => setSelectedPrice(suggestedPrice.price)}
+                            >
+                              Apply Price (${suggestedPrice.price})
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
+                </div>
+              )}
+
+              <Separator />
+
+              {/* Offers Settings */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label className="text-base font-semibold">Accept Offers?</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Allow buyers to negotiate the price
+                    </p>
+                  </div>
+                  <Switch
+                    checked={acceptsOffers}
+                    onCheckedChange={setAcceptsOffers}
+                  />
+                </div>
+                {!acceptsOffers && (
+                  <Alert className="bg-muted/50 border-none">
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>
+                      Buyers will only see "Buy Now" - no offer button will be shown.
+                    </AlertDescription>
+                  </Alert>
                 )}
               </div>
-            )}
-          </section>
-
-          {/* Offers Settings */}
-          <section className="space-y-4">
-            <h2 className="text-xl font-medium border-b pb-2">Offer Settings</h2>
-            <div className="flex items-start justify-between gap-4 p-4 bg-muted/30 rounded-lg">
-              <div className="space-y-1">
-                <Label className="text-base font-medium">Accept Offers on This Listing?</Label>
-                <p className="text-sm text-muted-foreground">
-                  Enable if you're open to negotiating the price. Disable for firm pricing only.
-                </p>
-              </div>
-              <Switch
-                checked={acceptsOffers}
-                onCheckedChange={setAcceptsOffers}
-              />
-            </div>
-            {!acceptsOffers && (
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription>
-                  Buyers will only see "Buy Now" - no offer button will be shown.
-                </AlertDescription>
-              </Alert>
-            )}
-          </section>
+            </CardContent>
+          </Card>
 
           {/* Shipping */}
-          <section className="space-y-4">
-            <h2 className="text-xl font-medium border-b pb-2 flex items-center gap-2">
-              <Truck className="w-5 h-5" />
-              Shipping
-            </h2>
-            <div className="space-y-4">
+          <Card className="border-border/50 shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Truck className="w-5 h-5 text-primary" />
+                Shipping
+              </CardTitle>
+              <CardDescription>
+                Configure shipping options and costs
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
               {/* Free Shipping Toggle */}
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 p-4 bg-secondary/20 rounded-lg border border-border/50">
                 <Checkbox
                   id="free-shipping"
                   checked={shipping.free_shipping}
                   onCheckedChange={(checked) => setShipping(prev => ({ ...prev, free_shipping: !!checked }))}
                 />
-                <Label htmlFor="free-shipping" className="font-normal cursor-pointer">
+                <Label htmlFor="free-shipping" className="font-medium cursor-pointer">
                   I'll pay for shipping (Free for buyer)
                 </Label>
               </div>
 
               {!shipping.free_shipping && (
-                <div className="space-y-4 pl-6 border-l-2 border-border">
+                <div className="space-y-6 pl-2">
                   {/* Carrier Selection */}
-                  <div className="space-y-2">
-                    <Label className="text-sm font-semibold">
+                  <div className="space-y-3">
+                    <Label className="text-base font-semibold">
                       Shipping Service
-                      <span className="text-muted-foreground font-normal ml-2">(Select your preferred carrier)</span>
+                      <span className="text-muted-foreground font-normal ml-2 text-sm">(Select your preferred carrier)</span>
                     </Label>
                     {loadingCarriers ? (
                       <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
@@ -1930,7 +1973,7 @@ const SellItem = () => {
                           }
                         }}
                       >
-                        <SelectTrigger className="h-11">
+                        <SelectTrigger className="h-12">
                           <SelectValue placeholder="Choose shipping service..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -1962,40 +2005,41 @@ const SellItem = () => {
                     )}
                   </div>
 
-                  {/* Manual Price Override */}
-                  <div className="space-y-2">
-                    <Label className="text-sm">
-                      UK Shipping Cost (£)
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    {/* Manual Price Override */}
+                    <div className="space-y-3">
+                      <Label className="text-base font-semibold">
+                        UK Shipping Cost (£)
+                      </Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={shipping.shipping_cost_uk}
+                        onChange={e => setShipping(prev => ({ ...prev, shipping_cost_uk: parseFloat(e.target.value) || 0 }))}
+                        className="h-11"
+                      />
                       {selectedCarrier && (
-                        <span className="text-muted-foreground ml-2">(Auto-filled from selected service)</span>
+                        <p className="text-xs text-muted-foreground">
+                          Auto-filled from selected service
+                        </p>
                       )}
-                    </Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={shipping.shipping_cost_uk}
-                      onChange={e => setShipping(prev => ({ ...prev, shipping_cost_uk: parseFloat(e.target.value) || 0 }))}
-                      className="max-w-[200px]"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      You can override the auto-filled price if needed
-                    </p>
+                    </div>
+
+                    {/* Estimated Delivery */}
+                    <div className="space-y-3">
+                      <Label className="text-base font-semibold">Estimated Delivery (Days)</Label>
+                      <Input
+                        type="number"
+                        value={shipping.estimated_delivery_days}
+                        onChange={e => setShipping(prev => ({ ...prev, estimated_delivery_days: parseInt(e.target.value) || 3 }))}
+                        className="h-11"
+                      />
+                    </div>
                   </div>
                 </div>
               )}
-
-              {/* Estimated Delivery */}
-              <div className="space-y-2">
-                <Label className="text-sm">Estimated Delivery (Days)</Label>
-                <Input
-                  type="number"
-                  value={shipping.estimated_delivery_days}
-                  onChange={e => setShipping(prev => ({ ...prev, estimated_delivery_days: parseInt(e.target.value) || 3 }))}
-                  className="max-w-[200px]"
-                />
-              </div>
-            </div>
-          </section>
+            </CardContent>
+          </Card>
 
           {/* AI Answer Engines Visibility */}
           <section className="space-y-4">
