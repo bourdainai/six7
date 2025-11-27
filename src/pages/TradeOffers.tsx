@@ -38,119 +38,119 @@ export default function TradeOffersPage() {
   return (
     <TradeErrorBoundary>
       <PageLayout>
-      <div className="container py-8 max-w-6xl">
-        <div className="mb-8 space-y-2">
-          <h1 className="text-3xl font-light text-foreground tracking-tight flex items-center gap-2">
-            <ArrowLeftRight className="w-8 h-8" />
-            Trade Offers
-          </h1>
-          <p className="text-base text-muted-foreground font-normal tracking-tight">
-            Manage your incoming and outgoing trade proposals with ease
-          </p>
-        </div>
-
-        {isLoading ? (
-          <div className="space-y-4">
-            {[...Array(3)].map((_, i) => (
-              <SkeletonTradeCard key={i} />
-            ))}
+        <div className="container py-8 max-w-6xl">
+          <div className="mb-8 space-y-2">
+            <h1 className="text-3xl font-light text-foreground tracking-tight flex items-center gap-2">
+              <ArrowLeftRight className="w-8 h-8" />
+              Trade Offers
+            </h1>
+            <p className="text-base text-muted-foreground font-normal tracking-tight">
+              Manage your incoming and outgoing trade proposals with ease
+            </p>
           </div>
-        ) : (
-          <Tabs defaultValue="incoming" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="incoming" className="flex items-center gap-2">
-                <ArrowLeft className="w-4 h-4" />
-                Incoming ({incomingOffers.length})
-              </TabsTrigger>
-              <TabsTrigger value="outgoing" className="flex items-center gap-2">
-                <ArrowRight className="w-4 h-4" />
-                Outgoing ({outgoingOffers.length})
-              </TabsTrigger>
-              <TabsTrigger value="completed" className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4" />
-                Accepted ({completedOffers.length})
-              </TabsTrigger>
-              <TabsTrigger value="rejected" className="flex items-center gap-2">
-                <XCircle className="w-4 h-4" />
-                Rejected ({rejectedOffers.length})
-              </TabsTrigger>
-              <TabsTrigger value="analytics" className="flex items-center gap-2">
-                <BarChart3 className="w-4 h-4" />
-                Analytics
-              </TabsTrigger>
-            </TabsList>
 
-            <TabsContent value="incoming" className="space-y-4">
-              {incomingOffers.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  No incoming trade offers
-                </div>
-              ) : (
-                incomingOffers.map((offer) => (
-                  <EnhancedTradeOfferCard
-                    key={offer.id}
-                    offer={offer as unknown as TradeOfferWithDetails}
-                    userRole="seller"
-                  />
-                ))
-              )}
-            </TabsContent>
+          {isLoading ? (
+            <div className="space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <SkeletonTradeCard key={i} />
+              ))}
+            </div>
+          ) : (
+            <Tabs defaultValue="incoming" className="space-y-6">
+              <TabsList className="w-full justify-start overflow-x-auto flex-nowrap h-auto p-1 bg-muted/50 backdrop-blur-sm border border-border/50 rounded-xl gap-1 no-scrollbar">
+                <TabsTrigger value="incoming" className="flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg data-[state=active]:bg-background/80 data-[state=active]:shadow-sm transition-all duration-300">
+                  <ArrowLeft className="w-4 h-4" />
+                  <span className="whitespace-nowrap">Incoming ({incomingOffers.length})</span>
+                </TabsTrigger>
+                <TabsTrigger value="outgoing" className="flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg data-[state=active]:bg-background/80 data-[state=active]:shadow-sm transition-all duration-300">
+                  <ArrowRight className="w-4 h-4" />
+                  <span className="whitespace-nowrap">Outgoing ({outgoingOffers.length})</span>
+                </TabsTrigger>
+                <TabsTrigger value="completed" className="flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg data-[state=active]:bg-background/80 data-[state=active]:shadow-sm transition-all duration-300">
+                  <CheckCircle className="w-4 h-4" />
+                  <span className="whitespace-nowrap">Accepted ({completedOffers.length})</span>
+                </TabsTrigger>
+                <TabsTrigger value="rejected" className="flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg data-[state=active]:bg-background/80 data-[state=active]:shadow-sm transition-all duration-300">
+                  <XCircle className="w-4 h-4" />
+                  <span className="whitespace-nowrap">Rejected ({rejectedOffers.length})</span>
+                </TabsTrigger>
+                <TabsTrigger value="analytics" className="flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg data-[state=active]:bg-background/80 data-[state=active]:shadow-sm transition-all duration-300">
+                  <BarChart3 className="w-4 h-4" />
+                  <span className="whitespace-nowrap">Analytics</span>
+                </TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="outgoing" className="space-y-4">
-              {outgoingOffers.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  No outgoing trade offers
-                </div>
-              ) : (
-                outgoingOffers.map((offer) => (
-                  <EnhancedTradeOfferCard
-                    key={offer.id}
-                    offer={offer as unknown as TradeOfferWithDetails}
-                    userRole="buyer"
-                  />
-                ))
-              )}
-            </TabsContent>
+              <TabsContent value="incoming" className="space-y-4">
+                {incomingOffers.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    No incoming trade offers
+                  </div>
+                ) : (
+                  incomingOffers.map((offer) => (
+                    <EnhancedTradeOfferCard
+                      key={offer.id}
+                      offer={offer as unknown as TradeOfferWithDetails}
+                      userRole="seller"
+                    />
+                  ))
+                )}
+              </TabsContent>
 
-            <TabsContent value="completed" className="space-y-4">
-              {completedOffers.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  No accepted trades yet
-                </div>
-              ) : (
-                completedOffers.map((offer) => (
-                  <EnhancedTradeOfferCard
-                    key={offer.id}
-                    offer={offer as unknown as TradeOfferWithDetails}
-                    userRole={offer.buyer_id === currentUserId ? 'buyer' : 'seller'}
-                  />
-                ))
-              )}
-            </TabsContent>
+              <TabsContent value="outgoing" className="space-y-4">
+                {outgoingOffers.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    No outgoing trade offers
+                  </div>
+                ) : (
+                  outgoingOffers.map((offer) => (
+                    <EnhancedTradeOfferCard
+                      key={offer.id}
+                      offer={offer as unknown as TradeOfferWithDetails}
+                      userRole="buyer"
+                    />
+                  ))
+                )}
+              </TabsContent>
 
-            <TabsContent value="rejected" className="space-y-4">
-              {rejectedOffers.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  No rejected trades
-                </div>
-              ) : (
-                rejectedOffers.map((offer) => (
-                  <EnhancedTradeOfferCard
-                    key={offer.id}
-                    offer={offer as unknown as TradeOfferWithDetails}
-                    userRole={offer.buyer_id === currentUserId ? 'buyer' : 'seller'}
-                  />
-                ))
-              )}
-            </TabsContent>
+              <TabsContent value="completed" className="space-y-4">
+                {completedOffers.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    No accepted trades yet
+                  </div>
+                ) : (
+                  completedOffers.map((offer) => (
+                    <EnhancedTradeOfferCard
+                      key={offer.id}
+                      offer={offer as unknown as TradeOfferWithDetails}
+                      userRole={offer.buyer_id === currentUserId ? 'buyer' : 'seller'}
+                    />
+                  ))
+                )}
+              </TabsContent>
 
-            <TabsContent value="analytics">
-              <TradeAnalyticsDashboard />
-            </TabsContent>
-          </Tabs>
-        )}
-      </div>
-    </PageLayout>
+              <TabsContent value="rejected" className="space-y-4">
+                {rejectedOffers.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    No rejected trades
+                  </div>
+                ) : (
+                  rejectedOffers.map((offer) => (
+                    <EnhancedTradeOfferCard
+                      key={offer.id}
+                      offer={offer as unknown as TradeOfferWithDetails}
+                      userRole={offer.buyer_id === currentUserId ? 'buyer' : 'seller'}
+                    />
+                  ))
+                )}
+              </TabsContent>
+
+              <TabsContent value="analytics">
+                <TradeAnalyticsDashboard />
+              </TabsContent>
+            </Tabs>
+          )}
+        </div>
+      </PageLayout>
     </TradeErrorBoundary>
   );
 }

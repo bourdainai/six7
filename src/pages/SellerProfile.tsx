@@ -244,7 +244,7 @@ export default function SellerProfile() {
                   </div>
                 )}
 
-                <Button onClick={() => navigate(`/messages?seller=${sellerId}`)}>
+                <Button onClick={() => navigate(`/messages?seller=${sellerId}`)} className="w-full md:w-auto">
                   <MessageSquare className="h-4 w-4 mr-2" />
                   Contact Seller
                 </Button>
@@ -316,8 +316,8 @@ export default function SellerProfile() {
                           <Star
                             key={i}
                             className={`h-4 w-4 ${i < review.rating
-                                ? "fill-yellow-500 text-yellow-500"
-                                : "text-gray-300"
+                              ? "fill-yellow-500 text-yellow-500"
+                              : "text-gray-300"
                               }`}
                           />
                         ))}
