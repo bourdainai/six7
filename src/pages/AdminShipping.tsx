@@ -158,18 +158,25 @@ const AdminShipping = () => {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-light text-foreground tracking-tight">
-            Shipping Management
-          </h1>
-          <p className="text-base text-muted-foreground font-normal tracking-tight mt-2">
-            Monitor and manage all shipping operations
-          </p>
+      <div className="space-y-8">
+        <div className="space-y-3">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+              <Truck className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+                Shipping Management
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Monitor and manage all shipping operations
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Analytics Cards */}
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Total Shipments</CardTitle>

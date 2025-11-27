@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminLayout } from "@/components/admin/AdminLayout";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -241,72 +241,96 @@ export default function AdminDisputes() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Dispute Management</h1>
-            <p className="text-muted-foreground">AI-powered dispute resolution and admin controls</p>
+      <div className="space-y-8">
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-3">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                <AlertCircle className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-semibold tracking-tight text-foreground">Dispute Management</h1>
+                <p className="text-sm text-muted-foreground">AI-powered dispute resolution and admin controls</p>
+              </div>
+            </div>
           </div>
           <Button 
             onClick={() => triggerSLAMonitor.mutate()}
             disabled={triggerSLAMonitor.isPending}
             variant="outline"
+            size="default"
           >
             {triggerSLAMonitor.isPending ? "Checking..." : "Run SLA Check"}
           </Button>
         </div>
 
         {/* Stats */}
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card className="p-4">
-            <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-yellow-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Open</p>
-                <p className="text-2xl font-bold">
-                  {disputes?.filter((d) => d.status === "open").length || 0}
-                </p>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Open</CardTitle>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-yellow-500/10">
+                <Clock className="h-4 w-4 text-yellow-600" />
               </div>
-            </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold tracking-tight">
+                {disputes?.filter((d) => d.status === "open").length || 0}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Pending action</p>
+            </CardContent>
           </Card>
-          <Card className="p-4">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-blue-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">In Review</p>
-                <p className="text-2xl font-bold">
-                  {disputes?.filter((d) => d.status === "in_review").length || 0}
-                </p>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground">In Review</CardTitle>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10">
+                <AlertCircle className="h-4 w-4 text-blue-600" />
               </div>
-            </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold tracking-tight">
+                {disputes?.filter((d) => d.status === "in_review").length || 0}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Being processed</p>
+            </CardContent>
           </Card>
-          <Card className="p-4">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-green-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Resolved</p>
-                <p className="text-2xl font-bold">
-                  {disputes?.filter((d) => d.status === "resolved").length || 0}
-                </p>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Resolved</CardTitle>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-500/10">
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
               </div>
-            </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold tracking-tight">
+                {disputes?.filter((d) => d.status === "resolved").length || 0}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Successfully closed</p>
+            </CardContent>
           </Card>
-          <Card className="p-4">
-            <div className="flex items-center gap-2">
-              <User className="h-5 w-5 text-purple-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Assigned</p>
-                <p className="text-2xl font-bold">
-                  {moderationQueue?.filter((m) => m.assigned_to).length || 0}
-                </p>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Assigned</CardTitle>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10">
+                <User className="h-4 w-4 text-purple-600" />
               </div>
-            </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold tracking-tight">
+                {moderationQueue?.filter((m) => m.assigned_to).length || 0}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">To moderators</p>
+            </CardContent>
           </Card>
         </div>
 
         {/* Disputes List */}
-        <Card className="p-6">
-          <div className="space-y-4">
+        <Card>
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-semibold">All Disputes</CardTitle>
+            <CardDescription className="text-sm">Review and resolve customer disputes</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
             {disputes?.map((dispute) => {
               const queueItem = moderationQueue?.find((m) => m.item_id === dispute.id);
               
@@ -361,7 +385,7 @@ export default function AdminDisputes() {
                 No disputes to display
               </div>
             )}
-          </div>
+          </CardContent>
         </Card>
       </div>
 
