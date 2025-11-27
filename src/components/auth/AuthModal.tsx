@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Dialog,
@@ -37,6 +37,14 @@ export const AuthModal = ({ open, onOpenChange, defaultMode = "signin" }: AuthMo
 
   const { signIn, signUp } = useAuth();
 
+  // Sync mode with defaultMode when modal opens or defaultMode changes
+  useEffect(() => {
+    if (open) {
+      setMode(defaultMode);
+      setError("");
+    }
+  }, [open, defaultMode]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -53,9 +61,9 @@ export const AuthModal = ({ open, onOpenChange, defaultMode = "signin" }: AuthMo
       setEmail("");
       setPassword("");
       setFullName("");
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "An error occurred";
-        setError(message);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "An error occurred";
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -116,7 +124,7 @@ export const AuthModal = ({ open, onOpenChange, defaultMode = "signin" }: AuthMo
 
   if (showMarketplaceSelection) {
     return (
-      <Dialog open={true} onOpenChange={() => {}}>
+      <Dialog open={true} onOpenChange={() => { }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Select Your Market</DialogTitle>
@@ -157,14 +165,14 @@ export const AuthModal = ({ open, onOpenChange, defaultMode = "signin" }: AuthMo
 
   if (showListingOption) {
     return (
-      <Dialog open={true} onOpenChange={() => {}}>
+      <Dialog open={true} onOpenChange={() => { }}>
         <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Welcome to 6Seven!</DialogTitle>
-          <DialogDescription>
-            Your account has been created. Please check your email to verify your account. What would you like to do first?
-          </DialogDescription>
-        </DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Welcome to 6Seven!</DialogTitle>
+            <DialogDescription>
+              Your account has been created. Please check your email to verify your account. What would you like to do first?
+            </DialogDescription>
+          </DialogHeader>
           <div className="space-y-3 mt-4">
             <Button
               onClick={handleStartListing}

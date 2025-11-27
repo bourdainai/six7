@@ -127,14 +127,14 @@ export const DesktopNav = ({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onAuthClick("signup")}
+            onClick={() => onAuthClick("signin")}
             className="font-normal"
           >
             Sign In
           </Button>
           <Button
             size="sm"
-            onClick={() => onAuthClick("signin")}
+            onClick={() => onAuthClick("signup")}
             className="font-normal"
           >
             Sign Up
