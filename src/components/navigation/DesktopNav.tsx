@@ -124,17 +124,17 @@ export const DesktopNav = ({
         </DropdownMenu>
       ) : (
         <div className="flex items-center gap-3">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => onAuthClick("signin")}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onAuthClick("signup")}
             className="font-normal"
           >
             Sign In
           </Button>
-          <Button 
-            size="sm" 
-            onClick={() => onAuthClick("signup")}
+          <Button
+            size="sm"
+            onClick={() => onAuthClick("signin")}
             className="font-normal"
           >
             Sign Up
