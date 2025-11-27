@@ -2389,47 +2389,6 @@ export type Database = {
           },
         ]
       }
-      seller_automation_rules: {
-        Row: {
-          actions: Json
-          conditions: Json
-          created_at: string | null
-          enabled: boolean | null
-          id: string
-          rule_type: string
-          seller_id: string
-          updated_at: string | null
-        }
-        Insert: {
-          actions?: Json
-          conditions?: Json
-          created_at?: string | null
-          enabled?: boolean | null
-          id?: string
-          rule_type: string
-          seller_id: string
-          updated_at?: string | null
-        }
-        Update: {
-          actions?: Json
-          conditions?: Json
-          created_at?: string | null
-          enabled?: boolean | null
-          id?: string
-          rule_type?: string
-          seller_id?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "seller_automation_rules_seller_id_fkey"
-            columns: ["seller_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       seller_badges: {
         Row: {
           badge_name: string

@@ -120,9 +120,6 @@ verify_jwt = false
 [functions.outfit-builder]
 verify_jwt = true
 
-[functions.auto-relist-executor]
-verify_jwt = false
-
 [functions.pokemon-search]
 verify_jwt = false
 
