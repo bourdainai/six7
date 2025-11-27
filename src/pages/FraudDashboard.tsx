@@ -113,18 +113,22 @@ export default function FraudDashboard() {
   return (
     <AdminLayout>
       <div className="space-y-8">
-        <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <AlertTriangle className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-light text-foreground">Fraud Detection</h1>
+        <div className="space-y-3">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-red-500/10">
+              <AlertTriangle className="h-6 w-6 text-red-600" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-semibold tracking-tight text-foreground">Fraud Detection</h1>
+              <p className="text-sm text-muted-foreground">
+                Monitor and manage fraud detection alerts across the platform
+              </p>
+            </div>
           </div>
-          <p className="text-base text-muted-foreground font-light">
-            Monitor and manage fraud detection alerts across the platform
-          </p>
         </div>
 
         {/* Stats Overview */}
-        <div className="grid gap-6 md:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-sm font-medium">Pending Review</CardTitle>

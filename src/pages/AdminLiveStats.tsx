@@ -71,30 +71,42 @@ export default function AdminLiveStats() {
   return (
     <PageLayout>
       <AdminLayout>
-        <div className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold">Live Dashboard</h1>
-            <p className="text-muted-foreground">Real-time platform metrics</p>
+        <div className="space-y-8">
+          <div className="space-y-3">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                <TrendingUp className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-semibold tracking-tight text-foreground">Live Dashboard</h1>
+                <p className="text-sm text-muted-foreground">Real-time platform metrics</p>
+              </div>
+            </div>
           </div>
 
           {/* Admin Test Email Section */}
-          <Card className="border-yellow-500 bg-yellow-500/5">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Mail className="h-5 w-5" />
-                Email Verification Testing
+          <Card className="border-yellow-500/50 bg-yellow-500/5">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-lg">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-500/10">
+                  <Mail className="h-5 w-5 text-yellow-600" />
+                </div>
+                <div>
+                  <div className="font-semibold">Email Verification Testing</div>
+                  <CardDescription className="text-sm mt-1">
+                    Send test verification emails to any address for testing purposes
+                  </CardDescription>
+                </div>
               </CardTitle>
-              <CardDescription>
-                Send test verification emails to any address for testing purposes
-              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="flex gap-2">
+            <CardContent className="space-y-3">
+              <div className="flex gap-3">
                 <Input
                   type="email"
                   placeholder="test@example.com"
                   value={testEmail}
                   onChange={(e) => setTestEmail(e.target.value)}
+                  className="flex-1"
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && testEmail) {
                       sendTestEmailMutation.mutate(testEmail);
@@ -104,12 +116,12 @@ export default function AdminLiveStats() {
                 <Button
                   onClick={() => sendTestEmailMutation.mutate(testEmail)}
                   disabled={!testEmail || sendTestEmailMutation.isPending}
+                  size="default"
                 >
-                  <Mail className="h-4 w-4 mr-2" />
-                  {sendTestEmailMutation.isPending ? "Sending..." : "Send Test Email"}
+                  {sendTestEmailMutation.isPending ? "Sending..." : "Send Test"}
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">
+              <p className="text-xs text-muted-foreground">
                 ⚠️ Test emails will be clearly marked with a red border and warning message
               </p>
             </CardContent>

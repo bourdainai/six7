@@ -90,63 +90,74 @@ export function AdminOrderView() {
   return (
     <div className="space-y-6">
       {/* Stats Overview */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Orders</CardTitle>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+              <Package className="h-4 w-4 text-primary" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalOrders}</div>
+            <div className="text-2xl font-bold tracking-tight">{totalOrders}</div>
+            <p className="text-xs text-muted-foreground mt-1">All time</p>
           </CardContent>
         </Card>
         
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Revenue</CardTitle>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-500/10">
+              <DollarSign className="h-4 w-4 text-green-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{currencySymbol}{totalRevenue.toFixed(2)}</div>
+            <div className="text-2xl font-bold tracking-tight">{currencySymbol}{totalRevenue.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground mt-1">Gross merchandise value</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Bundle Orders</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Bundle Orders</CardTitle>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10">
+              <TrendingUp className="h-4 w-4 text-blue-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{bundleOrders}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-2xl font-bold tracking-tight">{bundleOrders}</div>
+            <p className="text-xs text-muted-foreground mt-1">
               {totalOrders > 0 ? ((bundleOrders / totalOrders) * 100).toFixed(1) : 0}% of total
             </p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending</CardTitle>
-            <AlertCircle className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Pending</CardTitle>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
+              <AlertCircle className="h-4 w-4 text-orange-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{pendingOrders}</div>
+            <div className="text-2xl font-bold tracking-tight">{pendingOrders}</div>
+            <p className="text-xs text-muted-foreground mt-1">Awaiting action</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Orders List */}
       <Card>
-        <CardHeader>
-          <CardTitle>Recent Orders</CardTitle>
-          <CardDescription>All orders with bundle and variant details</CardDescription>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg font-semibold">Recent Orders</CardTitle>
+          <CardDescription className="text-sm">All orders with bundle and variant details</CardDescription>
         </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="all">
-            <TabsList>
+        <CardContent className="pt-2">
+          <Tabs defaultValue="all" className="w-full">
+            <TabsList className="grid w-full max-w-md grid-cols-3">
               <TabsTrigger value="all">All Orders</TabsTrigger>
-              <TabsTrigger value="bundles">Bundle Orders</TabsTrigger>
-              <TabsTrigger value="singles">Single Items</TabsTrigger>
+              <TabsTrigger value="bundles">Bundles</TabsTrigger>
+              <TabsTrigger value="singles">Singles</TabsTrigger>
             </TabsList>
 
             <TabsContent value="all" className="space-y-4 mt-4">
@@ -187,15 +198,17 @@ function OrderCard({
   currencySymbol: string;
 }) {
   return (
-    <div className="border rounded-lg p-4 space-y-3">
-      <div className="flex items-start justify-between">
-        <div>
-          <h4 className="font-medium">Order #{order.id.slice(0, 8)}</h4>
-          <p className="text-sm text-muted-foreground">
-            {format(new Date(order.created_at), "PPP 'at' p")}
+    <div className="border rounded-lg p-5 space-y-4 hover:shadow-sm transition-shadow bg-card">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <h4 className="font-semibold text-base">Order #{order.id.slice(0, 8)}</h4>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {format(new Date(order.created_at), "MMM d, yyyy 'at' h:mm a")}
           </p>
         </div>
-        <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
+        <Badge className={`${getStatusColor(order.status)} capitalize`}>
+          {order.status}
+        </Badge>
       </div>
 
       <div className="grid grid-cols-2 gap-4 text-sm">

@@ -90,69 +90,81 @@ export default function AdminAnalytics() {
   return (
     <AdminLayout>
       <div className="space-y-8">
-        <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <Activity className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-light text-foreground">Analytics</h1>
+        <div className="space-y-3">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+              <Activity className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-semibold tracking-tight text-foreground">Analytics</h1>
+              <p className="text-sm text-muted-foreground">
+                Platform metrics and performance insights
+              </p>
+            </div>
           </div>
-          <p className="text-base text-muted-foreground font-light">
-            Platform metrics and performance insights
-          </p>
         </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Users</CardTitle>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10">
+              <Users className="h-4 w-4 text-blue-600" />
+            </div>
           </CardHeader>
           <CardContent>
-              <div className="text-3xl font-bold">{overview?.totalUsers || 0}</div>
-            <p className="text-xs text-muted-foreground font-light mt-1">
-                +{overview?.newUsers || 0} new
+              <div className="text-2xl font-bold tracking-tight">{overview?.totalUsers || 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+                +{overview?.newUsers || 0} new this period
             </p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium">GMV (30d)</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">GMV (30d)</CardTitle>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-500/10">
+              <DollarSign className="h-4 w-4 text-green-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">
+            <div className="text-2xl font-bold tracking-tight">
                 £{(overview?.totalRevenue || 0).toLocaleString()}
             </div>
-            <p className="text-xs text-muted-foreground font-light mt-1">
-                  Avg order value £{overview?.avgOrderValue?.toFixed(2) || 0}
+            <p className="text-xs text-muted-foreground mt-1">
+                  Avg order £{overview?.avgOrderValue?.toFixed(2) || 0}
             </p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium">Active Listings</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Active Listings</CardTitle>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10">
+              <Package className="h-4 w-4 text-purple-600" />
+            </div>
           </CardHeader>
           <CardContent>
-              <div className="text-3xl font-bold">{overview?.activeListings || 0}</div>
-            <p className="text-xs text-muted-foreground font-light mt-1">
+              <div className="text-2xl font-bold tracking-tight">{overview?.activeListings || 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">
                 {overview?.completedOrders || 0} sold this period
             </p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium">Fraud Flags</CardTitle>
-            <ShieldAlert className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Fraud Flags</CardTitle>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/10">
+              <ShieldAlert className="h-4 w-4 text-red-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-destructive">
+            <div className="text-2xl font-bold tracking-tight text-red-600">
                 {overview?.pendingReports || 0}
             </div>
-            <p className="text-xs text-muted-foreground font-light mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
                   {overview?.openDisputes || 0} disputes open
             </p>
           </CardContent>
@@ -160,20 +172,20 @@ export default function AdminAnalytics() {
       </div>
 
       {/* Charts */}
-      <Tabs defaultValue="revenue" className="space-y-4">
-        <TabsList>
+      <Tabs defaultValue="revenue" className="space-y-6">
+        <TabsList className="grid w-full max-w-md grid-cols-4">
           <TabsTrigger value="revenue">Revenue</TabsTrigger>
-          <TabsTrigger value="users">User Growth</TabsTrigger>
+          <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="categories">Categories</TabsTrigger>
           <TabsTrigger value="moderation">Moderation</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="revenue" className="space-y-4">
+        <TabsContent value="revenue" className="space-y-4 mt-6">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-xl font-light">Revenue Trend (Last 30 Days)</CardTitle>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg font-semibold">Revenue Trend (Last 30 Days)</CardTitle>
             </CardHeader>
-            <CardContent className="h-[400px]">
+            <CardContent className="h-[400px] pt-4">
               <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={charts.revenue}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -192,12 +204,12 @@ export default function AdminAnalytics() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="users" className="space-y-4">
+        <TabsContent value="users" className="space-y-4 mt-6">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-xl font-light">User Growth (Last 30 Days)</CardTitle>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg font-semibold">User Growth (Last 30 Days)</CardTitle>
             </CardHeader>
-            <CardContent className="h-[400px]">
+            <CardContent className="h-[400px] pt-4">
               <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={charts.users}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -211,12 +223,12 @@ export default function AdminAnalytics() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="categories" className="space-y-4">
+        <TabsContent value="categories" className="space-y-4 mt-6">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-xl font-light">Listings by Category</CardTitle>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg font-semibold">Listings by Category</CardTitle>
             </CardHeader>
-            <CardContent className="h-[400px]">
+            <CardContent className="h-[400px] pt-4">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -240,35 +252,35 @@ export default function AdminAnalytics() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="moderation" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <TabsContent value="moderation" className="space-y-4 mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Moderation Queue</CardTitle>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Moderation Queue</CardTitle>
               </CardHeader>
               <CardContent>
-                  <div className="text-3xl font-bold">{overview?.pendingReports || 0}</div>
-                  <p className="text-xs text-muted-foreground">Reports pending review</p>
+                  <div className="text-2xl font-bold tracking-tight">{overview?.pendingReports || 0}</div>
+                  <p className="text-xs text-muted-foreground mt-1">Reports pending review</p>
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Active Disputes</CardTitle>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Active Disputes</CardTitle>
               </CardHeader>
               <CardContent>
-                  <div className="text-3xl font-bold">{overview?.openDisputes || 0}</div>
-                <p className="text-xs text-muted-foreground">Open cases</p>
+                  <div className="text-2xl font-bold tracking-tight">{overview?.openDisputes || 0}</div>
+                <p className="text-xs text-muted-foreground mt-1">Open cases</p>
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Reports (7d)</CardTitle>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Resolved (7d)</CardTitle>
               </CardHeader>
               <CardContent>
-                  <div className="text-3xl font-bold">{overview?.resolvedDisputes || 0}</div>
-                  <p className="text-xs text-muted-foreground">Resolved disputes</p>
+                  <div className="text-2xl font-bold tracking-tight">{overview?.resolvedDisputes || 0}</div>
+                  <p className="text-xs text-muted-foreground mt-1">Successfully closed</p>
               </CardContent>
             </Card>
           </div>

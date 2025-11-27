@@ -77,21 +77,25 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" />
       </div>
     );
   }
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="max-w-md">
-          <CardHeader>
-            <CardTitle>Access Denied</CardTitle>
-            <CardDescription>You don't have permission to access this page.</CardDescription>
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardHeader className="space-y-2">
+            <CardTitle className="text-2xl">Access Denied</CardTitle>
+            <CardDescription className="text-base">
+              You don't have permission to access the admin dashboard.
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => navigate("/")}>Go Home</Button>
+            <Button onClick={() => navigate("/")} size="lg" className="w-full">
+              Return to Home
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -106,14 +110,14 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         <div className="flex flex-1 w-full pt-[72px]">
           <AdminSidebar />
           
-          <main className="flex-1 overflow-auto">
-            <div className="sticky top-0 z-10 bg-background border-b">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <main className="flex-1 overflow-auto bg-muted/30">
+            <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+              <div className="max-w-[1600px] mx-auto px-6 lg:px-8 py-4">
                 <SidebarTrigger />
               </div>
             </div>
             
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="max-w-[1600px] mx-auto px-6 lg:px-8 py-8">
               <EmailVerificationBanner />
               {children}
             </div>

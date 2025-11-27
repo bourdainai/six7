@@ -11,68 +11,107 @@ export default function AdminDashboard() {
   return (
     <AdminLayout>
       <div className="space-y-8">
-        <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <Shield className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-light text-foreground">Admin Dashboard</h1>
+        <div className="space-y-3">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+              <Shield className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+                Admin Dashboard
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Manage platform operations and data
+              </p>
+            </div>
           </div>
-          <p className="text-base text-muted-foreground font-light">
-            Manage platform operations and data
-          </p>
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Link to="/admin/restore-cards">
-            <Card className="cursor-pointer hover:border-primary transition-colors h-full">
-              <CardHeader className="space-y-0 pb-3">
-                <Database className="h-6 w-6 mb-3 text-primary" />
-                <CardTitle className="text-sm font-medium">Card Restoration</CardTitle>
-                <CardDescription className="text-xs font-light">Import Japanese TCGdex cards</CardDescription>
-              </CardHeader>
-            </Card>
-          </Link>
+        <div>
+          <h2 className="text-lg font-semibold text-foreground mb-4">Quick Access</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Link to="/admin/restore-cards" className="group">
+              <Card className="cursor-pointer hover:border-primary transition-all h-full hover:shadow-md">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                      <Database className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-base font-semibold">Card Restoration</CardTitle>
+                      <CardDescription className="text-sm">Import TCGdex cards</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+              </Card>
+            </Link>
 
-          <Link to="/admin/analytics">
-            <Card className="cursor-pointer hover:border-primary transition-colors h-full">
-              <CardHeader className="space-y-0 pb-3">
-                <BarChart3 className="h-6 w-6 mb-3 text-primary" />
-                <CardTitle className="text-sm font-medium">Analytics</CardTitle>
-                <CardDescription className="text-xs font-light">Platform metrics</CardDescription>
-              </CardHeader>
-            </Card>
-          </Link>
+            <Link to="/admin/analytics" className="group">
+              <Card className="cursor-pointer hover:border-primary transition-all h-full hover:shadow-md">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                      <BarChart3 className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-base font-semibold">Analytics</CardTitle>
+                      <CardDescription className="text-sm">Platform metrics</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+              </Card>
+            </Link>
 
-          <Link to="/admin/moderation">
-            <Card className="cursor-pointer hover:border-primary transition-colors h-full">
-              <CardHeader className="space-y-0 pb-3">
-                <Shield className="h-6 w-6 mb-3 text-primary" />
-                <CardTitle className="text-sm font-medium">Moderation</CardTitle>
-                <CardDescription className="text-xs font-light">Content review</CardDescription>
-              </CardHeader>
-            </Card>
-          </Link>
+            <Link to="/admin/moderation" className="group">
+              <Card className="cursor-pointer hover:border-primary transition-all h-full hover:shadow-md">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                      <Shield className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-base font-semibold">Moderation</CardTitle>
+                      <CardDescription className="text-sm">Content review</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+              </Card>
+            </Link>
 
-          <Link to="/admin/fraud">
-            <Card className="cursor-pointer hover:border-primary transition-colors h-full">
-              <CardHeader className="space-y-0 pb-3">
-                <AlertTriangle className="h-6 w-6 mb-3 text-primary" />
-                <CardTitle className="text-sm font-medium">Fraud Detection</CardTitle>
-                <CardDescription className="text-xs font-light">Security monitoring</CardDescription>
-              </CardHeader>
-            </Card>
-          </Link>
+            <Link to="/admin/fraud" className="group">
+              <Card className="cursor-pointer hover:border-primary transition-all h-full hover:shadow-md">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                      <AlertTriangle className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-base font-semibold">Fraud Detection</CardTitle>
+                      <CardDescription className="text-sm">Security monitoring</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+              </Card>
+            </Link>
+          </div>
         </div>
 
-        {/* Existing Sections */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Management Sections */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-6">
-            <h2 className="text-xl font-light text-foreground">Order Management</h2>
+            <div className="flex items-center gap-2">
+              <Home className="h-5 w-5 text-muted-foreground" />
+              <h2 className="text-lg font-semibold text-foreground">Order Management</h2>
+            </div>
             <AdminOrderView />
             <RefundProcessor />
           </div>
           <div className="space-y-6">
-            <h2 className="text-xl font-light text-foreground">Safety & Moderation</h2>
+            <div className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-muted-foreground" />
+              <h2 className="text-lg font-semibold text-foreground">Safety & Moderation</h2>
+            </div>
             <DisputeManager />
             <FakeCardReviewQueue />
           </div>
