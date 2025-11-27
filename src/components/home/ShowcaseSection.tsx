@@ -11,7 +11,8 @@ export const ShowcaseSection = () => {
             if (!containerRef.current) return;
             const scrolled = window.scrollY;
             const val = scrolled * 0.5;
-            containerRef.current.style.transform = `translateY(${val * 0.1}px)`;
+            // Subtle parallax, less aggressive
+            containerRef.current.style.transform = `translateY(${val * 0.05}px)`;
         };
 
         window.addEventListener("scroll", handleScroll);
@@ -19,59 +20,52 @@ export const ShowcaseSection = () => {
     }, []);
 
     return (
-        <section className="relative min-h-[70vh] md:min-h-screen overflow-hidden bg-black text-white py-12 md:py-24">
-            {/* Background Texture */}
-            <div
-                className="absolute inset-0 z-0 opacity-40"
-                style={{
-                    backgroundImage: "url('/assets/home/hero_bg.png')",
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                }}
-            />
-
-            {/* Gradient Overlay */}
-            <div className="absolute inset-0 z-10 bg-gradient-to-b from-background via-transparent to-black/90" />
+        <section className="relative min-h-[80vh] flex items-center bg-zinc-950 text-white py-24 overflow-hidden">
+            {/* Clean Background */}
+            <div className="absolute inset-0 bg-zinc-950" />
 
             <div className="container relative z-20 mx-auto px-4 sm:px-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 md:gap-12 items-center">
-                    <div className="space-y-6 md:space-y-8 text-center lg:text-left order-2 lg:order-1">
-                        <h2 className="text-4xl md:text-5xl lg:text-7xl font-bold tracking-tighter">
-                            <span className="bg-gradient-to-r from-white via-cyan-200 to-white bg-clip-text text-transparent animate-gradient">
-                                The World's Most Desirable Cards.
-                            </span>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                    <div className="space-y-8 order-2 lg:order-1">
+                        <h2 className="text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight text-white leading-[1.1]">
+                            The World's Most <br />
+                            <span className="text-zinc-500">Desirable Cards.</span>
                         </h2>
-                        <p className="text-base md:text-xl text-gray-400 max-w-xl leading-relaxed mx-auto lg:mx-0">
+                        <p className="text-lg md:text-xl text-zinc-400 max-w-xl leading-relaxed">
                             Access a curated marketplace of high-end Pokémon TCG assets.
                             From vintage grails to modern chase cards, authenticated and ready for your collection.
                         </p>
-                        <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center lg:justify-start">
-                            <Button asChild size="lg" className="w-full sm:w-auto bg-white text-black hover:bg-zinc-100 hover:scale-105 transition-all duration-200 px-6 md:px-8 h-12 md:h-14 text-base md:text-lg border-0 shadow-lg">
+                        <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                            <Button asChild size="lg" className="w-full sm:w-auto bg-white text-black hover:bg-zinc-200 transition-all duration-200 px-8 h-14 rounded-full text-base font-medium border-0">
                                 <Link to="/browse">
-                                    Explore the Vault <ArrowRight className="ml-2 h-4 w-4 md:h-5 md:w-5" />
+                                    Explore the Vault <ArrowRight className="ml-2 h-4 w-4" />
                                 </Link>
-                            </Button>
-                            <Button asChild size="lg" className="w-full sm:w-auto bg-white text-black hover:bg-zinc-100 hover:scale-105 transition-all duration-200 px-6 md:px-8 h-12 md:h-14 text-base md:text-lg border-0 shadow-lg">
-                                <Link to="/sell">Start Selling</Link>
                             </Button>
                         </div>
                     </div>
 
-                    <div className="relative h-[300px] sm:h-[400px] md:h-[600px] flex items-center justify-center perspective-1000 order-1 lg:order-2" ref={containerRef}>
-                        {/* Floating Cards */}
-                        <div className="absolute top-0 right-10 sm:right-0 w-40 sm:w-56 md:w-80 transform rotate-12 hover:rotate-0 transition-all duration-700 ease-out z-10 hover:z-30 hover:scale-110">
-                            <img
-                                src="/assets/home/charizard.png"
-                                alt="Charizard Grail"
-                                className="w-full h-auto drop-shadow-[0_20px_50px_rgba(255,100,0,0.3)]"
-                            />
-                        </div>
-                        <div className="absolute bottom-0 sm:bottom-10 left-10 w-40 sm:w-56 md:w-80 transform -rotate-12 hover:rotate-0 transition-all duration-700 ease-out z-20 hover:z-30 hover:scale-110">
-                            <img
-                                src="/assets/home/lugia.png"
-                                alt="Lugia Grail"
-                                className="w-full h-auto drop-shadow-[0_20px_50px_rgba(0,100,255,0.3)]"
-                            />
+                    <div className="relative h-[400px] md:h-[600px] flex items-center justify-center order-1 lg:order-2" ref={containerRef}>
+                        {/* Clean Card Presentation */}
+                        <div className="relative z-10 transform transition-all duration-700 hover:scale-105">
+                            {/* Placeholder for high-quality card render - using existing assets but cleaner presentation */}
+                            <div className="relative w-64 md:w-80 aspect-[2.5/3.5] rounded-xl shadow-2xl rotate-[-6deg] bg-zinc-900 border border-zinc-800 overflow-hidden">
+                                <img
+                                    src="/assets/home/charizard.png"
+                                    alt="Charizard Grail"
+                                    className="w-full h-full object-cover"
+                                />
+                                {/* Glass reflection effect */}
+                                <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent pointer-events-none" />
+                            </div>
+
+                            <div className="absolute top-1/2 -right-12 md:-right-24 w-64 md:w-80 aspect-[2.5/3.5] rounded-xl shadow-2xl rotate-[6deg] bg-zinc-900 border border-zinc-800 overflow-hidden -z-10 translate-y-12">
+                                <img
+                                    src="/assets/home/lugia.png"
+                                    alt="Lugia Grail"
+                                    className="w-full h-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+                            </div>
                         </div>
                     </div>
                 </div>
