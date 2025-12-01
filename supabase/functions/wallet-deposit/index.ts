@@ -56,8 +56,7 @@ serve(async (req) => {
         .insert({ 
           user_id: user.id,
           balance: 0,
-          pending_balance: 0,
-          currency: currency
+          pending_balance: 0
         })
         .select('id, pending_balance')
         .single();
