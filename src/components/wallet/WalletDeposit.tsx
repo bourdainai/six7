@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useWallet } from "@/hooks/useWallet";
 import { Loader2, CheckCircle } from "lucide-react";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
@@ -96,8 +96,10 @@ export function WalletDeposit({ open, onOpenChange }: WalletDepositProps) {
   const [stripeLoadError, setStripeLoadError] = useState(false);
   const { toast } = useToast();
 
-  // Check if Stripe loaded successfully
-  useState(() => {
+  // Check if Stripe loaded successfully - only when dialog opens
+  useEffect(() => {
+    if (!open) return;
+    
     stripePromise.then((stripe) => {
       if (!stripe) {
         setStripeLoadError(true);
@@ -108,7 +110,7 @@ export function WalletDeposit({ open, onOpenChange }: WalletDepositProps) {
         });
       }
     });
-  });
+  }, [open, toast]);
 
   const handleInitiateDeposit = async () => {
     const val = parseFloat(amount);
