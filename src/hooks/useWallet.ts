@@ -80,13 +80,6 @@ export const useWallet = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      toast({
-        title: "Deposit Initiated",
-        description: "Please complete payment with the provided client secret.",
-      });
-      // Note: Actual balance update happens after webhook confirmation
-    },
     onError: (error) => {
       toast({
         title: "Deposit Failed",
