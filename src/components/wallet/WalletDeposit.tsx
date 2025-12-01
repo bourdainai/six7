@@ -159,12 +159,12 @@ export function WalletDeposit({ open, onOpenChange }: WalletDepositProps) {
                   Amount
                 </Label>
                 <div className="col-span-3 relative">
-                  <span className="absolute left-3 top-2.5">£</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">£</span>
                   <Input
                     id="amount"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    className="pl-7"
+                    className="pl-8"
                     type="number"
                     min="1"
                     step="0.01"
