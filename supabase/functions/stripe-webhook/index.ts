@@ -31,6 +31,57 @@ serve(async (req) => {
       case 'payment_intent.succeeded': {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
         
+        // Check if this is a wallet deposit FIRST
+        if (paymentIntent.metadata?.type === 'wallet_deposit') {
+          const depositId = paymentIntent.metadata.deposit_id;
+          const userId = paymentIntent.metadata.user_id;
+          const amount = Number(paymentIntent.amount) / 100; // Convert from pence to pounds
+          
+          if (depositId && userId) {
+            // Update deposit status
+            await supabaseAdmin
+              .from('wallet_deposits')
+              .update({ 
+                status: 'completed',
+                completed_at: new Date().toISOString(),
+                stripe_payment_intent_id: paymentIntent.id
+              })
+              .eq('id', depositId);
+            
+            // Update wallet balance
+            const { data: wallet } = await supabaseAdmin
+              .from('wallet_accounts')
+              .select('id, balance, pending_balance')
+              .eq('user_id', userId)
+              .single();
+            
+            if (wallet) {
+              await supabaseAdmin
+                .from('wallet_accounts')
+                .update({
+                  balance: (Number(wallet.balance) || 0) + amount,
+                  pending_balance: Math.max(0, (Number(wallet.pending_balance) || 0) - amount)
+                })
+                .eq('user_id', userId);
+              
+              // Create transaction record
+              await supabaseAdmin
+                .from('wallet_transactions')
+                .insert({
+                  wallet_id: wallet.id,
+                  type: 'deposit',
+                  amount: amount,
+                  status: 'completed',
+                  description: 'Wallet deposit via card'
+                });
+            }
+            
+            console.log(`Wallet deposit completed: ${depositId} for user: ${userId}`);
+          }
+          break;
+        }
+        
+        // Handle regular order payments
         // Update payment status
         const { error: paymentError } = await supabaseAdmin
           .from('payments')
@@ -99,314 +150,27 @@ serve(async (req) => {
             const { data: existingPayout } = await supabaseAdmin
               .from('payouts')
               .select('id')
-              .eq('order_id', order.id)
+              .eq('order_id', payment.order_id)
               .single();
 
             if (!existingPayout) {
-              // Create payout record
-              // Note: With application_fee_amount and transfer_data, Stripe automatically creates a transfer
-              // The transfer ID will be available in the charge object, but we'll create the payout record now
-              // and update it when we get the transfer information from charge.succeeded
-              const { error: payoutError } = await supabaseAdmin
+              // Schedule payout
+              await supabaseAdmin
                 .from('payouts')
                 .insert({
+                  order_id: payment.order_id,
                   seller_id: order.seller_id,
-                  order_id: order.id,
                   amount: order.seller_amount,
-                  currency: order.currency,
+                  currency: order.currency || 'GBP',
                   status: 'pending',
-                });
-
-              if (payoutError) {
-                console.error('Error creating payout record:', payoutError);
-              } else {
-                console.log(`Created payout record for order: ${payment.order_id}`);
-                
-                // Update seller_balances - add to pending balance
-                const { data: existingBalance } = await supabaseAdmin
-                  .from('seller_balances')
-                  .select('*')
-                  .eq('seller_id', order.seller_id)
-                  .single();
-
-                if (existingBalance) {
-                  // Update existing balance
-                  await supabaseAdmin
-                    .from('seller_balances')
-                    .update({
-                      pending_balance: (parseFloat(existingBalance.pending_balance.toString()) || 0) + parseFloat(order.seller_amount.toString()),
-                      updated_at: new Date().toISOString(),
-                    })
-                    .eq('seller_id', order.seller_id);
-                } else {
-                  // Create new balance record
-                  await supabaseAdmin
-                    .from('seller_balances')
-                    .insert({
-                      seller_id: order.seller_id,
-                      pending_balance: order.seller_amount,
-                      available_balance: 0,
-                      currency: order.currency,
-                    });
-                }
-              }
-            } else {
-              console.log(`Payout already exists for order: ${payment.order_id}`);
-            }
-
-            console.log(`Payment succeeded for order: ${payment.order_id}`);
-
-            // Send email notifications
-            try {
-              // Get order details for email
-              const { data: orderDetails } = await supabaseAdmin
-                .from('orders')
-                .select(`
-                  id,
-                  buyer_id,
-                  seller_id,
-                  total_amount,
-                  currency,
-                  order_items(
-                    listing:listings(title)
-                  )
-                `)
-                .eq('id', payment.order_id)
-                .single();
-
-              if (orderDetails) {
-                const itemName = orderItems && orderItems.length > 0 
-                  ? (orderDetails.order_items?.[0]?.listing as any)?.title || 'Item'
-                  : 'Item';
-
-                // Send order confirmation to buyer
-                const buyerEmailResponse = await fetch(
-                  `${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email-notification`,
-                  {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-                    },
-                    body: JSON.stringify({
-                      userId: orderDetails.buyer_id,
-                      type: 'order_confirmation',
-                      subject: 'Order Confirmation',
-                      template: 'order_confirmation',
-                      data: {
-                        orderId: orderDetails.id,
-                        itemName,
-                        total: `${orderDetails.currency} ${orderDetails.total_amount}`,
-                        orderLink: `${Deno.env.get('SITE_URL') || 'https://6seven.ai'}/orders`,
-                      },
-                    }),
-                  }
-                );
-
-                // Send payment received notification to seller
-                const sellerEmailResponse = await fetch(
-                  `${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email-notification`,
-                  {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-                    },
-                    body: JSON.stringify({
-                      userId: orderDetails.seller_id,
-                      type: 'payment_received',
-                      subject: 'Payment Received',
-                      template: 'payment_received',
-                      data: {
-                        amount: `${orderDetails.currency} ${order.seller_amount}`,
-                        orderId: orderDetails.id,
-                        payoutLink: `${Deno.env.get('SITE_URL') || 'https://6seven.ai'}/seller/account`,
-                      },
-                    }),
-                  }
-                );
-              }
-            } catch (emailError) {
-              // Don't fail the webhook if email fails
-              console.error('Error sending email notifications:', emailError);
-            }
-          }
-        }
-        break;
-      }
-
-      case 'charge.succeeded': {
-        const charge = event.data.object as Stripe.Charge;
-        
-        // If this charge has a transfer (Connect account payment), update the payout record
-        if (charge.transfer) {
-          // Get the payment intent to find the order
-          const paymentIntentId = typeof charge.payment_intent === 'string' 
-            ? charge.payment_intent 
-            : charge.payment_intent?.id;
-
-          if (paymentIntentId) {
-            const { data: payment } = await supabaseAdmin
-              .from('payments')
-              .select('order_id')
-              .eq('stripe_payment_intent_id', paymentIntentId)
-              .single();
-
-            if (payment) {
-              // Check if payout exists before updating
-              const { data: existingPayout } = await supabaseAdmin
-                .from('payouts')
-                .select('id, status, seller_id, amount')
-                .eq('order_id', payment.order_id)
-                .single();
-
-              if (existingPayout) {
-                // Only update if not already completed
-                if (existingPayout.status !== 'completed') {
-                  const { error: payoutUpdateError } = await supabaseAdmin
-                    .from('payouts')
-                    .update({
-                      stripe_transfer_id: charge.transfer as string,
-                      status: 'completed',
-                      completed_at: new Date().toISOString(),
-                    })
-                    .eq('order_id', payment.order_id);
-
-                  if (payoutUpdateError) {
-                    console.error('Error updating payout with transfer ID:', payoutUpdateError);
-                  } else {
-                    console.log(`Updated payout with transfer ID: ${charge.transfer} for order: ${payment.order_id}`);
-                    
-                    // Update seller_balances - move from pending to available
-                    const { data: balance } = await supabaseAdmin
-                      .from('seller_balances')
-                      .select('*')
-                      .eq('seller_id', existingPayout.seller_id)
-                      .single();
-
-                    if (balance) {
-                      const currentPending = parseFloat(balance.pending_balance.toString()) || 0;
-                      const currentAvailable = parseFloat(balance.available_balance.toString()) || 0;
-                      const payoutAmount = parseFloat(existingPayout.amount.toString());
-
-                      await supabaseAdmin
-                        .from('seller_balances')
-                        .update({
-                          pending_balance: Math.max(0, currentPending - payoutAmount),
-                          available_balance: currentAvailable + payoutAmount,
-                          updated_at: new Date().toISOString(),
-                        })
-                        .eq('seller_id', existingPayout.seller_id);
-                    }
-                  }
-                } else {
-                  console.log(`Payout already completed for order: ${payment.order_id}`);
-                }
-              } else {
-                console.warn(`No payout record found for order: ${payment.order_id}`);
-              }
-            }
-          }
-        }
-        break;
-      }
-
-      case 'payment_intent.payment_failed': {
-        const paymentIntent = event.data.object;
-        
-        await supabaseAdmin
-          .from('payments')
-          .update({ status: 'failed' })
-          .eq('stripe_payment_intent_id', paymentIntent.id);
-
-        // Release variant reservations on failed payment
-        const { data: payment } = await supabaseAdmin
-          .from('payments')
-          .select('order_id')
-          .eq('stripe_payment_intent_id', paymentIntent.id)
-          .single();
-
-        if (payment) {
-          const { data: orderItems } = await supabaseAdmin
-            .from('order_items')
-            .select('variant_id')
-            .eq('order_id', payment.order_id);
-
-          if (orderItems) {
-            const variantIds = orderItems
-              .filter(item => item.variant_id)
-              .map(item => item.variant_id);
-            
-            if (variantIds.length > 0) {
-              await supabaseAdmin
-                .from('listing_variants')
-                .update({ 
-                  reserved_until: null,
-                  reserved_by: null
-                })
-                .in('id', variantIds);
-            }
-          }
-        }
-
-        console.log(`Payment failed for intent: ${paymentIntent.id}`);
-        break;
-      }
-      
-      case 'payment_intent.succeeded': {
-        const paymentIntent = event.data.object as Stripe.PaymentIntent;
-        
-        // Check if this is a wallet deposit
-        if (paymentIntent.metadata?.type === 'wallet_deposit') {
-          const depositId = paymentIntent.metadata.deposit_id;
-          const userId = paymentIntent.metadata.user_id;
-          const amount = Number(paymentIntent.amount) / 100; // Convert from pence to pounds
-          
-          if (depositId && userId) {
-            // Update deposit status
-            await supabaseAdmin
-              .from('wallet_deposits')
-              .update({ 
-                status: 'completed',
-                completed_at: new Date().toISOString(),
-                stripe_payment_intent_id: paymentIntent.id
-              })
-              .eq('id', depositId);
-            
-            // Update wallet balance
-            const { data: wallet } = await supabaseAdmin
-              .from('wallet_accounts')
-              .select('id, balance, pending_balance')
-              .eq('user_id', userId)
-              .single();
-            
-            if (wallet) {
-              await supabaseAdmin
-                .from('wallet_accounts')
-                .update({
-                  balance: (Number(wallet.balance) || 0) + amount,
-                  pending_balance: Math.max(0, (Number(wallet.pending_balance) || 0) - amount)
-                })
-                .eq('user_id', userId);
-              
-              // Create transaction record
-              await supabaseAdmin
-                .from('wallet_transactions')
-                .insert({
-                  wallet_id: wallet.id,
-                  type: 'deposit',
-                  amount: amount,
-                  status: 'completed',
-                  description: 'Wallet deposit via card'
+                  scheduled_at: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
                 });
             }
-            
-            console.log(`Wallet deposit completed: ${depositId} for user: ${userId}`);
+
+            console.log(`Order paid and payout scheduled: ${order.id}`);
           }
-          break;
         }
-        
-        // ... rest of existing payment_intent.succeeded handler
+        break;
       }
 
       case 'transfer.failed':
@@ -452,6 +216,80 @@ serve(async (req) => {
           }
 
           console.log(`Transfer failed for payout: ${payout.id}, transfer: ${transfer.id}`);
+        }
+        break;
+      }
+
+      case 'payout.paid': {
+        const payout = event.data.object as Stripe.Payout;
+        
+        // Check if this is a wallet withdrawal
+        if (payout.metadata?.type === 'wallet_withdrawal') {
+          const walletId = payout.metadata.wallet_id;
+          
+          // Update withdrawal status
+          await supabaseAdmin
+            .from('wallet_withdrawals')
+            .update({ 
+              status: 'completed',
+              completed_at: new Date().toISOString()
+            })
+            .eq('stripe_payout_id', payout.id);
+          
+          // Update transaction status
+          await supabaseAdmin
+            .from('wallet_transactions')
+            .update({ status: 'completed' })
+            .eq('stripe_transaction_id', payout.id);
+          
+          console.log(`Wallet withdrawal completed: payout ${payout.id}`);
+        }
+        break;
+      }
+
+      case 'payout.failed': {
+        const payout = event.data.object as Stripe.Payout;
+        
+        // Check if this is a wallet withdrawal
+        if (payout.metadata?.type === 'wallet_withdrawal') {
+          const walletId = payout.metadata.wallet_id;
+          const userId = payout.metadata.user_id;
+          const amount = Number(payout.amount) / 100;
+          
+          // Update withdrawal status
+          await supabaseAdmin
+            .from('wallet_withdrawals')
+            .update({ 
+              status: 'failed',
+              failed_at: new Date().toISOString(),
+              error_message: payout.failure_message || 'Payout failed'
+            })
+            .eq('stripe_payout_id', payout.id);
+          
+          // Refund the wallet balance
+          const { data: wallet } = await supabaseAdmin
+            .from('wallet_accounts')
+            .select('balance')
+            .eq('id', walletId)
+            .single();
+          
+          if (wallet) {
+            await supabaseAdmin
+              .from('wallet_accounts')
+              .update({ balance: (Number(wallet.balance) || 0) + amount })
+              .eq('id', walletId);
+            
+            // Update transaction status
+            await supabaseAdmin
+              .from('wallet_transactions')
+              .update({ 
+                status: 'failed',
+                description: `Withdrawal failed: ${payout.failure_message || 'Unknown error'}`
+              })
+              .eq('stripe_transaction_id', payout.id);
+          }
+          
+          console.log(`Wallet withdrawal failed: payout ${payout.id}`);
         }
         break;
       }

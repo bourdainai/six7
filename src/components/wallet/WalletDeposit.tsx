@@ -9,7 +9,10 @@ import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-
 import { loadStripe } from "@stripe/stripe-js";
 import { useToast } from "@/hooks/use-toast";
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '').catch((err) => {
+  console.error('Failed to load Stripe:', err);
+  return null;
+});
 
 interface WalletDepositProps {
   open: boolean;
@@ -90,7 +93,22 @@ export function WalletDeposit({ open, onOpenChange }: WalletDepositProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [depositComplete, setDepositComplete] = useState(false);
+  const [stripeLoadError, setStripeLoadError] = useState(false);
   const { toast } = useToast();
+
+  // Check if Stripe loaded successfully
+  useState(() => {
+    stripePromise.then((stripe) => {
+      if (!stripe) {
+        setStripeLoadError(true);
+        toast({
+          title: "Payment System Unavailable",
+          description: "Unable to load payment system. Please check your internet connection or contact support.",
+          variant: "destructive"
+        });
+      }
+    });
+  });
 
   const handleInitiateDeposit = async () => {
     const val = parseFloat(amount);
@@ -174,7 +192,7 @@ export function WalletDeposit({ open, onOpenChange }: WalletDepositProps) {
               </div>
             </div>
             <DialogFooter>
-              <Button onClick={handleInitiateDeposit} disabled={isLoading || !amount}>
+              <Button onClick={handleInitiateDeposit} disabled={isLoading || !amount || stripeLoadError}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Continue to Payment
               </Button>
