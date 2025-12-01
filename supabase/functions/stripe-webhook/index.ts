@@ -376,7 +376,7 @@ serve(async (req) => {
             // Update wallet balance
             const { data: wallet } = await supabaseAdmin
               .from('wallet_accounts')
-              .select('balance, pending_balance')
+              .select('id, balance, pending_balance')
               .eq('user_id', userId)
               .single();
             
@@ -393,7 +393,7 @@ serve(async (req) => {
               await supabaseAdmin
                 .from('wallet_transactions')
                 .insert({
-                  wallet_id: userId,
+                  wallet_id: wallet.id,
                   type: 'deposit',
                   amount: amount,
                   status: 'completed',
