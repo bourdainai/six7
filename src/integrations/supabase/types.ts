@@ -4071,6 +4071,53 @@ export type Database = {
         }
         Relationships: []
       }
+      wallet_deposits: {
+        Row: {
+          amount: number
+          completed_at: string | null
+          created_at: string
+          currency: string
+          error_message: string | null
+          failed_at: string | null
+          id: string
+          status: string
+          stripe_payment_intent_id: string | null
+          wallet_id: string
+        }
+        Insert: {
+          amount: number
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          error_message?: string | null
+          failed_at?: string | null
+          id?: string
+          status?: string
+          stripe_payment_intent_id?: string | null
+          wallet_id: string
+        }
+        Update: {
+          amount?: number
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          error_message?: string | null
+          failed_at?: string | null
+          id?: string
+          status?: string
+          stripe_payment_intent_id?: string | null
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_deposits_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallet_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wallet_transactions: {
         Row: {
           amount: number
@@ -4114,6 +4161,59 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "wallet_transactions_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallet_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallet_withdrawals: {
+        Row: {
+          amount: number
+          bank_account_id: string
+          completed_at: string | null
+          created_at: string
+          currency: string
+          error_message: string | null
+          failed_at: string | null
+          id: string
+          processed_at: string | null
+          status: string
+          stripe_payout_id: string | null
+          wallet_id: string
+        }
+        Insert: {
+          amount: number
+          bank_account_id: string
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          error_message?: string | null
+          failed_at?: string | null
+          id?: string
+          processed_at?: string | null
+          status?: string
+          stripe_payout_id?: string | null
+          wallet_id: string
+        }
+        Update: {
+          amount?: number
+          bank_account_id?: string
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          error_message?: string | null
+          failed_at?: string | null
+          id?: string
+          processed_at?: string | null
+          status?: string
+          stripe_payout_id?: string | null
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_withdrawals_wallet_id_fkey"
             columns: ["wallet_id"]
             isOneToOne: false
             referencedRelation: "wallet_accounts"

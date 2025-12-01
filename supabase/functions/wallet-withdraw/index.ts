@@ -107,8 +107,11 @@ serve(async (req) => {
     await supabase.from('wallet_withdrawals').insert({
       wallet_id: wallet.id,
       amount: amount,
-      stripe_transfer_id: payout.id,
-      status: 'pending'
+      currency: 'GBP',
+      bank_account_id: bank_account_id,
+      stripe_payout_id: payout.id,
+      status: 'processing',
+      processed_at: new Date().toISOString()
     });
 
     // Record transaction log
