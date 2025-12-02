@@ -53,6 +53,7 @@ const TradeOffers = lazy(() => import("./pages/TradeOffers"));
 const APIKeys = lazy(() => import("./pages/Settings/APIKeys"));
 const MCPDocs = lazy(() => import("./pages/MCPDocs"));
 const Changelog = lazy(() => import("./pages/Changelog"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Configure QueryClient with performance optimizations
@@ -115,6 +116,7 @@ const AppRoutes = () => {
       <Route path="/wallet" element={<Suspense fallback={<DashboardSkeleton />}><Wallet /></Suspense>} />
       <Route path="/trade-offers" element={<Suspense fallback={<DashboardSkeleton />}><TradeOffers /></Suspense>} />
       <Route path="/changelog" element={<Suspense fallback={<PageSkeleton />}><Changelog /></Suspense>} />
+      <Route path="/reset-password" element={<Suspense fallback={<PageSkeleton />}><ResetPassword /></Suspense>} />
 
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<Suspense fallback={<PageSkeleton />}><NotFound /></Suspense>} />
