@@ -25,7 +25,7 @@ interface AuthModalProps {
 export const AuthModal = ({ open, onOpenChange, defaultMode = "signin" }: AuthModalProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [mode, setMode] = useState<"signin" | "signup">(defaultMode);
+  const [mode, setMode] = useState<"signin" | "signup" | "forgot">(defaultMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -34,6 +34,7 @@ export const AuthModal = ({ open, onOpenChange, defaultMode = "signin" }: AuthMo
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showMarketplaceSelection, setShowMarketplaceSelection] = useState(false);
   const [showListingOption, setShowListingOption] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
   const { signIn, signUp } = useAuth();
 
@@ -42,8 +43,34 @@ export const AuthModal = ({ open, onOpenChange, defaultMode = "signin" }: AuthMo
     if (open) {
       setMode(defaultMode);
       setError("");
+      setResetSent(false);
     }
   }, [open, defaultMode]);
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      
+      if (error) throw error;
+      
+      setResetSent(true);
+      toast({
+        title: "Reset email sent",
+        description: "Check your email for the password reset link.",
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "An error occurred";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -211,75 +238,154 @@ export const AuthModal = ({ open, onOpenChange, defaultMode = "signin" }: AuthMo
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {mode === "signin" ? "Sign In" : "Create Account"}
+            {mode === "forgot" 
+              ? "Reset Password" 
+              : mode === "signin" 
+                ? "Sign In" 
+                : "Create Account"}
           </DialogTitle>
           <DialogDescription>
-            {mode === "signin"
-              ? "Welcome back to 6Seven"
-              : "Join 6Seven and start selling in seconds"}
+            {mode === "forgot"
+              ? "Enter your email and we'll send you a reset link"
+              : mode === "signin"
+                ? "Welcome back to 6Seven"
+                : "Join 6Seven and start selling in seconds"}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-          {mode === "signup" && (
+        {mode === "forgot" ? (
+          <form onSubmit={handleForgotPassword} className="space-y-4 mt-4">
+            {resetSent ? (
+              <div className="text-center py-4">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Check your email for the password reset link.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setMode("signin");
+                    setResetSent(false);
+                  }}
+                >
+                  Back to Sign In
+                </Button>
+              </div>
+            ) : (
+              <>
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+
+                {error && (
+                  <p className="text-sm text-destructive">{error}</p>
+                )}
+
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Send Reset Link
+                </Button>
+
+                <p className="text-center text-sm text-muted-foreground">
+                  Remember your password?{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode("signin");
+                      setError("");
+                    }}
+                    className="text-primary hover:underline"
+                  >
+                    Sign in
+                  </button>
+                </p>
+              </>
+            )}
+          </form>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+            {mode === "signup" && (
+              <div>
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input
+                  id="fullName"
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  required
+                />
+              </div>
+            )}
+
             <div>
-              <Label htmlFor="fullName">Full Name</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
-                id="fullName"
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </div>
-          )}
 
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
+            <div>
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+              />
+            </div>
 
-          <div>
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-            />
-          </div>
+            {error && (
+              <p className="text-sm text-destructive">{error}</p>
+            )}
 
-          {error && (
-            <p className="text-sm text-destructive">{error}</p>
-          )}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {mode === "signin" ? "Sign In" : "Create Account"}
+            </Button>
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            {mode === "signin" ? "Sign In" : "Create Account"}
-          </Button>
+            {mode === "signin" && (
+              <p className="text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode("forgot");
+                    setError("");
+                  }}
+                  className="text-sm text-muted-foreground hover:text-primary hover:underline"
+                >
+                  Forgot password?
+                </button>
+              </p>
+            )}
 
-          <p className="text-center text-sm text-muted-foreground">
-            {mode === "signin" ? "Don't have an account? " : "Already have an account? "}
-            <button
-              type="button"
-              onClick={() => {
-                setMode(mode === "signin" ? "signup" : "signin");
-                setError("");
-              }}
-              className="text-primary hover:underline"
-            >
-              {mode === "signin" ? "Sign up" : "Sign in"}
-            </button>
-          </p>
-        </form>
+            <p className="text-center text-sm text-muted-foreground">
+              {mode === "signin" ? "Don't have an account? " : "Already have an account? "}
+              <button
+                type="button"
+                onClick={() => {
+                  setMode(mode === "signin" ? "signup" : "signin");
+                  setError("");
+                }}
+                className="text-primary hover:underline"
+              >
+                {mode === "signin" ? "Sign up" : "Sign in"}
+              </button>
+            </p>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );
