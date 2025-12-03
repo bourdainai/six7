@@ -48,9 +48,18 @@ export const BottomNav = ({ onMenuClick, unreadMessagesCount = 0 }: BottomNavPro
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
+    <nav 
+      className="fixed bottom-0 left-0 right-0 lg:hidden bottom-nav"
+      style={{
+        zIndex: 9999,
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+      }}
+    >
       {/* Background with blur effect */}
-      <div className="absolute inset-0 bg-background/95 backdrop-blur-xl border-t border-divider-gray" />
+      <div className="absolute inset-0 bg-background/95 backdrop-blur-xl border-t border-divider-gray shadow-[0_-2px_10px_rgba(0,0,0,0.1)]" />
       
       {/* Safe area padding for iOS */}
       <div className="relative flex items-center justify-around px-2 h-16 pb-safe">
