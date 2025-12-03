@@ -1,18 +1,15 @@
 import { Link } from "react-router-dom";
-import { Badge } from "@/components/ui/badge";
-import {
-  Sheet,
-  SheetContent,
-} from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  Shield, Heart, Bell,
-  User, LogOut,
-  ShoppingBag, Wallet, RefreshCw, BarChart3, Star, Home
+  Shield, Heart, Bell, X,
+  User, LogOut, ChevronRight,
+  ShoppingBag, Wallet, RefreshCw, BarChart3, Star, Home,
+  Package, TrendingUp
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
 interface MobileMenuProps {
   open: boolean;
@@ -54,216 +51,299 @@ export const MobileMenu = ({
     onOpenChange(false);
   };
 
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.05
-      }
+  const handleDragEnd = (_: any, info: PanInfo) => {
+    if (info.velocity.y > 500 || info.offset.y > 200) {
+      onOpenChange(false);
     }
   };
 
-  const item = {
-    hidden: { opacity: 0, x: -20 },
-    show: { opacity: 1, x: 0 }
-  };
+  const hasUnread = unreadMessagesCount > 0;
+
+  // Navigation items with consistent structure
+  const accountItems = [
+    { to: "/orders", icon: ShoppingBag, label: "Orders" },
+    { to: "/wallet", icon: Wallet, label: "Wallet" },
+    { to: "/trade-offers", icon: RefreshCw, label: "Trade Offers" },
+    { to: "/saved", icon: Heart, label: "Saved Items" },
+    { 
+      to: "/notifications", 
+      icon: Bell, 
+      label: "Notifications",
+      onClick: () => {
+        handleNavClick();
+        setTimeout(onNotificationsClick, 300);
+      }
+    },
+  ];
+
+  const sellerItems = [
+    { to: "/dashboard/seller", icon: Package, label: "Dashboard" },
+    { to: "/seller/analytics", icon: TrendingUp, label: "Analytics" },
+    { to: "/seller/reputation", icon: Star, label: "Reputation" },
+  ];
+
+  const adminItems = [
+    { to: "/admin", icon: Shield, label: "Admin Dashboard" },
+  ];
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="right"
-        className="w-full sm:w-[400px] p-0 border-l border-white/10 bg-background/80 backdrop-blur-xl shadow-2xl"
-      >
-        <div className="flex flex-col h-full overflow-y-auto no-scrollbar">
-          {/* Header Profile Section */}
-          <div className="pt-12 pb-6 px-6 bg-gradient-to-b from-secondary/50 to-transparent">
-            {user ? (
-              <Link to="/profile" onClick={handleNavClick} className="flex items-center gap-4 group">
-                <Avatar className="h-16 w-16 border-2 border-primary/20 shadow-lg ring-2 ring-background group-hover:ring-primary/30 transition-all">
-                  <AvatarImage src={profile?.avatar_url || user?.user_metadata?.avatar_url} />
-                  <AvatarFallback className="bg-primary/10 text-primary text-xl">
-                    {user?.email?.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col">
-                  <span className="font-bold text-lg tracking-tight group-hover:text-primary transition-colors">
-                    {profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0]}
-                  </span>
-                  <span className="text-xs text-muted-foreground font-medium bg-secondary/50 px-2 py-0.5 rounded-full w-fit mt-1">
-                    View Profile
-                  </span>
-                </div>
-              </Link>
-            ) : (
-              <div className="flex flex-col gap-4">
-                <div>
-                  <h2 className="text-2xl font-bold tracking-tight">Welcome to 6Seven</h2>
-                  <p className="text-muted-foreground mt-1">Join the marketplace for collectors.</p>
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => {
-                      handleNavClick();
-                      onAuthClick?.("signin");
-                    }}
-                    className="flex-1 py-2.5 px-4 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-colors"
-                  >
-                    Sign In
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleNavClick();
-                      onAuthClick?.("signup");
-                    }}
-                    className="flex-1 py-2.5 px-4 rounded-xl bg-secondary text-foreground font-semibold text-sm hover:bg-secondary/80 transition-colors border border-white/10"
-                  >
-                    Sign Up
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+    <AnimatePresence>
+      {open && (
+        <>
+          {/* Backdrop overlay */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9998]"
+            onClick={() => onOpenChange(false)}
+          />
 
-          {/* Quick Navigation */}
-          <div className="px-6 py-2">
-            <Link
-              to="/"
-              onClick={handleNavClick}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-secondary/50 active:bg-secondary transition-colors group"
-            >
-              <Home className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-              <span className="font-medium">Home</span>
-            </Link>
-          </div>
-
-          <motion.nav
-            variants={container}
-            initial="hidden"
-            animate="show"
-            className="flex-1 px-4 py-2 space-y-1"
+          {/* Menu panel */}
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            drag="y"
+            dragConstraints={{ top: 0, bottom: 0 }}
+            dragElastic={0.2}
+            onDragEnd={handleDragEnd}
+            className="fixed inset-x-0 bottom-0 z-[9999] max-h-[92vh] rounded-t-[28px] overflow-hidden"
+            style={{ touchAction: "none" }}
           >
-            {user && (
-              <>
-                <div className="px-4 py-2 mt-2">
-                  <h3 className="text-xs font-bold text-muted-foreground/70 uppercase tracking-wider flex items-center gap-2">
-                    <User className="w-3 h-3" /> Account
-                  </h3>
-                </div>
+            {/* Dark glass background */}
+            <div className="absolute inset-0 bg-black/95 backdrop-blur-2xl" />
+            
+            {/* Top gradient glow */}
+            <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-white/[0.08] to-transparent pointer-events-none" />
 
-                <motion.div variants={item}>
-                  <Link to="/messages" onClick={handleNavClick} className="flex items-center justify-between px-4 py-3.5 rounded-xl hover:bg-secondary/50 active:bg-secondary transition-colors group">
-                    <span className="flex items-center gap-3 font-medium group-hover:translate-x-1 transition-transform">
-                      Messages
-                    </span>
-                    {unreadMessagesCount > 0 && (
-                      <Badge variant="destructive" className="rounded-full h-5 min-w-5 px-1.5 flex items-center justify-center text-xs shadow-sm">
-                        {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
-                      </Badge>
-                    )}
-                  </Link>
-                </motion.div>
+            {/* Content */}
+            <div className="relative flex flex-col h-full max-h-[92vh] overflow-hidden">
+              
+              {/* Drag handle */}
+              <div className="flex justify-center pt-3 pb-2">
+                <div className="w-10 h-1 rounded-full bg-white/30" />
+              </div>
 
-                <motion.div variants={item}>
-                  <Link to="/orders" onClick={handleNavClick} className="flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-secondary/50 active:bg-secondary transition-colors group">
-                    <ShoppingBag className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                    <span className="font-medium group-hover:translate-x-1 transition-transform">Orders</span>
-                  </Link>
-                </motion.div>
+              {/* Close button */}
+              <button
+                onClick={() => onOpenChange(false)}
+                className="absolute top-4 right-4 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+              >
+                <X className="w-5 h-5 text-white/70" />
+              </button>
 
-                <motion.div variants={item}>
-                  <Link to="/wallet" onClick={handleNavClick} className="flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-secondary/50 active:bg-secondary transition-colors group">
-                    <Wallet className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                    <span className="font-medium group-hover:translate-x-1 transition-transform">Wallet</span>
-                  </Link>
-                </motion.div>
-
-                <motion.div variants={item}>
-                  <Link to="/trade-offers" onClick={handleNavClick} className="flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-secondary/50 active:bg-secondary transition-colors group">
-                    <RefreshCw className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                    <span className="font-medium group-hover:translate-x-1 transition-transform">Trade Offers</span>
-                  </Link>
-                </motion.div>
-
-                <motion.div variants={item}>
-                  <Link to="/saved" onClick={handleNavClick} className="flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-secondary/50 active:bg-secondary transition-colors group">
-                    <Heart className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                    <span className="font-medium group-hover:translate-x-1 transition-transform">Saved Items</span>
-                  </Link>
-                </motion.div>
-
-                <motion.div variants={item}>
-                  <button
-                    onClick={() => {
-                      handleNavClick();
-                      setTimeout(onNotificationsClick, 300);
-                    }}
-                    className="w-full text-left flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-secondary/50 active:bg-secondary transition-colors group"
-                  >
-                    <Bell className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                    <span className="font-medium group-hover:translate-x-1 transition-transform">Notifications</span>
-                  </button>
-                </motion.div>
-
-                <div className="my-4 border-t border-white/5 mx-4" />
-
-                <div className="px-4 py-2">
-                  <h3 className="text-xs font-bold text-muted-foreground/70 uppercase tracking-wider flex items-center gap-2">
-                    <BarChart3 className="w-3 h-3" /> Seller Center
-                  </h3>
-                </div>
-
-                <motion.div variants={item}>
-                  <Link to="/dashboard/seller" onClick={handleNavClick} className="flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-secondary/50 active:bg-secondary transition-colors group">
-                    <span className="font-medium group-hover:translate-x-1 transition-transform">Dashboard</span>
-                  </Link>
-                </motion.div>
-
-                <motion.div variants={item}>
-                  <Link to="/seller/analytics" onClick={handleNavClick} className="flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-secondary/50 active:bg-secondary transition-colors group">
-                    <span className="font-medium group-hover:translate-x-1 transition-transform">Analytics</span>
-                  </Link>
-                </motion.div>
-
-                <motion.div variants={item}>
-                  <Link to="/seller/reputation" onClick={handleNavClick} className="flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-secondary/50 active:bg-secondary transition-colors group">
-                    <Star className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                    <span className="font-medium group-hover:translate-x-1 transition-transform">Reputation</span>
-                  </Link>
-                </motion.div>
-
-                {isAdmin && (
-                  <>
-                    <div className="my-4 border-t border-white/5 mx-4" />
-                    <div className="px-4 py-2">
-                      <h3 className="text-xs font-bold text-muted-foreground/70 uppercase tracking-wider flex items-center gap-2">
-                        <Shield className="w-3 h-3" /> Admin
-                      </h3>
+              {/* Scrollable content */}
+              <div className="flex-1 overflow-y-auto overscroll-contain pb-8">
+                
+                {/* Profile Header */}
+                <div className="px-6 pt-4 pb-6">
+                  {user ? (
+                    <Link 
+                      to="/profile" 
+                      onClick={handleNavClick}
+                      className="flex items-center gap-4 p-4 -mx-2 rounded-2xl hover:bg-white/5 active:bg-white/10 transition-colors min-h-[96px]"
+                    >
+                      <div className="relative">
+                        <Avatar className="h-20 w-20 ring-2 ring-white/20 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
+                          <AvatarImage src={profile?.avatar_url || user?.user_metadata?.avatar_url} />
+                          <AvatarFallback className="bg-white/10 text-white text-2xl font-medium">
+                            {user?.email?.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        {/* Online indicator */}
+                        <div className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-green-500 border-2 border-black" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h2 className="text-xl font-semibold text-white truncate">
+                          {profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0]}
+                        </h2>
+                        <span className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-white/10 text-white/60 text-sm">
+                          View Profile
+                          <ChevronRight className="w-4 h-4" />
+                        </span>
+                      </div>
+                    </Link>
+                  ) : (
+                    <div className="py-4">
+                      <h2 className="text-2xl font-bold text-white mb-2">Welcome to 6Seven</h2>
+                      <p className="text-white/50 mb-6">Join the marketplace for collectors.</p>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => {
+                            handleNavClick();
+                            onAuthClick?.("signin");
+                          }}
+                          className="flex-1 h-14 rounded-2xl bg-white text-black font-semibold text-base hover:bg-white/90 active:scale-[0.98] transition-all"
+                        >
+                          Sign In
+                        </button>
+                        <button
+                          onClick={() => {
+                            handleNavClick();
+                            onAuthClick?.("signup");
+                          }}
+                          className="flex-1 h-14 rounded-2xl bg-white/10 text-white font-semibold text-base hover:bg-white/20 active:scale-[0.98] transition-all border border-white/10"
+                        >
+                          Sign Up
+                        </button>
+                      </div>
                     </div>
-                    <motion.div variants={item}>
-                      <Link to="/admin" onClick={handleNavClick} className="flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-secondary/50 active:bg-secondary transition-colors group">
-                        <span className="font-medium group-hover:translate-x-1 transition-transform">Admin Dashboard</span>
-                      </Link>
-                    </motion.div>
+                  )}
+                </div>
+
+                {/* Home Link */}
+                <div className="px-4">
+                  <NavItem
+                    to="/"
+                    icon={Home}
+                    label="Home"
+                    onClick={handleNavClick}
+                    index={0}
+                  />
+                </div>
+
+                {user && (
+                  <>
+                    {/* Account Section */}
+                    <div className="px-6 pt-6 pb-2">
+                      <SectionHeader icon={User} label="Account" />
+                    </div>
+                    <div className="px-4 space-y-1">
+                      {accountItems.map((item, index) => (
+                        <NavItem
+                          key={item.to}
+                          to={item.to}
+                          icon={item.icon}
+                          label={item.label}
+                          onClick={item.onClick || handleNavClick}
+                          hasNotification={item.label === "Notifications" && hasUnread}
+                          index={index + 1}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Seller Center Section */}
+                    <div className="px-6 pt-8 pb-2">
+                      <SectionHeader icon={BarChart3} label="Seller Center" />
+                    </div>
+                    <div className="px-4 space-y-1">
+                      {sellerItems.map((item, index) => (
+                        <NavItem
+                          key={item.to}
+                          to={item.to}
+                          icon={item.icon}
+                          label={item.label}
+                          onClick={handleNavClick}
+                          index={index + accountItems.length + 2}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Admin Section */}
+                    {isAdmin && (
+                      <>
+                        <div className="px-6 pt-8 pb-2">
+                          <SectionHeader icon={Shield} label="Admin" />
+                        </div>
+                        <div className="px-4 space-y-1">
+                          {adminItems.map((item, index) => (
+                            <NavItem
+                              key={item.to}
+                              to={item.to}
+                              icon={item.icon}
+                              label={item.label}
+                              onClick={handleNavClick}
+                              index={index + accountItems.length + sellerItems.length + 3}
+                            />
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    {/* Sign Out */}
+                    <div className="px-4 pt-8 pb-4">
+                      <div className="h-[1px] bg-white/10 mb-6 mx-2" />
+                      <motion.button
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4 }}
+                        onClick={onSignOut}
+                        className="w-full h-16 flex items-center justify-center gap-3 rounded-2xl bg-red-500/10 hover:bg-red-500/20 active:bg-red-500/30 transition-colors group"
+                      >
+                        <LogOut className="w-5 h-5 text-red-400 group-hover:text-red-300 transition-colors" />
+                        <span className="text-lg font-medium text-red-400 group-hover:text-red-300 transition-colors">
+                          Sign Out
+                        </span>
+                      </motion.button>
+                    </div>
                   </>
                 )}
 
-                <div className="my-4 border-t border-white/5 mx-4" />
-
-                <motion.div variants={item}>
-                  <button
-                    onClick={onSignOut}
-                    className="w-full text-left flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-destructive/10 text-destructive active:bg-destructive/20 transition-colors group"
-                  >
-                    <LogOut className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                    <span className="font-medium group-hover:translate-x-1 transition-transform">Sign Out</span>
-                  </button>
-                </motion.div>
-              </>
-            )}
-          </motion.nav>
-        </div>
-      </SheetContent>
-    </Sheet>
+              </div>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
   );
 };
+
+// Section Header Component
+const SectionHeader = ({ icon: Icon, label }: { icon: any; label: string }) => (
+  <div className="flex items-center gap-2 px-2">
+    <Icon className="w-4 h-4 text-white/30" />
+    <span className="text-xs font-semibold uppercase tracking-wider text-white/30">
+      {label}
+    </span>
+  </div>
+);
+
+// Navigation Item Component
+const NavItem = ({
+  to,
+  icon: Icon,
+  label,
+  onClick,
+  hasNotification,
+  index,
+}: {
+  to: string;
+  icon: any;
+  label: string;
+  onClick: () => void;
+  hasNotification?: boolean;
+  index: number;
+}) => (
+  <motion.div
+    initial={{ opacity: 0, x: -20 }}
+    animate={{ opacity: 1, x: 0 }}
+    transition={{ delay: index * 0.05, duration: 0.3 }}
+  >
+    <Link
+      to={to}
+      onClick={onClick}
+      className={cn(
+        "flex items-center gap-4 w-full h-16 px-4 rounded-2xl",
+        "hover:bg-white/5 active:bg-white/10 transition-all duration-200",
+        "group"
+      )}
+    >
+      <div className="relative flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 group-hover:bg-white/15 transition-colors">
+        <Icon className="w-6 h-6 text-white/70 group-hover:text-white transition-colors" />
+        {hasNotification && (
+          <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
+          </span>
+        )}
+      </div>
+      <span className="flex-1 text-lg font-medium text-white/70 group-hover:text-white transition-colors">
+        {label}
+      </span>
+      <ChevronRight className="w-5 h-5 text-white/20 group-hover:text-white/40 transition-colors" />
+    </Link>
+  </motion.div>
+);
