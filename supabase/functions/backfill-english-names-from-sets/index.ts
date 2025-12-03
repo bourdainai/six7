@@ -34,7 +34,7 @@ serve(async (req) => {
       .from('pokemon_card_attributes')
       .select('id, card_id, name, set_code, number, display_number')
       .is('name_en', null)
-      .like('card_id', 'tcgdex_github_ja_%')
+      .like('card_id', 'tcgdex_ja_%')
       .limit(batchSize);
 
     if (fetchError) {
@@ -71,12 +71,12 @@ serve(async (req) => {
     console.log(`🔍 Looking up English cards in ${uniqueSetCodes.length} sets...`);
 
     for (const setCode of uniqueSetCodes) {
-      // Get all English cards in this set
+      // Get all English cards in this set (any prefix that's NOT Japanese)
       const { data: englishCards, error: englishError } = await supabase
         .from('pokemon_card_attributes')
         .select('name, number, display_number')
         .eq('set_code', setCode)
-        .like('card_id', 'tcgdex_github_en_%');
+        .not('card_id', 'like', 'tcgdex_ja_%');
 
       if (englishError) {
         console.warn(`⚠️ Failed to fetch English cards for set ${setCode}: ${englishError.message}`);
@@ -184,8 +184,9 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('❌ Set matching error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
