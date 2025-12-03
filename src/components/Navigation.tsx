@@ -43,7 +43,7 @@ export const Navigation = React.memo(() => {
   return (
     <>
       <nav 
-        className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-divider-gray"
+        className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-divider-gray top-nav"
         style={{
           width: '100%',
           height: '72px',
