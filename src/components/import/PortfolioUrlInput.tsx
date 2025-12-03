@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ImportProgress } from "./ImportProgress";
 import { ImportSummary } from "./ImportSummary";
+import { logger } from "@/lib/logger";
 
 interface PortfolioUrlInputProps {
   onClose: () => void;
@@ -68,7 +69,7 @@ export function PortfolioUrlInput({ onClose }: PortfolioUrlInputProps) {
       }
 
     } catch (err) {
-      console.error("Import error:", err);
+      logger.error("Import error:", err);
       setError(err instanceof Error ? err.message : "Import failed");
     } finally {
       setImporting(false);

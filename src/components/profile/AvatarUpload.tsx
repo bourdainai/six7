@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Camera, Loader2, ZoomIn, ZoomOut } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { logger } from "@/lib/logger";
 import Cropper from "react-easy-crop";
 import getCroppedImg from "@/lib/cropImage";
 type Area = { x: number; y: number; width: number; height: number; };
@@ -94,7 +95,7 @@ export function AvatarUpload({ currentAvatarUrl, userName, onUploadComplete }: A
       setShowCropper(false);
       setImageSrc(null);
     } catch (error: any) {
-      console.error("Upload error:", error);
+      logger.error("Upload error:", error);
       toast.error(`Failed to upload image: ${error.message}`);
     } finally {
       setUploading(false);

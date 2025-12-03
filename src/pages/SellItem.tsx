@@ -470,7 +470,7 @@ const SellItem = () => {
       }
 
     } catch (error) {
-      console.error("Auto-fill error:", error);
+      logger.error("Auto-fill error:", error);
       toast({
         title: "Analysis Failed",
         description: "Could not analyze images. Please try again or fill manually.",
@@ -518,7 +518,7 @@ const SellItem = () => {
       }
 
     } catch (error) {
-      console.error("Price error:", error);
+      logger.error("Price error:", error);
       toast({ title: "Pricing Failed", description: "Could not fetch price suggestion.", variant: "destructive" });
     } finally {
       setGettingPrice(false);
@@ -796,7 +796,7 @@ const SellItem = () => {
               .single();
 
             if (variantError) {
-              console.error("Variant creation error for", card.cardData.title, ":", variantError);
+              logger.error("Variant creation error for", card.cardData.title, ":", variantError);
               throw new Error(`Failed to create variant for ${card.cardData.title}: ${variantError.message}`);
             }
 
@@ -813,7 +813,7 @@ const SellItem = () => {
 
         } catch (variantCreationError) {
           // Rollback: Delete the listing if variants failed
-          console.error("Critical variant creation failure:", variantCreationError);
+          logger.error("Critical variant creation failure:", variantCreationError);
 
           await supabase.from('listings').delete().eq('id', listing.id);
 
@@ -872,7 +872,7 @@ const SellItem = () => {
             const file = new File([blob], "magic-card.jpg", { type: "image/jpeg" });
             filesToUpload = [file];
           } catch (e) {
-            console.error("Failed to fetch magic image", e);
+            logger.error("Failed to fetch magic image", e);
           }
         }
 
@@ -885,7 +885,7 @@ const SellItem = () => {
             .upload(fileName, file);
 
           if (uploadError) {
-            if (import.meta.env.DEV) console.error("Image upload error:", uploadError);
+            logger.debug("Image upload error:", uploadError);
             continue;
           }
 
@@ -926,7 +926,7 @@ const SellItem = () => {
 
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to publish listing.";
-      console.error(error);
+      logger.error("Listing publish error:", error);
       toast({
         title: "Publishing Failed",
         description: message,

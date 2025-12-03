@@ -4,6 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/lib/logger";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -318,7 +319,7 @@ const Messages = () => {
         description: `You can now message ${userName}`,
       });
     } catch (error) {
-      console.error("Error creating test conversation:", error);
+      logger.error("Error creating test conversation:", error);
       toast({
         title: "Error",
         description: "Failed to create test conversation",

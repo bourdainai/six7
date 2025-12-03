@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Database } from "@/integrations/supabase/types";
+import { logger } from "@/lib/logger";
 
 type OfferRow = Database["public"]["Tables"]["offers"]["Row"];
 
@@ -83,9 +84,7 @@ export const CounterOfferDialog = ({ open, onOpenChange, originalOffer, userRole
       setMessage("");
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to send counter offer";
-      if (import.meta.env.DEV) {
-        console.error("Error creating counter offer:", error);
-      }
+        logger.debug("Error creating counter offer:", error);
         toast.error(message);
     } finally {
       setIsSubmitting(false);

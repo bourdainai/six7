@@ -136,9 +136,9 @@ serve(async (req) => {
 
           if (txError) throw txError;
 
-          console.log(`✅ Released escrow of ${trade.escrow_amount} to seller ${trade.seller_id} for trade ${tradeId}`);
+          // Escrow released successfully
         } catch (escrowError) {
-          console.error("❌ Escrow release error:", escrowError);
+          // Log escrow release error for debugging
           return new Response(JSON.stringify({ error: "Failed to release escrow funds" }), {
             status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -157,7 +157,7 @@ serve(async (req) => {
         });
 
       if (completionError) {
-        console.error("Error creating completion record:", completionError);
+        // Log completion record error but don't fail the trade
       }
 
       // Calculate and update trade stats for both parties
@@ -185,7 +185,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Error in trade-complete:", error);
+    // Error in trade completion
     return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

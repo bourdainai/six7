@@ -171,7 +171,7 @@ const Browse = () => {
 
         return data as ListingSummary[];
       } catch (err) {
-        console.error("💥 [Browse] Unexpected error:", err);
+        logger.error("[Browse] Unexpected error:", err);
         throw err;
       }
     },

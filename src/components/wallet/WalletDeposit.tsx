@@ -8,9 +8,10 @@ import { Loader2, CheckCircle } from "lucide-react";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { useToast } from "@/hooks/use-toast";
+import { logger } from "@/lib/logger";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '').catch((err) => {
-  console.error('Failed to load Stripe:', err);
+  logger.error('Failed to load Stripe:', err);
   return null;
 });
 

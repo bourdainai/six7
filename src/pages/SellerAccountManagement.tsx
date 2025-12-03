@@ -13,6 +13,7 @@ import {
   ConnectComponentsProvider,
   ConnectAccountManagement,
 } from "@stripe/react-connect-js";
+import { logger } from "@/lib/logger";
 import PayoutHistory from "@/components/seller/PayoutHistory";
 import PayoutSchedule from "@/components/seller/PayoutSchedule";
 import VerificationRequirements from "@/components/seller/VerificationRequirements";
@@ -50,9 +51,7 @@ const SellerAccountManagement = () => {
 
         setStripeConnectInstance(instance);
       } catch (err) {
-        if (import.meta.env.DEV) {
-          console.error("Error initializing Stripe Connect:", err);
-        }
+        logger.debug("Error initializing Stripe Connect:", err);
         toast({
           title: "Error",
           description: "Failed to load account management. Please try again.",

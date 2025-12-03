@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { AlertCircle } from "lucide-react";
+import { logger } from "@/lib/logger";
 
 interface DisputeFormProps {
   orderId: string;
@@ -51,7 +52,7 @@ export function DisputeForm({ orderId, listingId, sellerId, onSuccess }: Dispute
           body: { dispute_id: dispute.id },
         });
       } catch (aiError) {
-        console.error("AI analysis failed:", aiError);
+        logger.error("AI analysis failed:", aiError);
         // Don't fail the whole operation if AI fails
       }
 

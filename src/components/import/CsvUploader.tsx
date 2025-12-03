@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { validateCsvHeaders, mapCsvRowToListing, type CollectrCsvRow } from "./utils/csvMapper";
 import { ImportProgress } from "./ImportProgress";
 import { ImportSummary } from "./ImportSummary";
+import { logger } from "@/lib/logger";
 
 interface CsvUploaderProps {
   onClose: () => void;
@@ -138,7 +139,7 @@ export function CsvUploader({ onClose }: CsvUploaderProps) {
                   .insert(listings);
 
                 if (insertError) {
-                  console.error("Insert error:", insertError);
+                  logger.error("Insert error:", insertError);
                   failedCount += listings.length;
                 } else {
                   successCount += listings.length;
@@ -167,7 +168,7 @@ export function CsvUploader({ onClose }: CsvUploaderProps) {
             });
 
           } catch (err) {
-            console.error("Import error:", err);
+            logger.error("Import error:", err);
             setError(err instanceof Error ? err.message : "Import failed");
           } finally {
             setImporting(false);
@@ -180,7 +181,7 @@ export function CsvUploader({ onClose }: CsvUploaderProps) {
       });
 
     } catch (err) {
-      console.error("Import error:", err);
+      logger.error("Import error:", err);
       setError(err instanceof Error ? err.message : "Import failed");
       setImporting(false);
     }

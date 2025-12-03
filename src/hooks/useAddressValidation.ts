@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface Address {
   address: string;
@@ -57,7 +58,7 @@ export const useAddressValidation = () => {
 
       return result;
     } catch (error) {
-      console.error('Address validation error:', error);
+      logger.error('Address validation error:', error);
       const result: ValidationResult = {
         isValid: false,
         issues: ['Failed to validate address'],

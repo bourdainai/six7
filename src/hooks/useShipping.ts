@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 export interface ShippingRate {
   carrierCode: string;
@@ -83,7 +84,7 @@ export const useShipping = () => {
     });
 
     if (error) {
-      console.error('Failed to fetch shipping rates:', error);
+      logger.error('Failed to fetch shipping rates:', error);
       return [];
     }
 
@@ -102,7 +103,7 @@ export const useShipping = () => {
     });
 
     if (error) {
-      console.error('Failed to validate address:', error);
+      logger.error('Failed to validate address:', error);
       return { isValid: false };
     }
 
@@ -148,7 +149,7 @@ export const useShipping = () => {
     });
 
     if (error) {
-      console.error('Failed to fetch service points:', error);
+      logger.error('Failed to fetch service points:', error);
       return [];
     }
 

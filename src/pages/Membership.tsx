@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Check, Crown, Sparkles, Zap, Shield, TrendingUp } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { SEO } from "@/components/SEO";
+import { logger } from "@/lib/logger";
 
 interface MembershipData {
   subscribed: boolean;
@@ -67,9 +68,7 @@ const Membership = () => {
         window.open(data.url, "_blank");
       }
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error("Error creating checkout:", error);
-      }
+      logger.debug("Error creating checkout:", error);
       toast({
         title: "Error",
         description: "Failed to start checkout process. Please try again.",
@@ -91,9 +90,7 @@ const Membership = () => {
         window.open(data.url, "_blank");
       }
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error("Error opening customer portal:", error);
-      }
+      logger.debug("Error opening customer portal:", error);
       toast({
         title: "Error",
         description: "Failed to open subscription management. Please try again.",

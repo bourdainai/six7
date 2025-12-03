@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Paperclip, X, Upload, Loader2, File } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 interface FileUploadProps {
   conversationId: string;
@@ -113,7 +114,7 @@ export function FileUpload({ conversationId, onFilesSelected, onClear }: FileUpl
       toast.success(`${uploadedFiles.length} file(s) uploaded and ready to send`);
       return uploadedFiles;
     } catch (error) {
-      console.error('Upload error:', error);
+      logger.error('Upload error:', error);
       toast.error('Failed to upload files');
       return [];
     } finally {

@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
+import { logger } from "@/lib/logger";
 
 export const useSavedListings = () => {
   const { user } = useAuth();
@@ -72,7 +73,7 @@ export const useSavedListings = () => {
       onError: (error) => {
         const message = error instanceof Error ? error.message : "Failed to save listing";
         if (import.meta.env.DEV) {
-          console.error("Error saving listing:", error);
+          logger.error("Error saving listing:", error);
         }
         toast({
           title: "Error",
@@ -113,7 +114,7 @@ export const useSavedListings = () => {
       onError: (error) => {
         const message = error instanceof Error ? error.message : "Failed to remove listing";
         if (import.meta.env.DEV) {
-          console.error("Error unsaving listing:", error);
+          logger.error("Error unsaving listing:", error);
         }
         toast({
           title: "Error",
