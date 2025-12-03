@@ -1531,6 +1531,7 @@ export type Database = {
           last_searched_at: string | null
           metadata: Json | null
           name: string
+          name_en: string | null
           number: string | null
           popularity_score: number | null
           printed_total: number | null
@@ -1561,6 +1562,7 @@ export type Database = {
           last_searched_at?: string | null
           metadata?: Json | null
           name: string
+          name_en?: string | null
           number?: string | null
           popularity_score?: number | null
           printed_total?: number | null
@@ -1591,6 +1593,7 @@ export type Database = {
           last_searched_at?: string | null
           metadata?: Json | null
           name?: string
+          name_en?: string | null
           number?: string | null
           popularity_score?: number | null
           printed_total?: number | null

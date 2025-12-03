@@ -228,9 +228,12 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
           }
         }
 
+        // Use English name if available (for Japanese cards), otherwise use original name
+        const displayName = card.name_en || card.name;
+        
         return {
           id: card.card_id,
-          name: card.name,
+          name: displayName,
           number: displayNumber,
           rarity: card.rarity || undefined,
           artist: card.artist || undefined,

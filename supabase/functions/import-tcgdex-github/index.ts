@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getEnglishName } from "../_shared/pokemon-names.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -217,9 +218,13 @@ serve(async (req) => {
             const imageUrl = card.image || 
               `https://assets.tcgdex.net/${language}/${series}/${setId}/${card.localId}`;
             
+            // Get English name for non-English cards using dexId
+            const englishName = language !== 'en' ? getEnglishName(card.dexId) : null;
+            
             return {
               card_id: `tcgdex_github_${language}_${card.id}`,
               name: card.name,
+              name_en: englishName, // Auto-populate English name for Japanese/other language cards
               set_name: card.set.name,
               set_code: setId,
               number: card.localId,
