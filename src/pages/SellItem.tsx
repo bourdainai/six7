@@ -104,7 +104,7 @@ const SellItem = () => {
   const [gettingPrice, setGettingPrice] = useState(false);
   const [suggestedPrice, setSuggestedPrice] = useState<{ price: number, low: number, high: number } | null>(null);
   const [selectedPrice, setSelectedPrice] = useState<number | "">("");
-  const [aiAnswerEnginesEnabled, setAiAnswerEnginesEnabled] = useState(false);
+  const [aiAnswerEnginesEnabled, setAiAnswerEnginesEnabled] = useState(true);
   const [acceptsOffers, setAcceptsOffers] = useState(true);
 
   // Multi-card state
