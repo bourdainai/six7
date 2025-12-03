@@ -44,11 +44,16 @@ serve(async (req) => {
     console.log(`Creating deposit for user ${user.id}, amount: ${amount}`);
 
     // Get or create wallet
-    let { data: wallet } = await supabase
+    let { data: wallet, error: walletFetchError } = await supabase
       .from('wallet_accounts')
-      .select('id, pending_balance')
+      .select('id, pending_balance, balance')
       .eq('user_id', user.id)
       .single();
+
+    if (walletFetchError && walletFetchError.code !== 'PGRST116') {
+      // PGRST116 = not found, which is fine
+      throw new Error(`Failed to fetch wallet: ${walletFetchError.message}`);
+    }
 
     if (!wallet) {
       const { data: newWallet, error: walletError } = await supabase
@@ -58,10 +63,12 @@ serve(async (req) => {
           balance: 0,
           pending_balance: 0
         })
-        .select('id, pending_balance')
+        .select('id, pending_balance, balance')
         .single();
       
-      if (walletError) throw walletError;
+      if (walletError || !newWallet) {
+        throw new Error(`Failed to create wallet: ${walletError?.message || 'Unknown error'}`);
+      }
       wallet = newWallet;
     }
 

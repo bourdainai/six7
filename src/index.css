@@ -249,4 +249,24 @@
   .animate-scan {
     animation: scan 3s ease-in-out infinite;
   }
+
+  /* iOS Safe Area Support for Bottom Navigation */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+/* Bottom Navigation - Mobile Only */
+@layer components {
+  /* Ensure bottom nav is above other content but below modals */
+  nav[class*="fixed"][class*="bottom-0"] {
+    z-index: 40 !important;
+  }
+  
+  /* Hide bottom nav on desktop */
+  @media (min-width: 1024px) {
+    nav[class*="fixed"][class*="bottom-0"] {
+      display: none !important;
+    }
+  }
 }

@@ -3,45 +3,36 @@ import { Badge } from "@/components/ui/badge";
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
 } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  Menu, X, Shield, Heart, Bell,
-  PlusCircle, Search, User, LogOut,
-  ShoppingBag, Wallet, RefreshCw, BarChart3, Star
+  Shield, Heart, Bell,
+  User, LogOut,
+  ShoppingBag, Wallet, RefreshCw, BarChart3, Star, Home
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-
-interface NavLink {
-  to: string;
-  label: string;
-}
 
 interface MobileMenuProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  navLinks: NavLink[];
   user: any;
   isAdmin: boolean;
   onSignOut: () => void;
   onNotificationsClick: () => void;
+  onAuthClick?: (mode: "signin" | "signup") => void;
   unreadMessagesCount?: number;
 }
 
 export const MobileMenu = ({
   open,
   onOpenChange,
-  navLinks,
   user,
   isAdmin,
   onSignOut,
   onNotificationsClick,
+  onAuthClick,
   unreadMessagesCount = 0,
 }: MobileMenuProps) => {
   // Fetch user profile for avatar
@@ -80,34 +71,6 @@ export const MobileMenu = ({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-10 w-10 relative overflow-hidden rounded-full hover:bg-secondary/50 transition-all duration-300">
-          <AnimatePresence mode="wait">
-            {open ? (
-              <motion.div
-                key="close"
-                initial={{ rotate: -90, opacity: 0 }}
-                animate={{ rotate: 0, opacity: 1 }}
-                exit={{ rotate: 90, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <X className="h-5 w-5" />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="menu"
-                initial={{ rotate: 90, opacity: 0 }}
-                animate={{ rotate: 0, opacity: 1 }}
-                exit={{ rotate: -90, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Menu className="h-5 w-5" />
-              </motion.div>
-            )}
-          </AnimatePresence>
-          <span className="sr-only">Toggle menu</span>
-        </Button>
-      </SheetTrigger>
       <SheetContent
         side="right"
         className="w-full sm:w-[400px] p-0 border-l border-white/10 bg-background/80 backdrop-blur-xl shadow-2xl"
@@ -116,51 +79,61 @@ export const MobileMenu = ({
           {/* Header Profile Section */}
           <div className="pt-12 pb-6 px-6 bg-gradient-to-b from-secondary/50 to-transparent">
             {user ? (
-              <div className="flex items-center gap-4">
-                <Avatar className="h-16 w-16 border-2 border-primary/20 shadow-lg ring-2 ring-background">
+              <Link to="/profile" onClick={handleNavClick} className="flex items-center gap-4 group">
+                <Avatar className="h-16 w-16 border-2 border-primary/20 shadow-lg ring-2 ring-background group-hover:ring-primary/30 transition-all">
                   <AvatarImage src={profile?.avatar_url || user?.user_metadata?.avatar_url} />
                   <AvatarFallback className="bg-primary/10 text-primary text-xl">
                     {user?.email?.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col">
-                  <span className="font-bold text-lg tracking-tight">
+                  <span className="font-bold text-lg tracking-tight group-hover:text-primary transition-colors">
                     {profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0]}
                   </span>
                   <span className="text-xs text-muted-foreground font-medium bg-secondary/50 px-2 py-0.5 rounded-full w-fit mt-1">
-                    Member
+                    View Profile
                   </span>
                 </div>
-              </div>
+              </Link>
             ) : (
-              <div className="flex flex-col gap-2">
-                <h2 className="text-2xl font-bold tracking-tight">Welcome to 6Seven</h2>
-                <p className="text-muted-foreground">Join the marketplace for collectors.</p>
+              <div className="flex flex-col gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold tracking-tight">Welcome to 6Seven</h2>
+                  <p className="text-muted-foreground mt-1">Join the marketplace for collectors.</p>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      handleNavClick();
+                      onAuthClick?.("signin");
+                    }}
+                    className="flex-1 py-2.5 px-4 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-colors"
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleNavClick();
+                      onAuthClick?.("signup");
+                    }}
+                    className="flex-1 py-2.5 px-4 rounded-xl bg-secondary text-foreground font-semibold text-sm hover:bg-secondary/80 transition-colors border border-white/10"
+                  >
+                    Sign Up
+                  </button>
+                </div>
               </div>
             )}
           </div>
 
-          {/* Quick Actions */}
-          <div className="px-6 py-4 grid grid-cols-2 gap-3">
+          {/* Quick Navigation */}
+          <div className="px-6 py-2">
             <Link
-              to="/sell"
+              to="/"
               onClick={handleNavClick}
-              className="flex flex-col items-center justify-center p-4 rounded-2xl bg-primary/5 hover:bg-primary/10 border border-primary/10 transition-all active:scale-95 group"
+              className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-secondary/50 active:bg-secondary transition-colors group"
             >
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mb-2 group-hover:bg-primary group-hover:text-white transition-colors">
-                <PlusCircle className="h-5 w-5" />
-              </div>
-              <span className="font-semibold text-sm">Sell Item</span>
-            </Link>
-            <Link
-              to="/browse"
-              onClick={handleNavClick}
-              className="flex flex-col items-center justify-center p-4 rounded-2xl bg-secondary/50 hover:bg-secondary border border-white/5 transition-all active:scale-95 group"
-            >
-              <div className="h-10 w-10 rounded-full bg-background flex items-center justify-center mb-2 shadow-sm group-hover:scale-110 transition-transform">
-                <Search className="h-5 w-5" />
-              </div>
-              <span className="font-semibold text-sm">Browse</span>
+              <Home className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+              <span className="font-medium">Home</span>
             </Link>
           </div>
 

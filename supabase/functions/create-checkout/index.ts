@@ -255,62 +255,114 @@ serve(async (req) => {
     // Create order item(s) and RESERVE variants (don't mark as sold yet)
     const reservationExpiry = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 minutes
     
-    if (purchaseType === 'bundle') {
-      // Create order items for all bundle variants
-      const orderItems = bundleVariants.map(v => ({
-        order_id: order.id,
-        listing_id: listing.id,
-        variant_id: v.id,
-        price: Number(v.variant_price),
-      }));
-      
-      await supabaseClient.from('order_items').insert(orderItems);
-      
-      // RESERVE bundle variants instead of marking as sold
-      const variantIds = bundleVariants.map(v => v.id);
-      await supabaseClient
-        .from('listing_variants')
-        .update({ 
-          reserved_until: reservationExpiry,
-          reserved_by: user.id 
-        })
-        .in('id', variantIds);
+    try {
+      if (purchaseType === 'bundle') {
+        // Create order items for all bundle variants
+        const orderItems = bundleVariants.map(v => ({
+          order_id: order.id,
+          listing_id: listing.id,
+          variant_id: v.id,
+          price: Number(v.variant_price),
+        }));
         
-    } else if (variant) {
-      // Single variant purchase
-      await supabaseClient.from('order_items').insert({
-        order_id: order.id,
-        listing_id: listing.id,
-        variant_id: variant.id,
-        price: itemPrice,
-      });
-      
-      // RESERVE variant instead of marking as sold
-      await supabaseClient
-        .from('listing_variants')
-        .update({ 
-          reserved_until: reservationExpiry,
-          reserved_by: user.id 
-        })
-        .eq('id', variant.id);
+        const { error: orderItemsError } = await supabaseClient.from('order_items').insert(orderItems);
+        if (orderItemsError) {
+          throw new Error(`Failed to create order items: ${orderItemsError.message}`);
+        }
         
-    } else {
-      // Regular single item purchase
-      await supabaseClient.from('order_items').insert({
-        order_id: order.id,
-        listing_id: listing.id,
-        price: itemPrice,
-      });
+        // RESERVE bundle variants instead of marking as sold
+        const variantIds = bundleVariants.map(v => v.id);
+        const { error: reserveError } = await supabaseClient
+          .from('listing_variants')
+          .update({ 
+            reserved_until: reservationExpiry,
+            reserved_by: user.id 
+          })
+          .in('id', variantIds)
+          .eq('is_sold', false) // Only reserve if not already sold
+          .eq('is_available', true); // Only reserve if available
+        
+        if (reserveError) {
+          throw new Error(`Failed to reserve variants: ${reserveError.message}`);
+        }
+          
+      } else if (variant) {
+        // Single variant purchase
+        const { error: orderItemError } = await supabaseClient.from('order_items').insert({
+          order_id: order.id,
+          listing_id: listing.id,
+          variant_id: variant.id,
+          price: itemPrice,
+        });
+        
+        if (orderItemError) {
+          throw new Error(`Failed to create order item: ${orderItemError.message}`);
+        }
+        
+        // RESERVE variant instead of marking as sold
+        const { error: reserveError } = await supabaseClient
+          .from('listing_variants')
+          .update({ 
+            reserved_until: reservationExpiry,
+            reserved_by: user.id 
+          })
+          .eq('id', variant.id)
+          .eq('is_sold', false) // Only reserve if not already sold
+          .eq('is_available', true); // Only reserve if available
+        
+        if (reserveError) {
+          throw new Error(`Failed to reserve variant: ${reserveError.message}`);
+        }
+          
+      } else {
+        // Regular single item purchase
+        const { error: orderItemError } = await supabaseClient.from('order_items').insert({
+          order_id: order.id,
+          listing_id: listing.id,
+          price: itemPrice,
+        });
+        
+        if (orderItemError) {
+          throw new Error(`Failed to create order item: ${orderItemError.message}`);
+        }
+      }
+    } catch (reservationError) {
+      // Rollback: cancel payment intent, delete order and payment records
+      console.error('Reservation failed, rolling back:', reservationError);
+      try {
+        await stripe.paymentIntents.cancel(paymentIntent.id);
+      } catch (cancelError) {
+        console.error('Failed to cancel payment intent:', cancelError);
+      }
+      await supabaseClient.from('payments').delete().eq('order_id', order.id);
+      await supabaseClient.from('order_items').delete().eq('order_id', order.id);
+      await supabaseClient.from('orders').delete().eq('id', order.id);
+      throw reservationError;
     }
 
     // Create payment record
-    await supabaseClient.from('payments').insert({
+    const { error: paymentInsertError } = await supabaseClient.from('payments').insert({
       order_id: order.id,
       stripe_payment_intent_id: paymentIntent.id,
       amount: itemPrice,
       currency: listing.currency,
       status: paymentIntent.status,
     });
+
+    if (paymentInsertError) {
+      // If payment record creation fails, we should cancel the payment intent
+      // and clean up the order
+      console.error('Failed to create payment record:', paymentInsertError);
+      try {
+        await stripe.paymentIntents.cancel(paymentIntent.id);
+      } catch (cancelError) {
+        console.error('Failed to cancel payment intent:', cancelError);
+      }
+      // Clean up order and order items
+      await supabaseClient.from('order_items').delete().eq('order_id', order.id);
+      await supabaseClient.from('orders').delete().eq('id', order.id);
+      throw new Error('Failed to create payment record. Please try again.');
+    }
 
     console.log(`Created checkout for listing: ${listingId}, order: ${order.id}, payment intent: ${paymentIntent.id}`);
 

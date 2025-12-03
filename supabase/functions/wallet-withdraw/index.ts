@@ -55,12 +55,20 @@ serve(async (req) => {
     // Get user's profile to get Stripe Connect account
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('stripe_connect_account_id')
+      .select('stripe_connect_account_id, can_receive_payments, stripe_onboarding_complete')
       .eq('id', user.id)
       .single();
 
-    if (profileError || !profile?.stripe_connect_account_id) {
+    if (profileError || !profile) {
+      throw new Error('User profile not found');
+    }
+
+    if (!profile.stripe_connect_account_id) {
       throw new Error('No Stripe Connect account found. Please complete seller onboarding first.');
+    }
+
+    if (!profile.stripe_onboarding_complete || !profile.can_receive_payments) {
+      throw new Error('Stripe Connect account setup is incomplete. Please complete onboarding first.');
     }
 
     console.log(`Processing withdrawal for user ${user.id} to bank account ${bank_account_id}`);
@@ -77,34 +85,66 @@ serve(async (req) => {
       throw new Error('Invalid bank account selected');
     }
 
-    // Deduct from wallet balance first
-    const { error: updateError } = await supabase
+    // Check for existing withdrawal with same amount to prevent duplicates
+    const { data: recentWithdrawal } = await supabase
+      .from('wallet_withdrawals')
+      .select('id, status')
+      .eq('wallet_id', wallet.id)
+      .eq('amount', amount)
+      .eq('bank_account_id', bank_account_id)
+      .eq('status', 'processing')
+      .gte('processed_at', new Date(Date.now() - 5 * 60 * 1000).toISOString()) // Within last 5 minutes
+      .single();
+
+    if (recentWithdrawal) {
+      throw new Error('A withdrawal with this amount is already processing. Please wait a few minutes.');
+    }
+
+    // Deduct from wallet balance first (with optimistic locking)
+    const { error: updateError, data: updatedWallet } = await supabase
       .from('wallet_accounts')
       .update({ balance: wallet.balance - amount })
-      .eq('id', wallet.id);
+      .eq('id', wallet.id)
+      .eq('balance', wallet.balance) // Optimistic lock - ensure balance hasn't changed
+      .select('balance')
+      .single();
 
-    if (updateError) throw updateError;
+    if (updateError || !updatedWallet) {
+      throw new Error('Failed to deduct from wallet. Your balance may have changed. Please refresh and try again.');
+    }
 
-    // Create Stripe payout to the selected bank account
-    const payout = await stripe.payouts.create(
-      {
-        amount: Math.round(amount * 100),
-        currency: 'gbp',
-        method: 'standard',
-        destination: bank_account_id,
-        metadata: {
-          user_id: user.id,
-          wallet_id: wallet.id,
-          type: 'wallet_withdrawal'
+    let payout;
+    try {
+      // Create Stripe payout to the selected bank account
+      payout = await stripe.payouts.create(
+        {
+          amount: Math.round(amount * 100),
+          currency: 'gbp',
+          method: 'standard',
+          destination: bank_account_id,
+          metadata: {
+            user_id: user.id,
+            wallet_id: wallet.id,
+            type: 'wallet_withdrawal'
+          }
+        },
+        {
+          stripeAccount: profile.stripe_connect_account_id,
         }
-      },
-      {
-        stripeAccount: profile.stripe_connect_account_id,
-      }
-    );
+      );
+    } catch (stripeError: any) {
+      // Rollback wallet balance if Stripe payout creation fails
+      await supabase
+        .from('wallet_accounts')
+        .update({ balance: wallet.balance })
+        .eq('id', wallet.id);
+      
+      const errorMessage = stripeError?.message || 'Failed to create payout';
+      throw new Error(`Withdrawal failed: ${errorMessage}`);
+    }
 
     // Record withdrawal
-    await supabase.from('wallet_withdrawals').insert({
+    const { error: withdrawalInsertError } = await supabase.from('wallet_withdrawals').insert({
       wallet_id: wallet.id,
       amount: amount,
       currency: 'GBP',
@@ -114,16 +154,26 @@ serve(async (req) => {
       processed_at: new Date().toISOString()
     });
 
+    if (withdrawalInsertError) {
+      console.error('Failed to record withdrawal:', withdrawalInsertError);
+      // Don't throw - payout is already created, we'll handle it via webhook
+    }
+
     // Record transaction log
-    await supabase.from('wallet_transactions').insert({
+    const { error: txInsertError } = await supabase.from('wallet_transactions').insert({
       wallet_id: wallet.id,
       type: 'withdrawal',
       amount: -amount,
-      balance_after: wallet.balance - amount,
+      balance_after: updatedWallet.balance,
       stripe_transaction_id: payout.id,
       status: 'pending',
       description: `Withdrawal to bank account ending in ${(bankAccount as any).last4}`
     });
+
+    if (txInsertError) {
+      console.error('Failed to record transaction:', txInsertError);
+      // Non-critical, continue
+    }
 
     console.log(`Withdrawal successful: ${payout.id}`);
 

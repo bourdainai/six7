@@ -40,8 +40,12 @@ serve(async (req) => {
     }
 
     // Verify order is delivered
-    if (!order.delivered_at || order.status !== 'completed') {
+    if (!order.delivered_at) {
       throw new Error('Order must be marked as delivered before payout can be processed');
+    }
+
+    if (order.status !== 'completed' && order.status !== 'delivered') {
+      throw new Error(`Order status must be 'completed' or 'delivered' to process payout. Current status: ${order.status}`);
     }
 
     // Get seller's Stripe Connect account
@@ -74,13 +78,27 @@ serve(async (req) => {
       throw new Error(`Error checking payout: ${payoutError.message}`);
     }
 
-    // If payout already completed, return success
+    // If payout already completed, return success (idempotency)
     if (existingPayout && existingPayout.status === 'completed') {
       return new Response(
         JSON.stringify({ 
           success: true, 
           message: 'Payout already completed',
           payoutId: existingPayout.id,
+          transferId: existingPayout.stripe_transfer_id,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // If payout is already processing, return current status
+    if (existingPayout && existingPayout.status === 'processing') {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: 'Payout is already being processed',
+          payoutId: existingPayout.id,
+          status: existingPayout.status,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -122,16 +140,21 @@ serve(async (req) => {
 
       // Update or create payout record
       if (existingPayout) {
-        await supabaseAdmin
+        const { error: updateError } = await supabaseAdmin
           .from('payouts')
           .update({
             stripe_transfer_id: transfer.id,
             status: 'completed',
             completed_at: new Date().toISOString(),
           })
-          .eq('id', existingPayout.id);
+          .eq('id', existingPayout.id)
+          .eq('status', 'pending'); // Only update if still pending
+        
+        if (updateError) {
+          throw new Error(`Failed to update payout: ${updateError.message}`);
+        }
       } else {
-        await supabaseAdmin
+        const { error: insertError } = await supabaseAdmin
           .from('payouts')
           .insert({
             seller_id: order.seller_id,
@@ -142,6 +165,10 @@ serve(async (req) => {
             status: 'completed',
             completed_at: new Date().toISOString(),
           });
+        
+        if (insertError) {
+          throw new Error(`Failed to create payout record: ${insertError.message}`);
+        }
       }
 
       // Update seller balance - move from pending to available
@@ -199,26 +226,41 @@ serve(async (req) => {
           .eq('id', existingPayout.id);
       }
 
-      // Update seller balance
-      const { data: balance } = await supabaseAdmin
-        .from('seller_balances')
-        .select('*')
-        .eq('seller_id', order.seller_id)
-        .single();
-
-      if (balance) {
-        const currentPending = parseFloat(balance.pending_balance.toString()) || 0;
-        const currentAvailable = parseFloat(balance.available_balance.toString()) || 0;
-        const payoutAmount = parseFloat(order.seller_amount.toString());
-
-        await supabaseAdmin
+      // Update seller balance (idempotent - only if payout was updated)
+      if (existingPayout) {
+        const { data: balance } = await supabaseAdmin
           .from('seller_balances')
-          .update({
-            pending_balance: Math.max(0, currentPending - payoutAmount),
-            available_balance: currentAvailable + payoutAmount,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('seller_id', order.seller_id);
+          .select('*')
+          .eq('seller_id', order.seller_id)
+          .single();
+
+        if (balance) {
+          const currentPending = parseFloat(balance.pending_balance.toString()) || 0;
+          const currentAvailable = parseFloat(balance.available_balance.toString()) || 0;
+          const payoutAmount = parseFloat(order.seller_amount.toString());
+
+          // Only update if balance hasn't been updated yet (check if pending balance still includes this amount)
+          if (currentPending >= payoutAmount) {
+            await supabaseAdmin
+              .from('seller_balances')
+              .update({
+                pending_balance: Math.max(0, currentPending - payoutAmount),
+                available_balance: currentAvailable + payoutAmount,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('seller_id', order.seller_id);
+          }
+        } else {
+          // Create balance record if it doesn't exist
+          await supabaseAdmin
+            .from('seller_balances')
+            .insert({
+              seller_id: order.seller_id,
+              available_balance: order.seller_amount,
+              pending_balance: 0,
+              currency: order.currency,
+            });
+        }
       }
 
       console.log(`Payout marked as completed for order ${orderId}`);

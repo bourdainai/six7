@@ -6,6 +6,7 @@ import { AuthModal } from "@/components/auth/AuthModal";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { DesktopNav } from "@/components/navigation/DesktopNav";
 import { MobileMenu } from "@/components/navigation/MobileMenu";
+import { BottomNav } from "@/components/navigation/BottomNav";
 import { useTotalUnreadMessages } from "@/hooks/useTotalUnreadMessages";
 import logo from "@/assets/logo.svg";
 import React from "react";
@@ -102,22 +103,30 @@ export const Navigation = React.memo(() => {
             {user && <NotificationCenter ref={notificationRef} />}
           </div>
 
-          {/* Mobile Navigation */}
+          {/* Mobile Navigation - Only show notifications in top bar */}
           <div className="flex lg:hidden items-center gap-2" style={{ contain: 'layout' }}>
             {user && <NotificationCenter ref={notificationRef} />}
-            <MobileMenu 
-              open={mobileMenuOpen}
-              onOpenChange={setMobileMenuOpen}
-              navLinks={navLinks}
-              user={user}
-              isAdmin={!!isAdmin}
-              onSignOut={handleSignOut}
-              onNotificationsClick={handleNotificationsClick}
-              unreadMessagesCount={totalUnread}
-            />
           </div>
         </div>
       </nav>
+
+      {/* Mobile Bottom Navigation */}
+      <BottomNav 
+        onMenuClick={() => setMobileMenuOpen(true)}
+        unreadMessagesCount={totalUnread}
+      />
+
+      {/* Mobile Menu Sheet (triggered from BottomNav) */}
+      <MobileMenu 
+        open={mobileMenuOpen}
+        onOpenChange={setMobileMenuOpen}
+        user={user}
+        isAdmin={!!isAdmin}
+        onSignOut={handleSignOut}
+        onNotificationsClick={handleNotificationsClick}
+        onAuthClick={handleAuthClick}
+        unreadMessagesCount={totalUnread}
+      />
 
       <AuthModal 
         open={authOpen} 
