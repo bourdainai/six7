@@ -261,18 +261,54 @@ serve(async (req) => {
           throw new Error('Failed to update item - item may have been sold');
         }
         
-        // Check if all variants are sold to update listing
-        const { data: remainingVariants } = await supabase
-          .from('listing_variants')
-          .select('id')
-          .eq('listing_id', listingId)
-          .eq('is_available', true);
-        
-        if (!remainingVariants || remainingVariants.length === 0) {
-          await supabase
-            .from('listings')
-            .update({ status: 'sold' })
-            .eq('id', listingId);
+        // Recalculate bundle price after variant sale
+        if (listing.has_variants) {
+          try {
+            const bundleUpdateResponse = await fetch(
+              `${Deno.env.get('SUPABASE_URL')}/functions/v1/update-bundle-after-variant-sale`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+                },
+                body: JSON.stringify({ listingId }),
+              }
+            );
+            
+            if (bundleUpdateResponse.ok) {
+              const bundleUpdate = await bundleUpdateResponse.json();
+              console.log(`Bundle price recalculated for listing ${listingId}:`, bundleUpdate);
+              
+              // Check if all variants are now sold - if so, mark listing as sold
+              if (bundleUpdate.remainingVariants === 0) {
+                await supabase
+                  .from('listings')
+                  .update({ status: 'sold' })
+                  .eq('id', listingId);
+              }
+            } else {
+              console.error(`Failed to recalculate bundle price for listing ${listingId}`);
+              // Non-critical error, continue with purchase
+            }
+          } catch (bundleError) {
+            console.error('Error calling bundle recalculation function:', bundleError);
+            // Non-critical error, continue with purchase
+          }
+        } else {
+          // Check if all variants are sold to update listing (fallback for non-bundle variant listings)
+          const { data: remainingVariants } = await supabase
+            .from('listing_variants')
+            .select('id')
+            .eq('listing_id', listingId)
+            .eq('is_available', true);
+          
+          if (!remainingVariants || remainingVariants.length === 0) {
+            await supabase
+              .from('listings')
+              .update({ status: 'sold' })
+              .eq('id', listingId);
+          }
         }
       } else {
         // Simple listing without variants

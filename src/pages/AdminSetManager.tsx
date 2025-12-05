@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { SetImportTable } from "@/components/admin/SetImportTable";
 import { SetImportProgress } from "@/components/admin/SetImportProgress";
+import { ImportActivityDashboard } from "@/components/admin/ImportActivityDashboard";
+import { ImportJobHistory } from "@/components/admin/ImportJobHistory";
 import {
   useSetCoverage,
   useImportSet,
@@ -21,11 +23,13 @@ import {
   Loader2,
   Activity,
   Zap,
+  History,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 function StatsCard({
   icon: Icon,
@@ -410,6 +414,9 @@ export default function AdminSetManager() {
           </Card>
         )}
 
+        {/* Enterprise Import Activity Dashboard */}
+        <ImportActivityDashboard />
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="space-y-1">
@@ -479,15 +486,33 @@ export default function AdminSetManager() {
         {/* Stats */}
         <StatsSection sets={sets || []} totalCardsInDB={totalCards} />
 
-        {/* Set Table */}
-        <SetImportTable
-          sets={sets || []}
-          isLoading={isLoading}
-          onImportSet={handleImportSet}
-          onRefreshSet={handleRefreshSet}
-          selectedSets={selectedSets}
-          onSetSelected={handleSetSelected}
-        />
+        {/* Tabs for Sets vs Job History */}
+        <Tabs defaultValue="sets" className="w-full">
+          <TabsList>
+            <TabsTrigger value="sets" className="flex items-center gap-2">
+              <Database className="h-4 w-4" />
+              Sets to Import
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex items-center gap-2">
+              <History className="h-4 w-4" />
+              Import History
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="sets" className="mt-4">
+            {/* Set Table */}
+            <SetImportTable
+              sets={sets || []}
+              isLoading={isLoading}
+              onImportSet={handleImportSet}
+              onRefreshSet={handleRefreshSet}
+              selectedSets={selectedSets}
+              onSetSelected={handleSetSelected}
+            />
+          </TabsContent>
+          <TabsContent value="history" className="mt-4">
+            <ImportJobHistory />
+          </TabsContent>
+        </Tabs>
 
         {/* Import Progress Modal */}
         <SetImportProgress

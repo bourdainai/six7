@@ -175,12 +175,14 @@ serve(async (req) => {
           .eq('order_id', payment.order_id);
 
         if (orderItems && orderItems.length > 0) {
-          // Mark listing as sold (idempotent)
-          await supabaseAdmin
+          const listingId = orderItems[0].listing_id;
+          
+          // Check if this is a variant-based listing
+          const { data: listing } = await supabaseAdmin
             .from('listings')
-            .update({ status: 'sold' })
-            .eq('id', orderItems[0].listing_id)
-            .in('status', ['active', 'pending']); // Only update if still active/pending
+            .select('id, has_variants, status')
+            .eq('id', listingId)
+            .single();
           
           // Mark all variants in this order as sold (complete the reservation)
           const variantIds = orderItems
@@ -194,10 +196,60 @@ serve(async (req) => {
                 is_sold: true, 
                 sold_at: new Date().toISOString(),
                 reserved_until: null,
-                reserved_by: null
+                reserved_by: null,
+                is_available: false
               })
               .in('id', variantIds)
               .eq('is_sold', false); // Only update if not already sold
+            
+            // If this is a variant-based listing, recalculate bundle price
+            if (listing?.has_variants) {
+              try {
+                const bundleUpdateResponse = await fetch(
+                  `${Deno.env.get('SUPABASE_URL')}/functions/v1/update-bundle-after-variant-sale`,
+                  {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+                    },
+                    body: JSON.stringify({ listingId }),
+                  }
+                );
+                
+                if (bundleUpdateResponse.ok) {
+                  const bundleUpdate = await bundleUpdateResponse.json();
+                  console.log(`Bundle price recalculated for listing ${listingId}:`, bundleUpdate);
+                  
+                  // Check if all variants are now sold - if so, mark listing as sold
+                  if (bundleUpdate.remainingVariants === 0) {
+                    await supabaseAdmin
+                      .from('listings')
+                      .update({ status: 'sold' })
+                      .eq('id', listingId)
+                      .in('status', ['active', 'pending']);
+                  }
+                } else {
+                  console.error(`Failed to recalculate bundle price for listing ${listingId}`);
+                }
+              } catch (bundleError) {
+                console.error('Error calling bundle recalculation function:', bundleError);
+              }
+            } else {
+              // Non-variant listing - mark as sold immediately
+              await supabaseAdmin
+                .from('listings')
+                .update({ status: 'sold' })
+                .eq('id', listingId)
+                .in('status', ['active', 'pending']); // Only update if still active/pending
+            }
+          } else {
+            // No variants - regular listing purchase
+            await supabaseAdmin
+              .from('listings')
+              .update({ status: 'sold' })
+              .eq('id', listingId)
+              .in('status', ['active', 'pending']); // Only update if still active/pending
           }
         }
 
