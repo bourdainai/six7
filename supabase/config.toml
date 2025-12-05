@@ -191,3 +191,9 @@ verify_jwt = false
 
 [functions.backfill-sv4a-images]
 verify_jwt = false
+
+[functions.detect-duplicates]
+verify_jwt = false
+
+[functions.cleanup-duplicates]
+verify_jwt = false
