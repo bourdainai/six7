@@ -53,30 +53,87 @@ Deno.serve(async (req) => {
       try {
         // Pad the card number to 3 digits (001, 002, etc.)
         const paddedNumber = card.number?.padStart(3, '0') || '000'
+        const rawNumber = card.number || '0'
         
-        // Construct TCGdex CDN URLs - Note: TCGdex uses SV4a (capital S, lowercase a)
-        // Format: https://assets.tcgdex.net/{lang}/{series}/{setId}/{cardNumber}/high.webp
-        const imageUrl = `https://assets.tcgdex.net/ja/sv/SV4a/${paddedNumber}`
+        // Multiple URL formats to try for sv4a (Japanese Shiny Treasure ex)
+        // sv4a is a Japanese exclusive set - try multiple sources
+        const urlsToTry = [
+          // Pokemon TCG API images (most reliable for Japanese sets)
+          { url: `https://images.pokemontcg.io/sv4a/${rawNumber}.png`, type: 'pokemontcg' },
+          { url: `https://images.pokemontcg.io/sv4a/${rawNumber}_hires.png`, type: 'pokemontcg_hires' },
+          // TCGdex formats (various capitalization)
+          { url: `https://assets.tcgdex.net/ja/sv/SV4a/${paddedNumber}/high.webp`, type: 'tcgdex' },
+          { url: `https://assets.tcgdex.net/ja/sv/sv4a/${paddedNumber}/high.webp`, type: 'tcgdex' },
+          { url: `https://assets.tcgdex.net/en/sv/sv4a/${paddedNumber}/high.webp`, type: 'tcgdex' },
+          // Limitless TCG
+          { url: `https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/SV4a/SV4a_${paddedNumber}_R_EN.png`, type: 'limitless' },
+        ]
         
-        // Validate image exists before updating
-        const imageCheck = await fetch(`${imageUrl}/high.webp`, { method: 'HEAD' })
-        if (!imageCheck.ok) {
-          console.warn(`⚠️  Image not found for ${card.name} (${paddedNumber}), trying alternative format...`)
-          // Try without padding
-          const altUrl = `https://assets.tcgdex.net/ja/sv/SV4a/${card.number}`
-          const altCheck = await fetch(`${altUrl}/high.webp`, { method: 'HEAD' })
-          if (!altCheck.ok) {
-            console.error(`❌ No image found for ${card.name} at ${imageUrl} or ${altUrl}`)
-            errorCount++
-            errors.push({ card: card.card_id, error: 'Image not found on CDN' })
-            continue
+        let foundImage: { small: string; large: string; source: string } | null = null
+        
+        // Try each URL
+        for (const { url, type } of urlsToTry) {
+          try {
+            const response = await fetch(url, { method: 'HEAD' })
+            if (response.ok) {
+              console.log(`✅ Found image for ${card.name} at ${type}: ${url}`)
+              if (type === 'tcgdex') {
+                const baseUrl = url.replace('/high.webp', '')
+                foundImage = {
+                  small: `${baseUrl}/low.webp`,
+                  large: url,
+                  source: 'tcgdex'
+                }
+              } else {
+                foundImage = {
+                  small: url,
+                  large: url,
+                  source: type
+                }
+              }
+              break
+            }
+          } catch {
+            // Continue to next URL
           }
         }
         
+        // If still not found, try Pokemon TCG API query
+        if (!foundImage) {
+          try {
+            console.log(`🔍 Trying API lookup for ${card.name}...`)
+            const apiResponse = await fetch(
+              `https://api.pokemontcg.io/v2/cards?q=set.id:sv4a%20number:${rawNumber}`,
+              { headers: { 'X-Api-Key': Deno.env.get('POKEMON_TCG_API_KEY') || '' } }
+            )
+            if (apiResponse.ok) {
+              const apiData = await apiResponse.json()
+              if (apiData.data?.[0]?.images) {
+                const img = apiData.data[0].images
+                foundImage = {
+                  small: img.small || img.large,
+                  large: img.large || img.small,
+                  source: 'pokemontcg_api'
+                }
+                console.log(`✅ Found via API: ${foundImage.large}`)
+              }
+            }
+          } catch (apiErr) {
+            console.warn(`API lookup failed: ${apiErr}`)
+          }
+        }
+        
+        if (!foundImage) {
+          console.error(`❌ No image found for ${card.name} (${paddedNumber}) after trying all sources`)
+          errorCount++
+          errors.push({ card: card.card_id, error: 'Image not found in any source' })
+          continue
+        }
+        
         const imageData = {
-          small: `${imageUrl}/low.webp`,
-          large: `${imageUrl}/high.webp`,
-          tcgdex: `${imageUrl}/high.webp`
+          small: foundImage.small,
+          large: foundImage.large,
+          source: foundImage.source
         }
 
         console.log(`🖼️  Updating ${card.name} (${card.number}) with image: ${imageUrl}`)
