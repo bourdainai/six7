@@ -369,11 +369,11 @@ export function useCleanupDuplicates() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ dryRun = true, limit = 1000 }: { dryRun?: boolean; limit?: number }) => {
+    mutationFn: async ({ dryRun = true }: { dryRun?: boolean }) => {
       const { data, error } = await supabase.functions.invoke<CleanupResult>(
         "cleanup-duplicates",
         {
-          body: { dryRun, limit },
+          body: { dryRun },
         }
       );
 

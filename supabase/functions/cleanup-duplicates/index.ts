@@ -54,9 +54,9 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { dryRun = true, limit = 1000 } = await req.json().catch(() => ({}));
+    const { dryRun = true } = await req.json().catch(() => ({}));
 
-    console.log(`🧹 Cleaning up duplicates (dryRun: ${dryRun}, limit: ${limit})...`);
+    console.log(`🧹 Cleaning up ALL duplicates (dryRun: ${dryRun})...`);
 
     // Fetch all cards
     const { data: allCards, error: fetchError } = await supabase
@@ -118,12 +118,6 @@ serve(async (req) => {
             number: card.number,
             reason: `Duplicate of ${keeper.card.card_id} (score: ${keeper.score} vs ${scoreCard(card)})`,
           });
-        }
-
-        // Respect limit
-        if (idsToDelete.length >= limit) {
-          console.log(`⚠️ Reached limit of ${limit} deletions`);
-          break;
         }
       }
     }

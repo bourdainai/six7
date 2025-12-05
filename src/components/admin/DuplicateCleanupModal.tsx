@@ -75,7 +75,7 @@ export function DuplicateCleanupModal({
       
       toast({
         title: "Cleanup complete",
-        description: `Removed ${result?.stats.actualDeleted || 0} duplicate cards`,
+        description: `Removed ${result?.stats.actualDeleted || 0} duplicate cards. Database is now clean!`,
       });
     } catch (error) {
       toast({
