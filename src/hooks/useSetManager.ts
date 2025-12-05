@@ -322,10 +322,20 @@ export interface ImportQueueProgress {
   currentSet: { id: string; name: string } | null;
   totalCardsImported: number;
   totalCardsSkipped: number;
+  totalCardsErrors: number;
   errors: Array<{ setId: string; setName: string; error: string }>;
   isRunning: boolean;
   isPaused: boolean;
   isComplete: boolean;
+  currentSetStats: {
+    cardsProcessed: number;
+    cardsTotal: number;
+    fieldCompletion: {
+      images: number;
+      pricing: number;
+      metadata: number;
+    };
+  } | null;
 }
 
 export interface ImportQueueResult {
@@ -344,112 +354,161 @@ export function useImportQueue() {
     currentSet: null,
     totalCardsImported: 0,
     totalCardsSkipped: 0,
+    totalCardsErrors: 0,
     errors: [],
     isRunning: false,
     isPaused: false,
     isComplete: false,
+    currentSetStats: null,
   });
   const [queue, setQueue] = useState<Array<{ id: string; name: string }>>([]);
   const shouldStopRef = useRef(false);
-  const startIndexRef = useRef(0);
 
-  const startImport = useCallback(async (sets: Array<{ id: string; name: string }>, startFromIndex = 0) => {
+  const startImport = useCallback(async (sets: Array<{ id: string; name: string }>) => {
     if (sets.length === 0) return;
 
+    console.log(`🚀 Starting import of ${sets.length} set(s)`);
+    
     setQueue(sets);
-    startIndexRef.current = startFromIndex;
     setProgress({
-      completed: startFromIndex,
+      completed: 0,
       total: sets.length,
       currentSet: null,
       totalCardsImported: 0,
       totalCardsSkipped: 0,
+      totalCardsErrors: 0,
       errors: [],
       isRunning: true,
       isPaused: false,
       isComplete: false,
+      currentSetStats: null,
     });
     shouldStopRef.current = false;
 
     const errors: Array<{ setId: string; setName: string; error: string }> = [];
     let totalImported = 0;
     let totalSkipped = 0;
-    let completed = startFromIndex;
+    let totalErrors = 0;
+    let completed = 0;
 
-    // Process each set one at a time
-    for (let i = startFromIndex; i < sets.length; i++) {
-      // Check if stopped
+    // Process each set one at a time - DO NOT STOP UNTIL ALL COMPLETE
+    for (let i = 0; i < sets.length; i++) {
+      // Check if user requested stop
       if (shouldStopRef.current) {
+        console.log(`⏸️ Import paused by user at set ${i + 1}/${sets.length}`);
         setProgress((prev) => ({ ...prev, isRunning: false, isPaused: true }));
         break;
       }
 
       const set = sets[i];
+      console.log(`\n📦 [${i + 1}/${sets.length}] Importing: ${set.name} (${set.id})`);
 
+      // Update progress with current set
       setProgress((prev) => ({
         ...prev,
         currentSet: set,
+        currentSetStats: {
+          cardsProcessed: 0,
+          cardsTotal: 0,
+          fieldCompletion: { images: 0, pricing: 0, metadata: 0 },
+        },
       }));
 
       try {
-        // Call Edge Function for single set
+        // Call Edge Function for this set - wait for full completion
+        console.log(`   Calling Edge Function...`);
+        const startTime = Date.now();
+        
         const { data, error } = await supabase.functions.invoke("import-github-pokemon-data", {
-          body: { setIds: [set.id] },
+          body: { setIds: [set.id], batchSize: 25 },
         });
 
+        const duration = Date.now() - startTime;
+        console.log(`   Edge Function returned in ${duration}ms`);
+
         if (error) {
-          console.error(`Error importing ${set.name}:`, error);
+          console.error(`   ❌ Error: ${error.message}`);
           const errorEntry = { setId: set.id, setName: set.name, error: error.message };
           errors.push(errorEntry);
+          totalErrors++;
           completed++;
+          
           setProgress((prev) => ({
             ...prev,
             errors: [...prev.errors, errorEntry],
             completed,
+            totalCardsErrors: prev.totalCardsErrors + 1,
           }));
           continue;
         }
 
+        // Extract stats from response
         const imported = data?.stats?.totalImported || 0;
         const skipped = data?.stats?.totalSkipped || 0;
+        const setErrors = data?.stats?.totalErrors || 0;
+        const fieldCompletion = data?.fieldCompletion || {};
+
+        console.log(`   ✅ Complete: ${imported} cards imported`);
+        if (fieldCompletion.total > 0) {
+          console.log(`   📊 Fields: Images=${fieldCompletion.images}/${fieldCompletion.total}, Pricing=${fieldCompletion.pricing}/${fieldCompletion.total}`);
+        }
+
         totalImported += imported;
         totalSkipped += skipped;
+        totalErrors += setErrors;
         completed++;
 
+        // Update progress
         setProgress((prev) => ({
           ...prev,
           completed,
           totalCardsImported: totalImported,
           totalCardsSkipped: totalSkipped,
+          totalCardsErrors: totalErrors,
+          currentSetStats: {
+            cardsProcessed: imported,
+            cardsTotal: imported,
+            fieldCompletion: {
+              images: fieldCompletion.images || 0,
+              pricing: fieldCompletion.pricing || 0,
+              metadata: fieldCompletion.metadata || 0,
+            },
+          },
         }));
 
-        // Small delay between sets to avoid overwhelming
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        // Small delay between sets
+        await new Promise((resolve) => setTimeout(resolve, 300));
         
-        // Refresh coverage stats every 5 sets
-        if ((i + 1) % 5 === 0) {
+        // Refresh coverage stats every 3 sets
+        if ((i + 1) % 3 === 0) {
           queryClient.invalidateQueries({ queryKey: ["db-set-coverage"] });
         }
+        
       } catch (err) {
-        console.error(`Error importing ${set.name}:`, err);
+        console.error(`   💥 Exception: ${err}`);
         const errorMsg = err instanceof Error ? err.message : "Unknown error";
         const errorEntry = { setId: set.id, setName: set.name, error: errorMsg };
         errors.push(errorEntry);
+        totalErrors++;
         completed++;
+        
         setProgress((prev) => ({
           ...prev,
           errors: [...prev.errors, errorEntry],
           completed,
+          totalCardsErrors: prev.totalCardsErrors + 1,
         }));
       }
     }
 
-    // Refresh coverage data when done
+    // Import loop complete
     const wasStopped = shouldStopRef.current;
-    if (!wasStopped) {
-      queryClient.invalidateQueries({ queryKey: ["db-set-coverage"] });
-      queryClient.invalidateQueries({ queryKey: ["set-coverage"] });
-    }
+    console.log(`\n🎉 Import ${wasStopped ? 'paused' : 'complete'}!`);
+    console.log(`📊 Final: ${totalImported} cards from ${completed} sets`);
+
+    // Refresh all coverage data
+    queryClient.invalidateQueries({ queryKey: ["db-set-coverage"] });
+    queryClient.invalidateQueries({ queryKey: ["set-coverage"] });
 
     setProgress((prev) => ({
       ...prev,
@@ -457,6 +516,7 @@ export function useImportQueue() {
       isPaused: wasStopped,
       isComplete: !wasStopped && completed >= sets.length,
       currentSet: null,
+      currentSetStats: null,
     }));
 
     return {
@@ -469,19 +529,62 @@ export function useImportQueue() {
   }, [queryClient]);
 
   const stop = useCallback(() => {
+    console.log("⏸️ Stop requested");
     shouldStopRef.current = true;
-    setProgress((prev) => ({ ...prev, isRunning: false, isPaused: true }));
+    setProgress((prev) => ({ ...prev, isPaused: true }));
   }, []);
 
   const resume = useCallback(async () => {
     if (progress.isPaused && queue.length > 0 && progress.completed < queue.length) {
+      console.log(`▶️ Resuming from set ${progress.completed + 1}`);
       const remaining = queue.slice(progress.completed);
       shouldStopRef.current = false;
-      await startImport(remaining, progress.completed);
+      
+      // Update state for resume
+      setProgress((prev) => ({
+        ...prev,
+        isRunning: true,
+        isPaused: false,
+      }));
+      
+      // Start from where we left off
+      for (let i = 0; i < remaining.length; i++) {
+        if (shouldStopRef.current) break;
+        
+        const set = remaining[i];
+        setProgress((prev) => ({ ...prev, currentSet: set }));
+        
+        try {
+          const { data, error } = await supabase.functions.invoke("import-github-pokemon-data", {
+            body: { setIds: [set.id], batchSize: 25 },
+          });
+
+          if (!error) {
+            setProgress((prev) => ({
+              ...prev,
+              completed: prev.completed + 1,
+              totalCardsImported: prev.totalCardsImported + (data?.stats?.totalImported || 0),
+            }));
+          }
+          
+          await new Promise((resolve) => setTimeout(resolve, 300));
+        } catch (err) {
+          console.error(`Resume error for ${set.name}:`, err);
+        }
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ["db-set-coverage"] });
+      setProgress((prev) => ({
+        ...prev,
+        isRunning: false,
+        isComplete: !shouldStopRef.current,
+        currentSet: null,
+      }));
     }
-  }, [progress.isPaused, progress.completed, queue, startImport]);
+  }, [progress.isPaused, progress.completed, queue, queryClient]);
 
   const reset = useCallback(() => {
+    console.log("🔄 Reset import state");
     setQueue([]);
     setProgress({
       completed: 0,
@@ -489,13 +592,14 @@ export function useImportQueue() {
       currentSet: null,
       totalCardsImported: 0,
       totalCardsSkipped: 0,
+      totalCardsErrors: 0,
       errors: [],
       isRunning: false,
       isPaused: false,
       isComplete: false,
+      currentSetStats: null,
     });
     shouldStopRef.current = false;
-    startIndexRef.current = 0;
   }, []);
 
   return {
