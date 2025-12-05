@@ -1,5 +1,6 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState, useCallback } from "react";
 
 export interface GitHubSet {
   id: string;
@@ -24,6 +25,12 @@ export interface SetCoverage {
   dbCount: number;
   coverage: number; // 0-100 percentage
   status: "missing" | "partial" | "complete";
+}
+
+export interface ImportActivity {
+  isActive: boolean;
+  recentInserts: number;
+  lastInsertTime: Date | null;
 }
 
 export function useGitHubSets() {
@@ -64,6 +71,81 @@ export function useDatabaseSetCoverage() {
       return coverage;
     },
   });
+}
+
+// Real-time subscription to track import activity
+export function useImportActivityTracker() {
+  const queryClient = useQueryClient();
+  const [activity, setActivity] = useState<ImportActivity>({
+    isActive: false,
+    recentInserts: 0,
+    lastInsertTime: null,
+  });
+  const [totalCards, setTotalCards] = useState(0);
+
+  // Fetch total card count
+  const fetchTotalCount = useCallback(async () => {
+    const { count } = await supabase
+      .from("pokemon_card_attributes")
+      .select("*", { count: "exact", head: true });
+    setTotalCards(count || 0);
+  }, []);
+
+  useEffect(() => {
+    fetchTotalCount();
+
+    // Subscribe to real-time inserts
+    const channel = supabase
+      .channel("card-imports")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "pokemon_card_attributes",
+        },
+        (payload) => {
+          setActivity((prev) => ({
+            isActive: true,
+            recentInserts: prev.recentInserts + 1,
+            lastInsertTime: new Date(),
+          }));
+          setTotalCards((prev) => prev + 1);
+
+          // Invalidate coverage queries to refresh data
+          queryClient.invalidateQueries({ queryKey: ["db-set-coverage"] });
+        }
+      )
+      .subscribe();
+
+    // Check if activity has stopped (no inserts for 5 seconds)
+    const inactivityCheck = setInterval(() => {
+      setActivity((prev) => {
+        if (prev.lastInsertTime) {
+          const timeSinceLastInsert = Date.now() - prev.lastInsertTime.getTime();
+          if (timeSinceLastInsert > 5000) {
+            return { ...prev, isActive: false };
+          }
+        }
+        return prev;
+      });
+    }, 1000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(inactivityCheck);
+    };
+  }, [queryClient, fetchTotalCount]);
+
+  const resetActivity = useCallback(() => {
+    setActivity({
+      isActive: false,
+      recentInserts: 0,
+      lastInsertTime: null,
+    });
+  }, []);
+
+  return { activity, totalCards, resetActivity, refetch: fetchTotalCount };
 }
 
 export function useSetCoverage() {

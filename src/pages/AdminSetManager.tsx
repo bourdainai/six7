@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { SetImportTable } from "@/components/admin/SetImportTable";
 import { SetImportProgress } from "@/components/admin/SetImportProgress";
@@ -6,6 +6,7 @@ import {
   useSetCoverage,
   useImportSet,
   useImportMultipleSets,
+  useImportActivityTracker,
 } from "@/hooks/useSetManager";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,10 +18,14 @@ import {
   CheckCircle2,
   AlertTriangle,
   XCircle,
+  Loader2,
+  Activity,
+  Zap,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 function StatsCard({
   icon: Icon,
@@ -71,11 +76,11 @@ function StatsCard({
   );
 }
 
-function StatsSection({ sets }: { sets: any[] }) {
+function StatsSection({ sets, totalCardsInDB }: { sets: any[]; totalCardsInDB: number }) {
   if (!sets || sets.length === 0) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {Array.from({ length: 4 }).map((_, i) => (
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {Array.from({ length: 5 }).map((_, i) => (
           <Card key={i} className="p-4">
             <Skeleton className="h-16" />
           </Card>
@@ -88,18 +93,20 @@ function StatsSection({ sets }: { sets: any[] }) {
   const completeSets = sets.filter((s) => s.status === "complete").length;
   const partialSets = sets.filter((s) => s.status === "partial").length;
   const missingSets = sets.filter((s) => s.status === "missing").length;
-  const totalCardsInDB = sets.reduce((sum, s) => sum + s.dbCount, 0);
   const totalCardsInGitHub = sets.reduce((sum, s) => sum + s.githubTotal, 0);
-  const overallCoverage =
-    totalCardsInGitHub > 0
-      ? Math.round((totalCardsInDB / totalCardsInGitHub) * 100)
-      : 0;
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
       <StatsCard
         icon={Database}
-        label="Total Sets Available"
+        label="Cards in Database"
+        value={totalCardsInDB}
+        subValue={`of ${totalCardsInGitHub.toLocaleString()} available`}
+        variant="default"
+      />
+      <StatsCard
+        icon={Database}
+        label="Total Sets"
         value={totalSets}
         variant="default"
       />
@@ -127,10 +134,14 @@ function StatsSection({ sets }: { sets: any[] }) {
 }
 
 export default function AdminSetManager() {
-  const { data: sets, isLoading } = useSetCoverage();
+  const { data: sets, isLoading, refetch: refetchSets } = useSetCoverage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedSets, setSelectedSets] = useState<Set<string>>(new Set());
+  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { activity, totalCards, resetActivity, refetch: refetchTotalCards } = useImportActivityTracker();
+  
   const [importProgress, setImportProgress] = useState<{
     open: boolean;
     currentSet?: string;
@@ -152,6 +163,32 @@ export default function AdminSetManager() {
 
   const importSetMutation = useImportSet();
   const importMultipleMutation = useImportMultipleSets();
+
+  // Manual refresh function
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await queryClient.invalidateQueries({ queryKey: ["db-set-coverage"] });
+      await queryClient.invalidateQueries({ queryKey: ["set-coverage"] });
+      await refetchTotalCards();
+      await refetchSets();
+      setLastRefreshed(new Date());
+      toast({
+        title: "Data refreshed",
+        description: "Coverage statistics have been updated",
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // Auto-refresh when activity detected
+  useEffect(() => {
+    if (activity.isActive && activity.recentInserts > 0 && activity.recentInserts % 50 === 0) {
+      // Refresh every 50 cards imported
+      queryClient.invalidateQueries({ queryKey: ["db-set-coverage"] });
+    }
+  }, [activity.recentInserts, activity.isActive, queryClient]);
 
   const handleSetSelected = (setId: string, selected: boolean) => {
     const newSelected = new Set(selectedSets);
@@ -368,6 +405,56 @@ export default function AdminSetManager() {
   return (
     <AdminLayout>
       <div className="space-y-6">
+        {/* Real-time Activity Banner */}
+        {activity.isActive && (
+          <Alert className="border-green-500/50 bg-green-500/10">
+            <Activity className="h-4 w-4 text-green-500 animate-pulse" />
+            <AlertTitle className="text-green-600 flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Import in Progress
+            </AlertTitle>
+            <AlertDescription className="text-green-600">
+              <div className="flex items-center gap-4">
+                <span>
+                  <strong>{activity.recentInserts.toLocaleString()}</strong> cards imported this session
+                </span>
+                <span className="text-green-500/70">
+                  Total in database: <strong>{totalCards.toLocaleString()}</strong>
+                </span>
+                {activity.lastInsertTime && (
+                  <span className="text-green-500/70 text-sm">
+                    Last insert: {activity.lastInsertTime.toLocaleTimeString()}
+                  </span>
+                )}
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {!activity.isActive && activity.recentInserts > 0 && (
+          <Alert className="border-blue-500/50 bg-blue-500/10">
+            <CheckCircle2 className="h-4 w-4 text-blue-500" />
+            <AlertTitle className="text-blue-600">Import Session Complete</AlertTitle>
+            <AlertDescription className="text-blue-600">
+              <div className="flex items-center justify-between">
+                <span>
+                  <strong>{activity.recentInserts.toLocaleString()}</strong> cards were imported. 
+                  Total in database: <strong>{totalCards.toLocaleString()}</strong>
+                </span>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => { resetActivity(); handleRefresh(); }}
+                  className="border-blue-500/30 text-blue-600 hover:bg-blue-500/10"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh & Clear
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="space-y-1">
@@ -386,6 +473,18 @@ export default function AdminSetManager() {
             </div>
           </div>
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+            >
+              {isRefreshing ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              Refresh
+            </Button>
             {selectedSets.size > 0 && (
               <Button
                 onClick={handleImportSelected}
@@ -411,8 +510,23 @@ export default function AdminSetManager() {
           </div>
         </div>
 
+        {/* Last Refreshed Info */}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Zap className="h-4 w-4" />
+          <span>
+            Last refreshed: {lastRefreshed.toLocaleTimeString()} • 
+            Total cards in database: <strong className="text-foreground">{totalCards.toLocaleString()}</strong>
+          </span>
+          {activity.isActive && (
+            <Badge variant="outline" className="ml-2 animate-pulse border-green-500 text-green-500">
+              <Activity className="h-3 w-3 mr-1" />
+              Live
+            </Badge>
+          )}
+        </div>
+
         {/* Stats */}
-        <StatsSection sets={sets || []} />
+        <StatsSection sets={sets || []} totalCardsInDB={totalCards} />
 
         {/* Set Table */}
         <SetImportTable
