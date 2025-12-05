@@ -5,8 +5,8 @@ import { SetImportProgress } from "@/components/admin/SetImportProgress";
 import {
   useSetCoverage,
   useImportSet,
-  useImportMultipleSets,
   useImportActivityTracker,
+  useImportQueue,
 } from "@/hooks/useSetManager";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -141,28 +141,10 @@ export default function AdminSetManager() {
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { activity, totalCards, liveCards, currentSet, resetActivity, refetch: refetchTotalCards } = useImportActivityTracker();
+  const importQueue = useImportQueue();
+  const [showProgressModal, setShowProgressModal] = useState(false);
   
-  const [importProgress, setImportProgress] = useState<{
-    open: boolean;
-    currentSet?: string;
-    completed: number;
-    total: number;
-    imported: number;
-    skipped: number;
-    errors: number;
-    isComplete: boolean;
-  }>({
-    open: false,
-    completed: 0,
-    total: 0,
-    imported: 0,
-    skipped: 0,
-    errors: 0,
-    isComplete: false,
-  });
-
   const importSetMutation = useImportSet();
-  const importMultipleMutation = useImportMultipleSets();
 
   // Manual refresh function
   const handleRefresh = async () => {
@@ -204,56 +186,17 @@ export default function AdminSetManager() {
     const setName =
       sets?.find((s) => s.setId === setId)?.setName || setId;
 
-    try {
-      setImportProgress({
-        open: true,
-        currentSet: setId,
-        completed: 0,
-        total: 1,
-        imported: 0,
-        skipped: 0,
-        errors: 0,
-        isComplete: false,
-      });
+    // Reset activity tracker
+    resetActivity();
 
-      const result = await importSetMutation.mutateAsync({
-        setId,
-        setName,
-      });
+    // Use queue system for consistency (even for single set)
+    setShowProgressModal(true);
+    await importQueue.startImport([{ id: setId, name: setName }]);
 
-      setImportProgress({
-        open: true,
-        currentSet: setId,
-        completed: 1,
-        total: 1,
-        imported: result?.stats?.totalImported || 0,
-        skipped: result?.stats?.totalSkipped || 0,
-        errors: result?.stats?.totalErrors || 0,
-        isComplete: true,
-      });
-
-      // Refresh data
-      queryClient.invalidateQueries({ queryKey: ["db-set-coverage"] });
-      queryClient.invalidateQueries({ queryKey: ["set-coverage"] });
-
-      toast({
-        title: "Import complete",
-        description: `Imported ${result?.stats?.totalImported || 0} cards from ${setName}`,
-      });
-    } catch (error) {
-      setImportProgress((prev) => ({
-        ...prev,
-        errors: prev.errors + 1,
-        isComplete: true,
-      }));
-
-      toast({
-        title: "Import failed",
-        description:
-          error instanceof Error ? error.message : "Unknown error occurred",
-        variant: "destructive",
-      });
-    }
+    toast({
+      title: "Import complete",
+      description: `Imported ${importQueue.progress.totalCardsImported.toLocaleString()} cards from ${setName}`,
+    });
   };
 
   const handleRefreshSet = async (setId: string) => {
@@ -276,78 +219,21 @@ export default function AdminSetManager() {
     }
 
     const confirmed = window.confirm(
-      `Import ${missingSets.length} sets one at a time? This will take a while but won't timeout.\n\nNote: Each set is imported individually to avoid Edge Function timeouts.`
+      `Import ${missingSets.length} sets one at a time? This will continue automatically until all sets are imported.\n\nEach set imports individually to avoid timeouts.`
     );
     if (!confirmed) return;
 
     // Reset activity tracker for fresh session
     resetActivity();
 
-    setImportProgress({
-      open: true,
-      completed: 0,
-      total: missingSets.length,
-      imported: 0,
-      skipped: 0,
-      errors: 0,
-      isComplete: false,
-    });
+    // Open progress modal and start import
+    setShowProgressModal(true);
+    await importQueue.startImport(missingSets);
 
-    let totalImported = 0;
-    let totalSkipped = 0;
-    let totalErrors = 0;
-
-    // Import sets one at a time (avoids timeout)
-    for (let i = 0; i < missingSets.length; i++) {
-      const set = missingSets[i];
-      
-      setImportProgress({
-        open: true,
-        currentSet: `${set.name} (${i + 1}/${missingSets.length})`,
-        completed: i,
-        total: missingSets.length,
-        imported: totalImported,
-        skipped: totalSkipped,
-        errors: totalErrors,
-        isComplete: false,
-      });
-
-      try {
-        const result = await importSetMutation.mutateAsync({
-          setId: set.id,
-          setName: set.name,
-        });
-
-        totalImported += result?.stats?.totalImported || 0;
-        totalSkipped += result?.stats?.totalSkipped || 0;
-      } catch (error) {
-        console.error(`Error importing ${set.name}:`, error);
-        totalErrors++;
-      }
-
-      // Small delay between sets
-      await new Promise((resolve) => setTimeout(resolve, 500));
-    }
-
-    setImportProgress({
-      open: true,
-      currentSet: undefined,
-      completed: missingSets.length,
-      total: missingSets.length,
-      imported: totalImported,
-      skipped: totalSkipped,
-      errors: totalErrors,
-      isComplete: true,
-    });
-
-    // Refresh data
-    queryClient.invalidateQueries({ queryKey: ["db-set-coverage"] });
-    queryClient.invalidateQueries({ queryKey: ["set-coverage"] });
-    await refetchTotalCards();
-
+    // Show completion toast
     toast({
-      title: "Bulk import complete",
-      description: `Imported ${totalImported.toLocaleString()} cards from ${missingSets.length} sets`,
+      title: "Import complete",
+      description: `Imported ${importQueue.progress.totalCardsImported.toLocaleString()} cards from ${missingSets.length} sets`,
     });
   };
 
@@ -367,79 +253,24 @@ export default function AdminSetManager() {
     });
 
     const confirmed = window.confirm(
-      `Import ${setsToImport.length} selected set(s)?`
+      `Import ${setsToImport.length} selected set(s)? This will continue automatically until all sets are imported.`
     );
     if (!confirmed) return;
 
     // Reset activity tracker for fresh session
     resetActivity();
 
-    setImportProgress({
-      open: true,
-      completed: 0,
-      total: setsToImport.length,
-      imported: 0,
-      skipped: 0,
-      errors: 0,
-      isComplete: false,
-    });
+    // Open progress modal and start import
+    setShowProgressModal(true);
+    await importQueue.startImport(setsToImport);
 
-    let totalImported = 0;
-    let totalSkipped = 0;
-    let totalErrors = 0;
-
-    // Import sets one at a time
-    for (let i = 0; i < setsToImport.length; i++) {
-      const set = setsToImport[i];
-      
-      setImportProgress({
-        open: true,
-        currentSet: `${set.name} (${i + 1}/${setsToImport.length})`,
-        completed: i,
-        total: setsToImport.length,
-        imported: totalImported,
-        skipped: totalSkipped,
-        errors: totalErrors,
-        isComplete: false,
-      });
-
-      try {
-        const result = await importSetMutation.mutateAsync({
-          setId: set.id,
-          setName: set.name,
-        });
-
-        totalImported += result?.stats?.totalImported || 0;
-        totalSkipped += result?.stats?.totalSkipped || 0;
-      } catch (error) {
-        console.error(`Error importing ${set.name}:`, error);
-        totalErrors++;
-      }
-
-      // Small delay between sets
-      await new Promise((resolve) => setTimeout(resolve, 500));
-    }
-
-    setImportProgress({
-      open: true,
-      currentSet: undefined,
-      completed: setsToImport.length,
-      total: setsToImport.length,
-      imported: totalImported,
-      skipped: totalSkipped,
-      errors: totalErrors,
-      isComplete: true,
-    });
-
-    // Refresh data and clear selection
-    queryClient.invalidateQueries({ queryKey: ["db-set-coverage"] });
-    queryClient.invalidateQueries({ queryKey: ["set-coverage"] });
+    // Clear selection after import
     setSelectedSets(new Set());
-    await refetchTotalCards();
 
+    // Show completion toast
     toast({
       title: "Import complete",
-      description: `Imported ${totalImported.toLocaleString()} cards from ${setsToImport.length} sets`,
+      description: `Imported ${importQueue.progress.totalCardsImported.toLocaleString()} cards from ${setsToImport.length} sets`,
     });
   };
 
@@ -612,9 +443,7 @@ export default function AdminSetManager() {
             {selectedSets.size > 0 && (
               <Button
                 onClick={handleImportSelected}
-                disabled={
-                  importSetMutation.isPending || importMultipleMutation.isPending
-                }
+                disabled={importQueue.progress.isRunning}
               >
                 <Download className="h-4 w-4 mr-2" />
                 Import Selected ({selectedSets.size})
@@ -623,9 +452,7 @@ export default function AdminSetManager() {
             {missingCount > 0 && (
               <Button
                 onClick={handleImportAllMissing}
-                disabled={
-                  importSetMutation.isPending || importMultipleMutation.isPending
-                }
+                disabled={importQueue.progress.isRunning}
               >
                 <Download className="h-4 w-4 mr-2" />
                 Import All Missing ({missingCount})
@@ -664,21 +491,24 @@ export default function AdminSetManager() {
 
         {/* Import Progress Modal */}
         <SetImportProgress
-          open={importProgress.open}
-          onOpenChange={(open) =>
-            setImportProgress((prev) => ({ ...prev, open }))
-          }
-          currentSet={importProgress.currentSet}
-          completed={importProgress.completed}
-          total={importProgress.total}
-          imported={importProgress.imported}
-          skipped={importProgress.skipped}
-          errors={importProgress.errors}
-          isComplete={importProgress.isComplete}
-          onCancel={() => {
-            // Cancel logic could go here
-            setImportProgress((prev) => ({ ...prev, open: false }));
+          open={showProgressModal}
+          onOpenChange={(open) => {
+            setShowProgressModal(open);
+            if (!open && !importQueue.progress.isRunning) {
+              // Reset on close if not running
+              importQueue.reset();
+              refetchTotalCards();
+            }
           }}
+          progress={importQueue.progress}
+          onStop={importQueue.stop}
+          onResume={importQueue.resume}
+          onClose={() => {
+            importQueue.reset();
+            refetchTotalCards();
+          }}
+          liveCards={liveCards}
+          totalCards={totalCards}
         />
       </div>
     </AdminLayout>
