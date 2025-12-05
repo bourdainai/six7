@@ -275,15 +275,19 @@ serve(async (req) => {
                   }
                 };
 
-                const { error: insertError } = await supabase
+                // Use upsert with ignoreDuplicates to prevent duplicates
+                const { error: upsertError } = await supabase
                   .from('pokemon_card_attributes')
-                  .insert(newCard);
+                  .upsert(newCard, { 
+                    onConflict: 'card_id',
+                    ignoreDuplicates: true // Don't overwrite existing data
+                  });
 
-                if (!insertError) {
+                if (!upsertError) {
                   setInserted++;
                   totalInserted++;
                 } else {
-                  console.error(`   ❌ Insert error for ${card.name}:`, insertError.message);
+                  console.error(`   ❌ Upsert error for ${card.name}:`, upsertError.message);
                   totalErrors++;
                 }
               }

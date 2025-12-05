@@ -2,13 +2,16 @@ import { useState } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { CardCatalogFilters } from "@/components/admin/CardCatalogFilters";
 import { CardCatalogGrid } from "@/components/admin/CardCatalogGrid";
+import { DuplicateCleanupModal } from "@/components/admin/DuplicateCleanupModal";
 import {
   useCardCatalog,
   useCardCatalogStats,
+  useDuplicateDetection,
   CardCatalogFilters as FilterType,
 } from "@/hooks/useCardCatalog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Database,
   Image,
@@ -16,6 +19,8 @@ import {
   AlertTriangle,
   CheckCircle2,
   RefreshCw,
+  Trash2,
+  Copy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -149,12 +154,16 @@ export default function AdminCardCatalog() {
   const [filters, setFilters] = useState<FilterType>({ sortBy: "synced_newest" });
   const [page, setPage] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
 
   const { data, isLoading, refetch } = useCardCatalog({
     filters,
     page,
     pageSize: 50,
   });
+
+  // Check for duplicates
+  const { data: duplicateData, isLoading: duplicatesLoading } = useDuplicateDetection();
 
   // Reset page when filters change
   const handleFiltersChange = (newFilters: FilterType) => {
@@ -194,6 +203,48 @@ export default function AdminCardCatalog() {
         {/* Stats */}
         <StatsSection />
 
+        {/* Duplicate Warning Banner */}
+        {duplicateData?.stats?.totalDuplicates > 0 && (
+          <Alert className="border-destructive/50 bg-destructive/10">
+            <Copy className="h-4 w-4 text-destructive" />
+            <AlertTitle className="text-destructive flex items-center gap-2">
+              Duplicate Cards Detected
+              <Badge variant="destructive">
+                {duplicateData.stats.totalDuplicates.toLocaleString()} duplicates
+              </Badge>
+            </AlertTitle>
+            <AlertDescription className="text-destructive/80">
+              <div className="flex items-center justify-between">
+                <span>
+                  Found {duplicateData.stats.totalGroups.toLocaleString()} groups of duplicate cards across{" "}
+                  {duplicateData.stats.affectedSets.length} sets. 
+                  These should be cleaned up to prevent data issues.
+                </span>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setShowDuplicateModal(true)}
+                  className="ml-4"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Clean Up Duplicates
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* No duplicates badge */}
+        {duplicateData && duplicateData.stats?.totalDuplicates === 0 && (
+          <Alert className="border-green-500/50 bg-green-500/10">
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+            <AlertTitle className="text-green-600">No Duplicates</AlertTitle>
+            <AlertDescription className="text-green-600">
+              Card catalog is clean - no duplicate entries found.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Filters */}
         <CardCatalogFilters
           filters={filters}
@@ -227,6 +278,14 @@ export default function AdminCardCatalog() {
           totalPages={data?.totalPages || 0}
           totalCount={data?.totalCount || 0}
           onPageChange={setPage}
+        />
+
+        {/* Duplicate Cleanup Modal */}
+        <DuplicateCleanupModal
+          open={showDuplicateModal}
+          onOpenChange={setShowDuplicateModal}
+          duplicateCount={duplicateData?.stats?.totalDuplicates || 0}
+          affectedSets={duplicateData?.stats?.affectedSets || []}
         />
       </div>
     </AdminLayout>

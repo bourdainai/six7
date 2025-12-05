@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export type SortOption = 
@@ -293,6 +293,103 @@ export function useCardRarities() {
       return Array.from(rarities).sort();
     },
     staleTime: 300000,
+  });
+}
+
+// Duplicate Detection Types
+export interface DuplicateStats {
+  totalGroups: number;
+  totalDuplicates: number;
+  affectedSets: Array<{ set_code: string; duplicates: number }>;
+}
+
+export interface DuplicateGroup {
+  set_code: string;
+  number: string;
+  count: number;
+  cards: Array<{
+    id: string;
+    card_id: string;
+    name: string;
+    sync_source: string;
+    synced_at: string;
+    has_images: boolean;
+    has_prices: boolean;
+  }>;
+}
+
+export interface DuplicateDetectionResult {
+  success: boolean;
+  stats: DuplicateStats;
+  sampleGroups: DuplicateGroup[];
+}
+
+export interface CleanupResult {
+  success: boolean;
+  dryRun: boolean;
+  stats: {
+    duplicateGroups: number;
+    cardsToDelete: number;
+    actualDeleted: number;
+  };
+  sampleDeleted: Array<{
+    card_id: string;
+    name: string;
+    set_code: string;
+    number: string;
+    reason: string;
+  }>;
+  sampleKept: Array<{
+    card_id: string;
+    name: string;
+    set_code: string;
+    number: string;
+  }>;
+}
+
+// Hook to detect duplicates
+export function useDuplicateDetection() {
+  return useQuery({
+    queryKey: ["duplicate-detection"],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke<DuplicateDetectionResult>(
+        "detect-duplicates"
+      );
+
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 60000, // Cache for 1 minute
+    refetchOnWindowFocus: false,
+  });
+}
+
+// Hook to cleanup duplicates
+export function useCleanupDuplicates() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ dryRun = true, limit = 1000 }: { dryRun?: boolean; limit?: number }) => {
+      const { data, error } = await supabase.functions.invoke<CleanupResult>(
+        "cleanup-duplicates",
+        {
+          body: { dryRun, limit },
+        }
+      );
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      // Invalidate related queries after cleanup
+      if (!data?.dryRun) {
+        queryClient.invalidateQueries({ queryKey: ["card-catalog"] });
+        queryClient.invalidateQueries({ queryKey: ["card-catalog-stats"] });
+        queryClient.invalidateQueries({ queryKey: ["card-sets-with-counts"] });
+        queryClient.invalidateQueries({ queryKey: ["duplicate-detection"] });
+        queryClient.invalidateQueries({ queryKey: ["db-set-coverage"] });
+      }
+    },
   });
 }
 

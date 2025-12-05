@@ -99,23 +99,14 @@ serve(async (req) => {
         const cards: GitHubCard[] = await cardsResponse.json();
         console.log(`Found ${cards.length} cards in ${set.name}`);
 
-        // Check which cards already exist
-        const cardIds = cards.map(c => `github_${c.id}`);
-        const { data: existingCards } = await supabase
-          .from('pokemon_card_attributes')
-          .select('card_id')
-          .in('card_id', cardIds);
-
-        const existingCardIds = new Set(existingCards?.map(c => c.card_id) || []);
-        const newCards = cards.filter(c => !existingCardIds.has(`github_${c.id}`));
-
-        console.log(`${newCards.length} new cards to import, ${existingCards?.length || 0} already exist`);
+        // Process ALL cards with upsert (handles duplicates automatically)
+        console.log(`Processing ${cards.length} cards with upsert...`);
 
         // Process cards in batches
-        for (let i = 0; i < newCards.length; i += batchSize) {
-          const batch = newCards.slice(i, i + batchSize);
+        for (let i = 0; i < cards.length; i += batchSize) {
+          const batch = cards.slice(i, i + batchSize);
           
-          const cardsToInsert = batch.map(card => {
+          const cardsToUpsert = batch.map((card: GitHubCard) => {
             return {
               card_id: `github_${card.id}`,
               name: card.name,
@@ -163,23 +154,26 @@ serve(async (req) => {
             };
           });
 
-          const { error: insertError } = await supabase
+          // Use upsert to handle duplicates - updates existing, inserts new
+          const { error: upsertError, count } = await supabase
             .from('pokemon_card_attributes')
-            .insert(cardsToInsert);
+            .upsert(cardsToUpsert, { 
+              onConflict: 'card_id',
+              ignoreDuplicates: false // Update existing records
+            });
 
-          if (insertError) {
-            console.error(`Error inserting batch:`, insertError);
+          if (upsertError) {
+            console.error(`Error upserting batch:`, upsertError);
             totalErrors += batch.length;
           } else {
             totalImported += batch.length;
-            console.log(`✅ Imported batch of ${batch.length} cards (${totalImported} total)`);
+            console.log(`✅ Upserted batch of ${batch.length} cards (${totalImported} total)`);
           }
 
           // Small delay to avoid rate limiting
           await new Promise(resolve => setTimeout(resolve, 100));
         }
 
-        totalSkipped += existingCards?.length || 0;
         processedSets.push(set.id);
 
       } catch (err) {

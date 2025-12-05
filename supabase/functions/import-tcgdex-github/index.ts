@@ -269,18 +269,22 @@ serve(async (req) => {
             };
           });
 
-          const { error: insertError } = await supabase
+          // Use upsert with ignoreDuplicates to prevent duplicates
+          const { error: upsertError } = await supabase
             .from('pokemon_card_attributes')
-            .insert(cardsToInsert);
+            .upsert(cardsToInsert, { 
+              onConflict: 'card_id',
+              ignoreDuplicates: true // Don't update existing records
+            });
 
-          if (insertError) {
-            console.error(`   ❌ Error inserting batch:`, insertError);
+          if (upsertError) {
+            console.error(`   ❌ Error upserting batch:`, upsertError);
             setErrors += batch.length;
             totalErrors += batch.length;
           } else {
             setImported += batch.length;
             totalImported += batch.length;
-            console.log(`   ✅ Imported batch of ${batch.length} cards (${setImported}/${newCards.length})`);
+            console.log(`   ✅ Upserted batch of ${batch.length} cards (${setImported}/${newCards.length})`);
           }
 
           await new Promise(resolve => setTimeout(resolve, 100));
