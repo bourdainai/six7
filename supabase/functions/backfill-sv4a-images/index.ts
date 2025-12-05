@@ -5,10 +5,95 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Fetch with timeout
+async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 4000): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    return response;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function checkImageExists(url: string): Promise<boolean> {
+  try {
+    const response = await fetchWithTimeout(url, { method: 'HEAD' }, 3000);
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+// Get all possible image URLs for sv4a cards
+function getSv4aImageUrls(number: string): Array<{ url: string; source: string; small?: string }> {
+  const paddedNumber = number.padStart(3, '0');
+  const rawNumber = number.replace(/^0+/, '') || number;
+  
+  return [
+    // Pokemon TCG CDN - primary source
+    { 
+      url: `https://images.pokemontcg.io/sv4a/${rawNumber}.png`, 
+      source: 'pokemontcg',
+      small: `https://images.pokemontcg.io/sv4a/${rawNumber}.png`
+    },
+    { 
+      url: `https://images.pokemontcg.io/sv4a/${paddedNumber}.png`, 
+      source: 'pokemontcg',
+      small: `https://images.pokemontcg.io/sv4a/${paddedNumber}.png`
+    },
+    // High-res variants
+    { 
+      url: `https://images.pokemontcg.io/sv4a/${rawNumber}_hires.png`, 
+      source: 'pokemontcg_hires',
+      small: `https://images.pokemontcg.io/sv4a/${rawNumber}.png`
+    },
+    
+    // TCGdex Japanese (sv4a is Japanese Shiny Treasure ex)
+    { 
+      url: `https://assets.tcgdex.net/ja/sv/sv4a/${paddedNumber}/high.webp`, 
+      source: 'tcgdex_ja',
+      small: `https://assets.tcgdex.net/ja/sv/sv4a/${paddedNumber}/low.webp`
+    },
+    { 
+      url: `https://assets.tcgdex.net/ja/sv/SV4a/${paddedNumber}/high.webp`, 
+      source: 'tcgdex_ja',
+      small: `https://assets.tcgdex.net/ja/sv/SV4a/${paddedNumber}/low.webp`
+    },
+    
+    // TCGdex English (might have English versions)
+    { 
+      url: `https://assets.tcgdex.net/en/sv/sv4a/${paddedNumber}/high.webp`, 
+      source: 'tcgdex_en',
+      small: `https://assets.tcgdex.net/en/sv/sv4a/${paddedNumber}/low.webp`
+    },
+    
+    // Limitless TCG
+    { 
+      url: `https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/SV4a/SV4a_${paddedNumber}_R_EN.png`, 
+      source: 'limitless'
+    },
+    { 
+      url: `https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/SV4a/SV4a_${paddedNumber}_R_JA.png`, 
+      source: 'limitless_ja'
+    },
+    
+    // PkmnCards
+    { 
+      url: `https://pkmncards.com/wp-content/uploads/en_US-SV4a-${paddedNumber}-shiny.png`, 
+      source: 'pkmncards'
+    },
+  ];
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
+
+  const startTime = Date.now();
+  const MAX_RUNTIME_MS = 25000; // 25 seconds to avoid timeout
 
   try {
     const supabase = createClient(
@@ -16,15 +101,15 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    console.log('🔧 Starting sv4a image backfill...')
+    console.log('🔧 Starting sv4a image backfill with multi-source lookup...')
 
     // Fetch all sv4a cards without images
     const { data: cardsToUpdate, error: fetchError } = await supabase
       .from('pokemon_card_attributes')
       .select('id, card_id, number, name, set_code')
       .eq('set_code', 'sv4a')
-      .eq('sync_source', 'on_demand')
-      .is('images', null)
+      .or('images.is.null,images->small.is.null')
+      .limit(100)
 
     if (fetchError) {
       console.error('❌ Error fetching cards:', fetchError)
@@ -46,102 +131,90 @@ Deno.serve(async (req) => {
 
     let successCount = 0
     let errorCount = 0
+    let skipped = 0
     const errors: any[] = []
+    const successes: any[] = []
 
     // Update each card with constructed image URLs
     for (const card of cardsToUpdate) {
+      // Check time limit
+      if (Date.now() - startTime > MAX_RUNTIME_MS) {
+        console.log(`⏱️  Time limit reached after processing ${successCount + errorCount} cards`);
+        skipped = cardsToUpdate.length - (successCount + errorCount);
+        break;
+      }
+
       try {
-        // Pad the card number to 3 digits (001, 002, etc.)
-        const paddedNumber = card.number?.padStart(3, '0') || '000'
-        const rawNumber = card.number || '0'
+        const urlsToTry = getSv4aImageUrls(card.number || '0');
+        let foundImage: { small: string; large: string; source: string } | null = null;
         
-        // Multiple URL formats to try for sv4a (Japanese Shiny Treasure ex)
-        // sv4a is a Japanese exclusive set - try multiple sources
-        const urlsToTry = [
-          // Pokemon TCG API images (most reliable for Japanese sets)
-          { url: `https://images.pokemontcg.io/sv4a/${rawNumber}.png`, type: 'pokemontcg' },
-          { url: `https://images.pokemontcg.io/sv4a/${rawNumber}_hires.png`, type: 'pokemontcg_hires' },
-          // TCGdex formats (various capitalization)
-          { url: `https://assets.tcgdex.net/ja/sv/SV4a/${paddedNumber}/high.webp`, type: 'tcgdex' },
-          { url: `https://assets.tcgdex.net/ja/sv/sv4a/${paddedNumber}/high.webp`, type: 'tcgdex' },
-          { url: `https://assets.tcgdex.net/en/sv/sv4a/${paddedNumber}/high.webp`, type: 'tcgdex' },
-          // Limitless TCG
-          { url: `https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/SV4a/SV4a_${paddedNumber}_R_EN.png`, type: 'limitless' },
-        ]
-        
-        let foundImage: { small: string; large: string; source: string } | null = null
-        
-        // Try each URL
-        for (const { url, type } of urlsToTry) {
-          try {
-            const response = await fetch(url, { method: 'HEAD' })
-            if (response.ok) {
-              console.log(`✅ Found image for ${card.name} at ${type}: ${url}`)
-              if (type === 'tcgdex') {
-                const baseUrl = url.replace('/high.webp', '')
-                foundImage = {
-                  small: `${baseUrl}/low.webp`,
-                  large: url,
-                  source: 'tcgdex'
-                }
-              } else {
-                foundImage = {
-                  small: url,
-                  large: url,
-                  source: type
-                }
-              }
-              break
-            }
-          } catch {
-            // Continue to next URL
+        // Try each URL in batches of 3 for speed
+        for (let i = 0; i < urlsToTry.length && !foundImage; i += 3) {
+          const batch = urlsToTry.slice(i, i + 3);
+          const results = await Promise.all(
+            batch.map(async ({ url, source, small }) => {
+              const exists = await checkImageExists(url);
+              return exists ? { url, source, small } : null;
+            })
+          );
+          
+          const found = results.find(r => r !== null);
+          if (found) {
+            foundImage = {
+              small: found.small || found.url,
+              large: found.url,
+              source: found.source
+            };
           }
         }
         
-        // If still not found, try Pokemon TCG API query
+        // If still not found, try Pokemon TCG API
         if (!foundImage) {
           try {
-            console.log(`🔍 Trying API lookup for ${card.name}...`)
-            const apiResponse = await fetch(
-              `https://api.pokemontcg.io/v2/cards?q=set.id:sv4a%20number:${rawNumber}`,
-              { headers: { 'X-Api-Key': Deno.env.get('POKEMON_TCG_API_KEY') || '' } }
-            )
+            const apiKey = Deno.env.get('POKEMON_TCG_API_KEY') || '';
+            const rawNumber = card.number?.replace(/^0+/, '') || card.number;
+            
+            console.log(`🔍 API lookup for ${card.name} (${rawNumber})...`);
+            const apiResponse = await fetchWithTimeout(
+              `https://api.pokemontcg.io/v2/cards?q=set.id:sv4a%20number:${rawNumber}&pageSize=1`,
+              { headers: apiKey ? { 'X-Api-Key': apiKey } : {} },
+              5000
+            );
+            
             if (apiResponse.ok) {
-              const apiData = await apiResponse.json()
+              const apiData = await apiResponse.json();
               if (apiData.data?.[0]?.images) {
-                const img = apiData.data[0].images
+                const img = apiData.data[0].images;
                 foundImage = {
                   small: img.small || img.large,
                   large: img.large || img.small,
                   source: 'pokemontcg_api'
-                }
-                console.log(`✅ Found via API: ${foundImage.large}`)
+                };
+                console.log(`✅ Found via API: ${foundImage.large}`);
               }
             }
           } catch (apiErr) {
-            console.warn(`API lookup failed: ${apiErr}`)
+            console.warn(`API lookup failed for ${card.name}: ${apiErr}`);
           }
         }
         
         if (!foundImage) {
-          console.error(`❌ No image found for ${card.name} (${paddedNumber}) after trying all sources`)
-          errorCount++
-          errors.push({ card: card.card_id, error: 'Image not found in any source' })
-          continue
+          console.log(`❌ No image found for ${card.name} (${card.number})`);
+          errorCount++;
+          errors.push({ card_id: card.card_id, name: card.name, error: 'Not found in any source' });
+          continue;
         }
         
-        const imageData = {
-          small: foundImage.small,
-          large: foundImage.large,
-          source: foundImage.source
-        }
-
-        console.log(`🖼️  Updating ${card.name} (${card.number}) with image: ${imageUrl}`)
+        console.log(`🖼️  Updating ${card.name} (${card.number}) from ${foundImage.source}`);
 
         const { error: updateError } = await supabase
           .from('pokemon_card_attributes')
           .update({ 
-            images: imageData,
+            images: {
+              small: foundImage.small,
+              large: foundImage.large,
+              source: foundImage.source
+            },
             updated_at: new Date().toISOString()
           })
           .eq('id', card.id)
@@ -149,26 +222,33 @@ Deno.serve(async (req) => {
         if (updateError) {
           console.error(`❌ Failed to update ${card.card_id}:`, updateError)
           errorCount++
-          errors.push({ card: card.card_id, error: updateError.message })
+          errors.push({ card_id: card.card_id, name: card.name, error: updateError.message })
         } else {
           successCount++
+          successes.push({ card_id: card.card_id, name: card.name, source: foundImage.source })
         }
       } catch (err) {
         console.error(`❌ Error processing ${card.card_id}:`, err)
         errorCount++
-        errors.push({ card: card.card_id, error: String(err) })
+        errors.push({ card_id: card.card_id, name: card.name, error: String(err) })
       }
     }
 
-    console.log(`✅ Backfill complete: ${successCount} updated, ${errorCount} errors`)
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    console.log(`✅ Backfill complete in ${elapsed}s: ${successCount} updated, ${errorCount} errors, ${skipped} skipped`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Updated ${successCount} cards`,
-        updated: successCount,
-        errors: errorCount,
-        errorDetails: errors.length > 0 ? errors.slice(0, 10) : undefined
+        elapsed_seconds: parseFloat(elapsed),
+        stats: {
+          total: cardsToUpdate.length,
+          updated: successCount,
+          errors: errorCount,
+          skipped
+        },
+        successes: successes.slice(0, 10),
+        errorDetails: errors.slice(0, 10)
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
