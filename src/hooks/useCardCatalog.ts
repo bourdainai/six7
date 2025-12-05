@@ -85,7 +85,7 @@ export function useCardCatalog({ filters, page, pageSize = 50 }: UseCardCatalogO
       }
 
       if (filters.syncSource) {
-        query = query.eq("sync_source", filters.syncSource);
+        query = query.eq("sync_source", filters.syncSource as "cron" | "github" | "justtcg" | "manual" | "on_demand" | "pokemon_tcg_api" | "tcgdex");
       }
 
       if (filters.rarity) {
