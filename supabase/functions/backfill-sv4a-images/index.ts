@@ -54,12 +54,29 @@ Deno.serve(async (req) => {
         // Pad the card number to 3 digits (001, 002, etc.)
         const paddedNumber = card.number?.padStart(3, '0') || '000'
         
-        // Construct TCGdex CDN URLs
-        const imageUrl = `https://assets.tcgdex.net/ja/sv/sv4a/${paddedNumber}`
+        // Construct TCGdex CDN URLs - Note: TCGdex uses SV4a (capital S, lowercase a)
+        // Format: https://assets.tcgdex.net/{lang}/{series}/{setId}/{cardNumber}/high.webp
+        const imageUrl = `https://assets.tcgdex.net/ja/sv/SV4a/${paddedNumber}`
+        
+        // Validate image exists before updating
+        const imageCheck = await fetch(`${imageUrl}/high.webp`, { method: 'HEAD' })
+        if (!imageCheck.ok) {
+          console.warn(`⚠️  Image not found for ${card.name} (${paddedNumber}), trying alternative format...`)
+          // Try without padding
+          const altUrl = `https://assets.tcgdex.net/ja/sv/SV4a/${card.number}`
+          const altCheck = await fetch(`${altUrl}/high.webp`, { method: 'HEAD' })
+          if (!altCheck.ok) {
+            console.error(`❌ No image found for ${card.name} at ${imageUrl} or ${altUrl}`)
+            errorCount++
+            errors.push({ card: card.card_id, error: 'Image not found on CDN' })
+            continue
+          }
+        }
         
         const imageData = {
           small: `${imageUrl}/low.webp`,
-          large: `${imageUrl}/high.webp`
+          large: `${imageUrl}/high.webp`,
+          tcgdex: `${imageUrl}/high.webp`
         }
 
         console.log(`🖼️  Updating ${card.name} (${card.number}) with image: ${imageUrl}`)

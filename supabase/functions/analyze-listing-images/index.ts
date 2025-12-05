@@ -36,7 +36,9 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are an expert fashion analyst. Analyze clothing images and extract structured data. Be specific and accurate. Output ONLY valid JSON.`
+            content: `You are an expert item analyst for a marketplace. Analyze images of products (fashion, trading cards, electronics, collectibles) and extract structured data. Be specific and accurate. Output ONLY valid JSON.
+
+IMPORTANT: For all text fields (title, description), output PLAIN TEXT ONLY. Never use markdown formatting like **, ##, bullet points, or any special formatting. Write naturally as if speaking to a customer.`
           },
           {
             role: "user",
@@ -100,7 +102,7 @@ serve(async (req) => {
                 },
                 description: {
                   type: "string",
-                  description: "Detailed, appealing description (2-3 sentences)"
+                  description: "Detailed, appealing description (2-3 sentences). Plain text only - NO markdown, asterisks, or special formatting."
                 },
                 quality_metrics: {
                   type: "object",
