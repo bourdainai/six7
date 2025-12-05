@@ -1,6 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export type SortOption = 
+  | "synced_newest" 
+  | "synced_oldest" 
+  | "created_newest" 
+  | "created_oldest"
+  | "name_asc"
+  | "name_desc"
+  | "set_number";
+
 export interface CardCatalogFilters {
   language?: string;
   setCode?: string;
@@ -8,6 +17,7 @@ export interface CardCatalogFilters {
   dataStatus?: "all" | "missing_images" | "missing_prices" | "complete";
   syncSource?: string;
   rarity?: string;
+  sortBy?: SortOption;
 }
 
 export interface CardCatalogCard {
@@ -106,10 +116,36 @@ export function useCardCatalog({ filters, page, pageSize = 50 }: UseCardCatalogO
       const from = page * pageSize;
       const to = from + pageSize - 1;
 
-      query = query
-        .order("set_code", { ascending: true })
-        .order("number", { ascending: true })
-        .range(from, to);
+      // Apply sorting
+      const sortBy = filters.sortBy || "synced_newest";
+      switch (sortBy) {
+        case "synced_newest":
+          query = query.order("synced_at", { ascending: false, nullsFirst: false });
+          break;
+        case "synced_oldest":
+          query = query.order("synced_at", { ascending: true, nullsFirst: true });
+          break;
+        case "created_newest":
+          query = query.order("created_at", { ascending: false });
+          break;
+        case "created_oldest":
+          query = query.order("created_at", { ascending: true });
+          break;
+        case "name_asc":
+          query = query.order("name", { ascending: true });
+          break;
+        case "name_desc":
+          query = query.order("name", { ascending: false });
+          break;
+        case "set_number":
+        default:
+          query = query
+            .order("set_code", { ascending: true })
+            .order("number", { ascending: true });
+          break;
+      }
+
+      query = query.range(from, to);
 
       const { data, error, count } = await query;
 
@@ -171,31 +207,69 @@ export function useCardCatalogStats() {
   });
 }
 
+export interface SetWithCount {
+  code: string;
+  name: string;
+  cardCount: number;
+  lastSynced: string | null;
+}
+
 export function useCardSets() {
   return useQuery({
-    queryKey: ["card-sets"],
+    queryKey: ["card-sets-with-counts"],
     queryFn: async () => {
+      // Use RPC or aggregate query for better performance
       const { data, error } = await supabase
         .from("pokemon_card_attributes")
-        .select("set_code, set_name")
-        .order("set_code");
+        .select("set_code, set_name, synced_at");
 
       if (error) throw error;
 
-      // Get unique sets
-      const setsMap = new Map<string, string>();
+      // Aggregate by set
+      const setsMap = new Map<string, { name: string; count: number; lastSynced: string | null }>();
+      
       data?.forEach((card) => {
-        if (card.set_code && !setsMap.has(card.set_code)) {
-          setsMap.set(card.set_code, card.set_name || card.set_code);
+        if (card.set_code) {
+          const existing = setsMap.get(card.set_code);
+          if (existing) {
+            existing.count++;
+            // Track most recent sync
+            if (card.synced_at && (!existing.lastSynced || card.synced_at > existing.lastSynced)) {
+              existing.lastSynced = card.synced_at;
+            }
+          } else {
+            setsMap.set(card.set_code, {
+              name: card.set_name || card.set_code,
+              count: 1,
+              lastSynced: card.synced_at,
+            });
+          }
         }
       });
 
-      return Array.from(setsMap.entries()).map(([code, name]) => ({
+      // Convert to array and sort by most recently synced first
+      const setsArray = Array.from(setsMap.entries()).map(([code, data]) => ({
         code,
-        name,
+        name: data.name,
+        cardCount: data.count,
+        lastSynced: data.lastSynced,
       }));
+
+      // Sort: recently synced first, then alphabetically
+      return setsArray.sort((a, b) => {
+        // If both have sync dates, sort by newest first
+        if (a.lastSynced && b.lastSynced) {
+          return new Date(b.lastSynced).getTime() - new Date(a.lastSynced).getTime();
+        }
+        // If only one has sync date, prioritize it
+        if (a.lastSynced) return -1;
+        if (b.lastSynced) return 1;
+        // Fall back to alphabetical by name
+        return a.name.localeCompare(b.name);
+      });
     },
-    staleTime: 300000, // Cache for 5 minutes
+    staleTime: 60000, // Cache for 1 minute (shorter to show new imports faster)
+    refetchInterval: 30000, // Auto-refresh every 30 seconds
   });
 }
 

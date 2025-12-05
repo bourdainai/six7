@@ -145,10 +145,12 @@ function StatsSection() {
 }
 
 export default function AdminCardCatalog() {
-  const [filters, setFilters] = useState<FilterType>({});
+  // Default to showing recently synced cards first
+  const [filters, setFilters] = useState<FilterType>({ sortBy: "synced_newest" });
   const [page, setPage] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const { data, isLoading } = useCardCatalog({
+  const { data, isLoading, refetch } = useCardCatalog({
     filters,
     page,
     pageSize: 50,
@@ -158,6 +160,15 @@ export default function AdminCardCatalog() {
   const handleFiltersChange = (newFilters: FilterType) => {
     setFilters(newFilters);
     setPage(0);
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   return (
@@ -174,7 +185,7 @@ export default function AdminCardCatalog() {
                 Card Catalog
               </h1>
               <p className="text-sm text-muted-foreground">
-                Browse and inspect all Pokemon cards in the database
+                Browse and verify Pokemon card data • Default: Recently synced first
               </p>
             </div>
           </div>
@@ -187,6 +198,8 @@ export default function AdminCardCatalog() {
         <CardCatalogFilters
           filters={filters}
           onFiltersChange={handleFiltersChange}
+          onRefresh={handleRefresh}
+          isRefreshing={isRefreshing}
         />
 
         {/* Results Count */}
