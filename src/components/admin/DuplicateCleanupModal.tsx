@@ -146,11 +146,21 @@ export function DuplicateCleanupModal({
                 </AlertDescription>
               </Alert>
             ) : (
-              <Alert className="border-green-500/50 bg-green-500/10">
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
-                <AlertTitle className="text-green-600">Cleanup Complete</AlertTitle>
-                <AlertDescription className="text-green-600">
-                  Successfully removed {previewResult.stats.actualDeleted} duplicate cards.
+              <Alert className={previewResult.stats.remainingDuplicates === 0 
+                ? "border-green-500/50 bg-green-500/10" 
+                : "border-yellow-500/50 bg-yellow-500/10"
+              }>
+                <CheckCircle2 className={`h-4 w-4 ${previewResult.stats.remainingDuplicates === 0 ? "text-green-500" : "text-yellow-500"}`} />
+                <AlertTitle className={previewResult.stats.remainingDuplicates === 0 ? "text-green-600" : "text-yellow-600"}>
+                  {previewResult.stats.remainingDuplicates === 0 ? "Cleanup Complete!" : "Cleanup Finished"}
+                </AlertTitle>
+                <AlertDescription className={previewResult.stats.remainingDuplicates === 0 ? "text-green-600" : "text-yellow-600"}>
+                  {previewResult.message || `Removed ${previewResult.stats.actualDeleted} duplicate cards.`}
+                  {previewResult.stats.iterations && (
+                    <span className="block text-sm mt-1">
+                      Completed in {previewResult.stats.iterations} iteration(s)
+                    </span>
+                  )}
                 </AlertDescription>
               </Alert>
             )}

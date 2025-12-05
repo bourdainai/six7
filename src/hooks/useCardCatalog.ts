@@ -331,15 +331,19 @@ export interface CleanupResult {
     duplicateGroups: number;
     cardsToDelete: number;
     actualDeleted: number;
+    remainingDuplicates?: number;
+    iterations?: number;
   };
-  sampleDeleted: Array<{
+  message?: string;
+  errors?: string[];
+  sampleDeleted?: Array<{
     card_id: string;
     name: string;
     set_code: string;
     number: string;
     reason: string;
   }>;
-  sampleKept: Array<{
+  sampleKept?: Array<{
     card_id: string;
     name: string;
     set_code: string;
