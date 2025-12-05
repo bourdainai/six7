@@ -4,7 +4,7 @@ import { RefundProcessor } from "@/components/admin/RefundProcessor";
 import { FakeCardReviewQueue } from "@/components/admin/FakeCardReviewQueue";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Database, BarChart3, Shield, AlertTriangle, Home, Layers } from "lucide-react";
+import { Database, BarChart3, Shield, AlertTriangle, Home, Layers, FolderSync } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function AdminDashboard() {
@@ -41,6 +41,22 @@ export default function AdminDashboard() {
                     <div>
                       <CardTitle className="text-base font-semibold">Card Catalog</CardTitle>
                       <CardDescription className="text-sm">Browse all cards</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+              </Card>
+            </Link>
+
+            <Link to="/admin/sets" className="group">
+              <Card className="cursor-pointer hover:border-primary transition-all h-full hover:shadow-md">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                      <FolderSync className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-base font-semibold">Set Manager</CardTitle>
+                      <CardDescription className="text-sm">Import sets from GitHub</CardDescription>
                     </div>
                   </div>
                 </CardHeader>

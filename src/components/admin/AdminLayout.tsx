@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { Shield, Database, BarChart3, AlertTriangle, Home, AlertCircle, Layers } from "lucide-react";
+import { Shield, Database, BarChart3, AlertTriangle, Home, AlertCircle, Layers, FolderSync } from "lucide-react";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { NavLink } from "@/components/NavLink";
 import { Navigation } from "@/components/Navigation";
@@ -29,6 +29,7 @@ const adminMenuItems = [
   { title: "Dashboard", url: "/admin", icon: Home },
   { title: "Live Stats", url: "/admin/live", icon: BarChart3 },
   { title: "Card Catalog", url: "/admin/cards", icon: Layers },
+  { title: "Set Manager", url: "/admin/sets", icon: FolderSync },
   { title: "Disputes", url: "/admin/disputes", icon: AlertCircle },
   { title: "Card Restoration", url: "/admin/restore-cards", icon: Database },
   { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
