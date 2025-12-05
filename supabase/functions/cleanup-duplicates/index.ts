@@ -66,8 +66,11 @@ serve(async (req) => {
       .order('number');
 
     if (fetchError) {
+      console.error('❌ Fetch error:', fetchError);
       throw fetchError;
     }
+
+    console.log(`📊 Fetched ${allCards?.length || 0} total cards`);
 
     // Group by set_code + number
     const groups = new Map<string, Card[]>();
@@ -126,24 +129,38 @@ serve(async (req) => {
     console.log(`📊 Cards to delete: ${idsToDelete.length}`);
 
     let actualDeleted = 0;
+    const deleteErrors: string[] = [];
 
     if (!dryRun && idsToDelete.length > 0) {
-      // Delete in batches of 100
-      for (let i = 0; i < idsToDelete.length; i += 100) {
-        const batch = idsToDelete.slice(i, i + 100);
+      console.log(`🗑️ Starting deletion of ${idsToDelete.length} cards...`);
+      
+      // Delete in smaller batches of 50 for reliability
+      for (let i = 0; i < idsToDelete.length; i += 50) {
+        const batch = idsToDelete.slice(i, i + 50);
         
-        const { error: deleteError, count } = await supabase
+        console.log(`   Deleting batch ${Math.floor(i/50) + 1}: ${batch.length} cards (IDs: ${batch.slice(0, 3).join(', ')}...)`);
+        
+        // Use delete with select to get actual deleted records
+        const { data: deletedData, error: deleteError } = await supabase
           .from('pokemon_card_attributes')
           .delete()
-          .in('id', batch);
+          .in('id', batch)
+          .select('id');
 
         if (deleteError) {
-          console.error(`❌ Delete error:`, deleteError);
+          console.error(`❌ Delete error in batch:`, deleteError.message);
+          deleteErrors.push(deleteError.message);
         } else {
-          actualDeleted += count || batch.length;
-          console.log(`✅ Deleted batch of ${batch.length} cards (${actualDeleted} total)`);
+          const deletedCount = deletedData?.length || 0;
+          actualDeleted += deletedCount;
+          console.log(`   ✅ Batch deleted: ${deletedCount} cards (total: ${actualDeleted})`);
         }
+
+        // Small delay between batches
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
+      
+      console.log(`🎉 Deletion complete: ${actualDeleted} cards removed`);
     }
 
     return new Response(
@@ -155,6 +172,7 @@ serve(async (req) => {
           cardsToDelete: idsToDelete.length,
           actualDeleted: dryRun ? 0 : actualDeleted,
         },
+        errors: deleteErrors.length > 0 ? deleteErrors : undefined,
         // Sample of what was/would be deleted (first 20)
         sampleDeleted: deletedCards.slice(0, 20),
         // Sample of what was/would be kept (first 20)
@@ -179,4 +197,3 @@ serve(async (req) => {
     );
   }
 });
-
