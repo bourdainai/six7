@@ -33,6 +33,17 @@ export interface ImportActivity {
   lastInsertTime: Date | null;
 }
 
+export interface LiveCardInsert {
+  id: string;
+  cardId: string;
+  name: string;
+  setName: string;
+  setCode: string;
+  number: string;
+  imageUrl: string | null;
+  timestamp: Date;
+}
+
 export function useGitHubSets() {
   return useQuery({
     queryKey: ["github-sets"],
@@ -73,7 +84,7 @@ export function useDatabaseSetCoverage() {
   });
 }
 
-// Real-time subscription to track import activity
+// Real-time subscription to track import activity with live card feed
 export function useImportActivityTracker() {
   const queryClient = useQueryClient();
   const [activity, setActivity] = useState<ImportActivity>({
@@ -82,6 +93,8 @@ export function useImportActivityTracker() {
     lastInsertTime: null,
   });
   const [totalCards, setTotalCards] = useState(0);
+  const [liveCards, setLiveCards] = useState<LiveCardInsert[]>([]);
+  const [currentSet, setCurrentSet] = useState<string | null>(null);
 
   // Fetch total card count
   const fetchTotalCount = useCallback(async () => {
@@ -96,7 +109,7 @@ export function useImportActivityTracker() {
 
     // Subscribe to real-time inserts
     const channel = supabase
-      .channel("card-imports")
+      .channel("card-imports-live")
       .on(
         "postgres_changes",
         {
@@ -105,6 +118,23 @@ export function useImportActivityTracker() {
           table: "pokemon_card_attributes",
         },
         (payload) => {
+          const newCard = payload.new as any;
+          
+          // Add to live cards feed (keep last 20)
+          const liveCard: LiveCardInsert = {
+            id: newCard.id || crypto.randomUUID(),
+            cardId: newCard.card_id || "",
+            name: newCard.name || "Unknown",
+            setName: newCard.set_name || "Unknown Set",
+            setCode: newCard.set_code || "",
+            number: newCard.number || "",
+            imageUrl: newCard.images?.small || newCard.images?.large || null,
+            timestamp: new Date(),
+          };
+
+          setLiveCards((prev) => [liveCard, ...prev].slice(0, 20));
+          setCurrentSet(newCard.set_name || null);
+
           setActivity((prev) => ({
             isActive: true,
             recentInserts: prev.recentInserts + 1,
@@ -112,8 +142,10 @@ export function useImportActivityTracker() {
           }));
           setTotalCards((prev) => prev + 1);
 
-          // Invalidate coverage queries to refresh data
-          queryClient.invalidateQueries({ queryKey: ["db-set-coverage"] });
+          // Invalidate coverage queries to refresh data every 100 cards
+          if ((activity.recentInserts + 1) % 100 === 0) {
+            queryClient.invalidateQueries({ queryKey: ["db-set-coverage"] });
+          }
         }
       )
       .subscribe();
@@ -135,7 +167,7 @@ export function useImportActivityTracker() {
       supabase.removeChannel(channel);
       clearInterval(inactivityCheck);
     };
-  }, [queryClient, fetchTotalCount]);
+  }, [queryClient, fetchTotalCount, activity.recentInserts]);
 
   const resetActivity = useCallback(() => {
     setActivity({
@@ -143,9 +175,11 @@ export function useImportActivityTracker() {
       recentInserts: 0,
       lastInsertTime: null,
     });
+    setLiveCards([]);
+    setCurrentSet(null);
   }, []);
 
-  return { activity, totalCards, resetActivity, refetch: fetchTotalCount };
+  return { activity, totalCards, liveCards, currentSet, resetActivity, refetch: fetchTotalCount };
 }
 
 export function useSetCoverage() {

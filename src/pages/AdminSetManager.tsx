@@ -140,7 +140,7 @@ export default function AdminSetManager() {
   const [selectedSets, setSelectedSets] = useState<Set<string>>(new Set());
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const { activity, totalCards, resetActivity, refetch: refetchTotalCards } = useImportActivityTracker();
+  const { activity, totalCards, liveCards, currentSet, resetActivity, refetch: refetchTotalCards } = useImportActivityTracker();
   
   const [importProgress, setImportProgress] = useState<{
     open: boolean;
@@ -265,7 +265,7 @@ export default function AdminSetManager() {
 
     const missingSets = sets
       .filter((s) => s.status === "missing" || s.status === "partial")
-      .map((s) => s.setId);
+      .map((s) => ({ id: s.setId, name: s.setName }));
 
     if (missingSets.length === 0) {
       toast({
@@ -276,9 +276,12 @@ export default function AdminSetManager() {
     }
 
     const confirmed = window.confirm(
-      `Import ${missingSets.length} sets? This may take a while.`
+      `Import ${missingSets.length} sets one at a time? This will take a while but won't timeout.\n\nNote: Each set is imported individually to avoid Edge Function timeouts.`
     );
     if (!confirmed) return;
+
+    // Reset activity tracker for fresh session
+    resetActivity();
 
     setImportProgress({
       open: true,
@@ -290,45 +293,62 @@ export default function AdminSetManager() {
       isComplete: false,
     });
 
-    try {
-      const result = await importMultipleMutation.mutateAsync({
-        setIds: missingSets,
-        onProgress: (progress) => {
-          setImportProgress({
-            open: true,
-            currentSet: progress.current,
-            completed: progress.completed,
-            total: progress.total,
-            imported: progress.imported,
-            skipped: progress.skipped,
-            errors: 0,
-            isComplete: progress.completed === progress.total,
-          });
-        },
+    let totalImported = 0;
+    let totalSkipped = 0;
+    let totalErrors = 0;
+
+    // Import sets one at a time (avoids timeout)
+    for (let i = 0; i < missingSets.length; i++) {
+      const set = missingSets[i];
+      
+      setImportProgress({
+        open: true,
+        currentSet: `${set.name} (${i + 1}/${missingSets.length})`,
+        completed: i,
+        total: missingSets.length,
+        imported: totalImported,
+        skipped: totalSkipped,
+        errors: totalErrors,
+        isComplete: false,
       });
 
-      setImportProgress((prev) => ({
-        ...prev,
-        isComplete: true,
-        errors: result.results.filter((r: any) => !r.success).length,
-      }));
+      try {
+        const result = await importSetMutation.mutateAsync({
+          setId: set.id,
+          setName: set.name,
+        });
 
-      // Refresh data
-      queryClient.invalidateQueries({ queryKey: ["db-set-coverage"] });
-      queryClient.invalidateQueries({ queryKey: ["set-coverage"] });
+        totalImported += result?.stats?.totalImported || 0;
+        totalSkipped += result?.stats?.totalSkipped || 0;
+      } catch (error) {
+        console.error(`Error importing ${set.name}:`, error);
+        totalErrors++;
+      }
 
-      toast({
-        title: "Bulk import complete",
-        description: `Imported ${result.totalImported} cards, skipped ${result.totalSkipped} duplicates`,
-      });
-    } catch (error) {
-      toast({
-        title: "Import failed",
-        description:
-          error instanceof Error ? error.message : "Unknown error occurred",
-        variant: "destructive",
-      });
+      // Small delay between sets
+      await new Promise((resolve) => setTimeout(resolve, 500));
     }
+
+    setImportProgress({
+      open: true,
+      currentSet: undefined,
+      completed: missingSets.length,
+      total: missingSets.length,
+      imported: totalImported,
+      skipped: totalSkipped,
+      errors: totalErrors,
+      isComplete: true,
+    });
+
+    // Refresh data
+    queryClient.invalidateQueries({ queryKey: ["db-set-coverage"] });
+    queryClient.invalidateQueries({ queryKey: ["set-coverage"] });
+    await refetchTotalCards();
+
+    toast({
+      title: "Bulk import complete",
+      description: `Imported ${totalImported.toLocaleString()} cards from ${missingSets.length} sets`,
+    });
   };
 
   const handleImportSelected = async () => {
@@ -341,61 +361,86 @@ export default function AdminSetManager() {
     }
 
     const setIds = Array.from(selectedSets);
+    const setsToImport = setIds.map((id) => {
+      const set = sets?.find((s) => s.setId === id);
+      return { id, name: set?.setName || id };
+    });
+
     const confirmed = window.confirm(
-      `Import ${setIds.length} selected set(s)?`
+      `Import ${setsToImport.length} selected set(s)?`
     );
     if (!confirmed) return;
+
+    // Reset activity tracker for fresh session
+    resetActivity();
 
     setImportProgress({
       open: true,
       completed: 0,
-      total: setIds.length,
+      total: setsToImport.length,
       imported: 0,
       skipped: 0,
       errors: 0,
       isComplete: false,
     });
 
-    try {
-      const result = await importMultipleMutation.mutateAsync({
-        setIds,
-        onProgress: (progress) => {
-          setImportProgress({
-            open: true,
-            currentSet: progress.current,
-            completed: progress.completed,
-            total: progress.total,
-            imported: progress.imported,
-            skipped: progress.skipped,
-            errors: 0,
-            isComplete: progress.completed === progress.total,
-          });
-        },
+    let totalImported = 0;
+    let totalSkipped = 0;
+    let totalErrors = 0;
+
+    // Import sets one at a time
+    for (let i = 0; i < setsToImport.length; i++) {
+      const set = setsToImport[i];
+      
+      setImportProgress({
+        open: true,
+        currentSet: `${set.name} (${i + 1}/${setsToImport.length})`,
+        completed: i,
+        total: setsToImport.length,
+        imported: totalImported,
+        skipped: totalSkipped,
+        errors: totalErrors,
+        isComplete: false,
       });
 
-      setImportProgress((prev) => ({
-        ...prev,
-        isComplete: true,
-        errors: result.results.filter((r: any) => !r.success).length,
-      }));
+      try {
+        const result = await importSetMutation.mutateAsync({
+          setId: set.id,
+          setName: set.name,
+        });
 
-      // Refresh data and clear selection
-      queryClient.invalidateQueries({ queryKey: ["db-set-coverage"] });
-      queryClient.invalidateQueries({ queryKey: ["set-coverage"] });
-      setSelectedSets(new Set());
+        totalImported += result?.stats?.totalImported || 0;
+        totalSkipped += result?.stats?.totalSkipped || 0;
+      } catch (error) {
+        console.error(`Error importing ${set.name}:`, error);
+        totalErrors++;
+      }
 
-      toast({
-        title: "Import complete",
-        description: `Imported ${result.totalImported} cards, skipped ${result.totalSkipped} duplicates`,
-      });
-    } catch (error) {
-      toast({
-        title: "Import failed",
-        description:
-          error instanceof Error ? error.message : "Unknown error occurred",
-        variant: "destructive",
-      });
+      // Small delay between sets
+      await new Promise((resolve) => setTimeout(resolve, 500));
     }
+
+    setImportProgress({
+      open: true,
+      currentSet: undefined,
+      completed: setsToImport.length,
+      total: setsToImport.length,
+      imported: totalImported,
+      skipped: totalSkipped,
+      errors: totalErrors,
+      isComplete: true,
+    });
+
+    // Refresh data and clear selection
+    queryClient.invalidateQueries({ queryKey: ["db-set-coverage"] });
+    queryClient.invalidateQueries({ queryKey: ["set-coverage"] });
+    setSelectedSets(new Set());
+    await refetchTotalCards();
+
+    toast({
+      title: "Import complete",
+      description: `Imported ${totalImported.toLocaleString()} cards from ${setsToImport.length} sets`,
+    });
   };
 
   const missingCount = sets?.filter(
@@ -453,6 +498,85 @@ export default function AdminSetManager() {
               </div>
             </AlertDescription>
           </Alert>
+        )}
+
+        {!activity.isActive && activity.recentInserts === 0 && (
+          <Alert className="border-muted">
+            <Database className="h-4 w-4" />
+            <AlertTitle>No Active Import</AlertTitle>
+            <AlertDescription>
+              Click "Import" on a set below to start importing cards. 
+              Real-time updates will appear here as cards are added to the database.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Live Card Feed */}
+        {(activity.isActive || liveCards.length > 0) && (
+          <Card className="border-green-500/30 bg-green-500/5">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Activity className={`h-5 w-5 ${activity.isActive ? "text-green-500 animate-pulse" : "text-muted-foreground"}`} />
+                  <span className="font-semibold">
+                    {activity.isActive ? "Live Import Feed" : "Recent Imports"}
+                  </span>
+                  {currentSet && activity.isActive && (
+                    <Badge variant="outline" className="ml-2">
+                      Currently: {currentSet}
+                    </Badge>
+                  )}
+                </div>
+                <span className="text-sm text-muted-foreground">
+                  {activity.recentInserts.toLocaleString()} cards this session
+                </span>
+              </div>
+              
+              {liveCards.length > 0 ? (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {liveCards.map((card, idx) => (
+                    <div
+                      key={card.id}
+                      className={`flex items-center gap-3 p-2 rounded-lg transition-all ${
+                        idx === 0 && activity.isActive
+                          ? "bg-green-500/20 border border-green-500/30"
+                          : "bg-muted/50"
+                      }`}
+                    >
+                      {card.imageUrl ? (
+                        <img
+                          src={card.imageUrl}
+                          alt={card.name}
+                          className="w-10 h-14 object-contain rounded"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = "none";
+                          }}
+                        />
+                      ) : (
+                        <div className="w-10 h-14 bg-muted rounded flex items-center justify-center">
+                          <Database className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{card.name}</p>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {card.setName} • #{card.number}
+                        </p>
+                      </div>
+                      <div className="text-xs text-muted-foreground whitespace-nowrap">
+                        {card.timestamp.toLocaleTimeString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin" />
+                  <p>Waiting for cards...</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         )}
 
         {/* Header */}
