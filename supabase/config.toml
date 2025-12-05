@@ -105,12 +105,6 @@ verify_jwt = true
 [functions.price-drop-notifier]
 verify_jwt = true
 
-[functions.buyer-agent-recommendations]
-verify_jwt = true
-
-[functions.buyer-agent-learn]
-verify_jwt = true
-
 [functions.seller-copilot]
 verify_jwt = true
 
@@ -130,9 +124,6 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.import-github-tcg-data]
-verify_jwt = false
-
-[functions.sync-justtcg-data]
 verify_jwt = false
 
 [functions.import-tcgdex-data]
@@ -185,3 +176,18 @@ verify_jwt = false
 
 [functions.admin-reset-password]
 verify_jwt = true
+
+[functions.data-quality-dashboard]
+verify_jwt = false
+
+[functions.sync-tcgdex-unified]
+verify_jwt = false
+
+[functions.validate-and-fix-images]
+verify_jwt = false
+
+[functions.auto-match-listings]
+verify_jwt = false
+
+[functions.backfill-sv4a-images]
+verify_jwt = false
