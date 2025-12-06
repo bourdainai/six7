@@ -92,6 +92,44 @@ export interface ImportLog {
   timestamp: string;
 }
 
+// Helper to map database row to ImportJob type
+function mapToImportJob(data: any): ImportJob {
+  return {
+    id: data.id,
+    job_type: data.source || 'unknown',
+    status: data.status as ImportJob['status'],
+    sets_total: 0,
+    sets_completed: 0,
+    sets_failed: 0,
+    cards_total: data.total_items || 0,
+    cards_imported: data.processed_items || 0,
+    cards_updated: 0,
+    cards_skipped: 0,
+    cards_failed: data.failed_items || 0,
+    current_set_id: null,
+    current_set_name: null,
+    current_card_id: null,
+    current_card_name: null,
+    fields_summary: {
+      core: { total: 0, complete: 0 },
+      images: { total: 0, complete: 0 },
+      pricing: { total: 0, complete: 0 },
+      metadata: { total: 0, complete: 0 },
+      extended: { total: 0, complete: 0 },
+    },
+    started_at: data.created_at,
+    updated_at: data.created_at,
+    completed_at: data.completed_at,
+    estimated_completion: null,
+    avg_cards_per_second: null,
+    errors: [],
+    warnings: [],
+    source: data.source || 'unknown',
+    initiated_by: data.user_id,
+    metadata: data.metadata || {},
+  };
+}
+
 // Hook to get active import job
 export function useActiveImportJob() {
   const [job, setJob] = useState<ImportJob | null>(null);
@@ -104,12 +142,12 @@ export function useActiveImportJob() {
         .from("import_jobs")
         .select("*")
         .in("status", ["pending", "running", "paused"])
-        .order("started_at", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(1)
         .single();
 
       if (error && error.code !== "PGRST116") throw error; // PGRST116 = no rows
-      return data as ImportJob | null;
+      return data ? mapToImportJob(data) : null;
     },
     refetchInterval: 5000, // Poll every 5 seconds as backup
   });
@@ -126,7 +164,7 @@ export function useActiveImportJob() {
           table: "import_jobs",
         },
         (payload) => {
-          const updatedJob = payload.new as ImportJob;
+          const updatedJob = mapToImportJob(payload.new);
           if (payload.eventType === "DELETE") {
             setJob(null);
           } else if (["pending", "running", "paused"].includes(updatedJob.status)) {
@@ -168,7 +206,7 @@ export function useImportJob(jobId: string | null) {
         .single();
 
       if (error) throw error;
-      return data as ImportJob;
+      return mapToImportJob(data);
     },
     enabled: !!jobId,
     refetchInterval: 2000, // Poll every 2 seconds for active jobs
@@ -192,7 +230,7 @@ export function useImportJob(jobId: string | null) {
           if (payload.eventType === "DELETE") {
             setJob(null);
           } else {
-            setJob(payload.new as ImportJob);
+            setJob(mapToImportJob(payload.new));
           }
         }
       )
@@ -212,7 +250,7 @@ export function useImportJob(jobId: string | null) {
   return { job: job || initialJob, isLoading };
 }
 
-// Hook to get set progress for a job
+// Hook to get set progress for a job - simplified version without real-time for now
 export function useImportSetProgress(jobId: string | null) {
   const [setProgress, setSetProgress] = useState<ImportSetProgress[]>([]);
 
@@ -220,57 +258,12 @@ export function useImportSetProgress(jobId: string | null) {
     queryKey: ["import-set-progress", jobId],
     queryFn: async () => {
       if (!jobId) return [];
-      const { data, error } = await supabase
-        .from("import_set_progress")
-        .select("*")
-        .eq("job_id", jobId)
-        .order("started_at", { ascending: true });
-
-      if (error) throw error;
-      return data as ImportSetProgress[];
+      // Return empty array since we don't have this table in the current schema
+      return [] as ImportSetProgress[];
     },
     enabled: !!jobId,
     refetchInterval: 3000,
   });
-
-  // Real-time subscription
-  useEffect(() => {
-    if (!jobId) return;
-
-    const channel = supabase
-      .channel(`import-set-progress-${jobId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "import_set_progress",
-          filter: `job_id=eq.${jobId}`,
-        },
-        (payload) => {
-          if (payload.eventType === "INSERT") {
-            setSetProgress((prev) => [...prev, payload.new as ImportSetProgress]);
-          } else if (payload.eventType === "UPDATE") {
-            setSetProgress((prev) =>
-              prev.map((sp) =>
-                sp.id === (payload.new as ImportSetProgress).id
-                  ? (payload.new as ImportSetProgress)
-                  : sp
-              )
-            );
-          } else if (payload.eventType === "DELETE") {
-            setSetProgress((prev) =>
-              prev.filter((sp) => sp.id !== (payload.old as any).id)
-            );
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [jobId]);
 
   useEffect(() => {
     if (initialData) {
@@ -281,7 +274,7 @@ export function useImportSetProgress(jobId: string | null) {
   return { setProgress, isLoading, refetch };
 }
 
-// Hook to get recent import logs
+// Hook to get recent import logs - simplified version
 export function useImportLogs(jobId: string | null, limit = 50) {
   const [logs, setLogs] = useState<ImportLog[]>([]);
 
@@ -289,44 +282,12 @@ export function useImportLogs(jobId: string | null, limit = 50) {
     queryKey: ["import-logs", jobId, limit],
     queryFn: async () => {
       if (!jobId) return [];
-      const { data, error } = await supabase
-        .from("import_logs")
-        .select("*")
-        .eq("job_id", jobId)
-        .order("timestamp", { ascending: false })
-        .limit(limit);
-
-      if (error) throw error;
-      return data as ImportLog[];
+      // Return empty array since we don't have this table in the current schema
+      return [] as ImportLog[];
     },
     enabled: !!jobId,
     refetchInterval: 5000,
   });
-
-  // Real-time subscription for new logs
-  useEffect(() => {
-    if (!jobId) return;
-
-    const channel = supabase
-      .channel(`import-logs-${jobId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "import_logs",
-          filter: `job_id=eq.${jobId}`,
-        },
-        (payload) => {
-          setLogs((prev) => [payload.new as ImportLog, ...prev].slice(0, limit));
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [jobId, limit]);
 
   useEffect(() => {
     if (initialLogs) {
@@ -345,11 +306,11 @@ export function useImportJobHistory(limit = 20) {
       const { data, error } = await supabase
         .from("import_jobs")
         .select("*")
-        .order("started_at", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(limit);
 
       if (error) throw error;
-      return data as ImportJob[];
+      return (data || []).map(mapToImportJob);
     },
     staleTime: 30000,
   });
@@ -417,4 +378,3 @@ export function estimateRemainingTime(job: ImportJob | null): string {
   
   return formatDuration(remainingSeconds * 1000);
 }
-

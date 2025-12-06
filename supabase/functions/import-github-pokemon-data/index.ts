@@ -97,10 +97,10 @@ serve(async (req) => {
       setId: string;
       action: string;
       fields: {
-        core: boolean;
-        images: boolean;
-        pricing: boolean;
-        metadata: boolean;
+        hasCore: boolean;
+        hasImages: boolean;
+        hasPricing: boolean;
+        hasMetadata: boolean;
       };
     }> = [];
 
@@ -252,10 +252,10 @@ serve(async (req) => {
 
     // Field completion summary
     const fieldStats = {
-      core: cardResults.filter(c => c.fields.core).length,
-      images: cardResults.filter(c => c.fields.images).length,
-      pricing: cardResults.filter(c => c.fields.pricing).length,
-      metadata: cardResults.filter(c => c.fields.metadata).length,
+      core: cardResults.filter(c => c.fields.hasCore).length,
+      images: cardResults.filter(c => c.fields.hasImages).length,
+      pricing: cardResults.filter(c => c.fields.hasPricing).length,
+      metadata: cardResults.filter(c => c.fields.hasMetadata).length,
       total: cardResults.length
     };
 
