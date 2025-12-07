@@ -6,6 +6,19 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface CardData {
+  id: string;
+  card_id: string;
+  name: string;
+  set_code: string | null;
+  number: string | null;
+  sync_source: string | null;
+  synced_at: string | null;
+  images: { small?: string; large?: string } | null;
+  tcgplayer_prices: Record<string, unknown> | null;
+  cardmarket_prices: Record<string, unknown> | null;
+}
+
 interface DuplicateGroup {
   set_code: string;
   number: string;
@@ -21,6 +34,40 @@ interface DuplicateGroup {
   }>;
 }
 
+// Fetch ALL cards in batches (Supabase limits to 1000 by default)
+async function fetchAllCards(supabase: any): Promise<CardData[]> {
+  const BATCH_SIZE = 1000;
+  let allCards: CardData[] = [];
+  let from = 0;
+  let hasMore = true;
+
+  console.log('📥 Fetching all cards in batches...');
+
+  while (hasMore) {
+    const { data, error } = await supabase
+      .from('pokemon_card_attributes')
+      .select('id, card_id, name, set_code, number, sync_source, synced_at, images, tcgplayer_prices, cardmarket_prices')
+      .order('id', { ascending: true }) // Consistent ordering
+      .range(from, from + BATCH_SIZE - 1);
+
+    if (error) {
+      throw error;
+    }
+
+    if (data && data.length > 0) {
+      allCards = allCards.concat(data);
+      from += BATCH_SIZE;
+      hasMore = data.length === BATCH_SIZE;
+      console.log(`   Fetched ${allCards.length} cards so far...`);
+    } else {
+      hasMore = false;
+    }
+  }
+
+  console.log(`✅ Total cards fetched: ${allCards.length}`);
+  return allCards;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -34,21 +81,15 @@ serve(async (req) => {
 
     console.log('🔍 Detecting duplicate cards...');
 
-    // Find all cards grouped by set_code and number
-    const { data: allCards, error: fetchError } = await supabase
-      .from('pokemon_card_attributes')
-      .select('id, card_id, name, set_code, number, sync_source, synced_at, images, tcgplayer_prices, cardmarket_prices')
-      .order('set_code')
-      .order('number');
-
-    if (fetchError) {
-      throw fetchError;
-    }
+    // Fetch ALL cards (not just first 1000)
+    const allCards = await fetchAllCards(supabase);
 
     // Group by set_code + number
-    const groups = new Map<string, typeof allCards>();
+    const groups = new Map<string, CardData[]>();
     
-    for (const card of allCards || []) {
+    for (const card of allCards) {
+      if (!card.set_code || !card.number) continue; // Skip cards without set_code or number
+      
       const key = `${card.set_code}|${card.number}`;
       if (!groups.has(key)) {
         groups.set(key, []);
@@ -129,4 +170,3 @@ serve(async (req) => {
     );
   }
 });
-

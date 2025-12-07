@@ -10,8 +10,8 @@ interface Card {
   id: string;
   card_id: string;
   name: string;
-  set_code: string;
-  number: string;
+  set_code: string | null;
+  number: string | null;
   sync_source: string | null;
   synced_at: string | null;
   images: { small?: string; large?: string } | null;
@@ -34,21 +34,51 @@ function scoreCard(card: Card): number {
   return score;
 }
 
-async function findAndDeleteDuplicates(supabase: any): Promise<{ found: number; deleted: number; errors: string[] }> {
-  const errors: string[] = [];
-  
-  // Fetch all cards
-  const { data: allCards, error: fetchError } = await supabase
-    .from('pokemon_card_attributes')
-    .select('id, card_id, name, set_code, number, sync_source, synced_at, images, tcgplayer_prices, cardmarket_prices');
+// Fetch ALL cards in batches (Supabase limits to 1000 by default)
+async function fetchAllCards(supabase: any): Promise<Card[]> {
+  const BATCH_SIZE = 1000;
+  let allCards: Card[] = [];
+  let from = 0;
+  let hasMore = true;
 
-  if (fetchError) {
-    throw fetchError;
+  console.log('📥 Fetching all cards in batches...');
+
+  while (hasMore) {
+    const { data, error } = await supabase
+      .from('pokemon_card_attributes')
+      .select('id, card_id, name, set_code, number, sync_source, synced_at, images, tcgplayer_prices, cardmarket_prices')
+      .order('id', { ascending: true }) // Consistent ordering
+      .range(from, from + BATCH_SIZE - 1);
+
+    if (error) {
+      throw error;
+    }
+
+    if (data && data.length > 0) {
+      allCards = allCards.concat(data);
+      from += BATCH_SIZE;
+      hasMore = data.length === BATCH_SIZE;
+      console.log(`   Fetched ${allCards.length} cards so far...`);
+    } else {
+      hasMore = false;
+    }
   }
 
+  console.log(`✅ Total cards fetched: ${allCards.length}`);
+  return allCards;
+}
+
+// Find duplicates and optionally delete them
+async function findDuplicates(allCards: Card[]): Promise<{
+  duplicateGroups: number;
+  cardsToDelete: Card[];
+  cardsToKeep: Card[];
+}> {
   // Group by set_code + number
   const groups = new Map<string, Card[]>();
-  for (const card of (allCards || []) as Card[]) {
+  for (const card of allCards) {
+    if (!card.set_code || !card.number) continue; // Skip invalid cards
+    
     const key = `${card.set_code}|${card.number}`;
     if (!groups.has(key)) {
       groups.set(key, []);
@@ -56,45 +86,28 @@ async function findAndDeleteDuplicates(supabase: any): Promise<{ found: number; 
     groups.get(key)!.push(card);
   }
 
-  // Find IDs to delete
-  const idsToDelete: string[] = [];
-  
+  const cardsToDelete: Card[] = [];
+  const cardsToKeep: Card[] = [];
+  let duplicateGroups = 0;
+
   for (const [_, cards] of groups) {
     if (cards.length > 1) {
+      duplicateGroups++;
       // Score and sort - keep best, delete rest
       const scoredCards = cards.map(card => ({ card, score: scoreCard(card) }));
       scoredCards.sort((a, b) => b.score - a.score);
       
-      // Skip first (best), delete others
+      // Keep the best one
+      cardsToKeep.push(scoredCards[0].card);
+      
+      // Delete the rest
       for (let i = 1; i < scoredCards.length; i++) {
-        idsToDelete.push(scoredCards[i].card.id);
+        cardsToDelete.push(scoredCards[i].card);
       }
     }
   }
 
-  if (idsToDelete.length === 0) {
-    return { found: 0, deleted: 0, errors };
-  }
-
-  console.log(`   Found ${idsToDelete.length} duplicates to delete`);
-
-  // Delete ALL at once using a single query
-  const { data: deletedData, error: deleteError } = await supabase
-    .from('pokemon_card_attributes')
-    .delete()
-    .in('id', idsToDelete)
-    .select('id');
-
-  if (deleteError) {
-    console.error(`   ❌ Delete error:`, deleteError.message);
-    errors.push(deleteError.message);
-    return { found: idsToDelete.length, deleted: 0, errors };
-  }
-
-  const deletedCount = deletedData?.length || 0;
-  console.log(`   ✅ Deleted ${deletedCount} cards`);
-
-  return { found: idsToDelete.length, deleted: deletedCount, errors };
+  return { duplicateGroups, cardsToDelete, cardsToKeep };
 }
 
 serve(async (req) => {
@@ -112,139 +125,122 @@ serve(async (req) => {
 
     console.log(`🧹 Cleanup duplicates (dryRun: ${dryRun})`);
 
-    // For dry run, just count duplicates
+    // Fetch ALL cards (not just first 1000!)
+    const allCards = await fetchAllCards(supabase);
+    
+    // Find all duplicates
+    const { duplicateGroups, cardsToDelete, cardsToKeep } = await findDuplicates(allCards);
+
+    console.log(`📊 Found ${duplicateGroups} duplicate groups`);
+    console.log(`📊 Cards to delete: ${cardsToDelete.length}`);
+    console.log(`📊 Cards to keep: ${cardsToKeep.length}`);
+
+    // For dry run, just return the counts and samples
     if (dryRun) {
-      const { data: allCards } = await supabase
-        .from('pokemon_card_attributes')
-        .select('id, card_id, name, set_code, number, sync_source, images, tcgplayer_prices, cardmarket_prices');
+      const sampleDeleted = cardsToDelete.slice(0, 20).map(card => ({
+        card_id: card.card_id,
+        name: card.name,
+        set_code: card.set_code,
+        number: card.number,
+        reason: `Lower quality duplicate (score: ${scoreCard(card)})`,
+      }));
 
-      const groups = new Map<string, Card[]>();
-      for (const card of (allCards || []) as Card[]) {
-        const key = `${card.set_code}|${card.number}`;
-        if (!groups.has(key)) groups.set(key, []);
-        groups.get(key)!.push(card);
-      }
-
-      let duplicateGroups = 0;
-      let cardsToDelete = 0;
-      const sampleDeleted: any[] = [];
-      const sampleKept: any[] = [];
-
-      for (const [_, cards] of groups) {
-        if (cards.length > 1) {
-          duplicateGroups++;
-          const scoredCards = cards.map(card => ({ card, score: scoreCard(card) }));
-          scoredCards.sort((a, b) => b.score - a.score);
-          
-          sampleKept.push({
-            card_id: scoredCards[0].card.card_id,
-            name: scoredCards[0].card.name,
-            set_code: scoredCards[0].card.set_code,
-            number: scoredCards[0].card.number,
-          });
-
-          for (let i = 1; i < scoredCards.length; i++) {
-            cardsToDelete++;
-            if (sampleDeleted.length < 20) {
-              sampleDeleted.push({
-                card_id: scoredCards[i].card.card_id,
-                name: scoredCards[i].card.name,
-                set_code: scoredCards[i].card.set_code,
-                number: scoredCards[i].card.number,
-                reason: `Duplicate of ${scoredCards[0].card.card_id} (score: ${scoredCards[0].score} vs ${scoredCards[i].score})`,
-              });
-            }
-          }
-        }
-      }
+      const sampleKept = cardsToKeep.slice(0, 20).map(card => ({
+        card_id: card.card_id,
+        name: card.name,
+        set_code: card.set_code,
+        number: card.number,
+      }));
 
       return new Response(
         JSON.stringify({
           success: true,
           dryRun: true,
-          stats: { duplicateGroups, cardsToDelete, actualDeleted: 0 },
+          stats: { 
+            duplicateGroups, 
+            cardsToDelete: cardsToDelete.length, 
+            actualDeleted: 0 
+          },
           sampleDeleted,
-          sampleKept: sampleKept.slice(0, 20),
+          sampleKept,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // ACTUAL DELETION - Loop until all duplicates are gone
-    console.log(`🔄 Starting deletion loop - will continue until 0 duplicates remain`);
+    // ACTUAL DELETION
+    console.log(`🔄 Starting deletion of ${cardsToDelete.length} duplicate cards...`);
     
+    if (cardsToDelete.length === 0) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          dryRun: false,
+          stats: {
+            duplicateGroups: 0,
+            cardsToDelete: 0,
+            actualDeleted: 0,
+            remainingDuplicates: 0,
+            iterations: 0,
+          },
+          message: 'No duplicates found to delete!',
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Delete in batches to avoid timeout
+    const DELETE_BATCH_SIZE = 500;
     let totalDeleted = 0;
-    let iterations = 0;
-    const maxIterations = 20; // Safety limit
-    const allErrors: string[] = [];
+    const errors: string[] = [];
+    const idsToDelete = cardsToDelete.map(c => c.id);
 
-    while (iterations < maxIterations) {
-      iterations++;
-      console.log(`\n📍 Iteration ${iterations}:`);
-      
-      const result = await findAndDeleteDuplicates(supabase);
-      
-      if (result.errors.length > 0) {
-        allErrors.push(...result.errors);
+    for (let i = 0; i < idsToDelete.length; i += DELETE_BATCH_SIZE) {
+      const batch = idsToDelete.slice(i, i + DELETE_BATCH_SIZE);
+      console.log(`   Deleting batch ${Math.floor(i / DELETE_BATCH_SIZE) + 1}: ${batch.length} cards...`);
+
+      const { data: deletedData, error: deleteError } = await supabase
+        .from('pokemon_card_attributes')
+        .delete()
+        .in('id', batch)
+        .select('id');
+
+      if (deleteError) {
+        console.error(`   ❌ Delete error:`, deleteError.message);
+        errors.push(deleteError.message);
+      } else {
+        const deletedCount = deletedData?.length || 0;
+        totalDeleted += deletedCount;
+        console.log(`   ✅ Deleted ${deletedCount} cards (total: ${totalDeleted})`);
       }
-      
-      totalDeleted += result.deleted;
-      
-      if (result.found === 0) {
-        console.log(`✅ No more duplicates found! Total deleted: ${totalDeleted}`);
-        break;
-      }
-      
-      if (result.deleted === 0 && result.found > 0) {
-        console.log(`⚠️ Found ${result.found} duplicates but couldn't delete them`);
-        allErrors.push(`Could not delete ${result.found} duplicates`);
-        break;
-      }
-      
-      // Small delay between iterations
-      await new Promise(resolve => setTimeout(resolve, 200));
+
+      // Small delay between batches
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
 
-    if (iterations >= maxIterations) {
-      console.log(`⚠️ Reached max iterations (${maxIterations})`);
-    }
-
-    // Final count check
-    const { data: finalCards } = await supabase
-      .from('pokemon_card_attributes')
-      .select('set_code, number');
-    
-    const finalGroups = new Map<string, number>();
-    for (const card of finalCards || []) {
-      const key = `${card.set_code}|${card.number}`;
-      finalGroups.set(key, (finalGroups.get(key) || 0) + 1);
-    }
-    
-    let remainingDuplicates = 0;
-    for (const count of finalGroups.values()) {
-      if (count > 1) remainingDuplicates += count - 1;
-    }
+    // Verify final state
+    const finalCards = await fetchAllCards(supabase);
+    const { cardsToDelete: remainingToDelete } = await findDuplicates(finalCards);
 
     console.log(`\n🎉 CLEANUP COMPLETE`);
     console.log(`   Total deleted: ${totalDeleted}`);
-    console.log(`   Iterations: ${iterations}`);
-    console.log(`   Remaining duplicates: ${remainingDuplicates}`);
+    console.log(`   Remaining duplicates: ${remainingToDelete.length}`);
 
     return new Response(
       JSON.stringify({
         success: true,
         dryRun: false,
         stats: {
-          duplicateGroups: 0,
-          cardsToDelete: 0,
+          duplicateGroups,
+          cardsToDelete: cardsToDelete.length,
           actualDeleted: totalDeleted,
-          remainingDuplicates,
-          iterations,
+          remainingDuplicates: remainingToDelete.length,
+          iterations: 1,
         },
-        errors: allErrors.length > 0 ? allErrors : undefined,
-        message: remainingDuplicates === 0 
+        errors: errors.length > 0 ? errors : undefined,
+        message: remainingToDelete.length === 0 
           ? `Successfully removed all ${totalDeleted} duplicate cards!`
-          : `Removed ${totalDeleted} cards, but ${remainingDuplicates} duplicates remain`,
+          : `Removed ${totalDeleted} cards, but ${remainingToDelete.length} duplicates remain`,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
