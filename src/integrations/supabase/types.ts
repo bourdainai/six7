@@ -1313,14 +1313,18 @@ export type Database = {
           address_validated: boolean | null
           address_validation_details: Json | null
           buyer_id: string
+          buyer_transaction_fee: number | null
           carrier: string | null
           created_at: string
           currency: string
           delivered_at: string | null
           id: string
+          item_price: number | null
+          paid_at: string | null
           platform_fee: number
           seller_amount: number
           seller_id: string
+          seller_transaction_fee: number | null
           shipped_at: string | null
           shipping_address: Json
           shipping_cost: number | null
@@ -1334,14 +1338,18 @@ export type Database = {
           address_validated?: boolean | null
           address_validation_details?: Json | null
           buyer_id: string
+          buyer_transaction_fee?: number | null
           carrier?: string | null
           created_at?: string
           currency?: string
           delivered_at?: string | null
           id?: string
+          item_price?: number | null
+          paid_at?: string | null
           platform_fee: number
           seller_amount: number
           seller_id: string
+          seller_transaction_fee?: number | null
           shipped_at?: string | null
           shipping_address: Json
           shipping_cost?: number | null
@@ -1355,14 +1363,18 @@ export type Database = {
           address_validated?: boolean | null
           address_validation_details?: Json | null
           buyer_id?: string
+          buyer_transaction_fee?: number | null
           carrier?: string | null
           created_at?: string
           currency?: string
           delivered_at?: string | null
           id?: string
+          item_price?: number | null
+          paid_at?: string | null
           platform_fee?: number
           seller_amount?: number
           seller_id?: string
+          seller_transaction_fee?: number | null
           shipped_at?: string | null
           shipping_address?: Json
           shipping_cost?: number | null

@@ -372,6 +372,8 @@ const Browse = () => {
                 color: "",
                 material: "",
                 setCode: "",
+                setName: "",
+                character: "",
                 rarity: "",
                 tradeEnabled: "",
                 freeShipping: "",
