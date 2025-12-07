@@ -1546,6 +1546,7 @@ export type Database = {
           name_en: string | null
           number: string | null
           popularity_score: number | null
+          printed_number: string | null
           printed_total: number | null
           rarity: string | null
           search_number: string | null
@@ -1577,6 +1578,7 @@ export type Database = {
           name_en?: string | null
           number?: string | null
           popularity_score?: number | null
+          printed_number?: string | null
           printed_total?: number | null
           rarity?: string | null
           search_number?: string | null
@@ -1608,6 +1610,7 @@ export type Database = {
           name_en?: string | null
           number?: string | null
           popularity_score?: number | null
+          printed_number?: string | null
           printed_total?: number | null
           rarity?: string | null
           search_number?: string | null
