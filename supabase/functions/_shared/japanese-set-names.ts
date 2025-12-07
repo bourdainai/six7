@@ -4,7 +4,36 @@
  */
 
 export const JAPANESE_SET_ENGLISH_NAMES: Record<string, string> = {
-  // Scarlet & Violet Era
+  // ===== CLASSIC ERA (1996-2001) =====
+  // Pocket Monsters Card Game (PMCG) - Original Japanese sets
+  'PMCG1': 'Expansion Pack (Base Set)',
+  'PMCG2': 'Pokemon Jungle',
+  'PMCG3': 'Mystery of the Fossils',
+  'PMCG4': 'Team Rocket',
+  'PMCG5': 'Leaders Stadium',
+  'PMCG6': 'Challenge from the Darkness',
+  
+  // Neo Series
+  'neo1': 'Neo Genesis',
+  'neo2': 'Neo Discovery',
+  'neo3': 'Neo Revelation',
+  'neo4': 'Neo Destiny',
+  
+  // VS Series
+  'VS1': 'Pokemon Card VS',
+  'VS2': 'Pokemon Card e-web',
+  
+  // e-Card Series
+  'e1': 'Expedition Base Set',
+  'e2': 'Aquapolis',
+  'e3': 'Skyridge',
+  
+  // ADV Series (Ruby & Sapphire era Japan)
+  'ADV1': 'ADV Expansion Pack',
+  'ADV2': 'Desert Expansion',
+  'ADV3': 'Miracle of the Desert',
+  
+  // ===== Scarlet & Violet Era =====
   'sv8a': 'Terastal Fest ex',
   'sv8': 'Super Electric Breaker',
   'sv7a': 'Stellar Miracle',

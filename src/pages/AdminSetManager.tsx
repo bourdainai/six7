@@ -222,15 +222,17 @@ export default function AdminSetManager() {
   };
 
   const handleImportSet = async (setId: string) => {
-    const setName =
-      sets?.find((s) => s.setId === setId)?.setName || setId;
+    // Find the set in filteredSets to get language info
+    const setInfo = filteredSets?.find((s) => s.setId === setId);
+    const setName = setInfo?.setName || setId;
+    const language = (setInfo as any)?.language || 'en';
 
     // Reset activity tracker
     resetActivity();
 
     // Use queue system for consistency (even for single set)
     setShowProgressModal(true);
-    await importQueue.startImport([{ id: setId, name: setName }]);
+    await importQueue.startImport([{ id: setId, name: setName, language }]);
 
     toast({
       title: "Import complete",
@@ -287,8 +289,8 @@ export default function AdminSetManager() {
 
     const setIds = Array.from(selectedSets);
     const setsToImport = setIds.map((id) => {
-      const set = sets?.find((s) => s.setId === id);
-      return { id, name: set?.setName || id };
+      const set = filteredSets?.find((s) => s.setId === id);
+      return { id, name: set?.setName || id, language: (set as any)?.language || 'en' };
     });
 
     const confirmed = window.confirm(

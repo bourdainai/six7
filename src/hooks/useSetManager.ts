@@ -20,6 +20,21 @@ export interface GitHubSet {
 
 // Japanese set name mappings (loaded from static file)
 const JAPANESE_SET_ENGLISH_NAMES: Record<string, string> = {
+  // Classic Era (1996-2001)
+  'PMCG1': 'Expansion Pack (Base Set)',
+  'PMCG2': 'Pokemon Jungle',
+  'PMCG3': 'Mystery of the Fossils',
+  'PMCG4': 'Team Rocket',
+  'PMCG5': 'Leaders Stadium',
+  'PMCG6': 'Challenge from the Darkness',
+  // Neo Series
+  'neo1': 'Neo Genesis',
+  'neo2': 'Neo Discovery',
+  'neo3': 'Neo Revelation',
+  'neo4': 'Neo Destiny',
+  // VS Series
+  'VS1': 'Pokemon Card VS',
+  'VS2': 'Pokemon Card e-web',
   // Scarlet & Violet Era
   'sv8a': 'Terastal Fest ex',
   'sv7a': 'Stellar Miracle',
@@ -354,13 +369,23 @@ export function useSetCoverage() {
 
 export function useImportSet() {
   return useMutation({
-    mutationFn: async ({ setId, setName }: { setId: string; setName: string }) => {
-      const { data, error } = await supabase.functions.invoke("import-github-pokemon-data", {
-        body: { setIds: [setId] },
-      });
-
-      if (error) throw error;
-      return data;
+    mutationFn: async ({ setId, setName, language = 'en' }: { setId: string; setName: string; language?: 'en' | 'ja' }) => {
+      // Use different import function based on language
+      if (language === 'ja') {
+        // Japanese sets use TCGdex API
+        const { data, error } = await supabase.functions.invoke("import-tcgdex-set", {
+          body: { setCode: setId, language: 'ja' },
+        });
+        if (error) throw error;
+        return data;
+      } else {
+        // English sets use GitHub
+        const { data, error } = await supabase.functions.invoke("import-github-pokemon-data", {
+          body: { setIds: [setId] },
+        });
+        if (error) throw error;
+        return data;
+      }
     },
   });
 }
@@ -485,10 +510,10 @@ export function useImportQueue() {
     isComplete: false,
     currentSetStats: null,
   });
-  const [queue, setQueue] = useState<Array<{ id: string; name: string }>>([]);
+  const [queue, setQueue] = useState<Array<{ id: string; name: string; language?: 'en' | 'ja' }>>([]);
   const shouldStopRef = useRef(false);
 
-  const startImport = useCallback(async (sets: Array<{ id: string; name: string }>) => {
+  const startImport = useCallback(async (sets: Array<{ id: string; name: string; language?: 'en' | 'ja' }>) => {
     if (sets.length === 0) return;
 
     console.log(`🚀 Starting import of ${sets.length} set(s)`);
@@ -540,12 +565,18 @@ export function useImportQueue() {
 
       try {
         // Call Edge Function for this set - wait for full completion
-        console.log(`   Calling Edge Function...`);
+        // Use different function based on language
+        const isJapanese = set.language === 'ja';
+        console.log(`   Calling Edge Function (${isJapanese ? 'Japanese/TCGdex' : 'English/GitHub'})...`);
         const startTime = Date.now();
         
-        const { data, error } = await supabase.functions.invoke("import-github-pokemon-data", {
-          body: { setIds: [set.id], batchSize: 25 },
-        });
+        const { data, error } = isJapanese
+          ? await supabase.functions.invoke("import-tcgdex-set", {
+              body: { setCode: set.id, language: 'ja' },
+            })
+          : await supabase.functions.invoke("import-github-pokemon-data", {
+              body: { setIds: [set.id], batchSize: 25 },
+            });
 
         const duration = Date.now() - startTime;
         console.log(`   Edge Function returned in ${duration}ms`);
@@ -679,15 +710,20 @@ export function useImportQueue() {
         setProgress((prev) => ({ ...prev, currentSet: set }));
         
         try {
-          const { data, error } = await supabase.functions.invoke("import-github-pokemon-data", {
-            body: { setIds: [set.id], batchSize: 25 },
-          });
+          const isJapanese = set.language === 'ja';
+          const { data, error } = isJapanese
+            ? await supabase.functions.invoke("import-tcgdex-set", {
+                body: { setCode: set.id, language: 'ja' },
+              })
+            : await supabase.functions.invoke("import-github-pokemon-data", {
+                body: { setIds: [set.id], batchSize: 25 },
+              });
 
           if (!error) {
             setProgress((prev) => ({
               ...prev,
               completed: prev.completed + 1,
-              totalCardsImported: prev.totalCardsImported + (data?.stats?.totalImported || 0),
+              totalCardsImported: prev.totalCardsImported + (data?.stats?.totalImported || data?.cardsImported || 0),
             }));
           }
           
