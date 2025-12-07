@@ -196,7 +196,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.cleanup-duplicates]
-verify_jwt = false
+verify_jwt = true
 
 [functions.wallet-transfer]
 verify_jwt = true

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireAdmin, handleCORS, createErrorResponse } from '../_shared/admin-middleware.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -126,8 +127,18 @@ function findDuplicates(allCards: Card[]): {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return handleCORS();
+  }
+
+  // Require admin authentication for this destructive operation
+  try {
+    const adminUser = await requireAdmin(req);
+    console.log(`🔐 Admin access granted for user: ${adminUser.email || adminUser.id}`);
+  } catch (error) {
+    console.error('❌ Admin authentication failed:', error);
+    return createErrorResponse(error as Error);
   }
 
   try {
