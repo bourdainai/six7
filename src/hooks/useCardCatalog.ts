@@ -29,6 +29,7 @@ export interface CardCatalogCard {
   set_code: string;
   number: string;
   display_number: string | null;
+  printed_number: string | null;
   rarity: string | null;
   artist: string | null;
   types: string[] | null;
@@ -81,7 +82,8 @@ export function useCardCatalog({ filters, page, pageSize = 50 }: UseCardCatalogO
       }
 
       if (filters.search) {
-        query = query.or(`name.ilike.%${filters.search}%,card_id.ilike.%${filters.search}%,number.eq.${filters.search}`);
+        // Search by name, card_id, number, or printed_number (e.g., "125/094")
+        query = query.or(`name.ilike.%${filters.search}%,card_id.ilike.%${filters.search}%,number.ilike.%${filters.search}%,printed_number.ilike.%${filters.search}%`);
       }
 
       if (filters.syncSource) {

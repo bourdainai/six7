@@ -144,12 +144,19 @@ serve(async (req) => {
             const hasPricing = !!(card.tcgplayer?.prices || card.cardmarket?.prices);
             const hasMetadata = !!(card.hp || card.types?.length || card.abilities?.length || card.attacks?.length);
 
+            // Generate the printed number as it appears on the card (e.g., "125/094")
+            const printedNumber = set.printedTotal 
+              ? `${card.number}/${String(set.printedTotal).padStart(3, '0')}`
+              : card.number;
+
             return {
               card_id: `github_${card.id}`,
               name: card.name,
               set_name: set.name,
               set_code: set.id,
               number: card.number,
+              printed_number: printedNumber,
+              display_number: printedNumber, // Also update display_number for consistency
               rarity: card.rarity || null,
               types: card.types || null,
               supertype: card.supertype || null,

@@ -113,12 +113,20 @@ function transformCard(card: any, language: string, setCode: string, setName: st
   const localId = card.localId || card.id || 'unknown';
   const imageUrl = card.image || `https://assets.tcgdex.net/${language}/${setCode}/${localId}`;
   
+  // Generate printed_number as it appears on the card (e.g., "125/094")
+  const printedTotal = card.set?.cardCount?.official || card.set?.cardCount?.total;
+  const printedNumber = printedTotal 
+    ? `${localId}/${String(printedTotal).padStart(3, '0')}`
+    : localId;
+  
   return {
     card_id: `tcgdex_${language}_${cardId}`,
     name: card.name || 'Unknown',
     set_name: setName,
     set_code: setCode,
     number: localId,
+    printed_number: printedNumber,
+    display_number: printedNumber,
     rarity: card.rarity || null,
     types: card.types || null,
     supertype: card.category || null,

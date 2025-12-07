@@ -221,6 +221,12 @@ serve(async (req) => {
             // Get English name for non-English cards using dexId
             const englishName = language !== 'en' ? getEnglishName(card.dexId) : null;
             
+            // Generate printed_number as it appears on the card (e.g., "125/094")
+            const printedTotal = card.set.cardCount?.official || card.set.cardCount?.total;
+            const printedNumber = printedTotal 
+              ? `${card.localId}/${String(printedTotal).padStart(3, '0')}`
+              : card.localId;
+
             return {
               card_id: `tcgdex_github_${language}_${card.id}`,
               name: card.name,
@@ -228,7 +234,8 @@ serve(async (req) => {
               set_name: card.set.name,
               set_code: setId,
               number: card.localId,
-              display_number: card.localId, // TCGdex uses localId as the display number
+              printed_number: printedNumber,
+              display_number: printedNumber,
               search_number: card.localId.replace(/\s/g, '').toLowerCase(),
               rarity: card.rarity || null,
               types: card.types || null,
@@ -240,7 +247,7 @@ serve(async (req) => {
                 large: imageUrl,
                 tcgdex_github: imageUrl
               },
-              printed_total: card.set.cardCount?.official || card.set.cardCount?.total || null,
+              printed_total: printedTotal || null,
               sync_source: 'tcgdex_github',
               synced_at: new Date().toISOString(),
               metadata: {

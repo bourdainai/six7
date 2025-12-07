@@ -104,7 +104,7 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
       let error;
 
       if (hasSlash) {
-        // Full number search with slash: "167/190"
+        // Full number search with slash: "167/190" or "125/094"
         const normalizedInput = trimmedQuery.replace(/\s/g, "");
         const [numPart, totalPart] = normalizedInput.split('/');
 
@@ -112,7 +112,31 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
 
         const queries = [];
 
-        // Search display_number with full format (e.g., "167/190")
+        // BEST: Search printed_number directly (e.g., "125/094")
+        queries.push(
+          supabase
+            .from("pokemon_card_attributes")
+            .select("*")
+            .eq("printed_number", normalizedInput)
+            .limit(12)
+        );
+
+        // Also try with padded total (e.g., "125/094" from "125/94")
+        if (numPart && totalPart) {
+          const paddedTotal = totalPart.padStart(3, '0');
+          const paddedFormat = `${numPart}/${paddedTotal}`;
+          if (paddedFormat !== normalizedInput) {
+            queries.push(
+              supabase
+                .from("pokemon_card_attributes")
+                .select("*")
+                .eq("printed_number", paddedFormat)
+                .limit(12)
+            );
+          }
+        }
+
+        // Fallback: Search display_number with full format
         queries.push(
           supabase
             .from("pokemon_card_attributes")
@@ -130,7 +154,7 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
             supabase
               .from("pokemon_card_attributes")
               .select("*")
-              .eq("display_number", numPart)
+              .eq("number", numPart)
               .eq("printed_total", totalNum)
               .limit(12)
           );
@@ -141,18 +165,8 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
             supabase
               .from("pokemon_card_attributes")
               .select("*")
-              .eq("display_number", paddedNumber)
+              .eq("number", paddedNumber)
               .eq("printed_total", totalNum)
-              .limit(12)
-          );
-
-          // Also try the full padded format
-          const paddedFull = paddedNumber + '/' + totalPart;
-          queries.push(
-            supabase
-              .from("pokemon_card_attributes")
-              .select("*")
-              .eq("display_number", paddedFull)
               .limit(12)
           );
         }
@@ -172,15 +186,31 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
         dbCards = uniqueCards.slice(0, 12);
         error = results.find(r => r.error)?.error;
       } else if (/^\d+$/.test(trimmedQuery)) {
-        // Partial number search: "88"
-        const result = await supabase
-          .from("pokemon_card_attributes")
-          .select("*")
-          .eq("number", trimmedQuery)
-          .limit(12);
-
-        dbCards = result.data;
-        error = result.error;
+        // Partial number search: "88" or "125"
+        // Search by number field and also check if it appears in printed_number
+        const queries = [
+          supabase
+            .from("pokemon_card_attributes")
+            .select("*")
+            .eq("number", trimmedQuery)
+            .limit(12),
+          supabase
+            .from("pokemon_card_attributes")
+            .select("*")
+            .ilike("printed_number", `${trimmedQuery}/%`)
+            .limit(12)
+        ];
+        
+        const results = await Promise.all(queries);
+        const allCards = results.flatMap(r => r.data || []);
+        
+        // Remove duplicates by card_id
+        const uniqueCards = Array.from(
+          new Map(allCards.map(card => [card.card_id, card])).values()
+        );
+        
+        dbCards = uniqueCards.slice(0, 12);
+        error = results.find(r => r.error)?.error;
       } else {
         // Name search globally
         const result = await supabase

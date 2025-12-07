@@ -76,10 +76,15 @@ serve(async (req) => {
         .limit(pageSize);
 
       if (slashMatch) {
-        // Case: "179/131" -> Search by number
+        // Case: "179/131" or "125/094" -> Search by printed_number first, then fallback to number
         const cardNumber = slashMatch[1];
-        dbQuery = dbQuery.eq('number', cardNumber);
-        console.log(`Local search: number="${cardNumber}"`);
+        const totalPart = slashMatch[2];
+        const paddedTotal = totalPart.padStart(3, '0');
+        const fullPrintedNumber = `${cardNumber}/${paddedTotal}`;
+        
+        // Search by printed_number OR number for broader matching
+        dbQuery = dbQuery.or(`printed_number.eq.${fullPrintedNumber},printed_number.eq.${trimmedQuery},number.eq.${cardNumber}`);
+        console.log(`Local search: printed_number="${fullPrintedNumber}" or number="${cardNumber}"`);
       } else if (setCodeMatch) {
         // Case: "SWSH01 179" -> Search by set_code + number
         const [, setCode, cardNumber] = setCodeMatch;

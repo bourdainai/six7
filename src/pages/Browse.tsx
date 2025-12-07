@@ -131,7 +131,8 @@ const Browse = () => {
         }
         if (filters.search) {
           logger.debug("🔍 [Browse] Applying search filter:", filters.search);
-          query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%,brand.ilike.%${filters.search}%`);
+          // Include card_number in search to find cards by their printed number (e.g., "125/094")
+          query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%,brand.ilike.%${filters.search}%,card_number.ilike.%${filters.search}%`);
         }
 
         // Server-side sorting

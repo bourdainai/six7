@@ -241,13 +241,20 @@ serve(async (req) => {
                 // Insert new card
                 const imageUrl = card.image || `https://assets.tcgdex.net/${language}/${card.set.id}/${card.localId}`;
                 
+                // Generate printed_number as it appears on the card (e.g., "125/094")
+                const printedTotal = card.set.cardCount?.official || card.set.cardCount?.total;
+                const printedNumber = printedTotal 
+                  ? `${card.localId}/${String(printedTotal).padStart(3, '0')}`
+                  : card.localId;
+                
                 const newCard = {
                   card_id: cardId,
                   name: card.name,
                   set_name: card.set.name || setData.name,
                   set_code: setId,
                   number: card.localId,
-                  display_number: card.localId,
+                  printed_number: printedNumber,
+                  display_number: printedNumber,
                   search_number: card.localId?.replace(/\s/g, '').toLowerCase(),
                   rarity: card.rarity || null,
                   types: card.types || null,
@@ -260,7 +267,7 @@ serve(async (req) => {
                   },
                   tcgplayer_prices: tcgplayerPrices,
                   cardmarket_prices: cardmarketPrices,
-                  printed_total: card.set.cardCount?.official || card.set.cardCount?.total || null,
+                  printed_total: printedTotal || null,
                   sync_source: 'tcgdex',
                   synced_at: new Date().toISOString(),
                   last_price_update: hasPricing ? new Date().toISOString() : null,

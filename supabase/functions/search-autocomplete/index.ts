@@ -94,6 +94,26 @@ Deno.serve(async (req) => {
       })));
     }
 
+    // If query looks like a card number (contains / or is just digits), search pokemon_card_attributes
+    const isCardNumberSearch = query.includes('/') || /^\d+$/.test(query.trim());
+    if (isCardNumberSearch) {
+      const { data: cards } = await supabase
+        .from('pokemon_card_attributes')
+        .select('name, printed_number, set_name')
+        .or(`printed_number.ilike.%${query}%,number.ilike.%${query}%`)
+        .order('popularity_score', { ascending: false, nullsFirst: false })
+        .limit(5);
+
+      if (cards) {
+        suggestions.push(...cards.map(card => ({
+          type: 'card',
+          text: `${card.name} (${card.printed_number || ''})`,
+          subtext: card.set_name,
+          icon: '🃏'
+        })));
+      }
+    }
+
     // Remove duplicates and limit
     const uniqueSuggestions = Array.from(
       new Map(suggestions.map(s => [s.text.toLowerCase(), s])).values()
