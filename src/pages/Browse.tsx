@@ -29,6 +29,8 @@ const Browse = () => {
     color: "",
     material: "",
     setCode: "",
+    setName: "",
+    character: "",
     rarity: "",
     tradeEnabled: "",
     freeShipping: "",
@@ -112,6 +114,15 @@ const Browse = () => {
         }
         if (filters.setCode) {
           query = query.ilike("set_code", `%${filters.setCode}%`);
+        }
+        if (filters.character) {
+          // Search for character/Pokemon name in title or description
+          logger.debug("🔍 [Browse] Applying character filter:", filters.character);
+          query = query.or(`title.ilike.%${filters.character}%,description.ilike.%${filters.character}%`);
+        }
+        if (filters.rarity) {
+          logger.debug("🔍 [Browse] Applying rarity filter:", filters.rarity);
+          query = query.ilike("rarity", `%${filters.rarity}%`);
         }
         if (filters.tradeEnabled) {
           query = query.eq("trade_enabled", filters.tradeEnabled === "true");

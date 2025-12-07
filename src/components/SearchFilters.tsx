@@ -19,6 +19,7 @@ import {
 } from "./ui/sheet";
 import type { ListingSummary } from "@/types/listings";
 import { logger } from "@/lib/logger";
+import { useQuery } from "@tanstack/react-query";
 
 interface SearchFiltersProps {
   onFilterChange: (filters: FilterState) => void;
@@ -40,6 +41,8 @@ export interface FilterState {
   color: string;
   material: string;
   setCode: string;
+  setName: string;
+  character: string;
   rarity: string;
   tradeEnabled: string;
   freeShipping: string;
@@ -117,6 +120,36 @@ export const SearchFilters = ({
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { isMobile } = useMobileDetect();
+
+  // Fetch available sets from pokemon_card_attributes for the Set filter
+  const { data: availableSets = [] } = useQuery({
+    queryKey: ["filter-sets"],
+    queryFn: async () => {
+      // Get distinct set names from the card catalog
+      const { data, error } = await supabase
+        .from("pokemon_card_attributes")
+        .select("set_code, set_name")
+        .order("set_name");
+      
+      if (error) {
+        console.error("Error fetching sets:", error);
+        return [];
+      }
+
+      // Get unique sets
+      const setsMap = new Map<string, string>();
+      data?.forEach((card) => {
+        if (card.set_code && card.set_name && !setsMap.has(card.set_code)) {
+          setsMap.set(card.set_code, card.set_name);
+        }
+      });
+
+      return Array.from(setsMap.entries())
+        .map(([code, name]) => ({ code, name }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    },
+    staleTime: 300000, // Cache for 5 minutes
+  });
 
   // Fetch autocomplete suggestions
   useEffect(() => {
@@ -217,6 +250,8 @@ export const SearchFilters = ({
       color: "",
       material: "",
       setCode: "",
+      setName: "",
+      character: "",
       rarity: "",
       tradeEnabled: "",
       freeShipping: "",
@@ -352,35 +387,61 @@ export const SearchFilters = ({
                     )}
                   </div>
 
-                  {/* Trading Card Specific Filters */}
-                  {localFilters.category === "Trading Cards" && (
-                    <div className="space-y-4 pb-4 border-b border-border">
-                      <h3 className="text-sm font-semibold text-primary">Card Details</h3>
+                  {/* Pokemon Card Filters - Always visible for this marketplace */}
+                  <div className="space-y-4 pb-4 border-b border-border">
+                    <h3 className="text-sm font-semibold text-primary">Pokemon Card Filters</h3>
 
-                      <div className="space-y-2">
-                        <Label className="text-sm">Rarity</Label>
-                        <Select
-                          value={localFilters.rarity || "all"}
-                          onValueChange={(v) => updateFilter("rarity", v === "all" ? "" : v)}
-                        >
-                          <SelectTrigger><SelectValue placeholder="Any Rarity" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">Any Rarity</SelectItem>
-                            {RARITIES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label className="text-sm">Set Code</Label>
-                        <Input
-                          placeholder="e.g., SV04, BASE, etc."
-                          value={localFilters.setCode}
-                          onChange={(e) => updateFilter("setCode", e.target.value)}
-                        />
-                      </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm">Set</Label>
+                      <Select
+                        value={localFilters.setName || "all"}
+                        onValueChange={(v) => {
+                          if (v === "all") {
+                            updateFilter("setName", "");
+                            updateFilter("setCode", "");
+                          } else {
+                            // Find the set code for the selected set name
+                            const selectedSet = availableSets.find(s => s.name === v);
+                            updateFilter("setName", v);
+                            updateFilter("setCode", selectedSet?.code || "");
+                          }
+                        }}
+                      >
+                        <SelectTrigger><SelectValue placeholder="All Sets" /></SelectTrigger>
+                        <SelectContent className="max-h-[300px]">
+                          <SelectItem value="all">All Sets</SelectItem>
+                          {availableSets.map(set => (
+                            <SelectItem key={set.code} value={set.name}>
+                              {set.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
-                  )}
+
+                    <div className="space-y-2">
+                      <Label className="text-sm">Character / Pokemon</Label>
+                      <Input
+                        placeholder="e.g., Pikachu, Charizard, Mewtwo"
+                        value={localFilters.character}
+                        onChange={(e) => updateFilter("character", e.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm">Rarity</Label>
+                      <Select
+                        value={localFilters.rarity || "all"}
+                        onValueChange={(v) => updateFilter("rarity", v === "all" ? "" : v)}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Any Rarity" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Any Rarity</SelectItem>
+                          {RARITIES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
 
                   {/* Price & Condition */}
                   <div className="space-y-4 pb-4 border-b border-border">
