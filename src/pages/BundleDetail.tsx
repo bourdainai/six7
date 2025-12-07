@@ -12,6 +12,7 @@ import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 import { useSavedListings } from "@/hooks/useSavedListings";
+import { useSavedBundles } from "@/hooks/useSavedBundles";
 import { ListingCard } from "@/components/ListingCard";
 
 export default function BundleDetail() {
@@ -19,7 +20,8 @@ export default function BundleDetail() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
-  const { isSaved, toggleSave } = useSavedListings();
+  const { isSaved: isListingSaved, toggleSave: toggleListingSave } = useSavedListings();
+  const { isSaved: isBundleSaved, toggleSave: toggleBundleSave } = useSavedBundles();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   const { data: bundle, isLoading } = useQuery({
@@ -127,8 +129,8 @@ export default function BundleDetail() {
   const savings = originalPrice - Number(bundle.total_price);
   const savingsPercentage = originalPrice > 0 ? ((savings / originalPrice) * 100).toFixed(0) : 0;
 
-  // Check if bundle is saved (would need bundle favorites table)
-  const bundleSaved = false; // TODO: Implement bundle favorites
+  // Check if bundle is saved using the new useSavedBundles hook
+  const bundleSaved = isBundleSaved(bundle?.id || "");
 
   return (
     <PageLayout>
@@ -274,7 +276,7 @@ export default function BundleDetail() {
               <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  onClick={() => toggleSave(bundle.id)}
+                  onClick={() => toggleBundleSave(bundle.id)}
                   className="flex-1"
                 >
                   <Heart
