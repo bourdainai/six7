@@ -4,7 +4,7 @@ import {
   Shield, Heart, Bell, X,
   User, LogOut, ChevronRight,
   ShoppingBag, Wallet, RefreshCw, BarChart3, Star, Home,
-  Package, TrendingUp
+  Package, TrendingUp, Tag, Search, PlusCircle
 } from "lucide-react";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
@@ -194,14 +194,35 @@ export const MobileMenu = ({
                   )}
                 </div>
 
-                {/* Home Link */}
-                <div className="px-4">
+                {/* Quick Links */}
+                <div className="px-4 space-y-1">
                   <NavItem
                     to="/"
                     icon={Home}
                     label="Home"
                     onClick={handleNavClick}
                     index={0}
+                  />
+                  <NavItem
+                    to="/browse"
+                    icon={Search}
+                    label="Browse"
+                    onClick={handleNavClick}
+                    index={1}
+                  />
+                  <NavItem
+                    to="/sell"
+                    icon={PlusCircle}
+                    label="Sell"
+                    onClick={handleNavClick}
+                    index={2}
+                  />
+                  <NavItem
+                    to="/pricing"
+                    icon={Tag}
+                    label="Pricing & Fees"
+                    onClick={handleNavClick}
+                    index={3}
                   />
                 </div>
 

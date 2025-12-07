@@ -184,6 +184,7 @@ serve(async (req) => {
           buyerId: user.id,
           sellerId: listing.seller_id,
           itemPrice: itemPrice,
+          currency: listing.currency || 'GBP',
           shippingCost: shippingCost,
           wholesaleShippingCost: 0,
         }),
@@ -196,20 +197,26 @@ serve(async (req) => {
 
     const fees = await feesResponse.json();
 
-    // Total amount includes item price, buyer protection fee, and shipping
+    // Total amount includes item price, buyer transaction fee, and shipping
+    // Buyer pays: item + buyer fee + shipping
     const totalAmount = fees.totalBuyerPays;
+    
+    // Extract fee details for recording
+    const buyerTransactionFee = fees.buyerTransactionFee || fees.buyerProtectionFee;
+    const sellerTransactionFee = fees.sellerTransactionFee || fees.sellerCommissionFee;
 
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
       apiVersion: '2023-10-16',
     });
 
-    // Platform fee is buyer protection fee + seller commission (if applicable)
-    const platformFee = Math.round((fees.buyerProtectionFee + fees.sellerCommissionFee) * 100); // in pence
-    const sellerAmount = Math.round(fees.totalSellerReceives * 100); // in pence
+    // Platform fee = buyer transaction fee + seller transaction fee
+    // This is the total 6Seven takes (application_fee_amount in Stripe)
+    const platformFee = Math.round((buyerTransactionFee + sellerTransactionFee) * 100); // in pence/cents
+    const sellerAmount = Math.round(fees.totalSellerReceives * 100); // in pence/cents
 
-    // Create payment intent
+    // Create payment intent with detailed fee metadata
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(totalAmount * 100), // in pence
+      amount: Math.round(totalAmount * 100), // in pence/cents
       currency: listing.currency.toLowerCase(),
       application_fee_amount: platformFee,
       transfer_data: {
@@ -219,7 +226,11 @@ serve(async (req) => {
         listingId: listing.id,
         buyerId: user.id,
         sellerId: listing.seller_id,
+        itemPrice: itemPrice.toString(),
         shippingCost: shippingCost.toString(),
+        buyerTransactionFee: buyerTransactionFee.toString(),
+        sellerTransactionFee: sellerTransactionFee.toString(),
+        platformFee: (platformFee / 100).toString(),
         offerId: offerId || '',
         buyerTier: fees.buyerTier,
         sellerTier: fees.sellerTier,
@@ -230,14 +241,17 @@ serve(async (req) => {
       },
     });
 
-    // Create order record with shipping info
+    // Create order record with shipping info and detailed fee breakdown
     const { data: order, error: orderError } = await supabaseClient
       .from('orders')
       .insert({
         buyer_id: user.id,
         seller_id: listing.seller_id,
         total_amount: totalAmount,
+        item_price: itemPrice,
         platform_fee: platformFee / 100,
+        buyer_transaction_fee: buyerTransactionFee,
+        seller_transaction_fee: sellerTransactionFee,
         seller_amount: sellerAmount / 100,
         currency: listing.currency,
         status: 'pending',

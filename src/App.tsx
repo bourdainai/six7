@@ -56,6 +56,7 @@ const APIKeys = lazy(() => import("./pages/Settings/APIKeys"));
 const MCPDocs = lazy(() => import("./pages/MCPDocs"));
 const Changelog = lazy(() => import("./pages/Changelog"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const Pricing = lazy(() => import("./pages/Pricing"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Configure QueryClient with performance optimizations
@@ -105,6 +106,9 @@ const AppRoutes = () => {
       <Route path="/admin/shipping" element={<Suspense fallback={<DashboardSkeleton />}><AdminShipping /></Suspense>} />
       <Route path="/admin/moderation" element={<Suspense fallback={<DashboardSkeleton />}><ModerationDashboard /></Suspense>} />
       <Route path="/admin/fraud" element={<Suspense fallback={<DashboardSkeleton />}><FraudDashboard /></Suspense>} />
+
+      {/* Pricing */}
+      <Route path="/pricing" element={<Suspense fallback={<PageSkeleton />}><Pricing /></Suspense>} />
 
       {/* Legal & Help Pages */}
       <Route path="/terms" element={<Suspense fallback={<PageSkeleton />}><TermsOfService /></Suspense>} />

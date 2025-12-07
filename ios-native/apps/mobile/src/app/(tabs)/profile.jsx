@@ -17,6 +17,7 @@ import {
   TrendingUp,
   ArrowLeftRight,
   User,
+  Tag,
 } from "lucide-react-native";
 import {
   useFonts,
@@ -152,6 +153,9 @@ export default function Profile() {
       case "Settings":
         router.push("/settings");
         break;
+      case "Pricing & Fees":
+        router.push("/pricing");
+        break;
       case "Help Center":
         Alert.alert("Help Center", "Coming soon!");
         break;
@@ -189,6 +193,7 @@ export default function Profile() {
     {
       title: "Support",
       items: [
+        { icon: Tag, label: "Pricing & Fees" },
         { icon: HelpCircle, label: "Help Center" },
         { icon: FileText, label: "Terms & Privacy" },
       ],

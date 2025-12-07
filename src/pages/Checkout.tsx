@@ -237,7 +237,7 @@ const Checkout = () => {
   const itemPrice = calculateItemPrice();
   
   const { data: feeData } = useQuery({
-    queryKey: ["fees", user?.id, listing?.seller_id, itemPrice],
+    queryKey: ["fees", user?.id, listing?.seller_id, itemPrice, listing?.currency],
     queryFn: async () => {
       if (!user?.id || !listing?.seller_id) return null;
       const { data, error } = await supabase.functions.invoke("calculate-fees", {
@@ -245,6 +245,7 @@ const Checkout = () => {
           buyerId: user.id,
           sellerId: listing.seller_id,
           itemPrice: itemPrice,
+          currency: listing.currency || 'GBP',
           shippingCost: shippingCost,
           wholesaleShippingCost: 0,
         },
@@ -255,8 +256,9 @@ const Checkout = () => {
     enabled: !!user?.id && !!listing?.seller_id,
   });
 
-  const buyerProtectionFee = feeData?.buyerProtectionFee || 0;
-  const totalPrice = itemPrice + shippingCost + buyerProtectionFee;
+  // Use new tiered fee structure
+  const buyerTransactionFee = feeData?.buyerTransactionFee || feeData?.buyerProtectionFee || 0;
+  const totalPrice = itemPrice + shippingCost + buyerTransactionFee;
 
   const walletPurchaseMutation = useMutation({
     mutationFn: async () => {
@@ -577,16 +579,16 @@ const Checkout = () => {
                     <span className="text-foreground">£{itemPrice.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Buyer Protection</span>
+                    <span className="text-muted-foreground">
+                      Transaction Fee
+                      {feeData?.buyerFeeBreakdown?.percentageFee > 0 && (
+                        <span className="text-xs ml-1">(40p + 1%)</span>
+                      )}
+                    </span>
                     <span className="text-foreground">
-                      {buyerProtectionFee > 0 ? `£${buyerProtectionFee.toFixed(2)}` : 'FREE'}
+                      £{buyerTransactionFee.toFixed(2)}
                     </span>
                   </div>
-                  {feeData?.buyerTier === 'pro' && buyerProtectionFee === 0 && (
-                    <div className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
-                      ✓ Pro Member Benefit
-                    </div>
-                  )}
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Shipping</span>
                     <span className="text-foreground">
@@ -601,6 +603,9 @@ const Checkout = () => {
                       </span>
                     </div>
                   </div>
+                  <a href="/pricing" target="_blank" className="text-xs text-muted-foreground hover:text-foreground underline">
+                    See how fees work →
+                  </a>
                 </div>
               </CardContent>
             </Card>

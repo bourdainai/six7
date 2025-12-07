@@ -31,6 +31,17 @@ serve(async (req) => {
       case 'payment_intent.succeeded': {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
         
+        // Extract fee metadata for recording
+        const buyerTransactionFee = paymentIntent.metadata?.buyerTransactionFee 
+          ? parseFloat(paymentIntent.metadata.buyerTransactionFee) 
+          : 0;
+        const sellerTransactionFee = paymentIntent.metadata?.sellerTransactionFee 
+          ? parseFloat(paymentIntent.metadata.sellerTransactionFee) 
+          : 0;
+        const platformFeeFromMeta = paymentIntent.metadata?.platformFee 
+          ? parseFloat(paymentIntent.metadata.platformFee) 
+          : 0;
+        
         // Check if this is a wallet deposit FIRST
         if (paymentIntent.metadata?.type === 'wallet_deposit') {
           const depositId = paymentIntent.metadata.deposit_id;
@@ -159,11 +170,23 @@ serve(async (req) => {
           break;
         }
 
-        // Update order status to paid (idempotent)
+        // Update order status to paid and record fees (idempotent)
         if (order.status !== 'paid') {
+          const updateData: Record<string, any> = { 
+            status: 'paid',
+            paid_at: new Date().toISOString(),
+          };
+          
+          // Record fee breakdown if available from metadata
+          if (buyerTransactionFee > 0 || sellerTransactionFee > 0) {
+            updateData.buyer_transaction_fee = buyerTransactionFee;
+            updateData.seller_transaction_fee = sellerTransactionFee;
+            updateData.platform_fee = platformFeeFromMeta || (buyerTransactionFee + sellerTransactionFee);
+          }
+          
           await supabaseAdmin
             .from('orders')
-            .update({ status: 'paid' })
+            .update(updateData)
             .eq('id', payment.order_id)
             .eq('status', 'pending'); // Only update if still pending
         }
