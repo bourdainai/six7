@@ -65,28 +65,46 @@ async function fetchAllCards(supabase: any): Promise<Card[]> {
   return allCards;
 }
 
-// Find duplicates
+// Find duplicates - tries multiple grouping strategies
 function findDuplicates(allCards: Card[]): {
   duplicateGroups: number;
   cardsToDelete: Card[];
   cardsToKeep: Card[];
 } {
   const groups = new Map<string, Card[]>();
+  let skippedNoSetNumber = 0;
+  
   for (const card of allCards) {
-    if (!card.set_code || !card.number) continue;
-    
-    const key = `${card.set_code}|${card.number}`;
-    if (!groups.has(key)) {
-      groups.set(key, []);
+    // Primary: group by set_code + number
+    if (card.set_code && card.number) {
+      const key = `${card.set_code}|${card.number}`;
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+      groups.get(key)!.push(card);
+    } 
+    // Fallback: group by card_id (strip prefixes like github_, tcgdex_)
+    else if (card.card_id) {
+      // Normalize card_id by removing common prefixes
+      const normalizedId = card.card_id
+        .replace(/^(github_|tcgdex_|pokemontcg_)/, '')
+        .toLowerCase();
+      const key = `id:${normalizedId}`;
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+      groups.get(key)!.push(card);
+      skippedNoSetNumber++;
     }
-    groups.get(key)!.push(card);
   }
+
+  console.log(`📊 Cards without set_code/number (using card_id fallback): ${skippedNoSetNumber}`);
 
   const cardsToDelete: Card[] = [];
   const cardsToKeep: Card[] = [];
   let duplicateGroups = 0;
 
-  for (const [_, cards] of groups) {
+  for (const [key, cards] of groups) {
     if (cards.length > 1) {
       duplicateGroups++;
       const scoredCards = cards.map(card => ({ card, score: scoreCard(card) }));
@@ -99,6 +117,10 @@ function findDuplicates(allCards: Card[]): {
       }
     }
   }
+
+  console.log(`📊 Duplicate groups found: ${duplicateGroups}`);
+  console.log(`📊 Cards to delete: ${cardsToDelete.length}`);
+  console.log(`📊 Cards to keep: ${cardsToKeep.length}`);
 
   return { duplicateGroups, cardsToDelete, cardsToKeep };
 }
@@ -205,6 +227,20 @@ serve(async (req) => {
       console.log(`   Batch ${batchNum}/${totalBatches}: Deleting ${batch.length} cards...`);
 
       try {
+        console.log(`   📤 Attempting to delete IDs: ${batch.slice(0, 3).join(', ')}...`);
+        
+        // First verify these IDs exist
+        const { data: existCheck, error: checkError } = await supabase
+          .from('pokemon_card_attributes')
+          .select('id')
+          .in('id', batch.slice(0, 5));
+        
+        if (checkError) {
+          console.error(`   ⚠️ Check error:`, checkError.message);
+        } else {
+          console.log(`   📋 Found ${existCheck?.length || 0} of first 5 IDs in database`);
+        }
+
         const { data: deletedData, error: deleteError } = await supabase
           .from('pokemon_card_attributes')
           .delete()
@@ -213,11 +249,28 @@ serve(async (req) => {
 
         if (deleteError) {
           console.error(`   ❌ Delete error:`, deleteError.message);
-          errors.push(`Batch ${batchNum}: ${deleteError.message}`);
+          console.error(`   ❌ Error code:`, deleteError.code);
+          console.error(`   ❌ Error details:`, deleteError.details);
+          errors.push(`Batch ${batchNum}: ${deleteError.message} (code: ${deleteError.code})`);
         } else {
           const deletedCount = deletedData?.length || 0;
           totalDeleted += deletedCount;
           console.log(`   ✅ Deleted ${deletedCount} cards (total: ${totalDeleted})`);
+          
+          if (deletedCount === 0 && batch.length > 0) {
+            console.warn(`   ⚠️ 0 cards deleted but ${batch.length} were requested - possible RLS issue`);
+            // Try deleting one by one to identify the issue
+            if (batch.length > 0) {
+              const testId = batch[0];
+              const { error: singleDeleteError } = await supabase
+                .from('pokemon_card_attributes')
+                .delete()
+                .eq('id', testId);
+              if (singleDeleteError) {
+                console.error(`   ⚠️ Single delete test failed:`, singleDeleteError.message);
+              }
+            }
+          }
         }
       } catch (err) {
         console.error(`   ❌ Exception:`, err);

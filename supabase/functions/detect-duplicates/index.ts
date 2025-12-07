@@ -84,18 +84,35 @@ serve(async (req) => {
     // Fetch ALL cards (not just first 1000)
     const allCards = await fetchAllCards(supabase);
 
-    // Group by set_code + number
+    // Group by set_code + number (primary) or card_id (fallback)
     const groups = new Map<string, CardData[]>();
+    let skippedNoSetNumber = 0;
     
     for (const card of allCards) {
-      if (!card.set_code || !card.number) continue; // Skip cards without set_code or number
-      
-      const key = `${card.set_code}|${card.number}`;
-      if (!groups.has(key)) {
-        groups.set(key, []);
+      // Primary: group by set_code + number
+      if (card.set_code && card.number) {
+        const key = `${card.set_code}|${card.number}`;
+        if (!groups.has(key)) {
+          groups.set(key, []);
+        }
+        groups.get(key)!.push(card);
+      } 
+      // Fallback: group by card_id (strip prefixes like github_, tcgdex_)
+      else if (card.card_id) {
+        // Normalize card_id by removing common prefixes
+        const normalizedId = card.card_id
+          .replace(/^(github_|tcgdex_|pokemontcg_)/, '')
+          .toLowerCase();
+        const key = `id:${normalizedId}`;
+        if (!groups.has(key)) {
+          groups.set(key, []);
+        }
+        groups.get(key)!.push(card);
+        skippedNoSetNumber++;
       }
-      groups.get(key)!.push(card);
     }
+    
+    console.log(`📊 Cards without set_code/number (using card_id fallback): ${skippedNoSetNumber}`);
 
     // Find duplicates (groups with more than 1 card)
     const duplicateGroups: DuplicateGroup[] = [];
