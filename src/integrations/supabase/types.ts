@@ -1553,6 +1553,7 @@ export type Database = {
           search_vector: unknown
           set_code: string | null
           set_name: string
+          set_name_en: string | null
           subtypes: string[] | null
           supertype: string | null
           sync_source: Database["public"]["Enums"]["sync_source_type"] | null
@@ -1585,6 +1586,7 @@ export type Database = {
           search_vector?: unknown
           set_code?: string | null
           set_name: string
+          set_name_en?: string | null
           subtypes?: string[] | null
           supertype?: string | null
           sync_source?: Database["public"]["Enums"]["sync_source_type"] | null
@@ -1617,6 +1619,7 @@ export type Database = {
           search_vector?: unknown
           set_code?: string | null
           set_name?: string
+          set_name_en?: string | null
           subtypes?: string[] | null
           supertype?: string | null
           sync_source?: Database["public"]["Enums"]["sync_source_type"] | null
