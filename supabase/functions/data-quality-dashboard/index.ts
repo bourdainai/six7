@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireAdmin, createErrorResponse, handleCORS } from "../_shared/admin-middleware.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,10 +9,13 @@ const corsHeaders = {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return handleCORS();
   }
 
   try {
+    // Require admin authentication
+    await requireAdmin(req);
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -191,6 +195,12 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('❌ Report error:', error);
+    
+    // Handle auth errors from requireAdmin
+    if (error instanceof Error && (error.message === 'Unauthorized' || error.message === 'Forbidden')) {
+      return createErrorResponse(error);
+    }
+    
     return new Response(
       JSON.stringify({
         error: error instanceof Error ? error.message : 'Unknown error'
