@@ -109,7 +109,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.fraud-scan-scheduler]
-verify_jwt = false
+verify_jwt = true
 
 [functions.outfit-builder]
 verify_jwt = true
