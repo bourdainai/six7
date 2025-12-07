@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireAdmin, handleCORS, createErrorResponse } from "../_shared/admin-middleware.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -149,11 +150,15 @@ async function findCardMatches(
 }
 
 serve(async (req) => {
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return handleCORS();
   }
 
   try {
+    // Require admin authentication
+    await requireAdmin(req);
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -286,6 +291,12 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('❌ Matching error:', error);
+    
+    // Handle authentication errors
+    if (error instanceof Error && (error.message === 'Unauthorized' || error.message === 'Forbidden')) {
+      return createErrorResponse(error);
+    }
+    
     return new Response(
       JSON.stringify({
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -297,4 +308,3 @@ serve(async (req) => {
     );
   }
 });
-

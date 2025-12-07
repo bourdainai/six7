@@ -4327,6 +4327,20 @@ export type Database = {
       refresh_trade_opportunities: { Args: never; Returns: undefined }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      transfer_funds: {
+        Args: {
+          p_amount: number
+          p_description?: string
+          p_recipient_id: string
+          p_sender_id: string
+        }
+        Returns: {
+          error_message: string
+          recipient_balance_after: number
+          sender_balance_after: number
+          success: boolean
+        }[]
+      }
     }
     Enums: {
       condition_type:
