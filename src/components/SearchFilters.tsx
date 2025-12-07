@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -102,7 +102,7 @@ import { useMobileDetect } from "@/hooks/useMobileDetect";
 
 // ... existing imports ...
 
-export const SearchFilters = ({
+export const SearchFilters = React.memo(({
   onFilterChange,
   activeFilters,
   onSemanticSearch,
@@ -122,21 +122,26 @@ export const SearchFilters = ({
   const { isMobile } = useMobileDetect();
 
   // Fetch available sets from pokemon_card_attributes for the Set filter
+  // Use distinct query for better performance
   const { data: availableSets = [] } = useQuery({
     queryKey: ["filter-sets"],
     queryFn: async () => {
-      // Get distinct set names from the card catalog
+      // Use RPC or raw SQL for distinct query if available, otherwise fetch all and dedupe
+      // For now, limit to recent sets to reduce payload
       const { data, error } = await supabase
         .from("pokemon_card_attributes")
         .select("set_code, set_name")
-        .order("set_name");
+        .not("set_code", "is", null)
+        .not("set_name", "is", null)
+        .order("set_name")
+        .limit(1000); // Limit to reduce payload
       
       if (error) {
         console.error("Error fetching sets:", error);
         return [];
       }
 
-      // Get unique sets
+      // Get unique sets efficiently
       const setsMap = new Map<string, string>();
       data?.forEach((card) => {
         if (card.set_code && card.set_name && !setsMap.has(card.set_code)) {
@@ -148,7 +153,8 @@ export const SearchFilters = ({
         .map(([code, name]) => ({ code, name }))
         .sort((a, b) => a.name.localeCompare(b.name));
     },
-    staleTime: 300000, // Cache for 5 minutes
+    staleTime: 600000, // Cache for 10 minutes - sets don't change frequently
+    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
   });
 
   // Fetch autocomplete suggestions
@@ -680,4 +686,4 @@ export const SearchFilters = ({
       }
     </div >
   );
-};
+});

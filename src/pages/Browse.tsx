@@ -46,26 +46,22 @@ const Browse = () => {
   const [page, setPage] = useState(1);
   const itemsPerPage = 24;
 
+  // Memoize filters to prevent unnecessary query invalidation
+  const filtersKey = useMemo(() => JSON.stringify(filters), [filters]);
+
   const { data: listings, isLoading, error, refetch } = useQuery({
-    queryKey: ["active-listings", page, JSON.stringify(filters), sortBy, marketplace],
-    refetchOnMount: 'always',
-    staleTime: 0,
-    networkMode: 'always',
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
+    queryKey: ["active-listings", page, filtersKey, sortBy, marketplace],
+    staleTime: 30000, // Cache for 30 seconds - listings don't change that frequently
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    refetchOnMount: false, // Use cached data on mount if available
+    refetchOnWindowFocus: false, // Don't refetch on window focus
+    retry: 2, // Reduce retries from 3 to 2
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000), // Max 5s delay
     queryFn: async () => {
       logger.debug("🔍 [Browse] Starting query with filters:", filters);
       logger.debug("🔍 [Browse] Page:", page, "Sort:", sortBy, "Marketplace:", marketplace);
 
       try {
-        // Health check: Verify Supabase connection
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) {
-          logger.error("❌ [Browse] Session error:", sessionError);
-        } else {
-          logger.debug("✅ [Browse] Session valid:", !!session);
-        }
-
         const from = (page - 1) * itemsPerPage;
         const to = from + itemsPerPage - 1;
 
