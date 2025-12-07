@@ -103,7 +103,7 @@ export function DuplicateCleanupModal({
         const result = await cleanupMutation.mutateAsync({ dryRun: false });
         
         if (!result?.success) {
-          throw new Error(result?.error || "Cleanup failed");
+          throw new Error(result?.errors?.[0] || "Cleanup failed");
         }
 
         const deletedThisRound = result.stats.actualDeleted || 0;
