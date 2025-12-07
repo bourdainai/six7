@@ -65,15 +65,35 @@ export function useDatabaseSetCoverage() {
   return useQuery({
     queryKey: ["db-set-coverage"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("pokemon_card_attributes")
-        .select("set_code, sync_source");
+      // CRITICAL: Supabase limits to 1000 rows by default
+      // We need to fetch ALL cards in batches to get accurate counts
+      const BATCH_SIZE = 1000;
+      let allCards: Array<{ set_code: string | null; sync_source: string | null }> = [];
+      let from = 0;
+      let hasMore = true;
 
-      if (error) throw error;
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("pokemon_card_attributes")
+          .select("set_code, sync_source")
+          .range(from, from + BATCH_SIZE - 1);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          allCards = allCards.concat(data);
+          from += BATCH_SIZE;
+          hasMore = data.length === BATCH_SIZE;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      console.log(`[useDatabaseSetCoverage] Fetched ${allCards.length} cards total`);
 
       // Count cards per set
       const coverage: Record<string, number> = {};
-      data?.forEach((card) => {
+      allCards.forEach((card) => {
         if (card.set_code) {
           coverage[card.set_code] = (coverage[card.set_code] || 0) + 1;
         }
@@ -81,6 +101,8 @@ export function useDatabaseSetCoverage() {
 
       return coverage;
     },
+    staleTime: 60000, // Cache for 1 minute
+    refetchInterval: 30000, // Auto-refresh every 30 seconds
   });
 }
 

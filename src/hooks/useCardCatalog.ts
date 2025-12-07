@@ -164,34 +164,54 @@ export function useCardCatalogStats() {
   return useQuery({
     queryKey: ["card-catalog-stats"],
     queryFn: async () => {
-      // Get total count
+      // Get total count (uses exact count, not limited)
       const { count: total } = await supabase
         .from("pokemon_card_attributes")
         .select("*", { count: "exact", head: true });
 
-      // Get count with images
+      // Get count with images (uses exact count, not limited)
       const { count: withImages } = await supabase
         .from("pokemon_card_attributes")
         .select("*", { count: "exact", head: true })
         .not("images", "is", null)
         .not("images->small", "is", null);
 
-      // Get count with prices
+      // Get count with prices (uses exact count, not limited)
       const { count: withPrices } = await supabase
         .from("pokemon_card_attributes")
         .select("*", { count: "exact", head: true })
         .or("tcgplayer_prices.not.is.null,cardmarket_prices.not.is.null");
 
-      // Get sync source distribution
-      const { data: syncSourceData } = await supabase
-        .from("pokemon_card_attributes")
-        .select("sync_source");
+      // CRITICAL: Fetch ALL sync sources in batches to get accurate distribution
+      const BATCH_SIZE = 1000;
+      let allSyncSources: Array<{ sync_source: string | null }> = [];
+      let from = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("pokemon_card_attributes")
+          .select("sync_source")
+          .range(from, from + BATCH_SIZE - 1);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          allSyncSources = allSyncSources.concat(data);
+          from += BATCH_SIZE;
+          hasMore = data.length === BATCH_SIZE;
+        } else {
+          hasMore = false;
+        }
+      }
 
       const bySyncSource: Record<string, number> = {};
-      syncSourceData?.forEach((card) => {
+      allSyncSources.forEach((card) => {
         const source = card.sync_source || "unknown";
         bySyncSource[source] = (bySyncSource[source] || 0) + 1;
       });
+
+      console.log(`[useCardCatalogStats] Sync source distribution:`, bySyncSource);
 
       return {
         total: total || 0,
@@ -218,17 +238,36 @@ export function useCardSets() {
   return useQuery({
     queryKey: ["card-sets-with-counts"],
     queryFn: async () => {
-      // Use RPC or aggregate query for better performance
-      const { data, error } = await supabase
-        .from("pokemon_card_attributes")
-        .select("set_code, set_name, synced_at");
+      // CRITICAL: Supabase limits to 1000 rows by default
+      // We need to fetch ALL cards in batches to get accurate counts
+      const BATCH_SIZE = 1000;
+      let allCards: Array<{ set_code: string | null; set_name: string | null; synced_at: string | null }> = [];
+      let from = 0;
+      let hasMore = true;
 
-      if (error) throw error;
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("pokemon_card_attributes")
+          .select("set_code, set_name, synced_at")
+          .range(from, from + BATCH_SIZE - 1);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          allCards = allCards.concat(data);
+          from += BATCH_SIZE;
+          hasMore = data.length === BATCH_SIZE;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      console.log(`[useCardSets] Fetched ${allCards.length} cards total`);
 
       // Aggregate by set
       const setsMap = new Map<string, { name: string; count: number; lastSynced: string | null }>();
       
-      data?.forEach((card) => {
+      allCards.forEach((card) => {
         if (card.set_code) {
           const existing = setsMap.get(card.set_code);
           if (existing) {
@@ -255,6 +294,8 @@ export function useCardSets() {
         lastSynced: data.lastSynced,
       }));
 
+      console.log(`[useCardSets] Found ${setsArray.length} unique sets`);
+
       // Sort: recently synced first, then alphabetically
       return setsArray.sort((a, b) => {
         // If both have sync dates, sort by newest first
@@ -277,16 +318,33 @@ export function useCardRarities() {
   return useQuery({
     queryKey: ["card-rarities"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("pokemon_card_attributes")
-        .select("rarity")
-        .not("rarity", "is", null);
+      // CRITICAL: Fetch ALL rarities in batches to get complete list
+      const BATCH_SIZE = 1000;
+      let allRarities: Array<{ rarity: string | null }> = [];
+      let from = 0;
+      let hasMore = true;
 
-      if (error) throw error;
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("pokemon_card_attributes")
+          .select("rarity")
+          .not("rarity", "is", null)
+          .range(from, from + BATCH_SIZE - 1);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          allRarities = allRarities.concat(data);
+          from += BATCH_SIZE;
+          hasMore = data.length === BATCH_SIZE;
+        } else {
+          hasMore = false;
+        }
+      }
 
       // Get unique rarities
       const rarities = new Set<string>();
-      data?.forEach((card) => {
+      allRarities.forEach((card) => {
         if (card.rarity) rarities.add(card.rarity);
       });
 
