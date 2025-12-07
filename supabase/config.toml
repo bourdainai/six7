@@ -178,7 +178,7 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.data-quality-dashboard]
-verify_jwt = false
+verify_jwt = true
 
 [functions.sync-tcgdex-unified]
 verify_jwt = false
@@ -193,7 +193,7 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.detect-duplicates]
-verify_jwt = false
+verify_jwt = true
 
 [functions.cleanup-duplicates]
 verify_jwt = true
