@@ -9,6 +9,7 @@ import {
   useImportSet,
   useImportActivityTracker,
   useImportQueue,
+  useJapaneseGitHubSets,
 } from "@/hooks/useSetManager";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ import {
   Activity,
   Zap,
   History,
+  Globe,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -137,18 +139,51 @@ function StatsSection({ sets, totalCardsInDB }: { sets: any[]; totalCardsInDB: n
   );
 }
 
+type LanguageFilter = 'all' | 'english' | 'japanese';
+
 export default function AdminSetManager() {
   const { data: sets, isLoading, refetch: refetchSets } = useSetCoverage();
+  const { data: japaneseSets, isLoading: isLoadingJa } = useJapaneseGitHubSets();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedSets, setSelectedSets] = useState<Set<string>>(new Set());
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [languageFilter, setLanguageFilter] = useState<LanguageFilter>('all');
   const { activity, totalCards, liveCards, currentSet, resetActivity, refetch: refetchTotalCards } = useImportActivityTracker();
   const importQueue = useImportQueue();
   const [showProgressModal, setShowProgressModal] = useState(false);
   
   const importSetMutation = useImportSet();
+
+  // Transform Japanese sets to coverage format for display
+  const japaneseSetsAsCoverage = (japaneseSets || []).map((set) => ({
+    setId: set.id,
+    setName: set.name_en || set.name, // Display English name
+    setNameOriginal: set.name, // Keep original Japanese name
+    series: set.series,
+    releaseDate: set.releaseDate || '',
+    githubTotal: set.printedTotal || set.total || 0,
+    dbCount: 0, // TODO: Calculate from DB
+    coverage: 0,
+    status: 'missing' as const,
+    language: 'ja' as const,
+  }));
+
+  // Filter sets based on language selection
+  const filteredSets = (() => {
+    const englishSets = (sets || []).map(s => ({ ...s, language: 'en' as const }));
+    
+    switch (languageFilter) {
+      case 'english':
+        return englishSets;
+      case 'japanese':
+        return japaneseSetsAsCoverage;
+      case 'all':
+      default:
+        return [...englishSets, ...japaneseSetsAsCoverage];
+    }
+  })();
 
   // Manual refresh function
   const handleRefresh = async () => {
@@ -208,11 +243,11 @@ export default function AdminSetManager() {
   };
 
   const handleImportAllMissing = async () => {
-    if (!sets) return;
+    if (!filteredSets) return;
 
-    const missingSets = sets
+    const missingSets = filteredSets
       .filter((s) => s.status === "missing" || s.status === "partial")
-      .map((s) => ({ id: s.setId, name: s.setName }));
+      .map((s) => ({ id: s.setId, name: s.setName, language: (s as any).language || 'en' }));
 
     if (missingSets.length === 0) {
       toast({
@@ -278,7 +313,7 @@ export default function AdminSetManager() {
     });
   };
 
-  const missingCount = sets?.filter(
+  const missingCount = filteredSets?.filter(
     (s) => s.status === "missing" || s.status === "partial"
   ).length || 0;
 
@@ -429,7 +464,7 @@ export default function AdminSetManager() {
                   Set Import Manager
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                  Import Pokemon card sets from GitHub repository
+                  Import Pokemon card sets from GitHub repository (English & Japanese)
                 </p>
               </div>
             </div>
@@ -483,8 +518,45 @@ export default function AdminSetManager() {
           )}
         </div>
 
+        {/* Language Filter */}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Globe className="h-4 w-4" />
+            <span>Language:</span>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant={languageFilter === 'all' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setLanguageFilter('all')}
+            >
+              All Sets ({(sets?.length || 0) + (japaneseSets?.length || 0)})
+            </Button>
+            <Button
+              variant={languageFilter === 'english' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setLanguageFilter('english')}
+            >
+              🇬🇧 English ({sets?.length || 0})
+            </Button>
+            <Button
+              variant={languageFilter === 'japanese' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setLanguageFilter('japanese')}
+              disabled={isLoadingJa}
+            >
+              {isLoadingJa ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                '🇯🇵'
+              )}{' '}
+              Japanese ({japaneseSets?.length || 0})
+            </Button>
+          </div>
+        </div>
+
         {/* Stats */}
-        <StatsSection sets={sets || []} totalCardsInDB={totalCards} />
+        <StatsSection sets={filteredSets || []} totalCardsInDB={totalCards} />
 
         {/* Tabs for Sets vs Job History */}
         <Tabs defaultValue="sets" className="w-full">
@@ -501,8 +573,8 @@ export default function AdminSetManager() {
           <TabsContent value="sets" className="mt-4">
             {/* Set Table */}
             <SetImportTable
-              sets={sets || []}
-              isLoading={isLoading}
+              sets={filteredSets || []}
+              isLoading={isLoading || isLoadingJa}
               onImportSet={handleImportSet}
               onRefreshSet={handleRefreshSet}
               selectedSets={selectedSets}

@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getEnglishName } from "../_shared/pokemon-names.ts";
+import { getEnglishSetName } from "../_shared/japanese-set-names.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -221,6 +222,9 @@ serve(async (req) => {
             // Get English name for non-English cards using dexId
             const englishName = language !== 'en' ? getEnglishName(card.dexId) : null;
             
+            // Get English set name for Japanese sets
+            const englishSetName = language !== 'en' ? getEnglishSetName(setId) : null;
+            
             // Generate printed_number as it appears on the card (e.g., "125/094")
             const printedTotal = card.set.cardCount?.official || card.set.cardCount?.total;
             const printedNumber = printedTotal 
@@ -232,6 +236,7 @@ serve(async (req) => {
               name: card.name,
               name_en: englishName, // Auto-populate English name for Japanese/other language cards
               set_name: card.set.name,
+              set_name_en: englishSetName, // English set name for Japanese sets
               set_code: setId,
               number: card.localId,
               printed_number: printedNumber,

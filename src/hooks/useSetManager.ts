@@ -5,16 +5,63 @@ import { useEffect, useState, useCallback, useRef } from "react";
 export interface GitHubSet {
   id: string;
   name: string;
+  name_en?: string; // English name for Japanese sets
   series: string;
   printedTotal: number;
   total: number;
   releaseDate: string;
-  updatedAt: string;
+  updatedAt?: string;
+  language?: 'en' | 'ja';
   images?: {
     symbol?: string;
     logo?: string;
   };
 }
+
+// Japanese set name mappings (loaded from static file)
+const JAPANESE_SET_ENGLISH_NAMES: Record<string, string> = {
+  // Scarlet & Violet Era
+  'sv8a': 'Terastal Fest ex',
+  'sv7a': 'Stellar Miracle',
+  'sv6a': 'Night Wanderer',
+  'sv5a': 'Crimson Haze',
+  'sv4a': 'Shiny Treasure ex',
+  'sv4': 'Ancient Roar / Future Flash',
+  'sv3a': 'Raging Surf',
+  'sv3': 'Ruler of the Black Flame',
+  'sv2a': 'Pokemon Card 151',
+  'sv2': 'Snow Hazard / Clay Burst',
+  'sv1a': 'Triplet Beat',
+  'sv1': 'Scarlet ex / Violet ex',
+  // Sword & Shield Era
+  's12a': 'VSTAR Universe',
+  's12': 'Paradigm Trigger',
+  's11a': 'Incandescent Arcana',
+  's11': 'Lost Abyss',
+  's10a': 'Dark Fantasma',
+  's10': 'Time Gazer / Space Juggler',
+  's9a': 'Battle Region',
+  's9': 'Star Birth',
+  's8a': '25th Anniversary Collection',
+  's8': 'Fusion Arts',
+  's7R': 'Blue Sky Stream',
+  's7D': 'Skyscraping Perfect',
+  's6a': 'Eevee Heroes',
+  's6H': 'Silver Lance',
+  's6K': 'Jet Black Spirit',
+  's5a': 'Matchless Fighters',
+  's5R': 'Rapid Strike Master',
+  's5I': 'Single Strike Master',
+  's4a': 'Shiny Star V',
+  's4': 'Astonishing Volt Tackle',
+  's3a': 'Legendary Heartbeat',
+  's3': 'Infinity Zone',
+  's2a': 'Explosive Walker',
+  's2': 'Rebellion Crash',
+  's1a': 'VMAX Rising',
+  's1H': 'Shield',
+  's1W': 'Sword',
+};
 
 export interface SetCoverage {
   setId: string;
@@ -55,10 +102,65 @@ export function useGitHubSets() {
         throw new Error("Failed to fetch sets from GitHub");
       }
       const sets: GitHubSet[] = await response.json();
-      return sets;
+      // Mark as English sets
+      return sets.map(set => ({ ...set, language: 'en' as const }));
     },
     staleTime: 3600000, // Cache for 1 hour
   });
+}
+
+/**
+ * Fetch Japanese sets from TCGdex API
+ * Returns sets with English names for display
+ */
+export function useJapaneseGitHubSets() {
+  return useQuery({
+    queryKey: ["github-sets-ja"],
+    queryFn: async () => {
+      // Fetch from TCGdex API (one-time fetch, then cached)
+      const response = await fetch("https://api.tcgdex.net/v2/ja/sets");
+      if (!response.ok) {
+        throw new Error("Failed to fetch Japanese sets from TCGdex");
+      }
+      const sets = await response.json();
+      
+      // Transform to GitHubSet format with English names
+      const transformedSets: GitHubSet[] = sets.map((set: any) => ({
+        id: set.id,
+        name: set.name, // Japanese name
+        name_en: JAPANESE_SET_ENGLISH_NAMES[set.id] || set.name, // English name or fallback to Japanese
+        series: set.serie?.name || 'Unknown',
+        printedTotal: set.cardCount?.official || 0,
+        total: set.cardCount?.total || 0,
+        releaseDate: set.releaseDate || '',
+        language: 'ja' as const,
+        images: {
+          logo: set.logo,
+          symbol: set.symbol,
+        }
+      }));
+      
+      return transformedSets;
+    },
+    staleTime: 3600000, // Cache for 1 hour
+  });
+}
+
+/**
+ * Combined hook for all sets (English + Japanese)
+ */
+export function useAllGitHubSets() {
+  const { data: englishSets, isLoading: isLoadingEn } = useGitHubSets();
+  const { data: japaneseSets, isLoading: isLoadingJa } = useJapaneseGitHubSets();
+  
+  return {
+    data: {
+      english: englishSets || [],
+      japanese: japaneseSets || [],
+      all: [...(englishSets || []), ...(japaneseSets || [])],
+    },
+    isLoading: isLoadingEn || isLoadingJa,
+  };
 }
 
 export function useDatabaseSetCoverage() {

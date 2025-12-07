@@ -1,0 +1,320 @@
+{
+  "description": "Japanese Pokemon TCG sets from TCGdex - used for Set Manager",
+  "source": "https://api.tcgdex.net/v2/ja/sets",
+  "lastUpdated": "2024-12-08",
+  "sets": [
+    {
+      "id": "sv8a",
+      "name": "超電ブレイカー",
+      "name_en": "Terastal Fest ex",
+      "series": "Scarlet & Violet",
+      "printedTotal": 100,
+      "releaseDate": "2024-10-18"
+    },
+    {
+      "id": "sv7a",
+      "name": "パラダイムトリガー",
+      "name_en": "Stellar Miracle",
+      "series": "Scarlet & Violet",
+      "printedTotal": 102,
+      "releaseDate": "2024-07-19"
+    },
+    {
+      "id": "sv6a",
+      "name": "ナイトワンダラー",
+      "name_en": "Night Wanderer",
+      "series": "Scarlet & Violet",
+      "printedTotal": 64,
+      "releaseDate": "2024-06-07"
+    },
+    {
+      "id": "sv5a",
+      "name": "クリムゾンヘイズ",
+      "name_en": "Crimson Haze",
+      "series": "Scarlet & Violet",
+      "printedTotal": 76,
+      "releaseDate": "2024-03-22"
+    },
+    {
+      "id": "sv4a",
+      "name": "シャイニートレジャーex",
+      "name_en": "Shiny Treasure ex",
+      "series": "Scarlet & Violet",
+      "printedTotal": 190,
+      "releaseDate": "2023-12-01"
+    },
+    {
+      "id": "sv4",
+      "name": "古代の咆哮 / 未来の一閃",
+      "name_en": "Ancient Roar / Future Flash",
+      "series": "Scarlet & Violet",
+      "printedTotal": 130,
+      "releaseDate": "2023-10-27"
+    },
+    {
+      "id": "sv3a",
+      "name": "レイジングサーフ",
+      "name_en": "Raging Surf",
+      "series": "Scarlet & Violet",
+      "printedTotal": 62,
+      "releaseDate": "2023-09-22"
+    },
+    {
+      "id": "sv3",
+      "name": "黒炎の支配者",
+      "name_en": "Ruler of the Black Flame",
+      "series": "Scarlet & Violet",
+      "printedTotal": 108,
+      "releaseDate": "2023-07-28"
+    },
+    {
+      "id": "sv2a",
+      "name": "ポケモンカード151",
+      "name_en": "Pokemon Card 151",
+      "series": "Scarlet & Violet",
+      "printedTotal": 165,
+      "releaseDate": "2023-06-16"
+    },
+    {
+      "id": "sv2",
+      "name": "スノーハザード / クレイバースト",
+      "name_en": "Snow Hazard / Clay Burst",
+      "series": "Scarlet & Violet",
+      "printedTotal": 131,
+      "releaseDate": "2023-04-14"
+    },
+    {
+      "id": "sv1a",
+      "name": "トリプレットビート",
+      "name_en": "Triplet Beat",
+      "series": "Scarlet & Violet",
+      "printedTotal": 72,
+      "releaseDate": "2023-03-10"
+    },
+    {
+      "id": "sv1",
+      "name": "スカーレットex / バイオレットex",
+      "name_en": "Scarlet ex / Violet ex",
+      "series": "Scarlet & Violet",
+      "printedTotal": 108,
+      "releaseDate": "2023-01-20"
+    },
+    {
+      "id": "s12a",
+      "name": "VSTARユニバース",
+      "name_en": "VSTAR Universe",
+      "series": "Sword & Shield",
+      "printedTotal": 172,
+      "releaseDate": "2022-12-02"
+    },
+    {
+      "id": "s12",
+      "name": "パラダイムトリガー",
+      "name_en": "Paradigm Trigger",
+      "series": "Sword & Shield",
+      "printedTotal": 98,
+      "releaseDate": "2022-10-21"
+    },
+    {
+      "id": "s11a",
+      "name": "インセプト・アルセウス",
+      "name_en": "Incandescent Arcana",
+      "series": "Sword & Shield",
+      "printedTotal": 68,
+      "releaseDate": "2022-09-02"
+    },
+    {
+      "id": "s11",
+      "name": "ロストアビス",
+      "name_en": "Lost Abyss",
+      "series": "Sword & Shield",
+      "printedTotal": 100,
+      "releaseDate": "2022-07-15"
+    },
+    {
+      "id": "s10a",
+      "name": "ダークファンタズマ",
+      "name_en": "Dark Fantasma",
+      "series": "Sword & Shield",
+      "printedTotal": 71,
+      "releaseDate": "2022-05-13"
+    },
+    {
+      "id": "s10",
+      "name": "タイムゲイザー / スペースジャグラー",
+      "name_en": "Time Gazer / Space Juggler",
+      "series": "Sword & Shield",
+      "printedTotal": 134,
+      "releaseDate": "2022-04-08"
+    },
+    {
+      "id": "s9a",
+      "name": "バトルリージョン",
+      "name_en": "Battle Region",
+      "series": "Sword & Shield",
+      "printedTotal": 67,
+      "releaseDate": "2022-02-25"
+    },
+    {
+      "id": "s9",
+      "name": "スターバース",
+      "name_en": "Star Birth",
+      "series": "Sword & Shield",
+      "printedTotal": 100,
+      "releaseDate": "2022-01-14"
+    },
+    {
+      "id": "s8a",
+      "name": "25th アニバーサリーコレクション",
+      "name_en": "25th Anniversary Collection",
+      "series": "Sword & Shield",
+      "printedTotal": 28,
+      "releaseDate": "2021-10-22"
+    },
+    {
+      "id": "s8",
+      "name": "フュージョンアーツ",
+      "name_en": "Fusion Arts",
+      "series": "Sword & Shield",
+      "printedTotal": 100,
+      "releaseDate": "2021-09-24"
+    },
+    {
+      "id": "s7R",
+      "name": "蒼空ストリーム",
+      "name_en": "Blue Sky Stream",
+      "series": "Sword & Shield",
+      "printedTotal": 67,
+      "releaseDate": "2021-07-09"
+    },
+    {
+      "id": "s7D",
+      "name": "摩天パーフェクト",
+      "name_en": "Skyscraping Perfect",
+      "series": "Sword & Shield",
+      "printedTotal": 69,
+      "releaseDate": "2021-07-09"
+    },
+    {
+      "id": "s6a",
+      "name": "イーブイヒーローズ",
+      "name_en": "Eevee Heroes",
+      "series": "Sword & Shield",
+      "printedTotal": 69,
+      "releaseDate": "2021-05-28"
+    },
+    {
+      "id": "s6H",
+      "name": "白銀のランス",
+      "name_en": "Silver Lance",
+      "series": "Sword & Shield",
+      "printedTotal": 70,
+      "releaseDate": "2021-04-23"
+    },
+    {
+      "id": "s6K",
+      "name": "漆黒のガイスト",
+      "name_en": "Jet Black Spirit",
+      "series": "Sword & Shield",
+      "printedTotal": 70,
+      "releaseDate": "2021-04-23"
+    },
+    {
+      "id": "s5a",
+      "name": "双璧のファイター",
+      "name_en": "Matchless Fighters",
+      "series": "Sword & Shield",
+      "printedTotal": 70,
+      "releaseDate": "2021-03-19"
+    },
+    {
+      "id": "s5R",
+      "name": "連撃マスター",
+      "name_en": "Rapid Strike Master",
+      "series": "Sword & Shield",
+      "printedTotal": 70,
+      "releaseDate": "2021-01-22"
+    },
+    {
+      "id": "s5I",
+      "name": "一撃マスター",
+      "name_en": "Single Strike Master",
+      "series": "Sword & Shield",
+      "printedTotal": 70,
+      "releaseDate": "2021-01-22"
+    },
+    {
+      "id": "s4a",
+      "name": "シャイニースターV",
+      "name_en": "Shiny Star V",
+      "series": "Sword & Shield",
+      "printedTotal": 190,
+      "releaseDate": "2020-11-20"
+    },
+    {
+      "id": "s4",
+      "name": "仰天のボルテッカー",
+      "name_en": "Astonishing Volt Tackle",
+      "series": "Sword & Shield",
+      "printedTotal": 100,
+      "releaseDate": "2020-09-18"
+    },
+    {
+      "id": "s3a",
+      "name": "伝説の鼓動",
+      "name_en": "Legendary Heartbeat",
+      "series": "Sword & Shield",
+      "printedTotal": 76,
+      "releaseDate": "2020-07-10"
+    },
+    {
+      "id": "s3",
+      "name": "ムゲンゾーン",
+      "name_en": "Infinity Zone",
+      "series": "Sword & Shield",
+      "printedTotal": 100,
+      "releaseDate": "2020-06-05"
+    },
+    {
+      "id": "s2a",
+      "name": "爆炎ウォーカー",
+      "name_en": "Explosive Walker",
+      "series": "Sword & Shield",
+      "printedTotal": 70,
+      "releaseDate": "2020-04-24"
+    },
+    {
+      "id": "s2",
+      "name": "反逆クラッシュ",
+      "name_en": "Rebellion Crash",
+      "series": "Sword & Shield",
+      "printedTotal": 96,
+      "releaseDate": "2020-03-06"
+    },
+    {
+      "id": "s1a",
+      "name": "VMAXライジング",
+      "name_en": "VMAX Rising",
+      "series": "Sword & Shield",
+      "printedTotal": 70,
+      "releaseDate": "2020-02-07"
+    },
+    {
+      "id": "s1H",
+      "name": "シールド",
+      "name_en": "Shield",
+      "series": "Sword & Shield",
+      "printedTotal": 60,
+      "releaseDate": "2019-12-06"
+    },
+    {
+      "id": "s1W",
+      "name": "ソード",
+      "name_en": "Sword",
+      "series": "Sword & Shield",
+      "printedTotal": 60,
+      "releaseDate": "2019-12-06"
+    }
+  ]
+}
+
