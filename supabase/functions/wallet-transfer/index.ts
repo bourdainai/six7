@@ -6,6 +6,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface TransferResult {
+  success: boolean;
+  sender_balance_after: number | null;
+  recipient_balance_after: number | null;
+  error_message: string | null;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -27,81 +34,35 @@ serve(async (req) => {
       throw new Error('Invalid user token');
     }
 
-    if (user.id === recipient_id) {
-      throw new Error('Cannot transfer to self');
+    // Use atomic database function to prevent race conditions
+    const { data, error: transferError } = await supabase
+      .rpc('transfer_funds', {
+        p_sender_id: user.id,
+        p_recipient_id: recipient_id,
+        p_amount: amount,
+        p_description: description || 'Transfer to user'
+      });
+
+    if (transferError) {
+      console.error('Transfer RPC error:', transferError);
+      throw new Error(transferError.message);
     }
 
-    // Fetch sender wallet
-    const { data: senderWallet } = await supabase
-      .from('wallet_accounts')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
+    // RPC returns array of rows, take the first one
+    const result = (Array.isArray(data) ? data[0] : data) as TransferResult | null;
 
-    if (!senderWallet || senderWallet.balance < amount) {
-      throw new Error('Insufficient funds');
+    if (!result?.success) {
+      throw new Error(result?.error_message || 'Transfer failed');
     }
 
-    // Fetch recipient wallet
-    const { data: recipientWallet } = await supabase
-      .from('wallet_accounts')
-      .select('*')
-      .eq('user_id', recipient_id)
-      .single();
-
-    if (!recipientWallet) {
-      // Auto-create if missing? For now, error
-      throw new Error('Recipient wallet not found');
-    }
-
-    // Perform transfer
-    // In production, use RPC for atomicity
-    
-    // 1. Deduct from sender
-    const { error: senderError } = await supabase
-      .from('wallet_accounts')
-      .update({ balance: senderWallet.balance - amount })
-      .eq('id', senderWallet.id);
-    
-    if (senderError) throw senderError;
-
-    // 2. Add to recipient
-    const { error: recipientError } = await supabase
-      .from('wallet_accounts')
-      .update({ balance: recipientWallet.balance + amount })
-      .eq('id', recipientWallet.id);
-
-    if (recipientError) {
-      // CRITICAL: Rollback sender deduction (simplified here)
-      // Ideally use a Postgres function for this entire operation
-      console.error('Failed to credit recipient, need manual intervention or rollback');
-      throw recipientError;
-    }
-
-    // 3. Log transactions
-    await supabase.from('wallet_transactions').insert([
-      {
-        wallet_id: senderWallet.id,
-        type: 'transfer_out',
-        amount: -amount,
-        balance_after: senderWallet.balance - amount,
-        related_user_id: recipient_id,
-        description: description || 'Transfer to user',
-        status: 'completed'
-      },
-      {
-        wallet_id: recipientWallet.id,
-        type: 'transfer_in',
-        amount: amount,
-        balance_after: recipientWallet.balance + amount,
-        related_user_id: user.id,
-        description: description || 'Transfer from user',
-        status: 'completed'
-      }
-    ]);
+    console.log(`✅ Transfer completed: ${amount} from ${user.id} to ${recipient_id}`);
 
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ 
+        success: true,
+        sender_balance: result.sender_balance_after,
+        recipient_balance: result.recipient_balance_after
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
@@ -113,4 +74,3 @@ serve(async (req) => {
     );
   }
 });
-

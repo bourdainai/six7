@@ -187,7 +187,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.auto-match-listings]
-verify_jwt = false
+verify_jwt = true
 
 [functions.backfill-sv4a-images]
 verify_jwt = false
@@ -197,3 +197,6 @@ verify_jwt = false
 
 [functions.cleanup-duplicates]
 verify_jwt = false
+
+[functions.wallet-transfer]
+verify_jwt = true
