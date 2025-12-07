@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,7 @@ import {
   Loader2,
   Eye,
   Database,
+  RefreshCw,
 } from "lucide-react";
 import { useCleanupDuplicates, CleanupResult } from "@/hooks/useCardCatalog";
 import { useToast } from "@/hooks/use-toast";
@@ -35,6 +36,7 @@ interface DuplicateCleanupModalProps {
   onOpenChange: (open: boolean) => void;
   duplicateCount: number;
   affectedSets: Array<{ set_code: string; duplicates: number }>;
+  onCleanupComplete?: () => void;
 }
 
 export function DuplicateCleanupModal({
@@ -42,17 +44,31 @@ export function DuplicateCleanupModal({
   onOpenChange,
   duplicateCount,
   affectedSets,
+  onCleanupComplete,
 }: DuplicateCleanupModalProps) {
   const { toast } = useToast();
   const cleanupMutation = useCleanupDuplicates();
   const [previewResult, setPreviewResult] = useState<CleanupResult | null>(null);
   const [isPreviewMode, setIsPreviewMode] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteProgress, setDeleteProgress] = useState({
+    deleted: 0,
+    total: 0,
+    remaining: 0,
+    iterations: 0,
+  });
 
   const handlePreview = async () => {
     try {
       const result = await cleanupMutation.mutateAsync({ dryRun: true });
       setPreviewResult(result || null);
       setIsPreviewMode(true);
+      setDeleteProgress({
+        deleted: 0,
+        total: result?.stats.cardsToDelete || 0,
+        remaining: result?.stats.cardsToDelete || 0,
+        iterations: 0,
+      });
     } catch (error) {
       toast({
         title: "Preview failed",
@@ -62,39 +78,114 @@ export function DuplicateCleanupModal({
     }
   };
 
-  const handleCleanup = async () => {
+  const handleCleanup = useCallback(async () => {
+    if (!previewResult) return;
+    
     const confirmed = window.confirm(
-      `Are you sure you want to delete ${previewResult?.stats.cardsToDelete || duplicateCount} duplicate cards? This cannot be undone.`
+      `Are you sure you want to delete ${previewResult.stats.cardsToDelete.toLocaleString()} duplicate cards? This cannot be undone.`
     );
     if (!confirmed) return;
 
+    setIsDeleting(true);
+    setIsPreviewMode(false);
+    
+    let totalDeleted = 0;
+    let iterations = 0;
+    let remaining = previewResult.stats.cardsToDelete;
+    const maxIterations = 50; // Safety limit
+
     try {
-      const result = await cleanupMutation.mutateAsync({ dryRun: false });
-      setPreviewResult(result || null);
-      setIsPreviewMode(false);
-      
-      toast({
-        title: "Cleanup complete",
-        description: `Removed ${result?.stats.actualDeleted || 0} duplicate cards. Database is now clean!`,
-      });
+      // Keep calling the cleanup function until no duplicates remain
+      while (remaining > 0 && iterations < maxIterations) {
+        iterations++;
+        console.log(`🧹 Cleanup iteration ${iterations}, remaining: ${remaining}`);
+
+        const result = await cleanupMutation.mutateAsync({ dryRun: false });
+        
+        if (!result?.success) {
+          throw new Error(result?.error || "Cleanup failed");
+        }
+
+        const deletedThisRound = result.stats.actualDeleted || 0;
+        totalDeleted += deletedThisRound;
+        remaining = result.stats.remainingDuplicates ?? 0;
+
+        setDeleteProgress({
+          deleted: totalDeleted,
+          total: previewResult.stats.cardsToDelete,
+          remaining,
+          iterations,
+        });
+
+        // Update the preview result with latest stats
+        setPreviewResult(prev => prev ? {
+          ...prev,
+          stats: {
+            ...prev.stats,
+            actualDeleted: totalDeleted,
+            remainingDuplicates: remaining,
+            iterations,
+          },
+          message: result.message,
+        } : null);
+
+        // If nothing was deleted but there are remaining, something is wrong
+        if (deletedThisRound === 0 && remaining > 0) {
+          console.warn("No cards deleted but duplicates remain - may be a permissions issue");
+          break;
+        }
+
+        // Small delay between iterations
+        if (remaining > 0) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+
+      setIsDeleting(false);
+
+      if (remaining === 0) {
+        toast({
+          title: "Cleanup complete!",
+          description: `Successfully removed ${totalDeleted.toLocaleString()} duplicate cards in ${iterations} round(s).`,
+        });
+        onCleanupComplete?.();
+      } else {
+        toast({
+          title: "Cleanup partially complete",
+          description: `Removed ${totalDeleted.toLocaleString()} cards. ${remaining.toLocaleString()} duplicates still remain.`,
+          variant: "destructive",
+        });
+      }
     } catch (error) {
+      setIsDeleting(false);
+      console.error("Cleanup error:", error);
       toast({
-        title: "Cleanup failed",
-        description: error instanceof Error ? error.message : "Unknown error",
+        title: "Cleanup error",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
         variant: "destructive",
       });
     }
-  };
+  }, [previewResult, cleanupMutation, toast, onCleanupComplete]);
 
   const handleClose = () => {
+    if (isDeleting) {
+      const confirmed = window.confirm("Cleanup is in progress. Are you sure you want to close?");
+      if (!confirmed) return;
+    }
     setPreviewResult(null);
     setIsPreviewMode(true);
+    setIsDeleting(false);
+    setDeleteProgress({ deleted: 0, total: 0, remaining: 0, iterations: 0 });
     onOpenChange(false);
   };
 
+  const progressPercent = deleteProgress.total > 0 
+    ? Math.round((deleteProgress.deleted / deleteProgress.total) * 100)
+    : 0;
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Trash2 className="h-5 w-5 text-destructive" />
@@ -134,7 +225,7 @@ export function DuplicateCleanupModal({
           </div>
         )}
 
-        {/* Preview Results */}
+        {/* Preview/Delete Results */}
         {previewResult && (
           <div className="space-y-4">
             {isPreviewMode ? (
@@ -145,22 +236,36 @@ export function DuplicateCleanupModal({
                   This is a preview. No cards have been deleted yet.
                 </AlertDescription>
               </Alert>
+            ) : isDeleting ? (
+              <Alert className="border-blue-500/50 bg-blue-500/10">
+                <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />
+                <AlertTitle className="text-blue-600">Deleting Duplicates...</AlertTitle>
+                <AlertDescription className="text-blue-600">
+                  <div className="space-y-2">
+                    <p>
+                      Round {deleteProgress.iterations}: Deleted {deleteProgress.deleted.toLocaleString()} of {deleteProgress.total.toLocaleString()} cards
+                    </p>
+                    <Progress value={progressPercent} className="h-2" />
+                    <p className="text-xs">
+                      {deleteProgress.remaining.toLocaleString()} remaining • {progressPercent}% complete
+                    </p>
+                  </div>
+                </AlertDescription>
+              </Alert>
             ) : (
-              <Alert className={previewResult.stats.remainingDuplicates === 0 
+              <Alert className={deleteProgress.remaining === 0 
                 ? "border-green-500/50 bg-green-500/10" 
                 : "border-yellow-500/50 bg-yellow-500/10"
               }>
-                <CheckCircle2 className={`h-4 w-4 ${previewResult.stats.remainingDuplicates === 0 ? "text-green-500" : "text-yellow-500"}`} />
-                <AlertTitle className={previewResult.stats.remainingDuplicates === 0 ? "text-green-600" : "text-yellow-600"}>
-                  {previewResult.stats.remainingDuplicates === 0 ? "Cleanup Complete!" : "Cleanup Finished"}
+                <CheckCircle2 className={`h-4 w-4 ${deleteProgress.remaining === 0 ? "text-green-500" : "text-yellow-500"}`} />
+                <AlertTitle className={deleteProgress.remaining === 0 ? "text-green-600" : "text-yellow-600"}>
+                  {deleteProgress.remaining === 0 ? "Cleanup Complete!" : "Cleanup Finished"}
                 </AlertTitle>
-                <AlertDescription className={previewResult.stats.remainingDuplicates === 0 ? "text-green-600" : "text-yellow-600"}>
-                  {previewResult.message || `Removed ${previewResult.stats.actualDeleted} duplicate cards.`}
-                  {previewResult.stats.iterations && (
-                    <span className="block text-sm mt-1">
-                      Completed in {previewResult.stats.iterations} iteration(s)
-                    </span>
-                  )}
+                <AlertDescription className={deleteProgress.remaining === 0 ? "text-green-600" : "text-yellow-600"}>
+                  {previewResult.message || `Removed ${deleteProgress.deleted.toLocaleString()} duplicate cards.`}
+                  <span className="block text-sm mt-1">
+                    Completed in {deleteProgress.iterations} round(s)
+                  </span>
                 </AlertDescription>
               </Alert>
             )}
@@ -169,29 +274,32 @@ export function DuplicateCleanupModal({
             <div className="grid grid-cols-3 gap-4 text-center">
               <div className="p-3 rounded-lg bg-muted">
                 <p className="text-xs text-muted-foreground">Duplicate Groups</p>
-                <p className="text-lg font-bold">{previewResult.stats.duplicateGroups}</p>
+                <p className="text-lg font-bold">{previewResult.stats.duplicateGroups.toLocaleString()}</p>
               </div>
               <div className="p-3 rounded-lg bg-destructive/10">
                 <p className="text-xs text-muted-foreground">
                   {isPreviewMode ? "To Delete" : "Deleted"}
                 </p>
                 <p className="text-lg font-bold text-destructive">
-                  {isPreviewMode ? previewResult.stats.cardsToDelete : previewResult.stats.actualDeleted}
+                  {isPreviewMode 
+                    ? previewResult.stats.cardsToDelete.toLocaleString() 
+                    : deleteProgress.deleted.toLocaleString()
+                  }
                 </p>
               </div>
               <div className="p-3 rounded-lg bg-green-500/10">
                 <p className="text-xs text-muted-foreground">Kept (Best)</p>
                 <p className="text-lg font-bold text-green-600">
-                  {previewResult.stats.duplicateGroups}
+                  {previewResult.stats.duplicateGroups.toLocaleString()}
                 </p>
               </div>
             </div>
 
             {/* Sample of what will be deleted */}
-            {previewResult.sampleDeleted.length > 0 && (
+            {previewResult.sampleDeleted && previewResult.sampleDeleted.length > 0 && isPreviewMode && (
               <div className="space-y-2">
                 <h4 className="text-sm font-medium">
-                  Sample {isPreviewMode ? "to be" : ""} Removed ({previewResult.sampleDeleted.length}):
+                  Sample to be Removed ({previewResult.sampleDeleted.length}):
                 </h4>
                 <div className="max-h-48 overflow-y-auto border rounded-lg">
                   <Table>
@@ -222,19 +330,19 @@ export function DuplicateCleanupModal({
           </div>
         )}
 
-        {/* Loading State */}
-        {cleanupMutation.isPending && (
+        {/* Loading State for Preview */}
+        {cleanupMutation.isPending && isPreviewMode && !isDeleting && (
           <div className="flex flex-col items-center gap-4 py-8">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="text-sm text-muted-foreground">
-              {isPreviewMode ? "Analyzing duplicates..." : "Removing duplicates..."}
+              Analyzing duplicates... (this may take a moment for large databases)
             </p>
           </div>
         )}
 
         <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={handleClose}>
-            {previewResult && !isPreviewMode ? "Done" : "Cancel"}
+          <Button variant="outline" onClick={handleClose} disabled={isDeleting}>
+            {previewResult && !isPreviewMode && !isDeleting ? "Done" : "Cancel"}
           </Button>
           
           {!previewResult && (
@@ -247,14 +355,21 @@ export function DuplicateCleanupModal({
             </Button>
           )}
           
-          {previewResult && isPreviewMode && (
+          {previewResult && isPreviewMode && !isDeleting && (
             <Button
               variant="destructive"
               onClick={handleCleanup}
               disabled={cleanupMutation.isPending || previewResult.stats.cardsToDelete === 0}
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Confirm Delete ({previewResult.stats.cardsToDelete})
+              Confirm Delete ({previewResult.stats.cardsToDelete.toLocaleString()})
+            </Button>
+          )}
+
+          {isDeleting && (
+            <Button variant="outline" disabled>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Deleting... Do not close
             </Button>
           )}
         </DialogFooter>
@@ -262,4 +377,3 @@ export function DuplicateCleanupModal({
     </Dialog>
   );
 }
-

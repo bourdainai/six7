@@ -47,18 +47,15 @@ async function fetchAllCards(supabase: any): Promise<Card[]> {
     const { data, error } = await supabase
       .from('pokemon_card_attributes')
       .select('id, card_id, name, set_code, number, sync_source, synced_at, images, tcgplayer_prices, cardmarket_prices')
-      .order('id', { ascending: true }) // Consistent ordering
+      .order('id', { ascending: true })
       .range(from, from + BATCH_SIZE - 1);
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
 
     if (data && data.length > 0) {
       allCards = allCards.concat(data);
       from += BATCH_SIZE;
       hasMore = data.length === BATCH_SIZE;
-      console.log(`   Fetched ${allCards.length} cards so far...`);
     } else {
       hasMore = false;
     }
@@ -68,16 +65,15 @@ async function fetchAllCards(supabase: any): Promise<Card[]> {
   return allCards;
 }
 
-// Find duplicates and optionally delete them
-async function findDuplicates(allCards: Card[]): Promise<{
+// Find duplicates
+function findDuplicates(allCards: Card[]): {
   duplicateGroups: number;
   cardsToDelete: Card[];
   cardsToKeep: Card[];
-}> {
-  // Group by set_code + number
+} {
   const groups = new Map<string, Card[]>();
   for (const card of allCards) {
-    if (!card.set_code || !card.number) continue; // Skip invalid cards
+    if (!card.set_code || !card.number) continue;
     
     const key = `${card.set_code}|${card.number}`;
     if (!groups.has(key)) {
@@ -93,14 +89,11 @@ async function findDuplicates(allCards: Card[]): Promise<{
   for (const [_, cards] of groups) {
     if (cards.length > 1) {
       duplicateGroups++;
-      // Score and sort - keep best, delete rest
       const scoredCards = cards.map(card => ({ card, score: scoreCard(card) }));
       scoredCards.sort((a, b) => b.score - a.score);
       
-      // Keep the best one
       cardsToKeep.push(scoredCards[0].card);
       
-      // Delete the rest
       for (let i = 1; i < scoredCards.length; i++) {
         cardsToDelete.push(scoredCards[i].card);
       }
@@ -121,19 +114,18 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { dryRun = true } = await req.json().catch(() => ({}));
+    const { dryRun = true, batchOnly = false, batchSize = 1000 } = await req.json().catch(() => ({}));
 
-    console.log(`🧹 Cleanup duplicates (dryRun: ${dryRun})`);
+    console.log(`🧹 Cleanup duplicates (dryRun: ${dryRun}, batchOnly: ${batchOnly})`);
 
-    // Fetch ALL cards (not just first 1000!)
+    // Fetch ALL cards
     const allCards = await fetchAllCards(supabase);
     
     // Find all duplicates
-    const { duplicateGroups, cardsToDelete, cardsToKeep } = await findDuplicates(allCards);
+    const { duplicateGroups, cardsToDelete, cardsToKeep } = findDuplicates(allCards);
 
     console.log(`📊 Found ${duplicateGroups} duplicate groups`);
     console.log(`📊 Cards to delete: ${cardsToDelete.length}`);
-    console.log(`📊 Cards to keep: ${cardsToKeep.length}`);
 
     // For dry run, just return the counts and samples
     if (dryRun) {
@@ -169,8 +161,6 @@ serve(async (req) => {
     }
 
     // ACTUAL DELETION
-    console.log(`🔄 Starting deletion of ${cardsToDelete.length} duplicate cards...`);
-    
     if (cardsToDelete.length === 0) {
       return new Response(
         JSON.stringify({
@@ -181,7 +171,6 @@ serve(async (req) => {
             cardsToDelete: 0,
             actualDeleted: 0,
             remainingDuplicates: 0,
-            iterations: 0,
           },
           message: 'No duplicates found to delete!',
         }),
@@ -189,42 +178,86 @@ serve(async (req) => {
       );
     }
 
-    // Delete in batches to avoid timeout
-    const DELETE_BATCH_SIZE = 500;
+    // For large deletions, process in smaller chunks to avoid timeout
+    // batchOnly mode: only delete one batch and return, let frontend call again
+    const DELETE_BATCH_SIZE = batchOnly ? Math.min(batchSize, 500) : 200;
+    const MAX_TIME_MS = 45000; // 45 seconds max (leave 15s buffer)
+    const startTime = Date.now();
+    
     let totalDeleted = 0;
     const errors: string[] = [];
     const idsToDelete = cardsToDelete.map(c => c.id);
 
+    console.log(`🔄 Deleting ${idsToDelete.length} cards in batches of ${DELETE_BATCH_SIZE}...`);
+
     for (let i = 0; i < idsToDelete.length; i += DELETE_BATCH_SIZE) {
+      // Check if we're running out of time
+      const elapsed = Date.now() - startTime;
+      if (elapsed > MAX_TIME_MS) {
+        console.log(`⏰ Approaching timeout after ${totalDeleted} deletions, stopping to avoid crash`);
+        break;
+      }
+
       const batch = idsToDelete.slice(i, i + DELETE_BATCH_SIZE);
-      console.log(`   Deleting batch ${Math.floor(i / DELETE_BATCH_SIZE) + 1}: ${batch.length} cards...`);
+      const batchNum = Math.floor(i / DELETE_BATCH_SIZE) + 1;
+      const totalBatches = Math.ceil(idsToDelete.length / DELETE_BATCH_SIZE);
+      
+      console.log(`   Batch ${batchNum}/${totalBatches}: Deleting ${batch.length} cards...`);
 
-      const { data: deletedData, error: deleteError } = await supabase
-        .from('pokemon_card_attributes')
-        .delete()
-        .in('id', batch)
-        .select('id');
+      try {
+        const { data: deletedData, error: deleteError } = await supabase
+          .from('pokemon_card_attributes')
+          .delete()
+          .in('id', batch)
+          .select('id');
 
-      if (deleteError) {
-        console.error(`   ❌ Delete error:`, deleteError.message);
-        errors.push(deleteError.message);
-      } else {
-        const deletedCount = deletedData?.length || 0;
-        totalDeleted += deletedCount;
-        console.log(`   ✅ Deleted ${deletedCount} cards (total: ${totalDeleted})`);
+        if (deleteError) {
+          console.error(`   ❌ Delete error:`, deleteError.message);
+          errors.push(`Batch ${batchNum}: ${deleteError.message}`);
+        } else {
+          const deletedCount = deletedData?.length || 0;
+          totalDeleted += deletedCount;
+          console.log(`   ✅ Deleted ${deletedCount} cards (total: ${totalDeleted})`);
+        }
+      } catch (err) {
+        console.error(`   ❌ Exception:`, err);
+        errors.push(`Batch ${batchNum}: ${err}`);
       }
 
       // Small delay between batches
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // If batchOnly mode, return after first batch
+      if (batchOnly) {
+        const remaining = idsToDelete.length - totalDeleted;
+        return new Response(
+          JSON.stringify({
+            success: true,
+            dryRun: false,
+            batchOnly: true,
+            stats: {
+              duplicateGroups,
+              cardsToDelete: cardsToDelete.length,
+              actualDeleted: totalDeleted,
+              remainingDuplicates: remaining,
+              batchesRemaining: Math.ceil(remaining / DELETE_BATCH_SIZE),
+            },
+            errors: errors.length > 0 ? errors : undefined,
+            message: remaining > 0 
+              ? `Deleted ${totalDeleted} cards. ${remaining} remaining - call again to continue.`
+              : `Deleted all ${totalDeleted} duplicate cards!`,
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
-    // Verify final state
-    const finalCards = await fetchAllCards(supabase);
-    const { cardsToDelete: remainingToDelete } = await findDuplicates(finalCards);
+    // Check remaining duplicates
+    const remaining = idsToDelete.length - totalDeleted;
 
-    console.log(`\n🎉 CLEANUP COMPLETE`);
-    console.log(`   Total deleted: ${totalDeleted}`);
-    console.log(`   Remaining duplicates: ${remainingToDelete.length}`);
+    console.log(`\n🎉 CLEANUP SESSION COMPLETE`);
+    console.log(`   Deleted: ${totalDeleted}`);
+    console.log(`   Remaining: ${remaining}`);
 
     return new Response(
       JSON.stringify({
@@ -234,13 +267,13 @@ serve(async (req) => {
           duplicateGroups,
           cardsToDelete: cardsToDelete.length,
           actualDeleted: totalDeleted,
-          remainingDuplicates: remainingToDelete.length,
-          iterations: 1,
+          remainingDuplicates: remaining,
         },
         errors: errors.length > 0 ? errors : undefined,
-        message: remainingToDelete.length === 0 
+        message: remaining === 0 
           ? `Successfully removed all ${totalDeleted} duplicate cards!`
-          : `Removed ${totalDeleted} cards, but ${remainingToDelete.length} duplicates remain`,
+          : `Removed ${totalDeleted} cards. ${remaining} remaining - run cleanup again to continue.`,
+        needsMoreRuns: remaining > 0,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
