@@ -14,6 +14,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getEnglishSetName } from "../_shared/japanese-set-names.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -221,9 +222,10 @@ serve(async (req) => {
       );
     }
 
-    const setName = setData.name || setCode;
+    const japaneseSetName = setData.name || setCode;
+    const englishSetName = getEnglishSetName(setCode) || japaneseSetName;
     const totalCards = setData.cardCount?.total || 0;
-    console.log(`📊 Set "${setName}" has ${totalCards} cards`);
+    console.log(`📊 Set "${japaneseSetName}" (${englishSetName}) has ${totalCards} cards`);
 
     await updateProgress(supabase, {
       setCode,
@@ -259,12 +261,20 @@ serve(async (req) => {
       const localId = card.localId || card.id || 'unknown';
       const imageUrl = card.image || `https://assets.tcgdex.net/${language}/${setCode}/${localId}`;
       
+      // Generate printed_number as it appears on the card
+      const printedNumber = totalCards 
+        ? `${localId}/${String(totalCards).padStart(3, '0')}`
+        : localId;
+      
       return {
         card_id: `tcgdex_${language}_${cardId}`,
         name: card.name || 'Unknown',
-        set_name: setName,
+        set_name: japaneseSetName, // Original Japanese name
+        set_name_en: englishSetName, // English translation
         set_code: setCode,
         number: localId,
+        printed_number: printedNumber,
+        display_number: printedNumber,
         rarity: null, // Not in summary
         types: null,
         supertype: null,

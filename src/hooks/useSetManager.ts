@@ -18,65 +18,111 @@ export interface GitHubSet {
   };
 }
 
-// Japanese set name mappings (loaded from static file)
+// Complete Japanese set name mappings
+// Only sets in this mapping will be shown in the Set Manager
 const JAPANESE_SET_ENGLISH_NAMES: Record<string, string> = {
-  // Classic Era (1996-2001)
+  // Scarlet & Violet Era (2023-Present)
+  'SV8a': 'Terastal Fest ex',
+  'SV8': 'Super Electric Breaker',
+  'SV7a': 'Paradise Dragona',
+  'SV7': 'Stellar Miracle',
+  'SV6a': 'Night Wanderer',
+  'SV6': 'Mask of Change',
+  'SV5a': 'Crimson Haze',
+  'SV5M': 'Cyber Judge',
+  'SV5K': 'Wild Force',
+  'SV4a': 'Shiny Treasure ex',
+  'SV4M': 'Future Flash',
+  'SV4K': 'Ancient Roar',
+  'SV3a': 'Raging Surf',
+  'SV3': 'Ruler of the Black Flame',
+  'SV2a': 'Pokemon Card 151',
+  'SV2P': 'Snow Hazard',
+  'SV2D': 'Clay Burst',
+  'SV1a': 'Triplet Beat',
+  'SV1V': 'Violet ex',
+  'SV1S': 'Scarlet ex',
+  // Sword & Shield Era (2019-2023)
+  'S12a': 'VSTAR Universe',
+  'S12': 'Paradigm Trigger',
+  'S11a': 'Incandescent Arcana',
+  'S11': 'Lost Abyss',
+  'S10b': 'Pokemon GO',
+  'S10a': 'Dark Fantasma',
+  'S10P': 'Space Juggler',
+  'S10D': 'Time Gazer',
+  'S9a': 'Battle Region',
+  'S9': 'Star Birth',
+  'S8b': 'VMAX Climax',
+  'S8a': '25th Anniversary Collection',
+  'S8': 'Fusion Arts',
+  'S7R': 'Blue Sky Stream',
+  'S7D': 'Skyscraping Perfect',
+  'S6a': 'Eevee Heroes',
+  'S6H': 'Silver Lance',
+  'S6K': 'Jet Black Spirit',
+  'S5a': 'Matchless Fighters',
+  'S5R': 'Rapid Strike Master',
+  'S5I': 'Single Strike Master',
+  'S4a': 'Shiny Star V',
+  'S4': 'Astonishing Volt Tackle',
+  'S3a': 'Legendary Heartbeat',
+  'S3': 'Infinity Zone',
+  'S2a': 'Explosive Walker',
+  'S2': 'Rebellion Crash',
+  'S1a': 'VMAX Rising',
+  'S1H': 'Shield',
+  'S1W': 'Sword',
+  // Sun & Moon Era (2016-2019)
+  'SM12a': 'Tag All Stars',
+  'SM12': 'Alter Genesis',
+  'SM11b': 'Dream League',
+  'SM11a': 'Remix Bout',
+  'SM11': 'Miracle Twins',
+  'SM10b': 'Sky Legend',
+  'SM10a': 'GG End',
+  'SM10': 'Double Blaze',
+  'SM9b': 'Full Metal Wall',
+  'SM9a': 'Night Unison',
+  'SM9': 'Tag Bolt',
+  'SM8b': 'GX Ultra Shiny',
+  'SM8a': 'Dark Order',
+  'SM8': 'Super Burst Impact',
+  'SM7b': 'Fairy Rise',
+  'SM7a': 'Thunderclap Spark',
+  'SM7': 'Charisma of the Wrecked Sky',
+  'SM6b': 'Champion Road',
+  'SM6a': 'Dragon Storm',
+  'SM6': 'Forbidden Light',
+  // Neo Era (1999-2001)
+  'neo1': 'Neo Genesis',
+  'neo2': 'Neo Discovery',
+  'neo3': 'Neo Revelation',
+  'neo4': 'Neo Destiny',
+  // Classic / PMCG Era (1996-1999)
   'PMCG1': 'Expansion Pack (Base Set)',
   'PMCG2': 'Pokemon Jungle',
   'PMCG3': 'Mystery of the Fossils',
   'PMCG4': 'Team Rocket',
   'PMCG5': 'Leaders Stadium',
   'PMCG6': 'Challenge from the Darkness',
-  // Neo Series
-  'neo1': 'Neo Genesis',
-  'neo2': 'Neo Discovery',
-  'neo3': 'Neo Revelation',
-  'neo4': 'Neo Destiny',
-  // VS Series
-  'VS1': 'Pokemon Card VS',
-  'VS2': 'Pokemon Card e-web',
-  // Scarlet & Violet Era
-  'sv8a': 'Terastal Fest ex',
-  'sv7a': 'Stellar Miracle',
-  'sv6a': 'Night Wanderer',
-  'sv5a': 'Crimson Haze',
-  'sv4a': 'Shiny Treasure ex',
-  'sv4': 'Ancient Roar / Future Flash',
-  'sv3a': 'Raging Surf',
-  'sv3': 'Ruler of the Black Flame',
-  'sv2a': 'Pokemon Card 151',
-  'sv2': 'Snow Hazard / Clay Burst',
-  'sv1a': 'Triplet Beat',
-  'sv1': 'Scarlet ex / Violet ex',
-  // Sword & Shield Era
-  's12a': 'VSTAR Universe',
-  's12': 'Paradigm Trigger',
-  's11a': 'Incandescent Arcana',
-  's11': 'Lost Abyss',
-  's10a': 'Dark Fantasma',
-  's10': 'Time Gazer / Space Juggler',
-  's9a': 'Battle Region',
-  's9': 'Star Birth',
-  's8a': '25th Anniversary Collection',
-  's8': 'Fusion Arts',
-  's7R': 'Blue Sky Stream',
-  's7D': 'Skyscraping Perfect',
-  's6a': 'Eevee Heroes',
-  's6H': 'Silver Lance',
-  's6K': 'Jet Black Spirit',
-  's5a': 'Matchless Fighters',
-  's5R': 'Rapid Strike Master',
-  's5I': 'Single Strike Master',
-  's4a': 'Shiny Star V',
-  's4': 'Astonishing Volt Tackle',
-  's3a': 'Legendary Heartbeat',
-  's3': 'Infinity Zone',
-  's2a': 'Explosive Walker',
-  's2': 'Rebellion Crash',
-  's1a': 'VMAX Rising',
-  's1H': 'Shield',
-  's1W': 'Sword',
 };
+
+// Helper function to get English name (case-insensitive)
+function getEnglishSetName(setCode: string): string | null {
+  // Try exact match first
+  if (JAPANESE_SET_ENGLISH_NAMES[setCode]) {
+    return JAPANESE_SET_ENGLISH_NAMES[setCode];
+  }
+  // Try case-insensitive match
+  const upperCode = setCode.toUpperCase();
+  for (const [key, value] of Object.entries(JAPANESE_SET_ENGLISH_NAMES)) {
+    if (key.toUpperCase() === upperCode) {
+      return value;
+    }
+  }
+  return null;
+}
 
 export interface SetCoverage {
   setId: string;
@@ -126,7 +172,8 @@ export function useGitHubSets() {
 
 /**
  * Fetch Japanese sets from TCGdex API
- * Returns sets with English names for display
+ * Returns ONLY sets that have English translations mapped
+ * This ensures users only see sets with proper English names
  */
 export function useJapaneseGitHubSets() {
   return useQuery({
@@ -139,21 +186,32 @@ export function useJapaneseGitHubSets() {
       }
       const sets = await response.json();
       
-      // Transform to GitHubSet format with English names
-      const transformedSets: GitHubSet[] = sets.map((set: any) => ({
-        id: set.id,
-        name: set.name, // Japanese name
-        name_en: JAPANESE_SET_ENGLISH_NAMES[set.id] || set.name, // English name or fallback to Japanese
-        series: set.serie?.name || 'Unknown',
-        printedTotal: set.cardCount?.official || 0,
-        total: set.cardCount?.total || 0,
-        releaseDate: set.releaseDate || '',
-        language: 'ja' as const,
-        images: {
-          logo: set.logo,
-          symbol: set.symbol,
+      // Transform to GitHubSet format - ONLY include sets with English translations
+      const transformedSets: GitHubSet[] = [];
+      
+      for (const set of sets) {
+        const englishName = getEnglishSetName(set.id);
+        
+        // Only include sets that have an English translation mapped
+        if (englishName) {
+          transformedSets.push({
+            id: set.id,
+            name: englishName, // Use English name as primary display
+            name_en: englishName,
+            series: set.serie?.name || 'Unknown',
+            printedTotal: set.cardCount?.official || 0,
+            total: set.cardCount?.total || 0,
+            releaseDate: set.releaseDate || '',
+            language: 'ja' as const,
+            images: {
+              logo: set.logo,
+              symbol: set.symbol,
+            }
+          });
         }
-      }));
+      }
+      
+      console.log(`[useJapaneseGitHubSets] Found ${sets.length} total sets, ${transformedSets.length} have English translations`);
       
       return transformedSets;
     },
