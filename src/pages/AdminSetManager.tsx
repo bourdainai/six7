@@ -10,6 +10,7 @@ import {
   useImportActivityTracker,
   useImportQueue,
   useJapaneseGitHubSets,
+  useDatabaseSetCoverage,
 } from "@/hooks/useSetManager";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -144,6 +145,7 @@ type LanguageFilter = 'all' | 'english' | 'japanese';
 export default function AdminSetManager() {
   const { data: sets, isLoading, refetch: refetchSets } = useSetCoverage();
   const { data: japaneseSets, isLoading: isLoadingJa } = useJapaneseGitHubSets();
+  const { data: dbCoverage } = useDatabaseSetCoverage(); // Get actual DB coverage
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedSets, setSelectedSets] = useState<Set<string>>(new Set());
@@ -156,19 +158,35 @@ export default function AdminSetManager() {
   
   const importSetMutation = useImportSet();
 
-  // Transform Japanese sets to coverage format for display
-  const japaneseSetsAsCoverage = (japaneseSets || []).map((set) => ({
-    setId: set.id,
-    setName: set.name_en || set.name, // Display English name
-    setNameOriginal: set.name, // Keep original Japanese name
-    series: set.series,
-    releaseDate: set.releaseDate || '',
-    githubTotal: set.printedTotal || set.total || 0,
-    dbCount: 0, // TODO: Calculate from DB
-    coverage: 0,
-    status: 'missing' as const,
-    language: 'ja' as const,
-  }));
+  // Transform Japanese sets to coverage format with ACTUAL DB coverage
+  const japaneseSetsAsCoverage = (japaneseSets || []).map((set) => {
+    // Look up coverage from database (try both exact case and lowercase)
+    const dbCount = dbCoverage?.[set.id] || dbCoverage?.[set.id.toLowerCase()] || dbCoverage?.[set.id.toUpperCase()] || 0;
+    const total = set.printedTotal || set.total || 0;
+    const coveragePercent = total > 0 ? Math.round((dbCount / total) * 100) : 0;
+    
+    let status: 'missing' | 'partial' | 'complete';
+    if (dbCount === 0) {
+      status = 'missing';
+    } else if (coveragePercent >= 95) {
+      status = 'complete';
+    } else {
+      status = 'partial';
+    }
+    
+    return {
+      setId: set.id,
+      setName: set.name_en || set.name, // Display English name
+      setNameOriginal: set.name, // Keep original Japanese name
+      series: set.series,
+      releaseDate: set.releaseDate || '',
+      githubTotal: total,
+      dbCount,
+      coverage: coveragePercent,
+      status,
+      language: 'ja' as const,
+    };
+  });
 
   // Filter sets based on language selection
   const filteredSets = (() => {
