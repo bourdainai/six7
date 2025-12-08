@@ -1,16 +1,23 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { POKEMON_NAMES, getEnglishName, isJapaneseName } from "../_shared/pokemon-names.ts";
+import { requireCronAuth, handleCORS, createUnauthorizedResponse, getCorsHeaders } from "../_shared/cron-auth.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const corsHeaders = getCorsHeaders();
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return handleCORS();
   }
+
+  // Require cron authentication
+  const authResult = await requireCronAuth(req);
+  if (!authResult.authorized) {
+    console.warn(`Unauthorized access attempt to backfill-english-names: ${authResult.reason}`);
+    return createUnauthorizedResponse(authResult.reason);
+  }
+
+  console.log(`Authenticated via: ${authResult.authType}`);
 
   try {
     const supabase = createClient(
@@ -22,8 +29,6 @@ serve(async (req) => {
 
     console.log(`🚀 Starting English name backfill (batchSize: ${batchSize}, dryRun: ${dryRun})`);
 
-    // Step 1: Get cards that need English names
-    // Cards where name contains Japanese characters and name_en is null
     const { data: cards, error: fetchError } = await supabase
       .from('pokemon_card_attributes')
       .select('id, card_id, name, metadata')
@@ -47,19 +52,15 @@ serve(async (req) => {
       );
     }
 
-    // Step 2: Process cards and determine English names
     const updates: Array<{ id: string; name_en: string }> = [];
     const skipped: Array<{ id: string; name: string; reason: string }> = [];
     
     for (const card of cards) {
-      // Check if name is Japanese
       if (!isJapaneseName(card.name)) {
-        // Not Japanese, skip (might already be English)
         skipped.push({ id: card.id, name: card.name, reason: 'Not Japanese' });
         continue;
       }
 
-      // Try to get English name from dexId
       const dexId = card.metadata?.dexId;
       const englishName = getEnglishName(dexId);
 
@@ -67,8 +68,6 @@ serve(async (req) => {
         updates.push({ id: card.id, name_en: englishName });
         console.log(`✅ ${card.name} → ${englishName} (dexId: ${dexId})`);
       } else {
-        // No dexId or unknown Pokemon - this might be a Trainer/Energy card
-        // We'll mark these for manual review or AI translation later
         skipped.push({ 
           id: card.id, 
           name: card.name, 
@@ -79,11 +78,9 @@ serve(async (req) => {
 
     console.log(`\n📊 Results: ${updates.length} to update, ${skipped.length} skipped`);
 
-    // Step 3: Apply updates
     let updatedCount = 0;
     
     if (!dryRun && updates.length > 0) {
-      // Update in batches of 100
       for (let i = 0; i < updates.length; i += 100) {
         const batch = updates.slice(i, i + 100);
         
@@ -104,7 +101,6 @@ serve(async (req) => {
       }
     }
 
-    // Step 4: Return results
     const stats = {
       processed: cards.length,
       updated: dryRun ? 0 : updatedCount,
@@ -141,4 +137,3 @@ serve(async (req) => {
     );
   }
 });
-

@@ -1,10 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireCronAuth, handleCORS, createUnauthorizedResponse, getCorsHeaders } from "../_shared/cron-auth.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const corsHeaders = getCorsHeaders();
 
 // Helper function to map set codes to their series paths in TCGdex
 function getSeriesFromSetCode(setCode: string): string {
@@ -24,8 +22,17 @@ function getSeriesFromSetCode(setCode: string): string {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return handleCORS();
   }
+
+  // Require cron authentication
+  const authResult = await requireCronAuth(req);
+  if (!authResult.authorized) {
+    console.warn(`Unauthorized access attempt to import-tcgdex-data: ${authResult.reason}`);
+    return createUnauthorizedResponse(authResult.reason);
+  }
+
+  console.log(`Authenticated via: ${authResult.authType}`);
 
   try {
     const supabase = createClient(
@@ -104,7 +111,6 @@ serve(async (req) => {
                 set_name: setData.name,
                 set_code: set.id,
                 number: cardData.localId,
-                // display_number and search_number are generated columns, don't insert them
                 rarity: cardData.rarity || null,
                 types: cardData.types || null,
                 supertype: cardData.category || null,

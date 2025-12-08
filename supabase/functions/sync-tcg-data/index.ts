@@ -1,17 +1,24 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { requireCronAuth, handleCORS, createUnauthorizedResponse, getCorsHeaders } from "../_shared/cron-auth.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const corsHeaders = getCorsHeaders();
 
 const POKEMON_API_URL = "https://api.pokemontcg.io/v2";
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return handleCORS();
   }
+
+  // Require cron authentication
+  const authResult = await requireCronAuth(req);
+  if (!authResult.authorized) {
+    console.warn(`Unauthorized access attempt to sync-tcg-data: ${authResult.reason}`);
+    return createUnauthorizedResponse(authResult.reason);
+  }
+
+  console.log(`Authenticated via: ${authResult.authType}`);
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
@@ -20,47 +27,16 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Check if this is a cron job (no auth required) or admin request
-    const authHeader = req.headers.get('Authorization');
-    const isCronJob = !authHeader || authHeader.includes('cron-secret');
-    
-    let isAdmin = false;
-    if (authHeader && !isCronJob) {
-      const { data: { user }, error: userError } = await supabase.auth.getUser(
-        authHeader.replace('Bearer ', '')
-      );
-      
-      if (!userError && user) {
-        const { data: roles } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .eq('role', 'admin')
-          .single();
-        
-        isAdmin = !!roles;
-      }
-    }
-
-    // Allow cron jobs or admin requests
-    if (!isCronJob && !isAdmin) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized - Admin access or cron secret required' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     // Parse request body
     const body = await req.json().catch(() => ({}));
     const { 
-      daysBack = 7, // How many days back to fetch price updates
+      daysBack = 7,
       limit = 2000
     } = body;
 
     console.log(`Starting Pokemon TCG API price sync (last ${daysBack} days)...`);
 
     // Fetch cards that need price updates
-    // Since Pokemon TCG API doesn't have an updatedAt filter, we'll fetch random batches
     const apiUrl = new URL(`${POKEMON_API_URL}/cards`);
     apiUrl.searchParams.append('pageSize', limit.toString());
     apiUrl.searchParams.append('page', '1');

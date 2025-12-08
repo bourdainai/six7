@@ -1,21 +1,16 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { requireCronAuth, handleCORS, createUnauthorizedResponse, getCorsHeaders } from "../_shared/cron-auth.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const corsHeaders = getCorsHeaders();
 
 const PRIORITY_SETS = [
-  // Japanese SV Series (High Priority - User needs these)
   { code: 'SV4a', name: 'Shiny Treasure ex', language: 'ja', region: 'asia' },
   { code: 'SV1', name: 'Scarlet ex', language: 'ja', region: 'asia' },
   { code: 'SV2', name: 'Violet ex', language: 'ja', region: 'asia' },
   { code: 'SV3', name: 'Obsidian Flames', language: 'ja', region: 'asia' },
   { code: 'SV5', name: 'Wild Force / Cyber Judge', language: 'ja', region: 'asia' },
   { code: 'SV6', name: 'Mask of Change', language: 'ja', region: 'asia' },
-  
-  // English SV Series
   { code: 'sv1', name: 'Scarlet & Violet', language: 'en', region: 'international' },
   { code: 'sv2', name: 'Paldea Evolved', language: 'en', region: 'international' },
   { code: 'sv3', name: 'Obsidian Flames', language: 'en', region: 'international' },
@@ -26,8 +21,17 @@ const PRIORITY_SETS = [
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return handleCORS();
   }
+
+  // Require cron authentication
+  const authResult = await requireCronAuth(req);
+  if (!authResult.authorized) {
+    console.warn(`Unauthorized access attempt to import-all-pokemon: ${authResult.reason}`);
+    return createUnauthorizedResponse(authResult.reason);
+  }
+
+  console.log(`Authenticated via: ${authResult.authType}`);
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -52,12 +56,10 @@ serve(async (req) => {
 
     const setsToImport = specificSets || PRIORITY_SETS;
 
-    // Strategy: Try multiple sources for each set until we get complete data
     for (const set of setsToImport) {
       console.log(`\n📦 Processing ${set.name} (${set.code})...`);
       let setComplete = false;
 
-      // Source 1: TCGdex GitHub (most complete for some sets)
       if (!setComplete) {
         try {
           console.log(`  Trying TCGdex GitHub...`);
@@ -71,6 +73,9 @@ serve(async (req) => {
                 region: set.region,
                 setIds: [set.code],
                 batchSize: 100
+              },
+              headers: {
+                'x-cron-secret': supabaseKey
               }
             }
           );
@@ -89,7 +94,6 @@ serve(async (req) => {
         }
       }
 
-      // Source 2: TCGdex API (backup)
       if (!setComplete) {
         try {
           console.log(`  Trying TCGdex API...`);
@@ -102,6 +106,9 @@ serve(async (req) => {
                 language: set.language,
                 setIds: [set.code.toUpperCase()],
                 limit: 1000
+              },
+              headers: {
+                'x-cron-secret': supabaseKey
               }
             }
           );
@@ -120,7 +127,6 @@ serve(async (req) => {
         }
       }
 
-      // Verify completeness
       const { data: setCards } = await supabase
         .from('pokemon_card_attributes')
         .select('card_id')
@@ -129,7 +135,6 @@ serve(async (req) => {
       const cardCount = setCards?.length || 0;
       console.log(`  📊 Total cards in database for ${set.code}: ${cardCount}`);
 
-      // Small delay between sets
       await new Promise(resolve => setTimeout(resolve, 500));
     }
 
