@@ -1,10 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireCronAuth, handleCORS, createUnauthorizedResponse, getCorsHeaders } from "../_shared/cron-auth.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const corsHeaders = getCorsHeaders();
 
 const GITHUB_BASE_URL = 'https://raw.githubusercontent.com/PokemonTCG/pokemon-tcg-data/master';
 
@@ -54,8 +52,17 @@ interface GitHubCard {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return handleCORS();
   }
+
+  // Require cron authentication
+  const authResult = await requireCronAuth(req);
+  if (!authResult.authorized) {
+    console.warn(`Unauthorized access attempt to import-github-pokemon-data: ${authResult.reason}`);
+    return createUnauthorizedResponse(authResult.reason);
+  }
+
+  console.log(`Authenticated via: ${authResult.authType}`);
 
   const startTime = Date.now();
   
@@ -70,21 +77,18 @@ serve(async (req) => {
     console.log('🚀 Starting Pokemon data import...');
     console.log(`📋 Requested sets: ${setIds ? setIds.join(', ') : 'all'}`);
     
-    // Fetch sets list
     const setsResponse = await fetch(`${GITHUB_BASE_URL}/sets/en.json`);
     if (!setsResponse.ok) {
       throw new Error(`Failed to fetch sets: ${setsResponse.status}`);
     }
     const allSets = await setsResponse.json();
     
-    // Filter sets if specific ones requested
     const setsToProcess = setIds 
       ? allSets.filter((s: any) => setIds.includes(s.id))
       : allSets;
 
     console.log(`📦 Processing ${setsToProcess.length} set(s)`);
 
-    // Tracking
     let totalImported = 0;
     let totalUpdated = 0;
     let totalSkipped = 0;
@@ -104,12 +108,10 @@ serve(async (req) => {
       };
     }> = [];
 
-    // Process each set
     for (const set of setsToProcess) {
       console.log(`\n📦 SET: ${set.name} (${set.id})`);
       
       try {
-        // Fetch cards for this set
         const cardsUrl = `${GITHUB_BASE_URL}/cards/en/${set.id}.json`;
         console.log(`   Fetching: ${cardsUrl}`);
         
@@ -129,7 +131,6 @@ serve(async (req) => {
         let setSkipped = 0;
         let setErrors = 0;
 
-        // Process cards in small batches for reliability
         for (let i = 0; i < cards.length; i += batchSize) {
           const batch = cards.slice(i, i + batchSize);
           const batchNum = Math.floor(i / batchSize) + 1;
@@ -138,13 +139,11 @@ serve(async (req) => {
           console.log(`   📝 Batch ${batchNum}/${totalBatches} (${batch.length} cards)`);
 
           const cardsToUpsert = batch.map((card: GitHubCard) => {
-            // Track which fields have data
             const hasCore = !!(card.id && card.name && card.set?.id && card.number);
             const hasImages = !!(card.images?.small || card.images?.large);
             const hasPricing = !!(card.tcgplayer?.prices || card.cardmarket?.prices);
             const hasMetadata = !!(card.hp || card.types?.length || card.abilities?.length || card.attacks?.length);
 
-            // Generate the printed number as it appears on the card (e.g., "125/094")
             const printedNumber = set.printedTotal 
               ? `${card.number}/${String(set.printedTotal).padStart(3, '0')}`
               : card.number;
@@ -156,7 +155,7 @@ serve(async (req) => {
               set_code: set.id,
               number: card.number,
               printed_number: printedNumber,
-              display_number: printedNumber, // Also update display_number for consistency
+              display_number: printedNumber,
               rarity: card.rarity || null,
               types: card.types || null,
               supertype: card.supertype || null,
@@ -195,12 +194,10 @@ serve(async (req) => {
                 set_series: set.series,
                 release_date: set.releaseDate
               },
-              // Store field completion for verification
               _fields: { hasCore, hasImages, hasPricing, hasMetadata }
             };
           });
 
-          // Upsert the batch
           const { error: upsertError } = await supabase
             .from('pokemon_card_attributes')
             .upsert(
@@ -216,7 +213,6 @@ serve(async (req) => {
             setImported += batch.length;
             totalImported += batch.length;
             
-            // Log each card processed
             batch.forEach((card, idx) => {
               const cardData = cardsToUpsert[idx];
               cardResults.push({
@@ -227,16 +223,13 @@ serve(async (req) => {
                 fields: cardData._fields
               });
               
-              // Log individual card for visibility
               console.log(`      ✓ ${card.name} (#${card.number}) - Core:${cardData._fields.hasCore ? '✓' : '✗'} Img:${cardData._fields.hasImages ? '✓' : '✗'} Price:${cardData._fields.hasPricing ? '✓' : '✗'} Meta:${cardData._fields.hasMetadata ? '✓' : '✗'}`);
             });
           }
 
-          // Small delay to prevent overwhelming the database
           await new Promise(resolve => setTimeout(resolve, 100));
         }
 
-        // Set complete
         console.log(`   ✅ Set complete: ${setImported} imported, ${setUpdated} updated, ${setSkipped} skipped, ${setErrors} errors`);
         processedSets.push(set.id);
 
@@ -247,7 +240,6 @@ serve(async (req) => {
       }
     }
 
-    // Final stats
     const duration = Date.now() - startTime;
     const cardsPerSecond = totalImported / (duration / 1000);
 
@@ -257,7 +249,6 @@ serve(async (req) => {
     console.log(`   Cards: ${totalImported} imported, ${totalUpdated} updated, ${totalSkipped} skipped, ${totalErrors} errors`);
     console.log(`   Time: ${duration}ms (${cardsPerSecond.toFixed(1)} cards/sec)`);
 
-    // Field completion summary
     const fieldStats = {
       core: cardResults.filter(c => c.fields.hasCore).length,
       images: cardResults.filter(c => c.fields.hasImages).length,
@@ -288,7 +279,6 @@ serve(async (req) => {
           cardsPerSecond: Math.round(cardsPerSecond * 10) / 10,
         },
         fieldCompletion: fieldStats,
-        // Return last 50 cards for display
         recentCards: cardResults.slice(-50),
       }),
       {

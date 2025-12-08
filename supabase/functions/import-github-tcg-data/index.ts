@@ -1,17 +1,24 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { requireCronAuth, handleCORS, createUnauthorizedResponse, getCorsHeaders } from "../_shared/cron-auth.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const corsHeaders = getCorsHeaders();
 
 const GITHUB_RAW_BASE = "https://raw.githubusercontent.com/PokemonTCG/pokemon-tcg-data/master";
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return handleCORS();
   }
+
+  // Require cron authentication
+  const authResult = await requireCronAuth(req);
+  if (!authResult.authorized) {
+    console.warn(`Unauthorized access attempt to import-github-tcg-data: ${authResult.reason}`);
+    return createUnauthorizedResponse(authResult.reason);
+  }
+
+  console.log(`Authenticated via: ${authResult.authType}`);
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -22,7 +29,6 @@ serve(async (req) => {
 
     const { setCode, batchSize = 100, maxSets = 10 } = await req.json().catch(() => ({}));
 
-    // Step 1: Fetch all sets from GitHub
     console.log('Fetching sets list from GitHub...');
     const setsUrl = `${GITHUB_RAW_BASE}/sets/en.json`;
     const setsResponse = await fetch(setsUrl);
@@ -34,14 +40,11 @@ serve(async (req) => {
     const allSets = await setsResponse.json();
     console.log(`Found ${allSets.length} total sets in repository`);
 
-    // Step 2: Filter sets to process
     let setsToProcess = allSets;
     if (setCode) {
       setsToProcess = allSets.filter((s: any) => s.id === setCode);
       console.log(`Filtering for single set: ${setCode}`);
     } else {
-      // Limit to maxSets per run to avoid timeouts
-      // Get sets that haven't been synced yet from GitHub
       const { data: syncedSets } = await supabase
         .from('tcg_sync_progress')
         .select('set_code')
@@ -61,7 +64,6 @@ serve(async (req) => {
     const failedSets: string[] = [];
     const successSets: string[] = [];
 
-    // Step 3: Process each set
     for (const set of setsToProcess) {
       try {
         const setId = set.id;
@@ -70,7 +72,6 @@ serve(async (req) => {
 
         console.log(`\n=== Processing Set: ${setName} (${setId}) - ${totalCards} cards ===`);
 
-        // Check if already synced from GitHub
         const { data: existingProgress } = await supabase
           .from('tcg_sync_progress')
           .select('*')
@@ -84,7 +85,6 @@ serve(async (req) => {
           continue;
         }
 
-        // Fetch the full set JSON which contains all cards
         const setDataUrl = `${GITHUB_RAW_BASE}/cards/en/${setId}.json`;
         console.log(`Fetching cards from: ${setDataUrl}`);
         
@@ -99,7 +99,6 @@ serve(async (req) => {
         const cards = await setDataResponse.json();
         console.log(`Found ${cards.length} cards in set ${setId}`);
 
-        // Check which cards already exist
         const cardIds = cards.map((card: any) => card.id);
         const { data: existingCards } = await supabase
           .from('pokemon_card_attributes')
@@ -112,13 +111,11 @@ serve(async (req) => {
         console.log(`${newCards.length} new cards to import, ${existingCardIds.size} already exist`);
         totalSkipped += existingCardIds.size;
 
-        // Process cards in batches
         let importedForSet = 0;
         for (let i = 0; i < newCards.length; i += batchSize) {
           const batch = newCards.slice(i, i + batchSize);
           
           const cardsToInsert = batch.map((card: any) => {
-            // Map ALL GitHub data to our schema
             const mappedCard: any = {
               card_id: card.id,
               name: card.name,
@@ -134,7 +131,6 @@ serve(async (req) => {
               synced_at: new Date().toISOString(),
             };
 
-            // Images
             if (card.images) {
               mappedCard.images = {
                 small: card.images.small,
@@ -142,7 +138,6 @@ serve(async (req) => {
               };
             }
 
-            // TCGPlayer data
             if (card.tcgplayer) {
               mappedCard.tcgplayer_id = card.tcgplayer.url?.split('/').pop() || null;
               if (card.tcgplayer.prices) {
@@ -151,7 +146,6 @@ serve(async (req) => {
               }
             }
 
-            // Cardmarket data
             if (card.cardmarket) {
               mappedCard.cardmarket_id = card.cardmarket.url?.split('/').pop() || null;
               if (card.cardmarket.prices) {
@@ -180,7 +174,6 @@ serve(async (req) => {
           }
         }
 
-        // Update sync progress
         await supabase
           .from('tcg_sync_progress')
           .upsert({
@@ -215,7 +208,7 @@ serve(async (req) => {
         totalImported,
         totalSkipped,
         totalErrors,
-        successSets: successSets.slice(0, 10), // First 10
+        successSets: successSets.slice(0, 10),
         failedSets: failedSets.length > 0 ? failedSets.slice(0, 10) : undefined
       }
     };

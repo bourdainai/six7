@@ -1,17 +1,24 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { requireCronAuth, handleCORS, createUnauthorizedResponse, getCorsHeaders } from "../_shared/cron-auth.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const corsHeaders = getCorsHeaders();
 
 const JUSTTCG_API_URL = "https://api.justtcg.com/v1";
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return handleCORS();
   }
+
+  // Require cron authentication
+  const authResult = await requireCronAuth(req);
+  if (!authResult.authorized) {
+    console.warn(`Unauthorized access attempt to sync-justtcg-data: ${authResult.reason}`);
+    return createUnauthorizedResponse(authResult.reason);
+  }
+
+  console.log(`Authenticated via: ${authResult.authType}`);
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
@@ -24,54 +31,20 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Check if this is a cron job (no auth required) or admin request
-    const authHeader = req.headers.get('Authorization');
-    const isCronJob = !authHeader || authHeader.includes('cron-secret');
-    
-    let isAdmin = false;
-    if (authHeader && !isCronJob) {
-      const { data: { user }, error: userError } = await supabase.auth.getUser(
-        authHeader.replace('Bearer ', '')
-      );
-      
-      if (!userError && user) {
-        const { data: roles } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .eq('role', 'admin')
-          .single();
-        
-        isAdmin = !!roles;
-      }
-    }
-
-    // Allow cron jobs or admin requests
-    if (!isCronJob && !isAdmin) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized - Admin access or cron secret required' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Parse request body
     const body = await req.json().catch(() => ({}));
     const { 
       setId,
-      mode = 'prices', // Default to price-only mode now
+      mode = 'prices',
       limit = 2000
     } = body;
 
     console.log(`Starting JustTCG sync - Mode: ${mode}, Set: ${setId || 'auto'}, Limit: ${limit}`);
 
-    // Determine sync mode
     let targetSetId = setId;
     const updateOnly = mode === 'prices';
 
-    // If no set specified, auto-select based on mode
     if (!targetSetId) {
       if (updateOnly) {
-        // For price updates, check when we last updated
         const { data: lastUpdate } = await supabase
           .from('pokemon_card_attributes')
           .select('last_price_update')
@@ -82,11 +55,10 @@ serve(async (req) => {
 
         const lastUpdateTimestamp = lastUpdate?.last_price_update 
           ? Math.floor(new Date(lastUpdate.last_price_update).getTime() / 1000)
-          : Math.floor(Date.now() / 1000) - (30 * 24 * 60 * 60); // Default to 30 days ago
+          : Math.floor(Date.now() / 1000) - (30 * 24 * 60 * 60);
 
         console.log(`Price update mode - fetching cards updated since ${new Date(lastUpdateTimestamp * 1000).toISOString()}`);
       } else {
-        // For full sync, get sets that haven't been synced yet
         const { data: sets } = await supabase
           .from('tcg_sync_progress')
           .select('set_code')
@@ -95,7 +67,6 @@ serve(async (req) => {
 
         const completedSets = new Set(sets?.map(s => s.set_code) || []);
 
-        // Fetch available Pokemon sets from JustTCG
         const setsResponse = await fetch(`${JUSTTCG_API_URL}/sets?game=pokemon`, {
           headers: {
             'x-api-key': justTcgApiKey,
@@ -110,7 +81,6 @@ serve(async (req) => {
         const setsData = await setsResponse.json();
         const availableSets = setsData.data || [];
 
-        // Find first unsynced set
         const nextSet = availableSets.find((s: any) => !completedSets.has(s.id));
         
         if (nextSet) {
@@ -125,15 +95,12 @@ serve(async (req) => {
       }
     }
 
-    // Build API URL based on mode
     let apiUrl = `${JUSTTCG_API_URL}/cards?game=pokemon`;
     
     if (updateOnly) {
-      // Price update mode - fetch recently updated cards
-      const lastUpdateTimestamp = Math.floor(Date.now() / 1000) - (7 * 24 * 60 * 60); // Last 7 days
+      const lastUpdateTimestamp = Math.floor(Date.now() / 1000) - (7 * 24 * 60 * 60);
       apiUrl += `&updatedAt=${lastUpdateTimestamp}`;
     } else if (targetSetId) {
-      // Full sync mode - fetch all cards from specific set
       apiUrl += `&set=${targetSetId}`;
     }
 
@@ -141,7 +108,6 @@ serve(async (req) => {
 
     console.log(`Fetching from: ${apiUrl}`);
 
-    // Fetch cards from JustTCG
     const cardsResponse = await fetch(apiUrl, {
       headers: {
         'x-api-key': justTcgApiKey,
@@ -160,7 +126,6 @@ serve(async (req) => {
       console.log('No cards returned from API');
       
       if (targetSetId && !updateOnly) {
-        // Mark set as completed
         await supabase
           .from('tcg_sync_progress')
           .upsert({
@@ -185,7 +150,6 @@ serve(async (req) => {
     const now = new Date().toISOString();
     const cardIds = cards.map((card: any) => card.tcgplayerId);
 
-    // Check which cards already exist
     const { data: existingCards } = await supabase
       .from('pokemon_card_attributes')
       .select('tcgplayer_id')
@@ -196,11 +160,9 @@ serve(async (req) => {
     let insertCount = 0;
     let updateCount = 0;
 
-    // Process each card
     for (const card of cards) {
       const exists = existingCardIds.has(card.tcgplayerId);
 
-      // Calculate average price from variants
       let avgPrice = null;
       if (card.variants && card.variants.length > 0) {
         const prices = card.variants
@@ -212,7 +174,6 @@ serve(async (req) => {
         }
       }
 
-      // Prepare pricing data
       const pricingData = {
         variants: card.variants || [],
         averagePrice: avgPrice,
@@ -220,7 +181,6 @@ serve(async (req) => {
       };
 
       if (updateOnly && exists) {
-        // Price update mode - only update pricing fields
         const { error: updateError } = await supabase
           .from('pokemon_card_attributes')
           .update({
@@ -236,7 +196,6 @@ serve(async (req) => {
           console.error(`Update error for ${card.tcgplayerId}:`, updateError);
         }
       } else if (!updateOnly && !exists) {
-        // Full sync mode - insert new card with all data
         const { error: insertError } = await supabase
           .from('pokemon_card_attributes')
           .insert({
@@ -268,7 +227,6 @@ serve(async (req) => {
 
     console.log(`✅ Processed ${cards.length} cards: ${insertCount} new, ${updateCount} updated`);
 
-    // Update sync progress
     if (targetSetId && !updateOnly) {
       await supabase
         .from('tcg_sync_progress')

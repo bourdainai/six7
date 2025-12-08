@@ -2,11 +2,9 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getEnglishName } from "../_shared/pokemon-names.ts";
 import { getEnglishSetName } from "../_shared/japanese-set-names.ts";
+import { requireCronAuth, handleCORS, createUnauthorizedResponse, getCorsHeaders } from "../_shared/cron-auth.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const corsHeaders = getCorsHeaders();
 
 const TCGDEX_GITHUB_BASE = 'https://raw.githubusercontent.com/tcgdex/cards-database/master';
 
@@ -70,37 +68,32 @@ function getLanguageDir(language: string): string {
 function getSeriesDir(setCode: string): string {
   const code = setCode.toLowerCase();
   
-  // Scarlet & Violet series
   if (code.startsWith('sv')) return 'sv';
-  
-  // Sword & Shield series
   if (code.startsWith('swsh') || code.match(/^s\d/)) return 'swsh';
-  
-  // Sun & Moon series
   if (code.startsWith('sm')) return 'sm';
-  
-  // XY series
   if (code.startsWith('xy')) return 'xy';
-  
-  // Black & White series
   if (code.startsWith('bw')) return 'bw';
-  
-  // HeartGold SoulSilver / older series
   if (code.startsWith('hgss') || code.startsWith('pl') || code.startsWith('dp')) return 'dp';
-  
-  // Base, Jungle, Fossil, etc.
   if (['base1', 'base2', 'base3', 'base4', 'base5', 'gym1', 'gym2', 'neo1', 'neo2', 'neo3', 'neo4'].includes(code)) {
     return 'base';
   }
   
-  // Default to the set code as series
   return code;
 }
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return handleCORS();
   }
+
+  // Require cron authentication
+  const authResult = await requireCronAuth(req);
+  if (!authResult.authorized) {
+    console.warn(`Unauthorized access attempt to import-tcgdex-github: ${authResult.reason}`);
+    return createUnauthorizedResponse(authResult.reason);
+  }
+
+  console.log(`Authenticated via: ${authResult.authType}`);
 
   try {
     const supabase = createClient(
@@ -110,7 +103,7 @@ serve(async (req) => {
 
     const { 
       language = 'en',
-      region = 'international', // 'international' or 'asia'
+      region = 'international',
       setIds = null,
       batchSize = 50 
     } = await req.json().catch(() => ({}));
@@ -118,16 +111,12 @@ serve(async (req) => {
     console.log(`\n🚀 Starting TCGdex GitHub import for ${language} (${region})`);
     
     const languageDir = getLanguageDir(language);
-    
-    // Fetch the directory listing to get all series
     const seriesUrl = `${TCGDEX_GITHUB_BASE}/${languageDir}`;
     console.log(`📂 Fetching series list from: ${seriesUrl}`);
     
-    // For GitHub, we need to manually specify which sets to import since we can't list directories
-    // We'll fetch specific sets if provided, or a predefined list
     const defaultSets = language === 'ja' && region === 'asia' 
-      ? ['sv4a', 'sv1', 'sv2', 'sv3', 'sv4', 'sv5', 'sv6'] // Japanese sets
-      : ['base1', 'sv01', 'sv02', 'sv03', 'sv04', 'sv05']; // English sets
+      ? ['sv4a', 'sv1', 'sv2', 'sv3', 'sv4', 'sv5', 'sv6']
+      : ['base1', 'sv01', 'sv02', 'sv03', 'sv04', 'sv05'];
     
     const setsToImport = setIds || defaultSets;
     console.log(`📦 Sets to import: ${setsToImport.join(', ')}`);
@@ -146,16 +135,11 @@ serve(async (req) => {
         const series = getSeriesDir(setId);
         const setBaseUrl = `${TCGDEX_GITHUB_BASE}/${languageDir}/${series}/${setId}`;
         
-        // Try to fetch the set's card list (we'll need to know the card IDs)
-        // GitHub doesn't provide directory listings, so we'll try fetching cards by number
-        // First, let's try to get a reasonable range (1-400 should cover most sets)
-        
         const cards: TCGdexCard[] = [];
-        const maxCardNumber = 400; // Reasonable maximum
+        const maxCardNumber = 400;
         
         console.log(`🔍 Scanning for cards in ${setId}...`);
         
-        // Try fetching cards in batches
         for (let i = 1; i <= maxCardNumber; i++) {
           const paddedNum = i.toString().padStart(3, '0');
           const cardUrl = `${setBaseUrl}/${paddedNum}.json`;
@@ -170,17 +154,14 @@ serve(async (req) => {
                 console.log(`   Found ${cards.length} cards so far...`);
               }
             } else if (cardResponse.status === 404) {
-              // Card doesn't exist, continue
               continue;
             } else {
               console.warn(`   Unexpected status ${cardResponse.status} for card ${paddedNum}`);
             }
           } catch (err) {
-            // Network error or other issue, skip this card
             continue;
           }
           
-          // Small delay to avoid rate limiting
           if (i % 10 === 0) {
             await new Promise(resolve => setTimeout(resolve, 100));
           }
@@ -194,7 +175,6 @@ serve(async (req) => {
         
         console.log(`✅ Found ${cards.length} cards in ${setId}`);
         
-        // Check which cards already exist
         const cardIds = cards.map(c => `tcgdex_github_${language}_${c.id}`);
         const { data: existingCards } = await supabase
           .from('pokemon_card_attributes')
@@ -210,22 +190,16 @@ serve(async (req) => {
         const setSkipped = existingCards?.length || 0;
         let setErrors = 0;
 
-        // Process cards in batches
         for (let i = 0; i < newCards.length; i += batchSize) {
           const batch = newCards.slice(i, i + batchSize);
           
           const cardsToInsert = batch.map(card => {
-            // Construct image URL using TCGdex CDN
             const imageUrl = card.image || 
               `https://assets.tcgdex.net/${language}/${series}/${setId}/${card.localId}`;
             
-            // Get English name for non-English cards using dexId
             const englishName = language !== 'en' ? getEnglishName(card.dexId) : null;
-            
-            // Get English set name for Japanese sets
             const englishSetName = language !== 'en' ? getEnglishSetName(setId) : null;
             
-            // Generate printed_number as it appears on the card (e.g., "125/094")
             const printedTotal = card.set.cardCount?.official || card.set.cardCount?.total;
             const printedNumber = printedTotal 
               ? `${card.localId}/${String(printedTotal).padStart(3, '0')}`
@@ -234,9 +208,9 @@ serve(async (req) => {
             return {
               card_id: `tcgdex_github_${language}_${card.id}`,
               name: card.name,
-              name_en: englishName, // Auto-populate English name for Japanese/other language cards
+              name_en: englishName,
               set_name: card.set.name,
-              set_name_en: englishSetName, // English set name for Japanese sets
+              set_name_en: englishSetName,
               set_code: setId,
               number: card.localId,
               printed_number: printedNumber,
@@ -281,12 +255,11 @@ serve(async (req) => {
             };
           });
 
-          // Use upsert with ignoreDuplicates to prevent duplicates
           const { error: upsertError } = await supabase
             .from('pokemon_card_attributes')
             .upsert(cardsToInsert, { 
               onConflict: 'card_id',
-              ignoreDuplicates: true // Don't update existing records
+              ignoreDuplicates: true
             });
 
           if (upsertError) {

@@ -8,18 +8,15 @@
  * - Comprehensive error handling
  * - Transaction safety
  * - Resumable imports
- * 
- * Note: display_number and search_number are generated columns
+ * - Secure authentication
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getEnglishSetName } from "../_shared/japanese-set-names.ts";
+import { requireCronAuth, handleCORS, createUnauthorizedResponse, getCorsHeaders } from "../_shared/cron-auth.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const corsHeaders = getCorsHeaders();
 
 const TCGDEX_API_BASE = 'https://api.tcgdex.net/v2';
 const MAX_RETRIES = 3;
@@ -106,66 +103,19 @@ async function updateProgress(
   }
 }
 
-/**
- * Transform TCGdex card to database format
- */
-function transformCard(card: any, language: string, setCode: string, setName: string): any {
-  const cardId = card.id || `${setCode}-${card.localId || 'unknown'}`;
-  const localId = card.localId || card.id || 'unknown';
-  const imageUrl = card.image || `https://assets.tcgdex.net/${language}/${setCode}/${localId}`;
-  
-  // Generate printed_number as it appears on the card (e.g., "125/094")
-  const printedTotal = card.set?.cardCount?.official || card.set?.cardCount?.total;
-  const printedNumber = printedTotal 
-    ? `${localId}/${String(printedTotal).padStart(3, '0')}`
-    : localId;
-  
-  return {
-    card_id: `tcgdex_${language}_${cardId}`,
-    name: card.name || 'Unknown',
-    set_name: setName,
-    set_code: setCode,
-    number: localId,
-    printed_number: printedNumber,
-    display_number: printedNumber,
-    rarity: card.rarity || null,
-    types: card.types || null,
-    supertype: card.category || null,
-    subtypes: card.stage ? [card.stage] : null,
-    artist: card.illustrator || null,
-    images: {
-      small: imageUrl,
-      large: imageUrl,
-      tcgdex: imageUrl
-    },
-    printed_total: card.set?.cardCount?.official || card.set?.cardCount?.total || null,
-    sync_source: 'tcgdex',
-    synced_at: new Date().toISOString(),
-    metadata: {
-      hp: card.hp,
-      evolveFrom: card.evolveFrom,
-      stage: card.stage,
-      abilities: card.abilities,
-      attacks: card.attacks,
-      weaknesses: card.weaknesses,
-      resistances: card.resistances,
-      retreat: card.retreat,
-      effect: card.effect,
-      trainerType: card.trainerType,
-      energyType: card.energyType,
-      regulationMark: card.regulationMark,
-      dexId: card.dexId,
-      category: card.category,
-      language,
-      imported_at: new Date().toISOString()
-    }
-  };
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return handleCORS();
   }
+
+  // Require cron authentication
+  const authResult = await requireCronAuth(req);
+  if (!authResult.authorized) {
+    console.warn(`Unauthorized access attempt to import-tcgdex-set: ${authResult.reason}`);
+    return createUnauthorizedResponse(authResult.reason);
+  }
+
+  console.log(`Authenticated via: ${authResult.authType}`);
 
   let requestBody: any;
   
@@ -234,18 +184,17 @@ serve(async (req) => {
       cardsTotal: totalCards
     });
 
-    // Get list of cards from set (these contain enough data for our needs)
+    // Get list of cards from set
     console.log(`🔍 Processing cards from set data...`);
     const cardsList = setData.cards || [];
     
     if (cardsList.length === 0) {
-      // This is expected for many Japanese sets - the API doesn't have card data for all sets
       const errorMsg = `No card data available for set ${setCode} (${englishSetName}). The TCGdex API does not have card data for this set.`;
       console.warn(`⚠️ ${errorMsg}`);
       await updateProgress(supabase, {
         setCode,
         language,
-        status: 'completed', // Mark as completed, not failed - this is expected behavior
+        status: 'completed',
         cardsImported: 0,
         cardsTotal: 0,
         errorMessage: 'Set has no card data in TCGdex API'
@@ -264,13 +213,12 @@ serve(async (req) => {
 
     console.log(`✅ Found ${cardsList.length} cards in set`);
 
-    // Transform cards for database (use summary data from set endpoint)
+    // Transform cards for database
     const transformedCards = cardsList.map((card: any) => {
       const cardId = card.id || `${setCode}-${card.localId || 'unknown'}`;
       const localId = card.localId || card.id || 'unknown';
       const imageUrl = card.image || `https://assets.tcgdex.net/${language}/${setCode}/${localId}`;
       
-      // Generate printed_number as it appears on the card
       const printedNumber = totalCards 
         ? `${localId}/${String(totalCards).padStart(3, '0')}`
         : localId;
@@ -278,13 +226,13 @@ serve(async (req) => {
       return {
         card_id: `tcgdex_${language}_${cardId}`,
         name: card.name || 'Unknown',
-        set_name: japaneseSetName, // Original Japanese name
-        set_name_en: englishSetName, // English translation
+        set_name: japaneseSetName,
+        set_name_en: englishSetName,
         set_code: setCode,
         number: localId,
         printed_number: printedNumber,
         display_number: printedNumber,
-        rarity: null, // Not in summary
+        rarity: null,
         types: null,
         supertype: null,
         subtypes: null,
@@ -335,7 +283,7 @@ serve(async (req) => {
           .from('pokemon_card_attributes')
           .upsert(batch, {
             onConflict: 'card_id',
-            ignoreDuplicates: false // Update if exists
+            ignoreDuplicates: false
           });
 
         if (error) {
@@ -344,7 +292,6 @@ serve(async (req) => {
         } else {
           importedCount += batch.length;
           
-          // Update progress periodically
           if (importedCount % 100 === 0 || importedCount === transformedCards.length) {
             console.log(`   ✅ Imported ${importedCount}/${transformedCards.length} cards`);
             await updateProgress(supabase, {
@@ -358,7 +305,6 @@ serve(async (req) => {
           }
         }
 
-        // Minimal rate limiting
         await new Promise(resolve => setTimeout(resolve, 50));
         
       } catch (error) {
@@ -400,7 +346,6 @@ serve(async (req) => {
   } catch (error) {
     console.error('❌ Fatal error:', error);
     
-    // Try to mark as failed in database
     try {
       if (requestBody?.setCode && requestBody?.language) {
         const supabase = createClient(
