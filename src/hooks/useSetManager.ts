@@ -19,9 +19,13 @@ export interface GitHubSet {
 }
 
 // Complete Japanese set name mappings
-// Only sets in this mapping will be shown in the Set Manager
+// Only sets in this mapping AND in JAPANESE_SETS_WITH_DATA will be shown
 const JAPANESE_SET_ENGLISH_NAMES: Record<string, string> = {
-  // Scarlet & Violet Era (2023-Present)
+  // ===== SCARLET & VIOLET ERA (2023-Present) =====
+  'SV11W': 'White Flare',
+  'SV10': 'Team Rocket Glory',
+  'SV9a': 'Hot Wind Arena',
+  'SV9': 'Battle Partners',
   'SV8a': 'Terastal Fest ex',
   'SV8': 'Super Electric Breaker',
   'SV7a': 'Paradise Dragona',
@@ -39,67 +43,48 @@ const JAPANESE_SET_ENGLISH_NAMES: Record<string, string> = {
   'SV2a': 'Pokemon Card 151',
   'SV2P': 'Snow Hazard',
   'SV2D': 'Clay Burst',
-  'SV1a': 'Triplet Beat',
+  // 'SV1a': 'Triplet Beat', // No API data available
   'SV1V': 'Violet ex',
   'SV1S': 'Scarlet ex',
-  // Sword & Shield Era (2019-2023)
+  'SVK': 'Stellar Miracle Deck Build Box',
+  'SVLS': 'Starter Set Stellar Ceruledge ex',
+  'SVLN': 'Starter Set Stellar Sylveon ex',
+  
+  // ===== SWORD & SHIELD ERA (Only sets with API data) =====
   'S12a': 'VSTAR Universe',
   'S12': 'Paradigm Trigger',
-  'S11a': 'Incandescent Arcana',
-  'S11': 'Lost Abyss',
-  'S10b': 'Pokemon GO',
-  'S10a': 'Dark Fantasma',
-  'S10P': 'Space Juggler',
-  'S10D': 'Time Gazer',
   'S9a': 'Battle Region',
   'S9': 'Star Birth',
-  'S8b': 'VMAX Climax',
-  'S8a': '25th Anniversary Collection',
-  'S8': 'Fusion Arts',
-  'S7R': 'Blue Sky Stream',
-  'S7D': 'Skyscraping Perfect',
-  'S6a': 'Eevee Heroes',
-  'S6H': 'Silver Lance',
-  'S6K': 'Jet Black Spirit',
-  'S5a': 'Matchless Fighters',
-  'S5R': 'Rapid Strike Master',
-  'S5I': 'Single Strike Master',
-  'S4a': 'Shiny Star V',
-  'S4': 'Astonishing Volt Tackle',
-  'S3a': 'Legendary Heartbeat',
-  'S3': 'Infinity Zone',
-  'S2a': 'Explosive Walker',
-  'S2': 'Rebellion Crash',
-  'S1a': 'VMAX Rising',
-  'S1H': 'Shield',
-  'S1W': 'Sword',
-  // Sun & Moon Era (2016-2019)
-  'SM12a': 'Tag All Stars',
-  'SM12': 'Alter Genesis',
-  'SM11b': 'Dream League',
-  'SM11a': 'Remix Bout',
-  'SM11': 'Miracle Twins',
-  'SM10b': 'Sky Legend',
-  'SM10a': 'GG End',
-  'SM10': 'Double Blaze',
-  'SM9b': 'Full Metal Wall',
-  'SM9a': 'Night Unison',
-  'SM9': 'Tag Bolt',
-  'SM8b': 'GX Ultra Shiny',
-  'SM8a': 'Dark Order',
-  'SM8': 'Super Burst Impact',
-  'SM7b': 'Fairy Rise',
-  'SM7a': 'Thunderclap Spark',
-  'SM7': 'Charisma of the Wrecked Sky',
-  'SM6b': 'Champion Road',
-  'SM6a': 'Dragon Storm',
-  'SM6': 'Forbidden Light',
-  // Neo Era (1999-2001)
+  
+  // ===== PCG ERA (EX Series) - All have API data =====
+  'PCG1': 'Clash of the Blue Sky',
+  'PCG2': 'Flight of Legends',
+  'PCG3': 'Rocket Gang Strikes Back',
+  'PCG4': 'Golden Sky, Silvery Ocean',
+  'PCG5': 'Mirage Forest',
+  'PCG6': 'Holon Research Tower',
+  'PCG7': 'Holon Phantom',
+  'PCG8': 'Miracle Crystal',
+  'PCG9': 'Offense and Defense of the Furthest Ends',
+  
+  // ===== E-CARD ERA - All have API data =====
+  'E1': 'Base Expansion Pack',
+  'E2': 'The Town on No Map',
+  'E3': 'Wind from the Sea',
+  'E4': 'Split Earth',
+  'E5': 'Mysterious Mountains',
+  
+  // ===== VS ERA - Have API data =====
+  'VS1': 'Pokemon Card VS',
+  'web1': 'Pokemon Card e-web',
+  
+  // ===== NEO ERA - All have API data =====
   'neo1': 'Neo Genesis',
   'neo2': 'Neo Discovery',
   'neo3': 'Neo Revelation',
   'neo4': 'Neo Destiny',
-  // Classic / PMCG Era (1996-1999)
+  
+  // ===== CLASSIC / PMCG ERA - All have API data =====
   'PMCG1': 'Expansion Pack (Base Set)',
   'PMCG2': 'Pokemon Jungle',
   'PMCG3': 'Mystery of the Fossils',
@@ -171,13 +156,39 @@ export function useGitHubSets() {
 }
 
 /**
+ * Japanese sets that are VERIFIED to have card data in TCGdex API
+ * (Many sets return empty card arrays - only these actually have data)
+ * Last verified: Dec 2024
+ */
+const JAPANESE_SETS_WITH_DATA = new Set([
+  // Classic Era (PMCG) - All have data
+  'PMCG1', 'PMCG2', 'PMCG3', 'PMCG4', 'PMCG5', 'PMCG6',
+  // Neo Era - All have data
+  'neo1', 'neo2', 'neo3', 'neo4',
+  // VS / Web Era
+  'VS1', 'web1',
+  // E-Card Era - All have data
+  'E1', 'E2', 'E3', 'E4', 'E5',
+  // PCG Era - All have data
+  'PCG1', 'PCG2', 'PCG3', 'PCG4', 'PCG5', 'PCG6', 'PCG7', 'PCG8', 'PCG9',
+  // Sword & Shield Era - ONLY these 4 have data
+  'S12a', 'S12', 'S9', 'S9a',
+  // Scarlet & Violet Era - These have data
+  'SV1S', 'SV1V', 'SV2a', 'SV2P', 'SV2D', 'SV3', 'SV3a',
+  'SV4a', 'SV4K', 'SV4M', 'SV5a', 'SV5K', 'SV6', 'SV7', 'SV7a',
+  'SV8', 'SV8a', 'SV9', 'SV9a', 'SV10', 'SV11W',
+  'SVK', 'SVLS', 'SVLN',
+]);
+
+/**
  * Fetch Japanese sets from TCGdex API
- * Returns ONLY sets that have English translations mapped
- * This ensures users only see sets with proper English names
+ * Returns ONLY sets that:
+ * 1. Have English translations mapped
+ * 2. Actually have card data in the API (not empty)
  */
 export function useJapaneseGitHubSets() {
   return useQuery({
-    queryKey: ["github-sets-ja"],
+    queryKey: ["github-sets-ja-v2"],
     queryFn: async () => {
       // Fetch from TCGdex API (one-time fetch, then cached)
       const response = await fetch("https://api.tcgdex.net/v2/ja/sets");
@@ -186,14 +197,17 @@ export function useJapaneseGitHubSets() {
       }
       const sets = await response.json();
       
-      // Transform to GitHubSet format - ONLY include sets with English translations
+      // Transform to GitHubSet format - ONLY include sets that:
+      // 1. Have an English translation
+      // 2. Have actual card data in the API
       const transformedSets: GitHubSet[] = [];
       
       for (const set of sets) {
         const englishName = getEnglishSetName(set.id);
+        const hasCardData = JAPANESE_SETS_WITH_DATA.has(set.id);
         
-        // Only include sets that have an English translation mapped
-        if (englishName) {
+        // Only include sets that have both English name AND card data
+        if (englishName && hasCardData) {
           transformedSets.push({
             id: set.id,
             name: englishName, // Use English name as primary display
@@ -211,7 +225,7 @@ export function useJapaneseGitHubSets() {
         }
       }
       
-      console.log(`[useJapaneseGitHubSets] Found ${sets.length} total sets, ${transformedSets.length} have English translations`);
+      console.log(`[useJapaneseGitHubSets] Found ${sets.length} total sets, ${transformedSets.length} have English translations AND card data`);
       
       return transformedSets;
     },

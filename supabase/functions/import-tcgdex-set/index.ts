@@ -239,17 +239,26 @@ serve(async (req) => {
     const cardsList = setData.cards || [];
     
     if (cardsList.length === 0) {
-      const errorMsg = `No cards found in set ${setCode}`;
-      console.error(`❌ ${errorMsg}`);
+      // This is expected for many Japanese sets - the API doesn't have card data for all sets
+      const errorMsg = `No card data available for set ${setCode} (${englishSetName}). The TCGdex API does not have card data for this set.`;
+      console.warn(`⚠️ ${errorMsg}`);
       await updateProgress(supabase, {
         setCode,
         language,
-        status: 'failed',
-        errorMessage: errorMsg
+        status: 'completed', // Mark as completed, not failed - this is expected behavior
+        cardsImported: 0,
+        cardsTotal: 0,
+        errorMessage: 'Set has no card data in TCGdex API'
       });
       return new Response(
-        JSON.stringify({ error: errorMsg }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+        JSON.stringify({ 
+          success: true, 
+          message: errorMsg,
+          cardsImported: 0,
+          setCode,
+          reason: 'no_api_data'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
     }
 

@@ -237,9 +237,11 @@ export function SetImportTable({
                     </TableCell>
                     <TableCell className="font-medium">
                       {set.setName}
-                      <div className="text-xs text-muted-foreground">
-                        {new Date(set.releaseDate).getFullYear()}
-                      </div>
+                      {set.releaseDate && (
+                        <div className="text-xs text-muted-foreground">
+                          {new Date(set.releaseDate).getFullYear() || 'Unknown'}
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       {set.githubTotal.toLocaleString()}
