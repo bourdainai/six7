@@ -1538,6 +1538,9 @@ export type Database = {
           created_at: string | null
           display_number: string | null
           id: string
+          image_validated: boolean | null
+          image_validated_at: string | null
+          image_validation_error: string | null
           images: Json | null
           last_price_update: string | null
           last_searched_at: string | null
@@ -1571,6 +1574,9 @@ export type Database = {
           created_at?: string | null
           display_number?: string | null
           id?: string
+          image_validated?: boolean | null
+          image_validated_at?: string | null
+          image_validation_error?: string | null
           images?: Json | null
           last_price_update?: string | null
           last_searched_at?: string | null
@@ -1604,6 +1610,9 @@ export type Database = {
           created_at?: string | null
           display_number?: string | null
           id?: string
+          image_validated?: boolean | null
+          image_validated_at?: string | null
+          image_validation_error?: string | null
           images?: Json | null
           last_price_update?: string | null
           last_searched_at?: string | null

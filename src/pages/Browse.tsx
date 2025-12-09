@@ -71,7 +71,7 @@ const Browse = memo(() => {
           .select(`
             id, title, description, seller_price, category, subcategory, brand, condition, 
             status, created_at, views, trade_enabled, free_shipping, estimated_delivery_days,
-            card_number, set_code, rarity, marketplace,
+            card_number, set_code, marketplace,
             images:listing_images(image_url, display_order)
           `)
           .eq("status", "active")
@@ -119,10 +119,8 @@ const Browse = memo(() => {
           logger.debug("🔍 [Browse] Applying character filter:", filters.character);
           query = query.or(`title.ilike.%${filters.character}%,description.ilike.%${filters.character}%`);
         }
-        if (filters.rarity) {
-          logger.debug("🔍 [Browse] Applying rarity filter:", filters.rarity);
-          query = query.ilike("rarity", `%${filters.rarity}%`);
-        }
+        // Note: rarity filter removed - rarity is on pokemon_card_attributes, not listings
+        // To filter by rarity, we'd need to join with the card table or use a different approach
         if (filters.tradeEnabled) {
           query = query.eq("trade_enabled", filters.tradeEnabled === "true");
         }
