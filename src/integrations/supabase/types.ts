@@ -4298,6 +4298,10 @@ export type Database = {
         Args: { p_cash_amount: number; p_offer_id: string }
         Returns: undefined
       }
+      admin_delete_cards_by_card_id: {
+        Args: { card_ids_to_delete: string[] }
+        Returns: Json
+      }
       calculate_remaining_bundle_price: {
         Args: { listing_id_param: string }
         Returns: number
