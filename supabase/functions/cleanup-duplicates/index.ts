@@ -20,6 +20,10 @@ interface Card {
   cardmarket_prices: Record<string, unknown> | null;
 }
 
+interface CardWithListings extends Card {
+  hasListings: boolean;
+}
+
 // Score a card by data completeness (higher = better to keep)
 function scoreCard(card: Card): number {
   let score = 0;
@@ -33,6 +37,50 @@ function scoreCard(card: Card): number {
     if (age < 24 * 60 * 60 * 1000) score += 5;
   }
   return score;
+}
+
+// Tables that have foreign keys to pokemon_card_attributes.card_id
+const TABLES_WITH_FK = ['listings', 'trade_market_trends'];
+
+// Fetch all card_ids that have references in any FK table
+async function fetchCardIdsWithReferences(supabase: any): Promise<Set<string>> {
+  const BATCH_SIZE = 1000;
+  const cardIdsWithRefs = new Set<string>();
+
+  for (const tableName of TABLES_WITH_FK) {
+    let from = 0;
+    let hasMore = true;
+
+    console.log(`📥 Fetching card IDs from ${tableName}...`);
+
+    while (hasMore) {
+      const { data, error } = await supabase
+        .from(tableName)
+        .select('card_id')
+        .not('card_id', 'is', null)
+        .range(from, from + BATCH_SIZE - 1);
+
+      if (error) {
+        console.warn(`⚠️ Could not fetch from ${tableName}: ${error.message}`);
+        break;
+      }
+
+      if (data && data.length > 0) {
+        for (const row of data) {
+          if (row.card_id) {
+            cardIdsWithRefs.add(row.card_id);
+          }
+        }
+        from += BATCH_SIZE;
+        hasMore = data.length === BATCH_SIZE;
+      } else {
+        hasMore = false;
+      }
+    }
+  }
+
+  console.log(`✅ Found ${cardIdsWithRefs.size} unique card_ids with references`);
+  return cardIdsWithRefs;
 }
 
 // Fetch ALL cards in batches (Supabase limits to 1000 by default)
@@ -67,10 +115,13 @@ async function fetchAllCards(supabase: any): Promise<Card[]> {
 }
 
 // Find duplicates - tries multiple grouping strategies
-function findDuplicates(allCards: Card[]): {
+// Returns duplicate groups with info about which card_ids have listings
+function findDuplicates(allCards: Card[], cardIdsWithListings: Set<string>): {
   duplicateGroups: number;
   cardsToDelete: Card[];
   cardsToKeep: Card[];
+  skippedDueToListings: number;
+  listingsToUpdate: Array<{ fromCardId: string; toCardId: string }>;
 } {
   const groups = new Map<string, Card[]>();
   let skippedNoSetNumber = 0;
@@ -103,18 +154,50 @@ function findDuplicates(allCards: Card[]): {
 
   const cardsToDelete: Card[] = [];
   const cardsToKeep: Card[] = [];
+  const listingsToUpdate: Array<{ fromCardId: string; toCardId: string }> = [];
   let duplicateGroups = 0;
+  let skippedDueToListings = 0;
 
   for (const [key, cards] of groups) {
     if (cards.length > 1) {
       duplicateGroups++;
-      const scoredCards = cards.map(card => ({ card, score: scoreCard(card) }));
-      scoredCards.sort((a, b) => b.score - a.score);
       
-      cardsToKeep.push(scoredCards[0].card);
+      // Score cards - but cards with listings get a huge bonus to ensure they're kept
+      const scoredCards = cards.map(card => ({ 
+        card, 
+        score: scoreCard(card),
+        hasListings: cardIdsWithListings.has(card.card_id)
+      }));
       
+      // Sort: cards with listings first (they should be kept), then by score
+      scoredCards.sort((a, b) => {
+        // Cards with listings always come first (to be kept)
+        if (a.hasListings && !b.hasListings) return -1;
+        if (!a.hasListings && b.hasListings) return 1;
+        // Then by score
+        return b.score - a.score;
+      });
+      
+      // The first card is kept (either has listings or highest score)
+      const cardToKeep = scoredCards[0];
+      cardsToKeep.push(cardToKeep.card);
+      
+      // Process duplicates
       for (let i = 1; i < scoredCards.length; i++) {
-        cardsToDelete.push(scoredCards[i].card);
+        const duplicate = scoredCards[i];
+        
+        if (duplicate.hasListings) {
+          // This duplicate has listings - we need to update those listings to point to the kept card
+          listingsToUpdate.push({
+            fromCardId: duplicate.card.card_id,
+            toCardId: cardToKeep.card.card_id
+          });
+          // Then we can delete it
+          cardsToDelete.push(duplicate.card);
+        } else {
+          // No listings, safe to delete
+          cardsToDelete.push(duplicate.card);
+        }
       }
     }
   }
@@ -122,8 +205,10 @@ function findDuplicates(allCards: Card[]): {
   console.log(`📊 Duplicate groups found: ${duplicateGroups}`);
   console.log(`📊 Cards to delete: ${cardsToDelete.length}`);
   console.log(`📊 Cards to keep: ${cardsToKeep.length}`);
+  console.log(`📊 Listings to update (to unblock deletions): ${listingsToUpdate.length}`);
+  console.log(`📊 Skipped due to listings (fallback): ${skippedDueToListings}`);
 
-  return { duplicateGroups, cardsToDelete, cardsToKeep };
+  return { duplicateGroups, cardsToDelete, cardsToKeep, skippedDueToListings, listingsToUpdate };
 }
 
 serve(async (req) => {
@@ -151,11 +236,14 @@ serve(async (req) => {
 
     console.log(`🧹 Cleanup duplicates (dryRun: ${dryRun}, batchOnly: ${batchOnly})`);
 
+    // First, fetch all card_ids that have references in FK tables (these need special handling)
+    const cardIdsWithListings = await fetchCardIdsWithReferences(supabase);
+
     // Fetch ALL cards
     const allCards = await fetchAllCards(supabase);
     
     // Find all duplicates
-    const { duplicateGroups, cardsToDelete, cardsToKeep } = findDuplicates(allCards);
+    const { duplicateGroups, cardsToDelete, cardsToKeep, listingsToUpdate } = findDuplicates(allCards, cardIdsWithListings);
 
     console.log(`📊 Found ${duplicateGroups} duplicate groups`);
     console.log(`📊 Cards to delete: ${cardsToDelete.length}`);
@@ -210,6 +298,34 @@ serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // STEP 1: Update all FK tables to point to the "best" card before deleting duplicates
+    // This removes the foreign key constraint blocking deletions
+    let referencesUpdated = 0;
+    if (listingsToUpdate.length > 0) {
+      console.log(`🔄 Updating ${listingsToUpdate.length} card references across ${TABLES_WITH_FK.length} tables...`);
+      
+      for (const update of listingsToUpdate) {
+        for (const tableName of TABLES_WITH_FK) {
+          const { error: updateError, count } = await supabase
+            .from(tableName)
+            .update({ card_id: update.toCardId })
+            .eq('card_id', update.fromCardId);
+          
+          if (updateError) {
+            // Ignore errors for tables that might not have this card_id
+            if (!updateError.message.includes('0 rows')) {
+              console.error(`   ❌ Failed to update ${tableName} from ${update.fromCardId}: ${updateError.message}`);
+            }
+          } else if (count && count > 0) {
+            referencesUpdated += count;
+            console.log(`   ✅ Updated ${count} rows in ${tableName} from ${update.fromCardId} to ${update.toCardId}`);
+          }
+        }
+      }
+      console.log(`✅ Updated ${referencesUpdated} references total`);
+    }
+    const listingsUpdated = referencesUpdated; // For backwards compatibility
 
     // For large deletions, process in smaller chunks to avoid timeout
     // batchOnly mode: only delete one batch and return, let frontend call again
@@ -305,6 +421,7 @@ serve(async (req) => {
               actualDeleted: totalDeleted,
               remainingDuplicates: remaining,
               batchesRemaining: Math.ceil(remaining / DELETE_BATCH_SIZE),
+              listingsUpdated,
             },
             errors: errors.length > 0 ? errors : undefined,
             message: remaining > 0 
@@ -320,6 +437,7 @@ serve(async (req) => {
     const remaining = idsToDelete.length - totalDeleted;
 
     console.log(`\n🎉 CLEANUP SESSION COMPLETE`);
+    console.log(`   Listings updated: ${listingsUpdated}`);
     console.log(`   Deleted: ${totalDeleted}`);
     console.log(`   Remaining: ${remaining}`);
 
@@ -332,6 +450,7 @@ serve(async (req) => {
           cardsToDelete: cardsToDelete.length,
           actualDeleted: totalDeleted,
           remainingDuplicates: remaining,
+          listingsUpdated,
         },
         errors: errors.length > 0 ? errors : undefined,
         message: remaining === 0 
