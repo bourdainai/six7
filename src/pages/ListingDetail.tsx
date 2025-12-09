@@ -16,7 +16,7 @@ import { BundleRecommendation } from "@/components/BundleRecommendation";
 import { AgentFeedbackButtons } from "@/components/AgentFeedbackButtons";
 import { BulkPurchaseDialog } from "@/components/listings/BulkPurchaseDialog";
 import { ArrowLeft, ShoppingBag, PackagePlus, Flag, Heart, ArrowLeftRight, ShoppingCart } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, memo } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 import { SellerReputation } from "@/components/seller/SellerReputation";
@@ -35,7 +35,7 @@ type PackageDimensions = {
   unit: string;
 };
 
-const ListingDetail = () => {
+const ListingDetail = memo(() => {
   const { id: rawId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -61,12 +61,14 @@ const ListingDetail = () => {
       // Check if it's a short ID or full UUID
       const isShortId = extractedId.length === 8;
 
+      // Combine listing + variants + seller in single query for better performance
       const query = supabase
         .from("listings")
         .select(`
           *,
           seller:profiles!seller_id(id, full_name, avatar_url, trust_score),
-          images:listing_images(image_url, display_order)
+          images:listing_images(image_url, display_order),
+          variants:listing_variants!listing_id(id, title, seller_price, variant_images, is_available, display_order)
         `);
 
       let data, error;
@@ -116,27 +118,23 @@ const ListingDetail = () => {
         }
       }
 
+      // Filter variants to only available ones
+      if (data.variants) {
+        data.variants = data.variants
+          .filter((v: any) => v.is_available === true)
+          .sort((a: any, b: any) => (a.display_order || 0) - (b.display_order || 0));
+      }
+
       return data;
     },
-    staleTime: 1000 * 60 * 2, // 2 minutes
+    staleTime: 1000 * 60 * 5, // 5 minutes - listings don't change frequently
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   });
 
-  // Fetch variants if listing has them
-  const { data: variants } = useQuery({
-    queryKey: ["listing-variants", listing?.id],
-    enabled: !!listing?.id && listing?.has_variants === true,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("listing_variants")
-        .select("*")
-        .eq("listing_id", listing!.id)
-        .eq("is_available", true)
-        .order("display_order");
-
-      if (error) throw error;
-      return data;
-    },
-  });
+  // Extract variants from listing data (now included in main query)
+  const variants = useMemo(() => {
+    return listing?.variants || [];
+  }, [listing?.variants]);
 
   // Auto-select first variant when variants load
   useEffect(() => {
@@ -1023,6 +1021,8 @@ const ListingDetail = () => {
       <div className="h-24 sm:hidden" />
     </PageLayout>
   );
-};
+});
+
+ListingDetail.displayName = 'ListingDetail';
 
 export default ListingDetail;

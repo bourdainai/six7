@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { SearchFilters, FilterState } from "@/components/SearchFilters";
 import { VibeSearchDialog } from "@/components/VibeSearchDialog";
-import { useState, useMemo } from "react";
+import { useState, useMemo, memo, useCallback } from "react";
 import { ListingCard } from "@/components/ListingCard";
 import type { ListingSummary } from "@/types/listings";
 import { SEO } from "@/components/SEO";
@@ -15,7 +15,7 @@ import { ErrorDisplay } from "@/components/ErrorDisplay";
 import { useMarketplace } from "@/contexts/MarketplaceContext";
 import { logger } from "@/lib/logger";
 
-const Browse = () => {
+const Browse = memo(() => {
   const { marketplace, setMarketplace } = useMarketplace();
   const [filters, setFilters] = useState<FilterState>({
     search: "",
@@ -44,15 +44,15 @@ const Browse = () => {
   const [sortBy, setSortBy] = useState<'relevance' | 'price_low' | 'price_high' | 'newest' | 'popular'>('newest');
 
   const [page, setPage] = useState(1);
-  const itemsPerPage = 24;
+  const itemsPerPage = 20; // Reduced from 24 for faster initial load
 
   // Memoize filters to prevent unnecessary query invalidation
   const filtersKey = useMemo(() => JSON.stringify(filters), [filters]);
 
   const { data: listings, isLoading, error, refetch } = useQuery({
     queryKey: ["active-listings", page, filtersKey, sortBy, marketplace],
-    staleTime: 30000, // Cache for 30 seconds - listings don't change that frequently
-    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    staleTime: 2 * 60 * 1000, // Cache for 2 minutes - listings don't change that frequently
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
     refetchOnMount: false, // Use cached data on mount if available
     refetchOnWindowFocus: false, // Don't refetch on window focus
     retry: 2, // Reduce retries from 3 to 2
@@ -65,10 +65,13 @@ const Browse = () => {
         const from = (page - 1) * itemsPerPage;
         const to = from + itemsPerPage - 1;
 
+        // Optimize: Only select necessary fields for grid view
         let query = supabase
           .from("listings")
           .select(`
-            *,
+            id, title, description, seller_price, category, subcategory, brand, condition, 
+            status, created_at, views, trade_enabled, free_shipping, estimated_delivery_days,
+            card_number, set_code, rarity, marketplace,
             images:listing_images(image_url, display_order)
           `)
           .eq("status", "active")
@@ -195,25 +198,25 @@ const Browse = () => {
     return listings || [];
   }, [listings, semanticResults, searchMode, filters.rarity]);
 
-  const handleSemanticResults = (results: ListingSummary[]) => {
+  const handleSemanticResults = useCallback((results: ListingSummary[]) => {
     setSemanticResults(results);
     setSearchMode('semantic');
-  };
+  }, []);
 
-  const handleSearchTypeChange = (type: 'browse' | 'semantic') => {
+  const handleSearchTypeChange = useCallback((type: 'browse' | 'semantic') => {
     if (type === 'browse') {
       setSearchMode('browse');
       setSemanticResults(null);
     } else {
       setSearchMode('semantic');
     }
-  };
+  }, []);
 
-  const handleVibeResults = (results: ListingSummary[], description: string) => {
+  const handleVibeResults = useCallback((results: ListingSummary[], description: string) => {
     setSemanticResults(results);
     setVibeDescription(description);
     setSearchMode('vibe');
-  };
+  }, []);
 
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
@@ -437,6 +440,8 @@ const Browse = () => {
       </div>
     </PageLayout>
   );
-};
+});
+
+Browse.displayName = 'Browse';
 
 export default Browse;

@@ -112,42 +112,29 @@ const Messages = () => {
     queryFn: async () => {
       if (!user) return [];
 
+      // Combine conversations + profiles in single query using joins
       const { data, error } = await supabase
         .from("conversations")
         .select(`
           *,
-          listing:listings!inner(title, seller_price, images:listing_images(image_url))
+          listing:listings!inner(title, seller_price, images:listing_images(image_url)),
+          buyer:profiles!buyer_id(id, full_name),
+          seller:profiles!seller_id(id, full_name)
         `)
         .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
         .order("updated_at", { ascending: false });
 
       if (error) throw error;
 
-      // Fetch profiles separately but efficiently
-      const buyerIds = [...new Set(data.map(c => c.buyer_id))];
-      const sellerIds = [...new Set(data.map(c => c.seller_id))];
-
-      const { data: buyers } = await supabase
-        .from("profiles")
-        .select("id, full_name")
-        .in("id", buyerIds);
-
-      const { data: sellers } = await supabase
-        .from("profiles")
-        .select("id, full_name")
-        .in("id", sellerIds);
-
-      const buyerMap = new Map(buyers?.map(b => [b.id, b]) || []);
-      const sellerMap = new Map(sellers?.map(s => [s.id, s]) || []);
-
-      return data.map(conv => ({
+      return (data || []).map(conv => ({
         ...conv,
-        buyer: buyerMap.get(conv.buyer_id) || { id: conv.buyer_id, full_name: "Unknown" },
-        seller: sellerMap.get(conv.seller_id) || { id: conv.seller_id, full_name: "Unknown" },
+        buyer: conv.buyer || { id: conv.buyer_id, full_name: "Unknown" },
+        seller: conv.seller || { id: conv.seller_id, full_name: "Unknown" },
       })) as Conversation[];
     },
     enabled: !!user,
-    staleTime: 1000 * 30, // 30 seconds
+    staleTime: 1 * 60 * 1000, // 1 minute - messages update more frequently
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
   });
 
   // Get selected conversation and other user info

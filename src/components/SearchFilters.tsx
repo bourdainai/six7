@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from "react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -202,14 +202,29 @@ export const SearchFilters = React.memo(({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const updateFilter = (key: keyof FilterState, value: string) => {
+  // Debounce filter changes to reduce query frequency
+  const debounceTimerRef = useRef<NodeJS.Timeout>();
+  
+  const updateFilter = useCallback((key: keyof FilterState, value: string) => {
     const newFilters = { ...localFilters, [key]: value };
     setLocalFilters(newFilters);
 
     if (searchMode === 'browse') {
-      onFilterChange(newFilters);
+      // Debounce filter changes (except for immediate search input)
+      if (key === 'search') {
+        // Search input is already debounced in autocomplete effect
+        onFilterChange(newFilters);
+      } else {
+        // Debounce other filter changes by 300ms
+        if (debounceTimerRef.current) {
+          clearTimeout(debounceTimerRef.current);
+        }
+        debounceTimerRef.current = setTimeout(() => {
+          onFilterChange(newFilters);
+        }, 300);
+      }
     }
-  };
+  }, [localFilters, searchMode, onFilterChange]);
 
   const handleSearch = async () => {
     if (!localFilters.search?.trim() && searchMode !== 'vibe') {

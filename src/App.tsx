@@ -63,11 +63,11 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes - data stays fresh for 5 min
-      gcTime: 1000 * 60 * 10, // 10 minutes - cache garbage collection (formerly cacheTime)
+      staleTime: 1000 * 60 * 10, // 10 minutes - data stays fresh for 10 min (increased from 5)
+      gcTime: 1000 * 60 * 15, // 15 minutes - cache garbage collection (increased from 10)
       refetchOnWindowFocus: false, // Don't refetch on window focus
       retry: 1, // Only retry once on failure
-      refetchOnMount: true, // Refetch when component mounts if data is stale
+      refetchOnMount: false, // Use cached data on mount if available (changed from true)
     },
   },
 });

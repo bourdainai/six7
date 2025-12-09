@@ -56,6 +56,8 @@ const Orders = () => {
     const { data: buyerOrders, isLoading: isLoadingBuyer } = useQuery<OrderWithRelations[]>({
     queryKey: ["orders", "buyer", user?.id],
     enabled: !!user,
+    staleTime: 2 * 60 * 1000, // 2 minutes - orders don't change frequently
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
@@ -80,6 +82,8 @@ const Orders = () => {
     const { data: sellerOrders, isLoading: isLoadingSeller } = useQuery<OrderWithRelations[]>({
     queryKey: ["orders", "seller", user?.id],
     enabled: !!user,
+    staleTime: 2 * 60 * 1000, // 2 minutes - orders don't change frequently
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")

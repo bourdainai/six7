@@ -14,7 +14,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 import { Package, DollarSign, ShoppingCart, TrendingUp, Award, CheckCircle2, Upload, User, MoreVertical } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo } from "react";
 import { SellerCopilot } from "@/components/SellerCopilot";
 import { StaleInventoryAlert } from "@/components/StaleInventoryAlert";
 import { OnboardingStatusCards } from "@/components/seller/OnboardingStatusCards";
@@ -23,7 +23,7 @@ import { ListingsManagement } from "@/components/seller/ListingsManagement";
 import { CollectrImportDialog } from "@/components/import/CollectrImportDialog";
 import { CreditsBanner } from "@/components/seller/CreditsBanner";
 
-const SellerDashboard = () => {
+const SellerDashboard = memo(() => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -42,6 +42,8 @@ const SellerDashboard = () => {
       if (error) throw error;
       return data;
     },
+    staleTime: 5 * 60 * 1000, // 5 minutes - profile doesn't change frequently
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   });
 
   const { data: listings, refetch: refetchListings } = useQuery({
@@ -55,10 +57,13 @@ const SellerDashboard = () => {
           images:listing_images(image_url, display_order)
         `)
         .eq("seller_id", user!.id)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(100); // Limit to recent 100 listings for performance
       if (error) throw error;
       return data;
     },
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
   });
 
   const deleteListingMutation = useMutation({
@@ -83,6 +88,8 @@ const SellerDashboard = () => {
       if (error) throw error;
       return data;
     },
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
   });
 
   const { data: balance } = useQuery({
@@ -289,6 +296,8 @@ const SellerDashboard = () => {
       <CollectrImportDialog open={showImportDialog} onOpenChange={setShowImportDialog} />
     </PageLayout>
   );
-};
+});
+
+SellerDashboard.displayName = 'SellerDashboard';
 
 export default SellerDashboard;

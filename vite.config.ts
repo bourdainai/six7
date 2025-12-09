@@ -31,11 +31,12 @@ export default defineConfig(({ mode }) => ({
           'stripe-vendor': ['@stripe/connect-js', '@stripe/react-connect-js', '@stripe/stripe-js'],
           'recharts': ['recharts'],
           'mapbox': ['mapbox-gl'],
+          'supabase': ['@supabase/supabase-js'],
         },
       },
     },
-    // Increase chunk size warning limit
-    chunkSizeWarningLimit: 1000,
+    // Reduce chunk size warning limit to catch large bundles
+    chunkSizeWarningLimit: 500,
   },
   // Optimize dependencies
   optimizeDeps: {
