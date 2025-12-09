@@ -40,7 +40,7 @@ function scoreCard(card: Card): number {
 }
 
 // Tables that have foreign keys to pokemon_card_attributes.card_id
-const TABLES_WITH_FK = ['listings', 'trade_market_trends'];
+const TABLES_WITH_FK = ['listings', 'listing_variants', 'trade_market_trends'];
 
 // Fetch all card_ids that have references in any FK table
 async function fetchCardIdsWithReferences(supabase: any): Promise<Set<string>> {
@@ -376,8 +376,9 @@ serve(async (req) => {
             for (let j = 0; j < Math.min(cardIdBatch.length, 50); j++) {
               const cardId = cardIdBatch[j];
               
-              // Clear refs for this single card
+              // Clear refs for this single card (all FK tables)
               await supabase.from('listings').update({ card_id: null }).eq('card_id', cardId);
+              await supabase.from('listing_variants').update({ card_id: null }).eq('card_id', cardId);
               await supabase.from('trade_market_trends').update({ card_id: null }).eq('card_id', cardId);
               
               // Delete
