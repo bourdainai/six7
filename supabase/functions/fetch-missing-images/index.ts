@@ -7,60 +7,67 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const TCGDEX_API_BASE = 'https://api.tcgdx.net/v2';
-const MAX_RETRIES = 3;
-const BASE_DELAY_MS = 200;
+const TCGDEX_ASSETS_BASE = 'https://assets.tcgdx.net';
 
 /**
- * Exponential backoff delay
+ * Validate if an image URL is accessible
  */
-async function delayWithBackoff(attemptNumber: number): Promise<void> {
-  const delay = BASE_DELAY_MS * Math.pow(2, attemptNumber);
-  await new Promise(resolve => setTimeout(resolve, delay));
-}
+async function validateImageUrl(url: string, timeoutMs = 5000): Promise<{ valid: boolean; error?: string }> {
+  if (!url || typeof url !== 'string') {
+    return { valid: false, error: 'Invalid URL' };
+  }
 
-/**
- * Fetch card with retry logic
- */
-async function fetchCardWithRetry(url: string, retries = MAX_RETRIES): Promise<any> {
-  for (let attempt = 0; attempt < retries; attempt++) {
-    try {
-      const response = await fetch(url);
-      
-      if (response.ok) {
-        return await response.json();
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    const response = await fetch(url, {
+      method: 'HEAD',
+      signal: controller.signal,
+      headers: {
+        'User-Agent': '6Seven-ImageFetcher/1.0',
+      },
+    });
+
+    clearTimeout(timeoutId);
+
+    if (response.ok) {
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.startsWith('image/')) {
+        return { valid: true };
+      } else {
+        return { valid: false, error: `Not an image (content-type: ${contentType})` };
       }
-      
-      if (response.status === 404) {
-        return null; // Card doesn't exist
-      }
-      
-      if (response.status === 429) {
-        // Rate limited, wait longer
-        await delayWithBackoff(attempt + 2);
-        continue;
-      }
-      
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      
-    } catch (error) {
-      if (attempt === retries - 1) throw error;
-      await delayWithBackoff(attempt);
+    } else if (response.status === 404) {
+      return { valid: false, error: 'Image not found (404)' };
+    } else {
+      return { valid: false, error: `HTTP ${response.status}` };
     }
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      return { valid: false, error: 'Request timeout' };
+    }
+    return { valid: false, error: error.message || 'Network error' };
   }
-  
-  throw new Error('Max retries exceeded');
 }
 
 /**
- * Extract set code and local ID from card_id
+ * Extract set code and local ID from card_id or use set_code/number
  */
-function parseCardId(cardId: string): { setCode: string; localId: string } | null {
-  // Format: tcgdx_ja_S9a-033 or tcgdx_ja_S9a_033
-  const match = cardId.match(/tcgdx_ja_([A-Z0-9]+)[-_](.+)/);
-  if (match) {
-    return { setCode: match[1], localId: match[2] };
+function getImageUrl(card: any): string | null {
+  // Try to parse from card_id (format: tcgdx_ja_S9a-033)
+  const cardIdMatch = card.card_id?.match(/tcgdx_ja_([A-Z0-9]+)[-_](.+)/);
+  if (cardIdMatch) {
+    const setCode = cardIdMatch[1];
+    const localId = cardIdMatch[2];
+    return `${TCGDEX_ASSETS_BASE}/ja/${setCode}/${localId}.png`;
   }
+
+  // Fallback to set_code and number
+  if (card.set_code && card.number) {
+    return `${TCGDEX_ASSETS_BASE}/ja/${card.set_code}/${card.number}.png`;
+  }
+
   return null;
 }
 
@@ -89,13 +96,13 @@ serve(async (req) => {
       limit = null 
     } = await req.json().catch(() => ({}));
 
-    console.log(`🌐 Backfilling English names (dryRun: ${dryRun}, batchSize: ${batchSize})`);
+    console.log(`🖼️ Fetching missing images (dryRun: ${dryRun}, batchSize: ${batchSize})`);
 
-    // Fetch Japanese cards without English names
+    // Fetch cards without images or with invalid images
     let query = supabase
       .from('pokemon_card_attributes')
-      .select('id, card_id, name, set_code, number')
-      .or('name_en.is.null,name_en.eq.')
+      .select('id, card_id, set_code, number, images, image_validated')
+      .or('images.is.null,image_validated.eq.false')
       .or('card_id.ilike.tcgdx_ja_%,card_id.ilike.%_ja_%')
       .order('created_at', { ascending: false });
 
@@ -113,7 +120,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: true,
-          message: 'No cards need English names',
+          message: 'No cards need images',
           stats: { processed: 0, updated: 0, failed: 0 },
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -129,31 +136,39 @@ serve(async (req) => {
     for (let i = 0; i < cards.length; i++) {
       const card = cards[i];
       
-      // Parse card_id to get set code and local ID
-      const parsed = parseCardId(card.card_id);
+      // Get image URL from TCGdx assets
+      const imageUrl = getImageUrl(card);
       
-      if (!parsed) {
-        console.warn(`   ⚠️ Could not parse card_id: ${card.card_id}`);
+      if (!imageUrl) {
         failed++;
-        errors.push(`${card.card_id}: Could not parse card_id`);
+        errors.push(`${card.card_id}: Could not construct image URL`);
         continue;
       }
-
-      const { setCode, localId } = parsed;
 
       // Rate limiting
       await new Promise(resolve => setTimeout(resolve, 100));
 
       try {
-        // Fetch English version from TCGdx API
-        const englishCardUrl = `${TCGDEX_API_BASE}/en/sets/${setCode}/${localId}`;
-        const englishCard = await fetchCardWithRetry(englishCardUrl);
+        // Validate image exists
+        const validation = await validateImageUrl(imageUrl);
 
-        if (englishCard && englishCard.name) {
+        if (validation.valid) {
+          // Image exists - update card
+          const images = {
+            small: imageUrl,
+            large: imageUrl,
+            tcgdx: imageUrl
+          };
+
           if (!dryRun) {
             const { error: updateError } = await supabase
               .from('pokemon_card_attributes')
-              .update({ name_en: englishCard.name })
+              .update({ 
+                images,
+                image_validated: true,
+                image_validation_error: null,
+                image_validated_at: new Date().toISOString()
+              })
               .eq('id', card.id);
 
             if (updateError) {
@@ -162,10 +177,22 @@ serve(async (req) => {
           }
 
           updated++;
-          console.log(`   ✅ ${card.card_id}: ${card.name} → ${englishCard.name}`);
+          console.log(`   ✅ ${card.card_id}: Image found and updated`);
         } else {
+          // Image doesn't exist
+          if (!dryRun) {
+            await supabase
+              .from('pokemon_card_attributes')
+              .update({ 
+                image_validated: false,
+                image_validation_error: validation.error,
+                image_validated_at: new Date().toISOString()
+              })
+              .eq('id', card.id);
+          }
+
           failed++;
-          errors.push(`${card.card_id}: English name not found in API`);
+          errors.push(`${card.card_id}: ${validation.error}`);
         }
       } catch (error: any) {
         failed++;
@@ -191,8 +218,8 @@ serve(async (req) => {
         },
         errors: errors.slice(0, 20), // Return first 20 errors
         message: dryRun
-          ? `Would update ${updated} cards with English names`
-          : `Updated ${updated} cards with English names (${failed} failed)`,
+          ? `Would update ${updated} cards with images`
+          : `Updated ${updated} cards with images (${failed} failed)`,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -208,3 +235,4 @@ serve(async (req) => {
     );
   }
 });
+

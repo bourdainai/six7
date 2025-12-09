@@ -213,19 +213,61 @@ serve(async (req) => {
 
     console.log(`✅ Found ${cardsList.length} cards in set`);
 
+    // For Japanese cards, fetch English names from TCGdx API
+    const fetchEnglishNames = language === 'ja';
+    const englishNameMap = new Map<string, string>();
+
+    if (fetchEnglishNames) {
+      console.log(`🌐 Fetching English names for ${cardsList.length} Japanese cards...`);
+      
+      // Fetch English names with rate limiting
+      for (let i = 0; i < cardsList.length; i++) {
+        const card = cardsList[i];
+        const localId = card.localId || card.id || 'unknown';
+        
+        // Rate limiting: delay each request
+        if (i > 0) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        try {
+          const englishCardUrl = `${TCGDEX_API_BASE}/en/sets/${setCode}/${localId}`;
+          const englishCard = await fetchCardWithRetry(englishCardUrl);
+          
+          if (englishCard && englishCard.name) {
+            englishNameMap.set(localId, englishCard.name);
+            if ((i + 1) % 10 === 0) {
+              console.log(`   📊 Progress: ${i + 1}/${cardsList.length} English names fetched`);
+            }
+          }
+        } catch (error) {
+          // Silent fail - will use Japanese name as fallback
+          console.warn(`   ⚠️ Could not fetch English name for ${localId}`);
+        }
+      }
+      
+      console.log(`   ✅ Fetched ${englishNameMap.size}/${cardsList.length} English names`);
+    }
+
     // Transform cards for database
     const transformedCards = cardsList.map((card: any) => {
       const cardId = card.id || `${setCode}-${card.localId || 'unknown'}`;
       const localId = card.localId || card.id || 'unknown';
-      const imageUrl = card.image || `https://assets.tcgdex.net/${language}/${setCode}/${localId}`;
+      const imageUrl = card.image || `https://assets.tcgdx.net/${language}/${setCode}/${localId}`;
+      
+      // Get English name if available
+      const englishName = fetchEnglishNames 
+        ? (englishNameMap.get(localId) || null)
+        : null;
       
       const printedNumber = totalCards 
         ? `${localId}/${String(totalCards).padStart(3, '0')}`
         : localId;
       
       return {
-        card_id: `tcgdex_${language}_${cardId}`,
+        card_id: `tcgdx_${language}_${cardId}`,
         name: card.name || 'Unknown',
+        name_en: englishName, // Store English name
         set_name: japaneseSetName,
         set_name_en: englishSetName,
         set_code: setCode,
@@ -240,11 +282,12 @@ serve(async (req) => {
         images: {
           small: imageUrl,
           large: imageUrl,
-          tcgdex: imageUrl
+          tcgdx: imageUrl
         },
         printed_total: totalCards,
-        sync_source: 'tcgdex',
+        sync_source: 'tcgdx',
         synced_at: new Date().toISOString(),
+        image_validated: false, // Will be validated separately
         metadata: {
           language,
           imported_at: new Date().toISOString(),

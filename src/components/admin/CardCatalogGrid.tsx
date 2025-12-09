@@ -24,6 +24,23 @@ interface CardCatalogGridProps {
   onPageChange: (page: number) => void;
 }
 
+// Helper function to get display name (always prefer English)
+function getDisplayName(card: CardCatalogCard): string {
+  return card.name_en || card.name || 'Unknown';
+}
+
+// Helper function to check if image is actually valid
+function hasValidImage(card: CardCatalogCard): boolean {
+  const hasImageUrl = !!(card.images?.small || card.images?.large);
+  
+  // If image_validated field exists and is false, image is invalid
+  if ('image_validated' in card && (card as any).image_validated === false) {
+    return false;
+  }
+  
+  return hasImageUrl;
+}
+
 function CardThumbnail({
   card,
   onClick,
@@ -31,9 +48,10 @@ function CardThumbnail({
   card: CardCatalogCard;
   onClick: () => void;
 }) {
-  const hasImage = card.images?.small || card.images?.large;
+  const displayName = getDisplayName(card);
+  const hasImage = hasValidImage(card);
   const hasPrice = card.tcgplayer_prices || card.cardmarket_prices;
-  const imageUrl = card.images?.small || card.images?.large;
+  const imageUrl = card.images?.large || card.images?.small;
 
   return (
     <Card
@@ -44,15 +62,17 @@ function CardThumbnail({
     >
       {/* Card Image */}
       <div className="aspect-[2.5/3.5] bg-muted relative">
-        {hasImage ? (
+        {hasImage && imageUrl ? (
           <img
             src={imageUrl}
-            alt={card.name}
+            alt={displayName}
             className="w-full h-full object-cover"
             loading="lazy"
             onError={(e) => {
+              // Image failed to load - hide it and show placeholder
               (e.target as HTMLImageElement).style.display = "none";
-              (e.target as HTMLImageElement).nextElementSibling?.classList.remove("hidden");
+              const placeholder = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
+              if (placeholder) placeholder.classList.remove("hidden");
             }}
           />
         ) : null}
@@ -93,9 +113,12 @@ function CardThumbnail({
 
       {/* Card Info */}
       <div className="p-2 space-y-1">
-        <h3 className="text-sm font-medium truncate" title={card.name}>
-          {card.name}
+        <h3 className="text-sm font-medium truncate" title={displayName}>
+          {displayName}
         </h3>
+        {!card.name_en && card.name && /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(card.name) && (
+          <Badge variant="secondary" className="text-[10px] px-1 py-0 mt-1">Japanese Only</Badge>
+        )}
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span className="font-mono">{card.set_code}</span>
           <span>#{card.number}</span>

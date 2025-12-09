@@ -21,9 +21,14 @@ import {
   RefreshCw,
   Trash2,
   Copy,
+  Globe,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useMutation } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 function StatsCard({
   icon: Icon,
@@ -155,6 +160,7 @@ export default function AdminCardCatalog() {
   const [page, setPage] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const { toast } = useToast();
 
   const { data, isLoading, refetch } = useCardCatalog({
     filters,
@@ -164,6 +170,79 @@ export default function AdminCardCatalog() {
 
   // Check for duplicates
   const { data: duplicateData, isLoading: duplicatesLoading } = useDuplicateDetection();
+
+  // Bulk action mutations
+  const validateImagesMutation = useMutation({
+    mutationFn: async ({ validateAll = false }: { validateAll?: boolean }) => {
+      const { data, error } = await supabase.functions.invoke('validate-card-images', {
+        body: { validateAll, batchSize: 100 }
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Image Validation Complete",
+        description: data.message || `Validated ${data.stats?.validated || 0} images`,
+      });
+      refetch();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Validation Failed",
+        description: error.message || "Failed to validate images",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const fetchEnglishNamesMutation = useMutation({
+    mutationFn: async ({ limit = 100 }: { limit?: number }) => {
+      const { data, error } = await supabase.functions.invoke('backfill-english-names', {
+        body: { batchSize: 50, limit }
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "English Names Fetched",
+        description: data.message || `Updated ${data.stats?.updated || 0} cards`,
+      });
+      refetch();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Fetch Failed",
+        description: error.message || "Failed to fetch English names",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const fetchImagesMutation = useMutation({
+    mutationFn: async ({ limit = 100 }: { limit?: number }) => {
+      const { data, error } = await supabase.functions.invoke('fetch-missing-images', {
+        body: { batchSize: 50, limit }
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Images Fetched",
+        description: data.message || `Updated ${data.stats?.updated || 0} cards`,
+      });
+      refetch();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Fetch Failed",
+        description: error.message || "Failed to fetch images",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Reset page when filters change
   const handleFiltersChange = (newFilters: FilterType) => {
@@ -202,6 +281,53 @@ export default function AdminCardCatalog() {
 
         {/* Stats */}
         <StatsSection />
+
+        {/* Bulk Actions */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold">Bulk Actions</h3>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => validateImagesMutation.mutate({ validateAll: false })}
+                disabled={validateImagesMutation.isPending}
+              >
+                <Image className="h-4 w-4 mr-2" />
+                {validateImagesMutation.isPending ? "Validating..." : "Validate Images (Sample)"}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => validateImagesMutation.mutate({ validateAll: true })}
+                disabled={validateImagesMutation.isPending}
+              >
+                <Image className="h-4 w-4 mr-2" />
+                {validateImagesMutation.isPending ? "Validating All..." : "Validate All Images"}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fetchEnglishNamesMutation.mutate({ limit: 100 })}
+                disabled={fetchEnglishNamesMutation.isPending}
+              >
+                <Globe className="h-4 w-4 mr-2" />
+                {fetchEnglishNamesMutation.isPending ? "Fetching..." : "Fetch English Names (100)"}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fetchImagesMutation.mutate({ limit: 100 })}
+                disabled={fetchImagesMutation.isPending}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {fetchImagesMutation.isPending ? "Fetching..." : "Fetch Missing Images (100)"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Duplicate Warning Banner */}
         {duplicateData?.stats?.totalDuplicates > 0 && (

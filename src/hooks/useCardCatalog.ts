@@ -50,6 +50,8 @@ export interface CardCatalogCard {
   last_price_update: string | null;
   metadata: Record<string, any> | null;
   created_at: string;
+  image_validated?: boolean | null;
+  image_validation_error?: string | null;
 }
 
 export interface CardCatalogStats {

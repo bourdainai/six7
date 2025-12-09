@@ -95,10 +95,29 @@ function JsonField({ label, value }: { label: string; value: any }) {
   );
 }
 
+// Helper function to get display name (always prefer English)
+function getDisplayName(card: CardCatalogCard): string {
+  return card.name_en || card.name || 'Unknown';
+}
+
+// Helper function to check if image is actually valid
+function hasValidImage(card: CardCatalogCard): boolean {
+  // Check if image exists AND is validated (if validation has been run)
+  const hasImageUrl = !!(card.images?.small || card.images?.large);
+  
+  // If image_validated field exists, use it; otherwise fall back to URL check
+  if ('image_validated' in card && card.image_validated === false) {
+    return false;
+  }
+  
+  return hasImageUrl;
+}
+
 export function CardDetailModal({ card, open, onOpenChange }: CardDetailModalProps) {
   if (!card) return null;
 
-  const hasImage = card.images?.small || card.images?.large;
+  const displayName = getDisplayName(card);
+  const hasImage = hasValidImage(card);
   const hasPrice = card.tcgplayer_prices || card.cardmarket_prices;
   const imageUrl = card.images?.large || card.images?.small;
 
@@ -107,7 +126,10 @@ export function CardDetailModal({ card, open, onOpenChange }: CardDetailModalPro
       <DialogContent className="max-w-4xl max-h-[90vh] p-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle className="flex items-center gap-3">
-            <span>{card.name}</span>
+            <span>{displayName}</span>
+            {!card.name_en && card.name && /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(card.name) && (
+              <Badge variant="secondary" className="text-xs">Japanese Only</Badge>
+            )}
             <Badge variant="outline" className="font-mono text-xs">
               {card.set_code}-{card.number}
             </Badge>
@@ -121,16 +143,21 @@ export function CardDetailModal({ card, open, onOpenChange }: CardDetailModalPro
               <div className="space-y-4">
                 {/* Card Image */}
                 <div className="relative aspect-[2.5/3.5] bg-muted rounded-lg overflow-hidden border">
-                  {hasImage ? (
+                  {hasImage && imageUrl ? (
                     <img
                       src={imageUrl}
-                      alt={card.name}
+                      alt={displayName}
                       className="w-full h-full object-contain"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = "/placeholder.svg";
+                        // Image failed to load - mark as invalid
+                        (e.target as HTMLImageElement).style.display = "none";
+                        const errorDiv = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
+                        if (errorDiv) errorDiv.style.display = "flex";
                       }}
                     />
-                  ) : (
+                  ) : null}
+                  {/* Fallback for missing/broken images */}
+                  {(!hasImage || !imageUrl) && (
                     <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
                       <AlertTriangle className="h-12 w-12 mb-2 text-destructive" />
                       <span className="text-sm font-medium">No Image</span>
@@ -146,6 +173,9 @@ export function CardDetailModal({ card, open, onOpenChange }: CardDetailModalPro
                       <span className="text-sm font-medium">
                         {hasImage ? "Has Image" : "Missing Image"}
                       </span>
+                      {('image_validated' in card) && card.image_validated === false && (
+                        <Badge variant="destructive" className="text-xs ml-1">Invalid URL</Badge>
+                      )}
                     </div>
                   </div>
                   <div className={`p-3 rounded-lg border ${hasPrice ? "bg-green-500/10 border-green-500/20" : "bg-yellow-500/10 border-yellow-500/20"}`}>
@@ -182,8 +212,13 @@ export function CardDetailModal({ card, open, onOpenChange }: CardDetailModalPro
                   </h3>
                   <div className="bg-muted/30 rounded-lg p-3">
                     <DataField label="card_id" value={card.card_id} copyable />
-                    <DataField label="name" value={card.name} />
-                    <DataField label="name_en" value={card.name_en} />
+                    <DataField label="name (Japanese)" value={card.name} />
+                    <DataField label="name_en (English)" value={card.name_en || "— Not available"} />
+                    {!card.name_en && card.name && /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(card.name) && (
+                      <div className="mt-2 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded text-xs text-yellow-700 dark:text-yellow-400">
+                        ⚠️ English name missing - will display Japanese name
+                      </div>
+                    )}
                     <DataField label="set_code" value={card.set_code} />
                     <DataField label="set_name" value={card.set_name} />
                     <DataField label="number" value={card.number} />
