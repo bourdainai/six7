@@ -60,12 +60,12 @@ function getImageUrl(card: any): string | null {
   if (cardIdMatch) {
     const setCode = cardIdMatch[1];
     const localId = cardIdMatch[2];
-    return `${TCGDEX_ASSETS_BASE}/ja/${setCode}/${localId}.png`;
+    return `${TCGDEX_ASSETS_BASE}/ja/${setCode}/${localId}`;
   }
 
   // Fallback to set_code and number
   if (card.set_code && card.number) {
-    return `${TCGDEX_ASSETS_BASE}/ja/${card.set_code}/${card.number}.png`;
+    return `${TCGDEX_ASSETS_BASE}/ja/${card.set_code}/${card.number}`;
   }
 
   return null;
