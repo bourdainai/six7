@@ -303,122 +303,53 @@ serve(async (req) => {
     const listingsUpdated = 0;
 
     // For large deletions, process in smaller chunks to avoid timeout
-    // batchOnly mode: only delete one batch and return, let frontend call again
-    const DELETE_BATCH_SIZE = batchOnly ? Math.min(batchSize, 100) : 100; // Smaller batches for RPC
-    const MAX_TIME_MS = 45000; // 45 seconds max (leave 15s buffer)
+    const DELETE_BATCH_SIZE = batchOnly ? Math.min(batchSize, 50) : 50; // Small batches for reliability
+    const MAX_TIME_MS = 50000; // 50 seconds max
     const startTime = Date.now();
     
     let totalDeleted = 0;
     const errors: string[] = [];
-    const idsToDelete = cardsToDelete.map(c => c.id);
-
-    console.log(`🔄 Deleting ${idsToDelete.length} cards in batches of ${DELETE_BATCH_SIZE}...`);
     
-    // Get card_ids for RPC deletion (handles FK constraints atomically)
+    // Get card_ids for deletion
     const cardIdsToDelete = cardsToDelete.map(c => c.card_id);
-    console.log(`   Sample IDs to delete: ${idsToDelete.slice(0, 3).join(', ')}`);
-    console.log(`   Sample card_ids to delete: ${cardIdsToDelete.slice(0, 3).join(', ')}`);
+    console.log(`🔄 Deleting ${cardIdsToDelete.length} cards in batches of ${DELETE_BATCH_SIZE}...`);
+    console.log(`   Sample card_ids: ${cardIdsToDelete.slice(0, 3).join(', ')}`);
 
     for (let i = 0; i < cardIdsToDelete.length; i += DELETE_BATCH_SIZE) {
-      // Check if we're running out of time
-      const elapsed = Date.now() - startTime;
-      if (elapsed > MAX_TIME_MS) {
-        console.log(`⏰ Approaching timeout after ${totalDeleted} deletions, stopping to avoid crash`);
+      // Check timeout
+      if (Date.now() - startTime > MAX_TIME_MS) {
+        console.log(`⏰ Timeout after ${totalDeleted} deletions`);
         break;
       }
 
-      const cardIdBatch = cardIdsToDelete.slice(i, i + DELETE_BATCH_SIZE);
-      const idBatch = idsToDelete.slice(i, i + DELETE_BATCH_SIZE);
+      const batch = cardIdsToDelete.slice(i, i + DELETE_BATCH_SIZE);
       const batchNum = Math.floor(i / DELETE_BATCH_SIZE) + 1;
       const totalBatches = Math.ceil(cardIdsToDelete.length / DELETE_BATCH_SIZE);
       
-      console.log(`   Batch ${batchNum}/${totalBatches}: Attempting to delete ${cardIdBatch.length} cards...`);
+      console.log(`   Batch ${batchNum}/${totalBatches}: ${batch.length} cards`);
 
       try {
-        // PRIMARY METHOD: Use RPC function that handles FK constraints in a transaction
-        console.log(`   📤 Method 1: Using admin_delete_cards_by_card_id RPC...`);
+        // Use the RPC function that handles FK constraints atomically
         const { data: rpcResult, error: rpcError } = await supabase.rpc('admin_delete_cards_by_card_id', {
-          card_ids_to_delete: cardIdBatch
+          card_ids_to_delete: batch
         });
         
         if (rpcError) {
-          console.error(`   ❌ RPC error:`, rpcError.message);
-          console.log(`   📤 RPC not available, falling back to direct delete...`);
-          
-          // FALLBACK METHOD 1: Direct delete by card_id
-          console.log(`   📤 Method 2: Direct delete by card_id...`);
-          
-          // First, clear FK references manually
-          for (const tableName of TABLES_WITH_FK) {
-            const { error: clearError } = await supabase
-              .from(tableName)
-              .update({ card_id: null })
-              .in('card_id', cardIdBatch);
-            if (clearError) {
-              console.warn(`   ⚠️ Could not clear ${tableName} refs: ${clearError.message}`);
-            }
-          }
-          
-          // Now delete
-          const { data: deletedData, error: deleteError } = await supabase
-            .from('pokemon_card_attributes')
-            .delete()
-            .in('card_id', cardIdBatch)
-            .select('id');
-
-          if (deleteError) {
-            console.error(`   ❌ Delete error:`, deleteError.message);
-            errors.push(`Batch ${batchNum}: ${deleteError.message}`);
-            
-            // FALLBACK METHOD 2: Delete one by one
-            console.log(`   📤 Method 3: Single-record deletes...`);
-            let singleDeletes = 0;
-            for (let j = 0; j < Math.min(cardIdBatch.length, 50); j++) {
-              const cardId = cardIdBatch[j];
-              
-              // Clear refs for this single card (all FK tables)
-              await supabase.from('listings').update({ card_id: null }).eq('card_id', cardId);
-              await supabase.from('listing_variants').update({ card_id: null }).eq('card_id', cardId);
-              await supabase.from('trade_market_trends').update({ card_id: null }).eq('card_id', cardId);
-              
-              // Delete
-              const { error: singleErr } = await supabase
-                .from('pokemon_card_attributes')
-                .delete()
-                .eq('card_id', cardId);
-                
-              if (!singleErr) {
-                singleDeletes++;
-              } else {
-                console.error(`   ❌ Single delete ${cardId} failed:`, singleErr.message);
-                errors.push(`Card ${cardId}: ${singleErr.message}`);
-              }
-            }
-            totalDeleted += singleDeletes;
-            console.log(`   ✅ Method 3 deleted ${singleDeletes} cards individually`);
-          } else {
-            const count = deletedData?.length || 0;
-            totalDeleted += count;
-            console.log(`   ✅ Method 2 deleted ${count} cards`);
-          }
+          console.error(`   ❌ RPC error: ${rpcError.message}`);
+          errors.push(`Batch ${batchNum}: ${rpcError.message}`);
         } else {
-          // RPC succeeded
           const result = rpcResult as { deleted: number; requested: number } | null;
           const count = result?.deleted || 0;
           totalDeleted += count;
-          console.log(`   ✅ Method 1 (RPC) deleted ${count}/${result?.requested || cardIdBatch.length} cards`);
-          
-          if (count === 0 && cardIdBatch.length > 0) {
-            console.warn(`   ⚠️ RPC reported 0 deletions - cards may not exist or already deleted`);
-          }
+          console.log(`   ✅ Deleted ${count}/${batch.length}`);
         }
       } catch (err) {
         console.error(`   ❌ Exception:`, err);
         errors.push(`Batch ${batchNum}: ${err}`);
       }
 
-      // Small delay between batches
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Small delay
+      await new Promise(resolve => setTimeout(resolve, 50));
 
       // If batchOnly mode, return after first batch
       if (batchOnly) {
