@@ -1,6 +1,6 @@
-import { useCallback, useEffect } from "react";
+import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type PanInfo } from "framer-motion";
 import { ChevronLeft, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -66,9 +66,30 @@ export function SellWizard() {
   const { user } = useAuth();
   const haptics = useHaptics();
   const wizard = useSellWizard();
+  const swipeThreshold = 80;
 
   // Track swipe direction for animations
   const direction = wizard.currentStepIndex;
+
+  // Handle swipe gestures
+  const handleDragEnd = useCallback((event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    const { offset, velocity } = info;
+
+    // Only trigger if swipe was significant
+    if (Math.abs(offset.x) < swipeThreshold && Math.abs(velocity.x) < 500) {
+      return;
+    }
+
+    if (offset.x > 0 && !wizard.isFirstStep) {
+      // Swipe right - go back
+      haptics.light();
+      wizard.goBack();
+    } else if (offset.x < 0 && wizard.canProceed && !wizard.isLastStep) {
+      // Swipe left - go forward
+      haptics.medium();
+      wizard.goNext();
+    }
+  }, [wizard, haptics, swipeThreshold]);
 
   // Wrapped navigation with haptics
   const handleGoNext = useCallback(() => {
@@ -306,7 +327,11 @@ export function SellWizard() {
             animate="center"
             exit="exit"
             transition={{ duration: 0.25, ease: "easeInOut" }}
-            className="h-full overflow-y-auto"
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.2}
+            onDragEnd={handleDragEnd}
+            className="h-full overflow-y-auto touch-pan-y"
           >
             {wizard.currentStep === "capture" && <CaptureStep wizard={wizard} />}
             {wizard.currentStep === "details" && <DetailsStep wizard={wizard} />}
