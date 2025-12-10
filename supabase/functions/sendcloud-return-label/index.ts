@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import Stripe from "https://esm.sh/stripe@14.21.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -38,7 +39,7 @@ serve(async (req) => {
 
     console.log('Creating return label for order:', orderId);
 
-    // Fetch order details
+    // Fetch order details including seller's Stripe Connect account ID
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .select(`
@@ -47,7 +48,7 @@ serve(async (req) => {
           *,
           listing:listings(title, package_weight, package_dimensions)
         ),
-        seller:profiles!seller_id(full_name, email),
+        seller:profiles!seller_id(full_name, email, stripe_connect_account_id),
         buyer:profiles!buyer_id(full_name, email)
       `)
       .eq('id', orderId)
@@ -76,18 +77,57 @@ serve(async (req) => {
 
     // Create return parcel - reverse shipping address (buyer to seller)
     const shippingAddress = order.shipping_address as any;
-    
-    // Get seller's return address (for now, use a default or from profile)
-    const sellerReturnAddress = {
+
+    // Get seller's return address from Stripe Connect account
+    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY') ?? '';
+    let sellerReturnAddress = {
       name: order.seller?.full_name || 'Seller',
       company_name: '6SEVEN',
-      address: 'Seller Street 1', // TODO: Get from seller profile
-      city: 'London',
-      postal_code: 'SW1A 1AA',
+      address: '',
+      city: '',
+      postal_code: '',
       country: 'GB',
-      email: order.seller?.email,
-      telephone: shippingAddress.phone || '',
+      email: order.seller?.email || '',
+      telephone: '',
     };
+
+    // Fetch seller's address from Stripe Connect if available
+    if (order.seller?.stripe_connect_account_id && stripeKey) {
+      try {
+        const stripe = new Stripe(stripeKey, { apiVersion: '2023-10-16' });
+        const stripeAccount = await stripe.accounts.retrieve(order.seller.stripe_connect_account_id);
+
+        // Use business profile address or individual address
+        const address = stripeAccount.business_profile?.support_address ||
+                       (stripeAccount.individual as any)?.address ||
+                       (stripeAccount.company as any)?.address;
+
+        if (address) {
+          sellerReturnAddress = {
+            name: order.seller?.full_name || stripeAccount.business_profile?.name || 'Seller',
+            company_name: stripeAccount.business_profile?.name || '6SEVEN',
+            address: address.line1 || '',
+            city: address.city || '',
+            postal_code: address.postal_code || '',
+            country: address.country || 'GB',
+            email: order.seller?.email || '',
+            telephone: stripeAccount.business_profile?.support_phone || '',
+          };
+        }
+        console.log('Fetched seller address from Stripe:', sellerReturnAddress.city);
+      } catch (stripeError) {
+        console.error('Failed to fetch seller address from Stripe:', stripeError);
+        // Fall back to requiring manual address entry
+        throw new Error('Seller return address not available. Please contact support.');
+      }
+    } else {
+      throw new Error('Seller has not completed payment setup. Return label cannot be generated.');
+    }
+
+    // Validate we have a proper address
+    if (!sellerReturnAddress.address || !sellerReturnAddress.city || !sellerReturnAddress.postal_code) {
+      throw new Error('Seller return address is incomplete. Please contact support.');
+    }
 
     const parcelData = {
       parcel: {

@@ -66,12 +66,36 @@ export default function BundleDetail() {
 
     if (!bundle) return;
 
-    // TODO: Implement bundle checkout flow
-    // For now, redirect to first listing checkout as placeholder
-    if (bundle.bundle_items && bundle.bundle_items.length > 0) {
-      const firstListing = bundle.bundle_items[0]?.listing;
-      if (firstListing) {
-        navigate(`/checkout/${firstListing.id}?bundle=${id}`);
+    // Bundle checkout for multi-listing bundles
+    // For bundles with multiple listings, users can purchase items individually
+    // The bundle discount is shown as reference - contact seller for bundle deals
+    const activeItems = bundleItems.filter((item: any) => item.listing?.status === 'active');
+
+    if (activeItems.length === 0) {
+      toast({
+        title: "Bundle unavailable",
+        description: "All items in this bundle have been sold",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (activeItems.length === 1) {
+      // Only one item left, go directly to checkout
+      const listing = activeItems[0]?.listing;
+      if (listing) {
+        navigate(`/checkout/${listing.id}`);
+      }
+    } else {
+      // Multiple items - inform user about individual purchase option
+      toast({
+        title: "Bundle purchase",
+        description: `This bundle has ${activeItems.length} items. Click on individual items below to purchase them, or contact the seller for bundle deals.`,
+      });
+      // Scroll to bundle items section
+      const itemsSection = document.getElementById('bundle-items-section');
+      if (itemsSection) {
+        itemsSection.scrollIntoView({ behavior: 'smooth' });
       }
     }
   };
@@ -296,7 +320,7 @@ export default function BundleDetail() {
         </div>
 
         {/* Bundle Items */}
-        <div className="mt-12">
+        <div id="bundle-items-section" className="mt-12">
           <h2 className="text-2xl font-bold mb-6">Items in This Bundle</h2>
           
           {bundleItems.length === 0 ? (
@@ -315,27 +339,43 @@ export default function BundleDetail() {
                 return (
                   <Card
                     key={item.id}
-                    className="cursor-pointer hover:shadow-lg transition-shadow"
-                    onClick={() => navigate(`/listing/${listing.id}`)}
+                    className="hover:shadow-lg transition-shadow"
                   >
-                    {listing.listing_images?.[0]?.image_url && (
-                      <div className="aspect-square bg-muted overflow-hidden">
-                        <img
-                          src={listing.listing_images[0].image_url}
-                          alt={listing.title}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    )}
-                    <CardHeader>
-                      <CardTitle className="text-lg line-clamp-2">{listing.title}</CardTitle>
-                      {listing.condition && (
-                        <CardDescription>{listing.condition}</CardDescription>
+                    <div
+                      className="cursor-pointer"
+                      onClick={() => navigate(`/listing/${listing.id}`)}
+                    >
+                      {listing.listing_images?.[0]?.image_url && (
+                        <div className="aspect-square bg-muted overflow-hidden">
+                          <img
+                            src={listing.listing_images[0].image_url}
+                            alt={listing.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
                       )}
-                    </CardHeader>
-                    <CardContent>
+                      <CardHeader>
+                        <CardTitle className="text-lg line-clamp-2">{listing.title}</CardTitle>
+                        {listing.condition && (
+                          <CardDescription>{listing.condition}</CardDescription>
+                        )}
+                      </CardHeader>
+                    </div>
+                    <CardContent className="space-y-3">
                       <p className="text-xl font-bold">£{Number(listing.seller_price).toFixed(2)}</p>
-                      {listing.status !== "active" && (
+                      {listing.status === "active" ? (
+                        <Button
+                          size="sm"
+                          className="w-full"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/checkout/${listing.id}`);
+                          }}
+                        >
+                          <ShoppingBag className="mr-2 h-4 w-4" />
+                          Buy Now
+                        </Button>
+                      ) : (
                         <Badge variant="destructive" className="mt-2">
                           {listing.status}
                         </Badge>

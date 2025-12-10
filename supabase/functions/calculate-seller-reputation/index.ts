@@ -20,12 +20,26 @@ serve(async (req) => {
 
     console.log('Calculating reputation for seller:', seller_id);
 
-    // Fetch seller's order data
+    // Fetch seller's completed order data
     const { data: orders } = await supabase
       .from('orders')
       .select('*, order_items(*)')
       .eq('seller_id', seller_id)
       .eq('status', 'completed');
+
+    // Fetch cancelled orders for cancellation rate
+    const { data: cancelledOrders } = await supabase
+      .from('orders')
+      .select('id')
+      .eq('seller_id', seller_id)
+      .eq('status', 'cancelled');
+
+    // Fetch total orders (completed + cancelled) for rate calculation
+    const { data: allOrders } = await supabase
+      .from('orders')
+      .select('id')
+      .eq('seller_id', seller_id)
+      .in('status', ['completed', 'cancelled']);
 
     // Fetch seller's ratings
     const { data: ratings } = await supabase
@@ -139,7 +153,9 @@ serve(async (req) => {
         disputes_lost: disputesLost,
         on_time_shipments: onTimeShipments,
         late_shipments: lateShipments,
-        cancellation_rate: 0, // TODO: Calculate from orders
+        cancellation_rate: allOrders && allOrders.length > 0
+          ? ((cancelledOrders?.length || 0) / allOrders.length) * 100
+          : 0,
         last_calculated_at: new Date().toISOString(),
       });
 
