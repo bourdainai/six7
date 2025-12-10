@@ -1,9 +1,11 @@
+import { useCallback } from "react";
 import { motion } from "framer-motion";
 import { Package, Truck, Gift, Check } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { useHaptics } from "@/hooks/useHaptics";
 import type { SellWizardState } from "@/hooks/useSellWizard";
 
 const SHIPPING_OPTIONS = [
@@ -12,7 +14,6 @@ const SHIPPING_OPTIONS = [
     label: "Free Shipping",
     description: "You cover shipping costs",
     icon: Gift,
-    popular: true,
   },
   {
     value: 1.50,
@@ -34,15 +35,22 @@ interface ShippingStepProps {
 }
 
 export function ShippingStep({ wizard }: ShippingStepProps) {
+  const haptics = useHaptics();
   const { draft, updateDraft } = wizard;
 
-  const handleSelectOption = (value: number) => {
+  const handleSelectOption = useCallback((value: number) => {
+    haptics.selection();
     if (value === 0) {
       updateDraft({ freeShipping: true, shippingCost: 0 });
     } else {
       updateDraft({ freeShipping: false, shippingCost: value });
     }
-  };
+  }, [updateDraft, haptics]);
+
+  const handleAIToggle = useCallback((enabled: boolean) => {
+    haptics.light();
+    updateDraft({ aiEnabled: enabled });
+  }, [updateDraft, haptics]);
 
   const isCustomPrice = !SHIPPING_OPTIONS.some(
     opt => (opt.value === 0 && draft.freeShipping) ||
@@ -51,19 +59,10 @@ export function ShippingStep({ wizard }: ShippingStepProps) {
 
   return (
     <div className="p-4 space-y-6">
-      {/* Shipping Info Card */}
-      <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20">
-        <div className="flex items-start gap-3">
-          <Package className="h-5 w-5 text-blue-500 mt-0.5" />
-          <div>
-            <p className="text-sm font-medium">Shipping in the UK</p>
-            <p className="text-sm text-muted-foreground">
-              Cards are shipped in protective sleeves and toploaders.
-              We recommend tracked shipping for cards over £20.
-            </p>
-          </div>
-        </div>
-      </div>
+      {/* Shipping Info */}
+      <p className="text-sm text-muted-foreground">
+        Cards ship in protective sleeves. We recommend tracked delivery for items over £20.
+      </p>
 
       {/* Shipping Options */}
       <div className="space-y-3">
@@ -101,14 +100,9 @@ export function ShippingStep({ wizard }: ShippingStepProps) {
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{option.label}</span>
-                      {option.popular && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-600">
-                          Popular
-                        </span>
-                      )}
                       {option.recommended && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600">
-                          Recommended
+                        <span className="text-xs text-muted-foreground">
+                          · Recommended
                         </span>
                       )}
                     </div>
@@ -179,19 +173,17 @@ export function ShippingStep({ wizard }: ShippingStepProps) {
       )}
 
       {/* AI Visibility Toggle */}
-      <div className="pt-4 border-t">
-        <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
-          <div className="flex-1">
-            <Label className="text-base font-medium">AI Discovery</Label>
-            <p className="text-sm text-muted-foreground">
-              Let AI assistants (ChatGPT, Claude) find and recommend your listing
-            </p>
-          </div>
-          <Switch
-            checked={draft.aiEnabled}
-            onCheckedChange={(checked) => updateDraft({ aiEnabled: checked })}
-          />
+      <div className="flex items-center justify-between py-3 border-t">
+        <div className="flex-1">
+          <Label className="text-sm font-medium">AI discovery</Label>
+          <p className="text-xs text-muted-foreground">
+            Let AI assistants find your listing
+          </p>
         </div>
+        <Switch
+          checked={draft.aiEnabled}
+          onCheckedChange={handleAIToggle}
+        />
       </div>
     </div>
   );

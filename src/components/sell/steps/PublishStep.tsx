@@ -1,10 +1,10 @@
-import { motion } from "framer-motion";
-import { Loader2, Eye, Edit2, Check, Truck, Tag, MessageSquare } from "lucide-react";
+import { useCallback } from "react";
+import { Loader2, Eye, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
+import { useHaptics } from "@/hooks/useHaptics";
 import type { SellWizardState } from "@/hooks/useSellWizard";
 
 interface PublishStepProps {
@@ -13,7 +13,13 @@ interface PublishStepProps {
 }
 
 export function PublishStep({ wizard, onPublish }: PublishStepProps) {
+  const haptics = useHaptics();
   const { draft, isPublishing, goToStep } = wizard;
+
+  const handleEditStep = useCallback((step: "capture" | "details" | "shipping") => {
+    haptics.light();
+    goToStep(step);
+  }, [goToStep, haptics]);
 
   // Generate title
   const title = draft.card
@@ -132,55 +138,44 @@ export function PublishStep({ wizard, onPublish }: PublishStepProps) {
       </Card>
 
       {/* Quick Edit Links */}
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => goToStep("capture")}
-          className="text-primary"
+      <div className="flex gap-4 text-sm">
+        <button
+          onClick={() => handleEditStep("capture")}
+          className="text-primary hover:underline"
         >
-          <Edit2 className="mr-1 h-3 w-3" />
           Edit photos
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => goToStep("details")}
-          className="text-primary"
+        </button>
+        <button
+          onClick={() => handleEditStep("details")}
+          className="text-primary hover:underline"
         >
-          <Tag className="mr-1 h-3 w-3" />
           Edit details
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => goToStep("shipping")}
-          className="text-primary"
+        </button>
+        <button
+          onClick={() => handleEditStep("shipping")}
+          className="text-primary hover:underline"
         >
-          <Truck className="mr-1 h-3 w-3" />
           Edit shipping
-        </Button>
+        </button>
       </div>
 
       <Separator />
 
       {/* Fee Breakdown */}
       <div className="space-y-3">
-        <h3 className="font-medium text-sm text-muted-foreground">
-          Price breakdown
-        </h3>
+        <h3 className="text-sm font-medium">Price breakdown</h3>
 
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span>Item price</span>
+            <span className="text-muted-foreground">Item price</span>
             <span>£{itemPrice.toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
-            <span>Shipping</span>
+            <span className="text-muted-foreground">Shipping</span>
             <span>{draft.freeShipping ? "Free" : `£${shippingPrice.toFixed(2)}`}</span>
           </div>
-          <div className="flex justify-between text-muted-foreground">
-            <span>Buyer fee (40p + 1%)</span>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Buyer fee</span>
             <span>£{buyerFee.toFixed(2)}</span>
           </div>
           <Separator />
@@ -188,46 +183,38 @@ export function PublishStep({ wizard, onPublish }: PublishStepProps) {
             <span>Buyer pays</span>
             <span>£{totalBuyerPays.toFixed(2)}</span>
           </div>
-        </div>
-
-        <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/20">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">You receive (estimated)</span>
-            <span className="font-semibold text-green-600">
-              £{sellerReceives.toFixed(2)}
-            </span>
+          <div className="flex justify-between pt-1">
+            <span className="text-muted-foreground">You receive</span>
+            <span className="font-medium">£{sellerReceives.toFixed(2)}</span>
           </div>
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Final fees calculated at sale. <a href="/pricing" className="underline">See fee details</a>
+          Final fees calculated at sale. <a href="/pricing" className="underline">Fee details</a>
         </p>
       </div>
 
       {/* Checklist */}
       <div className="space-y-2">
-        <h3 className="font-medium text-sm text-muted-foreground">
-          Ready to list?
-        </h3>
-
         {[
           { label: "Photos added", done: draft.images.length > 0 || !!draft.card?.imageUrl },
           { label: "Condition set", done: !!draft.condition },
           { label: "Price set", done: !!draft.price && Number(draft.price) > 0 },
-          { label: "Shipping configured", done: true },
-        ].map((item, i) => (
-          <div key={i} className="flex items-center gap-2 text-sm">
-            <div className={cn(
-              "w-5 h-5 rounded-full flex items-center justify-center",
-              item.done ? "bg-green-500" : "bg-muted"
-            )}>
-              {item.done && <Check className="h-3 w-3 text-white" />}
-            </div>
-            <span className={cn(!item.done && "text-muted-foreground")}>
-              {item.label}
-            </span>
-          </div>
-        ))}
+        ].filter(item => !item.done).length > 0 && (
+          <>
+            <h3 className="text-sm font-medium">Before you publish</h3>
+            {[
+              { label: "Photos added", done: draft.images.length > 0 || !!draft.card?.imageUrl },
+              { label: "Condition set", done: !!draft.condition },
+              { label: "Price set", done: !!draft.price && Number(draft.price) > 0 },
+            ].filter(item => !item.done).map((item, i) => (
+              <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="w-4 h-4 rounded-full border-2 border-current" />
+                <span>{item.label}</span>
+              </div>
+            ))}
+          </>
+        )}
       </div>
 
       {/* Fixed Publish Button */}

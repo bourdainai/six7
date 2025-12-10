@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useHaptics } from "@/hooks/useHaptics";
 import type { SellWizardState, CardData } from "@/hooks/useSellWizard";
 
 interface CaptureStepProps {
@@ -15,6 +16,7 @@ interface CaptureStepProps {
 
 export function CaptureStep({ wizard }: CaptureStepProps) {
   const { toast } = useToast();
+  const haptics = useHaptics();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -25,16 +27,18 @@ export function CaptureStep({ wizard }: CaptureStepProps) {
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
+    haptics.medium();
     wizard.addImages(Array.from(files));
-  }, [wizard]);
+  }, [wizard, haptics]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     const files = e.dataTransfer.files;
     if (files.length > 0) {
+      haptics.medium();
       wizard.addImages(Array.from(files));
     }
-  }, [wizard]);
+  }, [wizard, haptics]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -79,14 +83,16 @@ export function CaptureStep({ wizard }: CaptureStepProps) {
   }, [searchQuery, toast]);
 
   const handleSelectCard = useCallback((card: CardData) => {
+    haptics.success();
     wizard.setCard(card);
     setShowSearch(false);
     setSearchResults([]);
     setSearchQuery("");
-  }, [wizard]);
+  }, [wizard, haptics]);
 
   const handleAIAnalyze = useCallback(async () => {
     if (wizard.draft.imageFiles.length === 0) {
+      haptics.warning();
       toast({
         title: "Add a photo first",
         description: "Take or upload a photo of your card",
@@ -95,6 +101,7 @@ export function CaptureStep({ wizard }: CaptureStepProps) {
       return;
     }
 
+    haptics.impact();
     wizard.setIsAnalyzing(true);
 
     try {
@@ -140,11 +147,13 @@ export function CaptureStep({ wizard }: CaptureStepProps) {
           wizard.updateDraft({ condition: data.condition });
         }
 
+        haptics.success();
         toast({
           title: "Card identified! ✨",
           description: searchName,
         });
       } else {
+        haptics.warning();
         toast({
           title: "Couldn't identify card",
           description: "Try searching manually",
@@ -153,6 +162,7 @@ export function CaptureStep({ wizard }: CaptureStepProps) {
       }
     } catch (error) {
       console.error("AI analysis error:", error);
+      haptics.error();
       toast({
         title: "Analysis failed",
         description: "Try searching manually",
@@ -162,7 +172,7 @@ export function CaptureStep({ wizard }: CaptureStepProps) {
     } finally {
       wizard.setIsAnalyzing(false);
     }
-  }, [wizard, toast]);
+  }, [wizard, toast, haptics]);
 
   return (
     <div className="p-4 space-y-6">
@@ -276,20 +286,19 @@ export function CaptureStep({ wizard }: CaptureStepProps) {
       {/* AI Analysis Button */}
       {wizard.draft.images.length > 0 && !wizard.draft.card && (
         <Button
-          variant="secondary"
-          className="w-full h-12 bg-gradient-to-r from-purple-500/10 to-blue-500/10 hover:from-purple-500/20 hover:to-blue-500/20 border border-purple-500/20"
+          className="w-full h-12"
           onClick={handleAIAnalyze}
           disabled={wizard.isAnalyzing}
         >
           {wizard.isAnalyzing ? (
             <>
               <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              Analyzing...
+              Identifying card...
             </>
           ) : (
             <>
-              <Sparkles className="mr-2 h-5 w-5 text-purple-500" />
-              Identify Card with AI
+              <Sparkles className="mr-2 h-5 w-5" />
+              Identify Card
             </>
           )}
         </Button>
@@ -297,37 +306,42 @@ export function CaptureStep({ wizard }: CaptureStepProps) {
 
       {/* Selected Card Display */}
       {wizard.draft.card && (
-        <Card className="border-green-500/30 bg-green-500/5">
+        <Card>
           <CardContent className="p-4">
             <div className="flex gap-4">
               {wizard.draft.card.imageUrl && (
                 <img
                   src={wizard.draft.card.imageUrl}
                   alt={wizard.draft.card.name}
-                  className="w-20 h-28 object-contain rounded"
+                  className="w-20 h-28 object-contain rounded bg-muted"
                 />
               )}
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold truncate">{wizard.draft.card.name}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {wizard.draft.card.setName} • {wizard.draft.card.cardNumber}
-                </p>
-                {wizard.draft.card.rarity && (
-                  <p className="text-sm text-muted-foreground">{wizard.draft.card.rarity}</p>
-                )}
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <h3 className="font-medium">{wizard.draft.card.name}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {wizard.draft.card.setName} · {wizard.draft.card.cardNumber}
+                    </p>
+                    {wizard.draft.card.rarity && (
+                      <p className="text-xs text-muted-foreground mt-1">{wizard.draft.card.rarity}</p>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => wizard.setCard(null)}
+                    className="text-muted-foreground h-8 px-2"
+                  >
+                    Change
+                  </Button>
+                </div>
                 {wizard.draft.card.marketPrice && (
-                  <p className="text-sm font-medium text-green-600 mt-1">
-                    Market: £{wizard.draft.card.marketPrice.toFixed(2)}
+                  <p className="text-sm mt-2">
+                    Market price: <span className="font-medium">£{wizard.draft.card.marketPrice.toFixed(2)}</span>
                   </p>
                 )}
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => wizard.setCard(null)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
             </div>
           </CardContent>
         </Card>

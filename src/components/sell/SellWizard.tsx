@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useHaptics } from "@/hooks/useHaptics";
 import { supabase } from "@/integrations/supabase/client";
 import { useSellWizard, type SellWizardState } from "@/hooks/useSellWizard";
 import { CaptureStep } from "./steps/CaptureStep";
@@ -31,9 +32,10 @@ const slideVariants = {
 
 interface StepIndicatorProps {
   wizard: SellWizardState;
+  onStepClick?: (step: any) => void;
 }
 
-function StepIndicator({ wizard }: StepIndicatorProps) {
+function StepIndicator({ wizard, onStepClick }: StepIndicatorProps) {
   return (
     <div className="flex items-center justify-center gap-2 py-2">
       {wizard.steps.map((step, index) => {
@@ -43,7 +45,7 @@ function StepIndicator({ wizard }: StepIndicatorProps) {
         return (
           <button
             key={step}
-            onClick={() => wizard.goToStep(step)}
+            onClick={() => onStepClick ? onStepClick(step) : wizard.goToStep(step)}
             disabled={index > wizard.currentStepIndex}
             className={cn(
               "h-2 rounded-full transition-all duration-300",
@@ -62,13 +64,31 @@ export function SellWizard() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  const haptics = useHaptics();
   const wizard = useSellWizard();
 
   // Track swipe direction for animations
   const direction = wizard.currentStepIndex;
 
+  // Wrapped navigation with haptics
+  const handleGoNext = useCallback(() => {
+    haptics.medium();
+    wizard.goNext();
+  }, [wizard, haptics]);
+
+  const handleGoBack = useCallback(() => {
+    haptics.light();
+    wizard.goBack();
+  }, [wizard, haptics]);
+
+  const handleStepClick = useCallback((step: typeof wizard.currentStep) => {
+    haptics.selection();
+    wizard.goToStep(step);
+  }, [wizard, haptics]);
+
   const handlePublish = useCallback(async () => {
     if (!user) {
+      haptics.warning();
       toast({
         title: "Sign in required",
         description: "Please sign in to publish your listing",
@@ -81,18 +101,22 @@ export function SellWizard() {
 
     // Validation
     if (!draft.condition) {
+      haptics.error();
       toast({ title: "Please select a condition", variant: "destructive" });
       return;
     }
     if (!draft.price || Number(draft.price) <= 0) {
+      haptics.error();
       toast({ title: "Please set a price", variant: "destructive" });
       return;
     }
     if (draft.images.length === 0 && !draft.card?.imageUrl) {
+      haptics.error();
       toast({ title: "Please add at least one photo", variant: "destructive" });
       return;
     }
 
+    haptics.impact();
     wizard.setIsPublishing(true);
 
     try {
@@ -170,6 +194,7 @@ export function SellWizard() {
       }
 
       wizard.setPublishedId(listing.id);
+      haptics.success();
 
       toast({
         title: "Listed successfully! 🎉",
@@ -177,6 +202,7 @@ export function SellWizard() {
       });
     } catch (error) {
       console.error("Publish error:", error);
+      haptics.error();
       toast({
         title: "Failed to publish",
         description: error instanceof Error ? error.message : "Please try again",
@@ -185,7 +211,7 @@ export function SellWizard() {
     } finally {
       wizard.setIsPublishing(false);
     }
-  }, [user, wizard, toast]);
+  }, [user, wizard, toast, haptics]);
 
   const handleClose = useCallback(() => {
     if (wizard.draft.images.length > 0 || wizard.draft.card) {
@@ -237,12 +263,13 @@ export function SellWizard() {
   return (
     <div className="flex flex-col h-full min-h-[100dvh] bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+      <header className="sticky top-0 z-50 bg-background border-b">
         <div className="flex items-center justify-between px-4 h-14">
           <Button
             variant="ghost"
             size="icon"
-            onClick={wizard.isFirstStep ? handleClose : wizard.goBack}
+            onClick={wizard.isFirstStep ? handleClose : handleGoBack}
+            className="h-9 w-9"
           >
             {wizard.isFirstStep ? (
               <X className="h-5 w-5" />
@@ -252,19 +279,18 @@ export function SellWizard() {
           </Button>
 
           <div className="flex-1 px-4">
-            <StepIndicator wizard={wizard} />
+            <StepIndicator wizard={wizard} onStepClick={handleStepClick} />
           </div>
 
-          <div className="w-10" /> {/* Spacer for symmetry */}
+          <div className="w-9" />
         </div>
 
-        {/* Progress bar */}
-        <Progress value={wizard.progress} className="h-1 rounded-none" />
+        <Progress value={wizard.progress} className="h-0.5 rounded-none" />
       </header>
 
       {/* Step Title */}
-      <div className="px-4 pt-4 pb-2">
-        <h1 className="text-xl font-semibold">
+      <div className="px-4 pt-6 pb-2">
+        <h1 className="text-lg font-medium">
           {wizard.stepTitles[wizard.currentStep]}
         </h1>
       </div>
@@ -292,11 +318,11 @@ export function SellWizard() {
 
       {/* Footer */}
       {!wizard.isLastStep && (
-        <footer className="sticky bottom-0 bg-background/95 backdrop-blur border-t p-4 safe-area-inset-bottom">
+        <footer className="sticky bottom-0 bg-background border-t p-4 safe-area-inset-bottom">
           <Button
-            className="w-full h-12 text-base font-medium"
+            className="w-full h-12"
             disabled={!wizard.canProceed}
-            onClick={wizard.goNext}
+            onClick={handleGoNext}
           >
             Continue
           </Button>

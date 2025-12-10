@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useHaptics } from "@/hooks/useHaptics";
 import type { SellWizardState } from "@/hooks/useSellWizard";
 
 const CONDITIONS = [
@@ -37,13 +38,26 @@ interface PriceSuggestion {
 
 export function DetailsStep({ wizard }: DetailsStepProps) {
   const { toast } = useToast();
+  const haptics = useHaptics();
   const [priceSuggestion, setPriceSuggestion] = useState<PriceSuggestion | null>(null);
   const [isGettingPrice, setIsGettingPrice] = useState(false);
 
   const { draft, updateDraft } = wizard;
 
+  // Haptic-enhanced update
+  const handleConditionSelect = useCallback((value: string) => {
+    haptics.selection();
+    updateDraft({ condition: value as any });
+  }, [updateDraft, haptics]);
+
+  const handleToggle = useCallback((field: string, value: boolean) => {
+    haptics.light();
+    updateDraft({ [field]: value } as any);
+  }, [updateDraft, haptics]);
+
   const handleGetPriceSuggestion = useCallback(async () => {
     if (!draft.card && !draft.images.length) {
+      haptics.warning();
       toast({
         title: "Add card info first",
         description: "Go back and add photos or search for your card",
@@ -52,6 +66,7 @@ export function DetailsStep({ wizard }: DetailsStepProps) {
       return;
     }
 
+    haptics.impact();
     setIsGettingPrice(true);
 
     try {
@@ -80,9 +95,11 @@ export function DetailsStep({ wizard }: DetailsStepProps) {
           high: Math.round((data.price_high || price * 1.2) * 0.79 * 100) / 100,
           confidence: data.confidence || "medium",
         };
+        haptics.success();
         setPriceSuggestion(suggestion);
       } else if (draft.card?.marketPrice) {
         // Use card's market price as fallback
+        haptics.medium();
         setPriceSuggestion({
           price: draft.card.marketPrice,
           low: draft.card.marketPrice * 0.85,
@@ -90,6 +107,7 @@ export function DetailsStep({ wizard }: DetailsStepProps) {
           confidence: "medium",
         });
       } else {
+        haptics.warning();
         toast({
           title: "No price data",
           description: "Enter your price manually",
@@ -99,6 +117,7 @@ export function DetailsStep({ wizard }: DetailsStepProps) {
       console.error("Price suggestion error:", error);
       // Fall back to card's market price if available
       if (draft.card?.marketPrice) {
+        haptics.medium();
         setPriceSuggestion({
           price: draft.card.marketPrice,
           low: draft.card.marketPrice * 0.85,
@@ -106,6 +125,7 @@ export function DetailsStep({ wizard }: DetailsStepProps) {
           confidence: "low",
         });
       } else {
+        haptics.error();
         toast({
           title: "Couldn't get price",
           description: "Enter your price manually",
@@ -115,11 +135,12 @@ export function DetailsStep({ wizard }: DetailsStepProps) {
     } finally {
       setIsGettingPrice(false);
     }
-  }, [draft, toast]);
+  }, [draft, toast, haptics]);
 
   const applyPrice = useCallback((price: number) => {
+    haptics.success();
     updateDraft({ price });
-  }, [updateDraft]);
+  }, [updateDraft, haptics]);
 
   // Calculate price confidence indicator
   const getPriceIndicator = () => {
@@ -150,7 +171,7 @@ export function DetailsStep({ wizard }: DetailsStepProps) {
             return (
               <button
                 key={condition.value}
-                onClick={() => updateDraft({ condition: condition.value })}
+                onClick={() => handleConditionSelect(condition.value)}
                 className={cn(
                   "p-3 rounded-xl border-2 text-left transition-all",
                   isSelected
@@ -174,14 +195,14 @@ export function DetailsStep({ wizard }: DetailsStepProps) {
       </div>
 
       {/* Graded Toggle */}
-      <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
+      <div className="flex items-center justify-between py-3">
         <div>
-          <Label className="text-base font-medium">Professionally Graded?</Label>
-          <p className="text-sm text-muted-foreground">PSA, BGS, CGC, etc.</p>
+          <Label className="text-sm font-medium">Professionally graded</Label>
+          <p className="text-xs text-muted-foreground">PSA, BGS, CGC, etc.</p>
         </div>
         <Switch
           checked={draft.isGraded}
-          onCheckedChange={(checked) => updateDraft({ isGraded: checked })}
+          onCheckedChange={(checked) => handleToggle('isGraded', checked)}
         />
       </div>
 
@@ -250,36 +271,31 @@ export function DetailsStep({ wizard }: DetailsStepProps) {
 
         {/* Price Suggestion Card */}
         {priceSuggestion && (
-          <Card className="border-primary/30 bg-primary/5">
+          <Card>
             <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-muted-foreground">Suggested price</span>
-                <span className={cn(
-                  "text-xs px-2 py-0.5 rounded-full",
-                  priceSuggestion.confidence === "high" ? "bg-green-500/10 text-green-600" :
-                  priceSuggestion.confidence === "medium" ? "bg-yellow-500/10 text-yellow-600" :
-                  "bg-gray-500/10 text-gray-600"
-                )}>
+                <span className="text-xs text-muted-foreground">
                   {priceSuggestion.confidence} confidence
                 </span>
               </div>
 
-              <div className="flex items-end gap-4 mb-3">
-                <span className="text-3xl font-bold">
+              <div className="flex items-baseline justify-between mb-3">
+                <span className="text-2xl font-semibold">
                   £{priceSuggestion.price.toFixed(2)}
                 </span>
-                <span className="text-sm text-muted-foreground pb-1">
-                  Range: £{priceSuggestion.low.toFixed(2)} - £{priceSuggestion.high.toFixed(2)}
+                <span className="text-sm text-muted-foreground">
+                  £{priceSuggestion.low.toFixed(2)} – £{priceSuggestion.high.toFixed(2)}
                 </span>
               </div>
 
               <Button
-                variant="secondary"
+                variant="outline"
                 size="sm"
                 onClick={() => applyPrice(priceSuggestion.price)}
                 className="w-full"
               >
-                Apply this price
+                Use suggested price
               </Button>
             </CardContent>
           </Card>
@@ -315,14 +331,14 @@ export function DetailsStep({ wizard }: DetailsStepProps) {
       </div>
 
       {/* Accept Offers Toggle */}
-      <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
+      <div className="flex items-center justify-between py-3 border-t">
         <div>
-          <Label className="text-base font-medium">Accept Offers</Label>
-          <p className="text-sm text-muted-foreground">Let buyers make offers</p>
+          <Label className="text-sm font-medium">Accept offers</Label>
+          <p className="text-xs text-muted-foreground">Let buyers make offers</p>
         </div>
         <Switch
           checked={draft.acceptsOffers}
-          onCheckedChange={(checked) => updateDraft({ acceptsOffers: checked })}
+          onCheckedChange={(checked) => handleToggle('acceptsOffers', checked)}
         />
       </div>
 
