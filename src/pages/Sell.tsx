@@ -51,7 +51,6 @@ export default function Sell() {
       <AuthModal
         open={authModalOpen}
         onOpenChange={setAuthModalOpen}
-        onSuccess={() => setAuthModalOpen(false)}
       />
 
       {/* Hero */}

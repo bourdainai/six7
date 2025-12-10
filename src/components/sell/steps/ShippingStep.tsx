@@ -14,12 +14,14 @@ const SHIPPING_OPTIONS = [
     label: "Free Shipping",
     description: "You cover shipping costs",
     icon: Gift,
+    recommended: false,
   },
   {
     value: 1.50,
     label: "Standard Letter",
     description: "2-3 business days",
     icon: Package,
+    recommended: false,
   },
   {
     value: 2.99,
