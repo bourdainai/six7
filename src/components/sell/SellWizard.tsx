@@ -246,36 +246,62 @@ export function SellWizard() {
 
   // Success state
   if (wizard.publishedId) {
+    const totalListed = wizard.publishedCount + 1;
+
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center">
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: "spring", damping: 15 }}
-          className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mb-6"
+          className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mb-6"
         >
-          <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-8 h-8 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
           </svg>
         </motion.div>
 
-        <h2 className="text-2xl font-bold mb-2">You're live!</h2>
-        <p className="text-muted-foreground mb-8">Your card is now visible to buyers</p>
+        <h2 className="text-xl font-semibold mb-1">Listed</h2>
+        {wizard.batchMode && totalListed > 1 && (
+          <p className="text-sm text-muted-foreground mb-6">
+            {totalListed} cards listed this session
+          </p>
+        )}
+        {!wizard.batchMode && (
+          <p className="text-sm text-muted-foreground mb-6">
+            Your card is now visible to buyers
+          </p>
+        )}
 
-        <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
+        <div className="flex flex-col gap-2 w-full max-w-xs">
           <Button
-            variant="outline"
-            className="flex-1"
-            onClick={() => navigate(`/listing/${wizard.publishedId}`)}
+            className="w-full h-12"
+            onClick={() => {
+              haptics.medium();
+              wizard.resetForBatch();
+            }}
           >
-            View Listing
+            List Another Card
           </Button>
-          <Button
-            className="flex-1"
-            onClick={wizard.reset}
-          >
-            List Another
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => navigate(`/listing/${wizard.publishedId}`)}
+            >
+              View
+            </Button>
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => {
+                wizard.endBatchMode();
+                navigate("/sell");
+              }}
+            >
+              Done
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -311,9 +337,16 @@ export function SellWizard() {
 
       {/* Step Title */}
       <div className="px-4 pt-6 pb-2">
-        <h1 className="text-lg font-medium">
-          {wizard.stepTitles[wizard.currentStep]}
-        </h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-lg font-medium">
+            {wizard.stepTitles[wizard.currentStep]}
+          </h1>
+          {wizard.batchMode && wizard.publishedCount > 0 && (
+            <span className="text-xs text-muted-foreground">
+              {wizard.publishedCount} listed
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Step Content */}

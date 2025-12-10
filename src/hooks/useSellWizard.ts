@@ -76,6 +76,8 @@ export function useSellWizard() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishedId, setPublishedId] = useState<string | null>(null);
+  const [batchMode, setBatchMode] = useState(false);
+  const [publishedCount, setPublishedCount] = useState(0);
 
   const currentStepIndex = STEPS.indexOf(currentStep);
   const progress = ((currentStepIndex + 1) / STEPS.length) * 100;
@@ -160,6 +162,38 @@ export function useSellWizard() {
     setIsAnalyzing(false);
     setIsPublishing(false);
     setPublishedId(null);
+    setBatchMode(false);
+    setPublishedCount(0);
+  }, []);
+
+  // Reset for batch mode - keeps shipping preferences
+  const resetForBatch = useCallback(() => {
+    const preservedSettings = {
+      freeShipping: draft.freeShipping,
+      shippingCost: draft.shippingCost,
+      aiEnabled: draft.aiEnabled,
+      acceptsOffers: draft.acceptsOffers,
+    };
+
+    setCurrentStep("capture");
+    setDraft({
+      ...initialDraft,
+      ...preservedSettings,
+    });
+    setIsAnalyzing(false);
+    setIsPublishing(false);
+    setPublishedId(null);
+    setBatchMode(true);
+    setPublishedCount(prev => prev + 1);
+  }, [draft.freeShipping, draft.shippingCost, draft.aiEnabled, draft.acceptsOffers]);
+
+  const startBatchMode = useCallback(() => {
+    setBatchMode(true);
+  }, []);
+
+  const endBatchMode = useCallback(() => {
+    setBatchMode(false);
+    setPublishedCount(0);
   }, []);
 
   return {
@@ -174,6 +208,8 @@ export function useSellWizard() {
     isAnalyzing,
     isPublishing,
     publishedId,
+    batchMode,
+    publishedCount,
 
     // Step info
     steps: STEPS,
@@ -190,6 +226,9 @@ export function useSellWizard() {
     removeImage,
     setCard,
     reset,
+    resetForBatch,
+    startBatchMode,
+    endBatchMode,
 
     // Status setters
     setIsAnalyzing,
