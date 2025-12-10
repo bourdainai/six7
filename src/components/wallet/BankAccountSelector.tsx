@@ -53,7 +53,7 @@ export function BankAccountSelector({ value, onChange }: BankAccountSelectorProp
 
   const handleManageBankAccounts = () => {
     // Redirect to seller onboarding/management
-    window.open('/seller-onboarding', '_blank');
+    window.open('/seller/onboarding', '_blank');
   };
 
   if (isLoading) {
