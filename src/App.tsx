@@ -15,7 +15,8 @@ import { MarketplaceProvider } from "@/contexts/MarketplaceContext";
 
 // Lazy load routes for code splitting
 const Index = lazy(() => import("./pages/Index"));
-const Sell = lazy(() => import("./pages/SellItem"));
+const Sell = lazy(() => import("./pages/Sell"));
+const SellAdvanced = lazy(() => import("./pages/SellItem"));
 const Browse = lazy(() => import("./pages/Browse"));
 const ListingDetail = lazy(() => import("./pages/ListingDetail"));
 const Checkout = lazy(() => import("./pages/Checkout"));
@@ -78,6 +79,7 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/" element={<Suspense fallback={<PageSkeleton />}><Index /></Suspense>} />
       <Route path="/sell" element={<Suspense fallback={<PageSkeleton />}><Sell /></Suspense>} />
+      <Route path="/sell/advanced" element={<Suspense fallback={<PageSkeleton />}><SellAdvanced /></Suspense>} />
       <Route path="/browse" element={<Suspense fallback={<PageSkeleton />}><Browse /></Suspense>} />
       <Route path="/listing/:id" element={<Suspense fallback={<ListingSkeleton />}><ListingDetail /></Suspense>} />
       <Route path="/checkout/:id" element={<Suspense fallback={<PageSkeleton />}><Checkout /></Suspense>} />
