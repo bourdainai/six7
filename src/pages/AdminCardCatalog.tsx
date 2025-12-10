@@ -160,6 +160,10 @@ export default function AdminCardCatalog() {
   const [page, setPage] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [isRunningEnglishNames, setIsRunningEnglishNames] = useState(false);
+  const [isRunningImages, setIsRunningImages] = useState(false);
+  const [englishNamesProgress, setEnglishNamesProgress] = useState({ processed: 0, updated: 0 });
+  const [imagesProgress, setImagesProgress] = useState({ processed: 0, updated: 0 });
   const { toast } = useToast();
 
   const { data, isLoading, refetch } = useCardCatalog({
@@ -244,6 +248,100 @@ export default function AdminCardCatalog() {
     },
   });
 
+  // Auto-run English names until complete
+  const runAllEnglishNames = async () => {
+    setIsRunningEnglishNames(true);
+    setEnglishNamesProgress({ processed: 0, updated: 0 });
+    let totalProcessed = 0;
+    let totalUpdated = 0;
+
+    try {
+      while (true) {
+        const { data, error } = await supabase.functions.invoke('backfill-english-names', {
+          body: { batchSize: 50, limit: 100 }
+        });
+
+        if (error) throw error;
+
+        const processed = data?.stats?.processed || 0;
+        const updated = data?.stats?.updated || 0;
+
+        totalProcessed += processed;
+        totalUpdated += updated;
+        setEnglishNamesProgress({ processed: totalProcessed, updated: totalUpdated });
+
+        // Stop if no more cards to process
+        if (processed === 0 || updated === 0) {
+          break;
+        }
+
+        // Small delay between batches
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      toast({
+        title: "English Names Complete",
+        description: `Processed ${totalProcessed} cards, updated ${totalUpdated}`,
+      });
+      refetch();
+    } catch (error: any) {
+      toast({
+        title: "Fetch Failed",
+        description: error.message || "Failed to fetch English names",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRunningEnglishNames(false);
+    }
+  };
+
+  // Auto-run image fetch until complete
+  const runAllImages = async () => {
+    setIsRunningImages(true);
+    setImagesProgress({ processed: 0, updated: 0 });
+    let totalProcessed = 0;
+    let totalUpdated = 0;
+
+    try {
+      while (true) {
+        const { data, error } = await supabase.functions.invoke('fetch-missing-images', {
+          body: { batchSize: 50, limit: 100 }
+        });
+
+        if (error) throw error;
+
+        const processed = data?.stats?.processed || 0;
+        const updated = data?.stats?.updated || 0;
+
+        totalProcessed += processed;
+        totalUpdated += updated;
+        setImagesProgress({ processed: totalProcessed, updated: totalUpdated });
+
+        // Stop if no more cards to process
+        if (processed === 0 || updated === 0) {
+          break;
+        }
+
+        // Small delay between batches
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      toast({
+        title: "Image Fetch Complete",
+        description: `Processed ${totalProcessed} cards, updated ${totalUpdated}`,
+      });
+      refetch();
+    } catch (error: any) {
+      toast({
+        title: "Fetch Failed",
+        description: error.message || "Failed to fetch images",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRunningImages(false);
+    }
+  };
+
   // Reset page when filters change
   const handleFiltersChange = (newFilters: FilterType) => {
     setFilters(newFilters);
@@ -287,45 +385,50 @@ export default function AdminCardCatalog() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold">Bulk Actions</h3>
+              {(isRunningEnglishNames || isRunningImages) && (
+                <Badge variant="secondary" className="animate-pulse">
+                  Running...
+                </Badge>
+              )}
             </div>
             <div className="flex flex-wrap gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => validateImagesMutation.mutate({ validateAll: false })}
-                disabled={validateImagesMutation.isPending}
-              >
-                <Image className="h-4 w-4 mr-2" />
-                {validateImagesMutation.isPending ? "Validating..." : "Validate Images (Sample)"}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
                 onClick={() => validateImagesMutation.mutate({ validateAll: true })}
-                disabled={validateImagesMutation.isPending}
+                disabled={validateImagesMutation.isPending || isRunningImages}
               >
                 <Image className="h-4 w-4 mr-2" />
-                {validateImagesMutation.isPending ? "Validating All..." : "Validate All Images"}
+                {validateImagesMutation.isPending ? "Validating..." : "Validate All Images"}
               </Button>
               <Button
-                variant="outline"
+                variant="default"
                 size="sm"
-                onClick={() => fetchEnglishNamesMutation.mutate({ limit: 100 })}
-                disabled={fetchEnglishNamesMutation.isPending}
+                onClick={runAllEnglishNames}
+                disabled={isRunningEnglishNames || isRunningImages}
               >
                 <Globe className="h-4 w-4 mr-2" />
-                {fetchEnglishNamesMutation.isPending ? "Fetching..." : "Fetch English Names (100)"}
+                {isRunningEnglishNames
+                  ? `Running... (${englishNamesProgress.updated} updated)`
+                  : "Fetch All English Names"}
               </Button>
               <Button
-                variant="outline"
+                variant="default"
                 size="sm"
-                onClick={() => fetchImagesMutation.mutate({ limit: 100 })}
-                disabled={fetchImagesMutation.isPending}
+                onClick={runAllImages}
+                disabled={isRunningEnglishNames || isRunningImages}
               >
                 <Download className="h-4 w-4 mr-2" />
-                {fetchImagesMutation.isPending ? "Fetching..." : "Fetch Missing Images (100)"}
+                {isRunningImages
+                  ? `Running... (${imagesProgress.updated} updated)`
+                  : "Fetch All Missing Images"}
               </Button>
             </div>
+            {(isRunningEnglishNames || isRunningImages) && (
+              <p className="text-xs text-muted-foreground mt-2">
+                This will keep running until all cards are processed. Please wait...
+              </p>
+            )}
           </CardContent>
         </Card>
 
