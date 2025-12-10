@@ -220,6 +220,7 @@ export function CardCatalogFilters({ filters, onFiltersChange, onRefresh, isRefr
             <SelectItem value="all">All Cards</SelectItem>
             <SelectItem value="missing_images">Missing Images</SelectItem>
             <SelectItem value="missing_prices">Missing Prices</SelectItem>
+            <SelectItem value="missing_english">Missing English Names (JP)</SelectItem>
             <SelectItem value="complete">Complete Data</SelectItem>
           </SelectContent>
         </Select>

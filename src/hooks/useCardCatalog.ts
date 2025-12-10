@@ -15,7 +15,7 @@ export interface CardCatalogFilters {
   language?: string;
   setCode?: string;
   search?: string;
-  dataStatus?: "all" | "missing_images" | "missing_prices" | "complete";
+  dataStatus?: "all" | "missing_images" | "missing_prices" | "missing_english" | "complete";
   syncSource?: string;
   rarity?: string;
   sortBy?: SortOption;
@@ -110,6 +110,11 @@ export function useCardCatalog({ filters, page, pageSize = 50 }: UseCardCatalogO
         query = query.or("images.is.null,images->small.is.null");
       } else if (filters.dataStatus === "missing_prices") {
         query = query.is("tcgplayer_prices", null).is("cardmarket_prices", null);
+      } else if (filters.dataStatus === "missing_english") {
+        // Japanese cards without English names
+        query = query
+          .is("name_en", null)
+          .or("card_id.ilike.tcgdex_github_ja_%,card_id.ilike.tcgdx_ja_%,card_id.ilike.%_ja_%,metadata->>language.eq.ja");
       } else if (filters.dataStatus === "complete") {
         query = query
           .not("images", "is", null)

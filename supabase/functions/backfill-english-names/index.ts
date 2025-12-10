@@ -7,7 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const TCGDEX_API_BASE = 'https://api.tcgdx.net/v2';
+const TCGDEX_API_BASE = 'https://api.tcgdex.net/v2';
 const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 200;
 
@@ -56,11 +56,18 @@ async function fetchCardWithRetry(url: string, retries = MAX_RETRIES): Promise<a
  * Extract set code and local ID from card_id
  */
 function parseCardId(cardId: string): { setCode: string; localId: string } | null {
-  // Format: tcgdx_ja_S9a-033 or tcgdx_ja_S9a_033
-  const match = cardId.match(/tcgdx_ja_([A-Z0-9]+)[-_](.+)/);
-  if (match) {
-    return { setCode: match[1], localId: match[2] };
+  // Format: tcgdex_github_ja_setcode-localid or tcgdx_ja_S9a-033 (legacy)
+  const githubMatch = cardId.match(/tcgdex_github_ja_([A-Za-z0-9]+)-(.+)/i);
+  if (githubMatch) {
+    return { setCode: githubMatch[1], localId: githubMatch[2] };
   }
+
+  // Legacy format: tcgdx_ja_S9a-033 or tcgdex_ja_S9a_033
+  const legacyMatch = cardId.match(/tcgd[ex]+_ja_([A-Z0-9]+)[-_](.+)/i);
+  if (legacyMatch) {
+    return { setCode: legacyMatch[1], localId: legacyMatch[2] };
+  }
+
   return null;
 }
 
@@ -96,7 +103,7 @@ serve(async (req) => {
       .from('pokemon_card_attributes')
       .select('id, card_id, name, set_code, number')
       .or('name_en.is.null,name_en.eq.')
-      .or('card_id.ilike.tcgdx_ja_%,card_id.ilike.%_ja_%')
+      .or('card_id.ilike.tcgdex_github_ja_%,card_id.ilike.tcgdx_ja_%,card_id.ilike.%_ja_%')
       .order('created_at', { ascending: false });
 
     if (limit) {

@@ -253,7 +253,7 @@ serve(async (req) => {
     const transformedCards = cardsList.map((card: any) => {
       const cardId = card.id || `${setCode}-${card.localId || 'unknown'}`;
       const localId = card.localId || card.id || 'unknown';
-      const imageUrl = card.image || `https://assets.tcgdx.net/${language}/${setCode}/${localId}`;
+      const imageUrl = card.image || `https://assets.tcgdex.net/${language}/${setCode}/${localId}`;
       
       // Get English name if available
       const englishName = fetchEnglishNames 
@@ -282,10 +282,10 @@ serve(async (req) => {
         images: {
           small: imageUrl,
           large: imageUrl,
-          tcgdx: imageUrl
+          tcgdex: imageUrl
         },
         printed_total: totalCards,
-        sync_source: 'tcgdx',
+        sync_source: 'tcgdex',
         synced_at: new Date().toISOString(),
         image_validated: false, // Will be validated separately
         metadata: {

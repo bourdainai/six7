@@ -7,7 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const TCGDEX_ASSETS_BASE = 'https://assets.tcgdx.net';
+const TCGDEX_ASSETS_BASE = 'https://assets.tcgdex.net';
 
 /**
  * Validate if an image URL is accessible
@@ -55,8 +55,8 @@ async function validateImageUrl(url: string, timeoutMs = 5000): Promise<{ valid:
  * Extract set code and local ID from card_id or use set_code/number
  */
 function getImageUrl(card: any): string | null {
-  // Try to parse from card_id (format: tcgdx_ja_S9a-033)
-  const cardIdMatch = card.card_id?.match(/tcgdx_ja_([A-Z0-9]+)[-_](.+)/);
+  // Try to parse from card_id (format: tcgdex_github_ja_setcode-localid or legacy tcgdx_ja_S9a-033)
+  const cardIdMatch = card.card_id?.match(/tcgd[ex]+(?:_github)?_ja_([A-Za-z0-9]+)[-_](.+)/i);
   if (cardIdMatch) {
     const setCode = cardIdMatch[1];
     const localId = cardIdMatch[2];
@@ -103,7 +103,7 @@ serve(async (req) => {
       .from('pokemon_card_attributes')
       .select('id, card_id, set_code, number, images, image_validated')
       .or('images.is.null,image_validated.eq.false')
-      .or('card_id.ilike.tcgdx_ja_%,card_id.ilike.%_ja_%')
+      .or('card_id.ilike.tcgdex_github_ja_%,card_id.ilike.tcgdx_ja_%,card_id.ilike.%_ja_%')
       .order('created_at', { ascending: false });
 
     if (limit) {
@@ -157,7 +157,7 @@ serve(async (req) => {
           const images = {
             small: imageUrl,
             large: imageUrl,
-            tcgdx: imageUrl
+            tcgdex: imageUrl
           };
 
           if (!dryRun) {

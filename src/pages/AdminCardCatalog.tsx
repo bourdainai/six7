@@ -393,6 +393,11 @@ export default function AdminCardCatalog() {
                 Showing cards without price data
               </Badge>
             )}
+            {filters.dataStatus === "missing_english" && (
+              <Badge className="bg-blue-500/20 text-blue-600">
+                Japanese cards without English names
+              </Badge>
+            )}
           </div>
         )}
 

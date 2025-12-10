@@ -38,15 +38,15 @@ export function CaptureStep({ wizard }: CaptureStepProps) {
       const { data, error } = await supabase
         .from("pokemon_card_attributes")
         .select("*")
-        .or(`name.ilike.%${transcript}%,set_name.ilike.%${transcript}%`)
+        .or(`name.ilike.%${transcript}%,name_en.ilike.%${transcript}%,set_name.ilike.%${transcript}%,set_name_en.ilike.%${transcript}%`)
         .limit(12);
 
       if (error) throw error;
 
       const results: CardData[] = (data || []).map(card => ({
         id: card.id,
-        name: card.name || "",
-        setName: card.set_name || "",
+        name: card.name_en || card.name || "",
+        setName: card.set_name_en || card.set_name || "",
         setCode: card.set_id || "",
         cardNumber: card.printed_number || card.number || "",
         rarity: card.rarity || "",
@@ -110,15 +110,15 @@ export function CaptureStep({ wizard }: CaptureStepProps) {
       const { data, error } = await supabase
         .from("pokemon_card_attributes")
         .select("*")
-        .or(`name.ilike.%${searchQuery}%,set_name.ilike.%${searchQuery}%,printed_number.ilike.%${searchQuery}%`)
+        .or(`name.ilike.%${searchQuery}%,name_en.ilike.%${searchQuery}%,set_name.ilike.%${searchQuery}%,set_name_en.ilike.%${searchQuery}%,printed_number.ilike.%${searchQuery}%`)
         .limit(12);
 
       if (error) throw error;
 
       const results: CardData[] = (data || []).map(card => ({
         id: card.id,
-        name: card.name || "",
-        setName: card.set_name || "",
+        name: card.name_en || card.name || "",
+        setName: card.set_name_en || card.set_name || "",
         setCode: card.set_id || "",
         cardNumber: card.printed_number || card.number || "",
         rarity: card.rarity || "",
@@ -182,15 +182,15 @@ export function CaptureStep({ wizard }: CaptureStepProps) {
         const { data: cardData } = await supabase
           .from("pokemon_card_attributes")
           .select("*")
-          .ilike("name", `%${searchName}%`)
+          .or(`name.ilike.%${searchName}%,name_en.ilike.%${searchName}%`)
           .limit(1)
           .single();
 
         if (cardData) {
           wizard.setCard({
             id: cardData.id,
-            name: cardData.name || searchName,
-            setName: cardData.set_name || data.set_name || "",
+            name: cardData.name_en || cardData.name || searchName,
+            setName: cardData.set_name_en || cardData.set_name || data.set_name || "",
             setCode: cardData.set_id || data.set_code || "",
             cardNumber: cardData.printed_number || data.card_number || "",
             rarity: cardData.rarity || data.rarity || "",

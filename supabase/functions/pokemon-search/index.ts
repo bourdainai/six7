@@ -91,10 +91,10 @@ serve(async (req) => {
         dbQuery = dbQuery.eq('set_code', setCode).eq('number', cardNumber);
         console.log(`Local search: set_code="${setCode}", number="${cardNumber}"`);
       } else if (nameNumberMatch) {
-        // Case: "Charizard 4" -> Search by name + number
+        // Case: "Charizard 4" -> Search by name + number (includes English names for Japanese cards)
         const [, namePart, cardNumber] = nameNumberMatch;
         dbQuery = dbQuery
-          .ilike('name', `%${namePart}%`)
+          .or(`name.ilike.%${namePart}%,name_en.ilike.%${namePart}%`)
           .eq('number', cardNumber);
         console.log(`Local search: name~"${namePart}", number="${cardNumber}"`);
       } else if (numberMatch) {
@@ -102,9 +102,9 @@ serve(async (req) => {
         dbQuery = dbQuery.eq('number', trimmedQuery);
         console.log(`Local search: number="${trimmedQuery}"`);
       } else {
-        // Case: Name search -> Use ILIKE for name matching
-        dbQuery = dbQuery.ilike('name', `%${trimmedQuery}%`);
-        console.log(`Local search: name~"${trimmedQuery}"`);
+        // Case: Name search -> Search both original and English names
+        dbQuery = dbQuery.or(`name.ilike.%${trimmedQuery}%,name_en.ilike.%${trimmedQuery}%`);
+        console.log(`Local search: name/name_en~"${trimmedQuery}"`);
       }
 
       // Add ranking: prioritize by popularity_score, then last_searched_at
@@ -127,14 +127,18 @@ serve(async (req) => {
         }
 
       // Transform local database results to match API format
+      // Use English names when available for better display
       localResults = localCards.map((card: any) => ({
         id: card.card_id,
-        name: card.name,
+        name: card.name_en || card.name,
+        name_original: card.name,
+        name_en: card.name_en,
         supertype: card.supertype,
         subtypes: card.subtypes || [],
         set: {
           id: card.set_code,
-          name: card.set_name,
+          name: card.set_name_en || card.set_name,
+          name_original: card.set_name,
           ptcgoCode: card.set_code,
         },
         number: card.number,
