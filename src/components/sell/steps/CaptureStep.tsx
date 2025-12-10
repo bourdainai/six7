@@ -43,16 +43,21 @@ export function CaptureStep({ wizard }: CaptureStepProps) {
 
       if (error) throw error;
 
-      const results: CardData[] = (data || []).map(card => ({
-        id: card.id,
-        name: card.name_en || card.name || "",
-        setName: card.set_name_en || card.set_name || "",
-        setCode: card.set_id || "",
-        cardNumber: card.printed_number || card.number || "",
-        rarity: card.rarity || "",
-        imageUrl: card.image_url_large || card.image_url_small || "",
-        marketPrice: card.price_tcgplayer_holofoil || card.price_tcgplayer_normal || card.price_cardmarket_avg || undefined,
-      }));
+      const results: CardData[] = (data || []).map(card => {
+        const images = card.images as { large?: string; small?: string } | null;
+        const tcgPrices = card.tcgplayer_prices as { holofoil?: { market?: number }; normal?: { market?: number } } | null;
+        const cmPrices = card.cardmarket_prices as { averageSellPrice?: number } | null;
+        return {
+          id: card.id,
+          name: card.name_en || card.name || "",
+          setName: card.set_name_en || card.set_name || "",
+          setCode: card.set_code || "",
+          cardNumber: card.printed_number || card.number || "",
+          rarity: card.rarity || "",
+          imageUrl: images?.large || images?.small || "",
+          marketPrice: tcgPrices?.holofoil?.market || tcgPrices?.normal?.market || cmPrices?.averageSellPrice || undefined,
+        };
+      });
 
       setSearchResults(results);
 
@@ -115,16 +120,21 @@ export function CaptureStep({ wizard }: CaptureStepProps) {
 
       if (error) throw error;
 
-      const results: CardData[] = (data || []).map(card => ({
-        id: card.id,
-        name: card.name_en || card.name || "",
-        setName: card.set_name_en || card.set_name || "",
-        setCode: card.set_id || "",
-        cardNumber: card.printed_number || card.number || "",
-        rarity: card.rarity || "",
-        imageUrl: card.image_url_large || card.image_url_small || "",
-        marketPrice: card.price_tcgplayer_holofoil || card.price_tcgplayer_normal || card.price_cardmarket_avg || undefined,
-      }));
+      const results: CardData[] = (data || []).map(card => {
+        const images = card.images as { large?: string; small?: string } | null;
+        const tcgPrices = card.tcgplayer_prices as { holofoil?: { market?: number }; normal?: { market?: number } } | null;
+        const cmPrices = card.cardmarket_prices as { averageSellPrice?: number } | null;
+        return {
+          id: card.id,
+          name: card.name_en || card.name || "",
+          setName: card.set_name_en || card.set_name || "",
+          setCode: card.set_code || "",
+          cardNumber: card.printed_number || card.number || "",
+          rarity: card.rarity || "",
+          imageUrl: images?.large || images?.small || "",
+          marketPrice: tcgPrices?.holofoil?.market || tcgPrices?.normal?.market || cmPrices?.averageSellPrice || undefined,
+        };
+      });
 
       setSearchResults(results);
     } catch (error) {
@@ -187,15 +197,17 @@ export function CaptureStep({ wizard }: CaptureStepProps) {
           .single();
 
         if (cardData) {
+          const images = cardData.images as { large?: string; small?: string } | null;
+          const tcgPrices = cardData.tcgplayer_prices as { holofoil?: { market?: number }; normal?: { market?: number } } | null;
           wizard.setCard({
             id: cardData.id,
             name: cardData.name_en || cardData.name || searchName,
             setName: cardData.set_name_en || cardData.set_name || data.set_name || "",
-            setCode: cardData.set_id || data.set_code || "",
+            setCode: cardData.set_code || data.set_code || "",
             cardNumber: cardData.printed_number || data.card_number || "",
             rarity: cardData.rarity || data.rarity || "",
-            imageUrl: cardData.image_url_large || "",
-            marketPrice: cardData.price_tcgplayer_holofoil || cardData.price_tcgplayer_normal || undefined,
+            imageUrl: images?.large || "",
+            marketPrice: tcgPrices?.holofoil?.market || tcgPrices?.normal?.market || undefined,
           });
         }
 
