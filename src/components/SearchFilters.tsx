@@ -137,7 +137,7 @@ export const SearchFilters = React.memo(({
         .limit(1000); // Limit to reduce payload
       
       if (error) {
-        console.error("Error fetching sets:", error);
+        logger.error("Error fetching sets:", error);
         return [];
       }
 

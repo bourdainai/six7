@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useCleanupDuplicates, CleanupResult } from "@/hooks/useCardCatalog";
 import { useToast } from "@/hooks/use-toast";
+import { logger } from "@/lib/logger";
 import {
   Table,
   TableBody,
@@ -98,7 +99,7 @@ export function DuplicateCleanupModal({
       // Keep calling the cleanup function until no duplicates remain
       while (remaining > 0 && iterations < maxIterations) {
         iterations++;
-        console.log(`🧹 Cleanup iteration ${iterations}, remaining: ${remaining}`);
+        logger.debug(`Cleanup iteration ${iterations}, remaining: ${remaining}`);
 
         const result = await cleanupMutation.mutateAsync({ dryRun: false });
         
@@ -131,7 +132,7 @@ export function DuplicateCleanupModal({
 
         // If nothing was deleted but there are remaining, something is wrong
         if (deletedThisRound === 0 && remaining > 0) {
-          console.warn("No cards deleted but duplicates remain - may be a permissions issue");
+          logger.warn("No cards deleted but duplicates remain - may be a permissions issue");
           break;
         }
 
@@ -158,7 +159,7 @@ export function DuplicateCleanupModal({
       }
     } catch (error) {
       setIsDeleting(false);
-      console.error("Cleanup error:", error);
+      logger.error("Cleanup error:", error);
       toast({
         title: "Cleanup error",
         description: error instanceof Error ? error.message : "Unknown error occurred",

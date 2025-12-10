@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/lib/logger";
 
 export type SortOption = 
   | "synced_newest" 
@@ -215,7 +216,7 @@ export function useCardCatalogStats() {
         bySyncSource[source] = (bySyncSource[source] || 0) + 1;
       });
 
-      console.log(`[useCardCatalogStats] Sync source distribution:`, bySyncSource);
+      logger.debug(`[useCardCatalogStats] Sync source distribution:`, bySyncSource);
 
       return {
         total: total || 0,
@@ -266,7 +267,7 @@ export function useCardSets() {
         }
       }
 
-      console.log(`[useCardSets] Fetched ${allCards.length} cards total`);
+      logger.debug(`[useCardSets] Fetched ${allCards.length} cards total`);
 
       // Aggregate by set
       const setsMap = new Map<string, { name: string; count: number; lastSynced: string | null }>();
@@ -298,7 +299,7 @@ export function useCardSets() {
         lastSynced: data.lastSynced,
       }));
 
-      console.log(`[useCardSets] Found ${setsArray.length} unique sets`);
+      logger.debug(`[useCardSets] Found ${setsArray.length} unique sets`);
 
       // Sort: recently synced first, then alphabetically
       return setsArray.sort((a, b) => {

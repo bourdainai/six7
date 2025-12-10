@@ -20,10 +20,10 @@ export function useTradePerformanceMonitor(componentName: string) {
       
       // Log slow renders (>16ms = 60fps threshold)
       if (renderTime > 16) {
-        console.warn(`[Performance] ${componentName} slow render:`, {
+        logger.warn(`[Performance] ${componentName} slow render:`, {
           renderTime: `${renderTime.toFixed(2)}ms`,
           renderCount: renderCount.current,
-          memory: (performance as any).memory?.usedJSHeapSize 
+          memory: (performance as any).memory?.usedJSHeapSize
             ? `${((performance as any).memory.usedJSHeapSize / 1048576).toFixed(2)}MB`
             : 'N/A'
         });
@@ -54,7 +54,7 @@ export function useMemoizedTradeValue<T>(
   const calcTime = performance.now() - startTime;
   
   if (calcTime > 10) {
-    console.warn('[Performance] Expensive calculation detected:', {
+    logger.warn('[Performance] Expensive calculation detected:', {
       time: `${calcTime.toFixed(2)}ms`,
       deps: deps.length
     });

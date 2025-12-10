@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState, useCallback, useRef } from "react";
+import { logger } from "@/lib/logger";
 
 export interface GitHubSet {
   id: string;
@@ -225,7 +226,7 @@ export function useJapaneseGitHubSets() {
         }
       }
       
-      console.log(`[useJapaneseGitHubSets] Found ${sets.length} total sets, ${transformedSets.length} have English translations AND card data`);
+      logger.debug(`[useJapaneseGitHubSets] Found ${sets.length} total sets, ${transformedSets.length} have English translations AND card data`);
       
       return transformedSets;
     },
@@ -278,7 +279,7 @@ export function useDatabaseSetCoverage() {
         }
       }
 
-      console.log(`[useDatabaseSetCoverage] Fetched ${allCards.length} cards total`);
+      logger.debug(`[useDatabaseSetCoverage] Fetched ${allCards.length} cards total`);
 
       // Count cards per set
       const coverage: Record<string, number> = {};
@@ -588,7 +589,7 @@ export function useImportQueue() {
   const startImport = useCallback(async (sets: Array<{ id: string; name: string; language?: 'en' | 'ja' }>) => {
     if (sets.length === 0) return;
 
-    console.log(`🚀 Starting import of ${sets.length} set(s)`);
+    logger.info(`Starting import of ${sets.length} set(s)`);
     
     setQueue(sets);
     setProgress({
@@ -616,13 +617,13 @@ export function useImportQueue() {
     for (let i = 0; i < sets.length; i++) {
       // Check if user requested stop
       if (shouldStopRef.current) {
-        console.log(`⏸️ Import paused by user at set ${i + 1}/${sets.length}`);
+        logger.info(`Import paused by user at set ${i + 1}/${sets.length}`);
         setProgress((prev) => ({ ...prev, isRunning: false, isPaused: true }));
         break;
       }
 
       const set = sets[i];
-      console.log(`\n📦 [${i + 1}/${sets.length}] Importing: ${set.name} (${set.id})`);
+      logger.info(`[${i + 1}/${sets.length}] Importing: ${set.name} (${set.id})`);
 
       // Update progress with current set
       setProgress((prev) => ({
@@ -639,7 +640,7 @@ export function useImportQueue() {
         // Call Edge Function for this set - wait for full completion
         // Use different function based on language
         const isJapanese = set.language === 'ja';
-        console.log(`   Calling Edge Function (${isJapanese ? 'Japanese/TCGdex' : 'English/GitHub'})...`);
+        logger.debug(`Calling Edge Function (${isJapanese ? 'Japanese/TCGdex' : 'English/GitHub'})...`);
         const startTime = Date.now();
         
         const { data, error } = isJapanese
@@ -651,10 +652,10 @@ export function useImportQueue() {
             });
 
         const duration = Date.now() - startTime;
-        console.log(`   Edge Function returned in ${duration}ms`);
+        logger.debug(`Edge Function returned in ${duration}ms`);
 
         if (error) {
-          console.error(`   ❌ Error: ${error.message}`);
+          logger.error(`Import error: ${error.message}`);
           const errorEntry = { setId: set.id, setName: set.name, error: error.message };
           errors.push(errorEntry);
           totalErrors++;
@@ -675,9 +676,9 @@ export function useImportQueue() {
         const setErrors = data?.stats?.totalErrors || 0;
         const fieldCompletion = data?.fieldCompletion || {};
 
-        console.log(`   ✅ Complete: ${imported} cards imported`);
+        logger.info(`Complete: ${imported} cards imported`);
         if (fieldCompletion.total > 0) {
-          console.log(`   📊 Fields: Images=${fieldCompletion.images}/${fieldCompletion.total}, Pricing=${fieldCompletion.pricing}/${fieldCompletion.total}`);
+          logger.debug(`Fields: Images=${fieldCompletion.images}/${fieldCompletion.total}, Pricing=${fieldCompletion.pricing}/${fieldCompletion.total}`);
         }
 
         totalImported += imported;
@@ -712,7 +713,7 @@ export function useImportQueue() {
         }
         
       } catch (err) {
-        console.error(`   💥 Exception: ${err}`);
+        logger.error(`Import exception: ${err}`);
         const errorMsg = err instanceof Error ? err.message : "Unknown error";
         const errorEntry = { setId: set.id, setName: set.name, error: errorMsg };
         errors.push(errorEntry);
@@ -730,8 +731,8 @@ export function useImportQueue() {
 
     // Import loop complete
     const wasStopped = shouldStopRef.current;
-    console.log(`\n🎉 Import ${wasStopped ? 'paused' : 'complete'}!`);
-    console.log(`📊 Final: ${totalImported} cards from ${completed} sets`);
+    logger.info(`Import ${wasStopped ? 'paused' : 'complete'}!`);
+    logger.info(`Final: ${totalImported} cards from ${completed} sets`);
 
     // Refresh all coverage data
     queryClient.invalidateQueries({ queryKey: ["db-set-coverage"] });
@@ -756,14 +757,14 @@ export function useImportQueue() {
   }, [queryClient]);
 
   const stop = useCallback(() => {
-    console.log("⏸️ Stop requested");
+    logger.info("Stop requested");
     shouldStopRef.current = true;
     setProgress((prev) => ({ ...prev, isPaused: true }));
   }, []);
 
   const resume = useCallback(async () => {
     if (progress.isPaused && queue.length > 0 && progress.completed < queue.length) {
-      console.log(`▶️ Resuming from set ${progress.completed + 1}`);
+      logger.info(`Resuming from set ${progress.completed + 1}`);
       const remaining = queue.slice(progress.completed);
       shouldStopRef.current = false;
       
@@ -801,7 +802,7 @@ export function useImportQueue() {
           
           await new Promise((resolve) => setTimeout(resolve, 300));
         } catch (err) {
-          console.error(`Resume error for ${set.name}:`, err);
+          logger.error(`Resume error for ${set.name}:`, err);
         }
       }
       
@@ -816,7 +817,7 @@ export function useImportQueue() {
   }, [progress.isPaused, progress.completed, queue, queryClient]);
 
   const reset = useCallback(() => {
-    console.log("🔄 Reset import state");
+    logger.info("Reset import state");
     setQueue([]);
     setProgress({
       completed: 0,
