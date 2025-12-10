@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Camera, Upload, X, Sparkles, Loader2, Search } from "lucide-react";
+import { Camera, Upload, X, Sparkles, Loader2, Search, Mic, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useHaptics } from "@/hooks/useHaptics";
+import { useVoiceInput } from "@/hooks/useVoiceInput";
 import type { SellWizardState, CardData } from "@/hooks/useSellWizard";
 
 interface CaptureStepProps {
@@ -23,6 +24,62 @@ export function CaptureStep({ wizard }: CaptureStepProps) {
   const [searchResults, setSearchResults] = useState<CardData[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+
+  // Voice input handler
+  const handleVoiceTranscript = useCallback(async (transcript: string) => {
+    haptics.success();
+    // Use the transcript as search query
+    setSearchQuery(transcript);
+    setShowSearch(true);
+
+    // Auto-search with transcript
+    setIsSearching(true);
+    try {
+      const { data, error } = await supabase
+        .from("pokemon_card_attributes")
+        .select("*")
+        .or(`name.ilike.%${transcript}%,set_name.ilike.%${transcript}%`)
+        .limit(12);
+
+      if (error) throw error;
+
+      const results: CardData[] = (data || []).map(card => ({
+        id: card.id,
+        name: card.name || "",
+        setName: card.set_name || "",
+        setCode: card.set_id || "",
+        cardNumber: card.printed_number || card.number || "",
+        rarity: card.rarity || "",
+        imageUrl: card.image_url_large || card.image_url_small || "",
+        marketPrice: card.price_tcgplayer_holofoil || card.price_tcgplayer_normal || card.price_cardmarket_avg || undefined,
+      }));
+
+      setSearchResults(results);
+
+      if (results.length === 0) {
+        toast({
+          title: "No cards found",
+          description: `Try different search terms for "${transcript}"`,
+        });
+      }
+    } catch (error) {
+      console.error("Voice search error:", error);
+    } finally {
+      setIsSearching(false);
+    }
+  }, [haptics, toast]);
+
+  const voice = useVoiceInput({
+    onTranscript: handleVoiceTranscript,
+    onError: (error) => {
+      haptics.error();
+      toast({
+        title: "Voice input failed",
+        description: error,
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -349,13 +406,58 @@ export function CaptureStep({ wizard }: CaptureStepProps) {
 
       {/* Manual Search */}
       <div className="space-y-3">
-        <button
-          onClick={() => setShowSearch(!showSearch)}
-          className="text-sm text-primary font-medium flex items-center gap-1"
-        >
-          <Search className="h-4 w-4" />
-          {showSearch ? "Hide search" : "Search card manually"}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowSearch(!showSearch)}
+            className="text-sm text-primary font-medium flex items-center gap-1"
+          >
+            <Search className="h-4 w-4" />
+            {showSearch ? "Hide search" : "Search card manually"}
+          </button>
+
+          {voice.isSupported && (
+            <>
+              <span className="text-muted-foreground">or</span>
+              <button
+                onClick={() => {
+                  haptics.medium();
+                  if (voice.isRecording) {
+                    voice.stopRecording();
+                  } else {
+                    voice.startRecording();
+                  }
+                }}
+                className={cn(
+                  "text-sm font-medium flex items-center gap-1",
+                  voice.isRecording ? "text-red-500" : "text-primary"
+                )}
+              >
+                {voice.isRecording ? (
+                  <>
+                    <MicOff className="h-4 w-4" />
+                    Stop
+                  </>
+                ) : (
+                  <>
+                    <Mic className="h-4 w-4" />
+                    Voice search
+                  </>
+                )}
+              </button>
+            </>
+          )}
+        </div>
+
+        {voice.isRecording && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex items-center gap-2 p-3 rounded-lg bg-red-500/5 border border-red-500/20"
+          >
+            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            <span className="text-sm">Listening... say a card name</span>
+          </motion.div>
+        )}
 
         {showSearch && (
           <motion.div
