@@ -23,6 +23,7 @@ import {
   Copy,
   Globe,
   Download,
+  type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -37,7 +38,7 @@ function StatsCard({
   subValue,
   variant = "default",
 }: {
-  icon: any;
+  icon: LucideIcon;
   label: string;
   value: string | number;
   subValue?: string;
@@ -191,7 +192,7 @@ export default function AdminCardCatalog() {
       });
       refetch();
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Validation Failed",
         description: error.message || "Failed to validate images",
@@ -215,7 +216,7 @@ export default function AdminCardCatalog() {
       });
       refetch();
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Fetch Failed",
         description: error.message || "Failed to fetch English names",
@@ -239,7 +240,7 @@ export default function AdminCardCatalog() {
       });
       refetch();
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Fetch Failed",
         description: error.message || "Failed to fetch images",
@@ -284,10 +285,10 @@ export default function AdminCardCatalog() {
         description: `Processed ${totalProcessed} cards, updated ${totalUpdated}`,
       });
       refetch();
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Fetch Failed",
-        description: error.message || "Failed to fetch English names",
+        description: error instanceof Error ? error.message : "Failed to fetch English names",
         variant: "destructive",
       });
     } finally {
@@ -331,10 +332,10 @@ export default function AdminCardCatalog() {
         description: `Processed ${totalProcessed} cards, updated ${totalUpdated}`,
       });
       refetch();
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Fetch Failed",
-        description: error.message || "Failed to fetch images",
+        description: error instanceof Error ? error.message : "Failed to fetch images",
         variant: "destructive",
       });
     } finally {

@@ -4,9 +4,11 @@ import {
   Shield, Heart, Bell, X,
   User, LogOut, ChevronRight,
   ShoppingBag, Wallet, RefreshCw, BarChart3, Star, Home,
-  Package, TrendingUp, Tag, Search, PlusCircle
+  Package, TrendingUp, Tag, Search, PlusCircle,
+  type LucideIcon,
 } from "lucide-react";
-import { motion, AnimatePresence, PanInfo } from "framer-motion";
+import { motion, AnimatePresence, type PanInfo } from "framer-motion";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -14,7 +16,7 @@ import { cn } from "@/lib/utils";
 interface MobileMenuProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  user: any;
+  user: SupabaseUser | null;
   isAdmin: boolean;
   onSignOut: () => void;
   onNotificationsClick: () => void;
@@ -51,7 +53,7 @@ export const MobileMenu = ({
     onOpenChange(false);
   };
 
-  const handleDragEnd = (_: any, info: PanInfo) => {
+  const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (info.velocity.y > 500 || info.offset.y > 200) {
       onOpenChange(false);
     }
@@ -313,7 +315,7 @@ export const MobileMenu = ({
 };
 
 // Section Header Component
-const SectionHeader = ({ icon: Icon, label }: { icon: any; label: string }) => (
+const SectionHeader = ({ icon: Icon, label }: { icon: LucideIcon; label: string }) => (
   <div className="flex items-center gap-2 px-2">
     <Icon className="w-4 h-4 text-white/30" />
     <span className="text-xs font-semibold uppercase tracking-wider text-white/30">
@@ -332,7 +334,7 @@ const NavItem = ({
   index,
 }: {
   to: string;
-  icon: any;
+  icon: LucideIcon;
   label: string;
   onClick: () => void;
   hasNotification?: boolean;

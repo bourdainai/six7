@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useHaptics } from "@/hooks/useHaptics";
@@ -63,7 +64,7 @@ export function CaptureStep({ wizard }: CaptureStepProps) {
         });
       }
     } catch (error) {
-      console.error("Voice search error:", error);
+      logger.error("Voice search error", error);
     } finally {
       setIsSearching(false);
     }
@@ -128,7 +129,7 @@ export function CaptureStep({ wizard }: CaptureStepProps) {
 
       setSearchResults(results);
     } catch (error) {
-      console.error("Search error:", error);
+      logger.error("Search error", error);
       toast({
         title: "Search failed",
         description: "Please try again",
@@ -218,7 +219,7 @@ export function CaptureStep({ wizard }: CaptureStepProps) {
         setShowSearch(true);
       }
     } catch (error) {
-      console.error("AI analysis error:", error);
+      logger.error("AI analysis error", error);
       haptics.error();
       toast({
         title: "Analysis failed",
