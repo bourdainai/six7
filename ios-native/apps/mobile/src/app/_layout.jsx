@@ -48,7 +48,9 @@ export default function RootLayout() {
           <Stack.Screen name="settings/index" />
           <Stack.Screen name="settings/notifications" />
           <Stack.Screen name="seller/dashboard" />
+          <Stack.Screen name="seller/analytics" />
           <Stack.Screen name="trade-offers/index" />
+          <Stack.Screen name="bundles/index" />
           <Stack.Screen name="+not-found" />
         </Stack>
         <AuthModal />

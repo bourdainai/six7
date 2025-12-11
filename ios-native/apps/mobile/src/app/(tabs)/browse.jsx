@@ -7,11 +7,12 @@ import {
   TextInput,
   Dimensions,
   ActivityIndicator,
+  Modal,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { Image } from "expo-image";
-import { Search, ChevronDown, X } from "lucide-react-native";
+import { Search, ChevronDown, X, Sparkles, Camera, Package } from "lucide-react-native";
 import {
   useFonts,
   Inter_400Regular,
@@ -20,7 +21,57 @@ import {
   Inter_700Bold,
 } from "@expo-google-fonts/inter";
 import { useRouter } from "expo-router";
-import { fetchListings, searchListings } from "@/utils/supabase";
+import * as ImagePicker from "expo-image-picker";
+import { fetchListings, searchListings, supabase, isSupabaseConfigured } from "@/utils/supabase";
+
+// AI Vibe Search function
+async function vibeSearch(query) {
+  if (!isSupabaseConfigured() || !query) {
+    return [];
+  }
+
+  try {
+    // Call the vibe-search edge function
+    const { data, error } = await supabase.functions.invoke("vibe-search", {
+      body: { query, limit: 30 },
+    });
+
+    if (error) {
+      console.error("Vibe search error:", error);
+      // Fallback to regular search
+      return await searchListings(query);
+    }
+
+    return data?.listings || [];
+  } catch (error) {
+    console.error("Vibe search error:", error);
+    return await searchListings(query);
+  }
+}
+
+// AI Image Search function
+async function imageSearch(base64Image) {
+  if (!isSupabaseConfigured() || !base64Image) {
+    return [];
+  }
+
+  try {
+    // Call the image-search edge function
+    const { data, error } = await supabase.functions.invoke("ai-image-search", {
+      body: { image: base64Image, limit: 20 },
+    });
+
+    if (error) {
+      console.error("Image search error:", error);
+      return [];
+    }
+
+    return data?.listings || [];
+  } catch (error) {
+    console.error("Image search error:", error);
+    return [];
+  }
+}
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -41,6 +92,8 @@ export default function Browse() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [sortBy, setSortBy] = useState("relevance");
+  const [searchMode, setSearchMode] = useState("normal"); // normal, vibe, image
+  const [showImageSearch, setShowImageSearch] = useState(false);
 
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
@@ -51,18 +104,24 @@ export default function Browse() {
 
   useEffect(() => {
     loadListings();
-  }, [selectedFilter, sortBy, searchQuery]);
+  }, [selectedFilter, sortBy, searchQuery, searchMode]);
 
   const loadListings = async () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       let data;
       if (searchQuery && searchQuery.trim().length > 0) {
-        // Use search function
-        console.log("Searching listings for:", searchQuery);
-        data = await searchListings(searchQuery.trim());
+        if (searchMode === "vibe") {
+          // Use AI Vibe Search
+          console.log("Vibe searching for:", searchQuery);
+          data = await vibeSearch(searchQuery.trim());
+        } else {
+          // Use regular search
+          console.log("Searching listings for:", searchQuery);
+          data = await searchListings(searchQuery.trim());
+        }
       } else {
         // Use regular fetch with filters
         console.log("Fetching listings...");
@@ -70,7 +129,7 @@ export default function Browse() {
         if (selectedFilter !== "all") {
           filters.category = selectedFilter;
         }
-        
+
         data = await fetchListings({
           limit: 50,
           filters,
@@ -78,13 +137,39 @@ export default function Browse() {
           ascending: false,
         });
       }
-      
+
       console.log("Loaded listings:", data.length, "listings");
       setListings(data);
     } catch (error) {
       console.error("Error loading listings:", error);
       setError(error.message || "Failed to load listings");
     } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle image search
+  const handleImageSearch = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [3, 4],
+        quality: 0.8,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets[0]?.base64) {
+        setLoading(true);
+        setSearchMode("image");
+        const base64 = `data:image/jpeg;base64,${result.assets[0].base64}`;
+        const data = await imageSearch(base64);
+        setListings(data);
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error("Image picker error:", error);
+      setError("Failed to process image");
       setLoading(false);
     }
   };
@@ -267,6 +352,100 @@ export default function Browse() {
           Browse
         </Text>
 
+        {/* Search Mode Toggle */}
+        <View
+          style={{
+            flexDirection: "row",
+            marginBottom: 12,
+            gap: 8,
+          }}
+        >
+          <TouchableOpacity
+            onPress={() => setSearchMode("normal")}
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: searchMode === "normal" ? colors.foreground : colors.lightGray,
+              paddingVertical: 10,
+              borderRadius: 10,
+              gap: 6,
+            }}
+          >
+            <Search
+              size={16}
+              color={searchMode === "normal" ? colors.background : colors.foreground}
+              strokeWidth={2}
+            />
+            <Text
+              style={{
+                fontFamily: "Inter_600SemiBold",
+                fontSize: 13,
+                color: searchMode === "normal" ? colors.background : colors.foreground,
+              }}
+            >
+              Search
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setSearchMode("vibe")}
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: searchMode === "vibe" ? colors.foreground : colors.lightGray,
+              paddingVertical: 10,
+              borderRadius: 10,
+              gap: 6,
+            }}
+          >
+            <Sparkles
+              size={16}
+              color={searchMode === "vibe" ? colors.background : colors.foreground}
+              strokeWidth={2}
+            />
+            <Text
+              style={{
+                fontFamily: "Inter_600SemiBold",
+                fontSize: 13,
+                color: searchMode === "vibe" ? colors.background : colors.foreground,
+              }}
+            >
+              Vibe
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleImageSearch}
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: searchMode === "image" ? colors.foreground : colors.lightGray,
+              paddingVertical: 10,
+              borderRadius: 10,
+              gap: 6,
+            }}
+          >
+            <Camera
+              size={16}
+              color={searchMode === "image" ? colors.background : colors.foreground}
+              strokeWidth={2}
+            />
+            <Text
+              style={{
+                fontFamily: "Inter_600SemiBold",
+                fontSize: 13,
+                color: searchMode === "image" ? colors.background : colors.foreground,
+              }}
+            >
+              Image
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Search Bar with elevated web-style shadow */}
         <View
           style={{
@@ -287,11 +466,19 @@ export default function Browse() {
             elevation: 8,
           }}
         >
-          <Search size={20} color={colors.gray} strokeWidth={2} />
+          {searchMode === "vibe" ? (
+            <Sparkles size={20} color={colors.foreground} strokeWidth={2} />
+          ) : (
+            <Search size={20} color={colors.gray} strokeWidth={2} />
+          )}
           <TextInput
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder="Search for cards, sets, or other..."
+            placeholder={
+              searchMode === "vibe"
+                ? "Describe what you're looking for..."
+                : "Search for cards, sets, or other..."
+            }
             placeholderTextColor={colors.gray}
             style={{
               flex: 1,
@@ -307,6 +494,44 @@ export default function Browse() {
             </TouchableOpacity>
           )}
         </View>
+
+        {/* Vibe Search Hint */}
+        {searchMode === "vibe" && (
+          <View
+            style={{
+              backgroundColor: "#F0F9FF",
+              borderRadius: 10,
+              padding: 12,
+              marginBottom: 12,
+              flexDirection: "row",
+              alignItems: "flex-start",
+              gap: 10,
+            }}
+          >
+            <Sparkles size={16} color="#0284C7" strokeWidth={2} />
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontFamily: "Inter_500Medium",
+                  fontSize: 12,
+                  color: "#0284C7",
+                }}
+              >
+                AI-Powered Vibe Search
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "Inter_400Regular",
+                  fontSize: 11,
+                  color: "#0369A1",
+                  marginTop: 2,
+                }}
+              >
+                Try "rare vintage Charizard cards" or "holographic first edition"
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* Sort & Results */}
         <View
@@ -361,6 +586,33 @@ export default function Browse() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ gap: 8 }}
         >
+          {/* Bundles Quick Link */}
+          <TouchableOpacity
+            onPress={() => router.push("/bundles")}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: "#F0FDF4",
+              paddingHorizontal: 16,
+              paddingVertical: 10,
+              borderRadius: 20,
+              borderWidth: 1,
+              borderColor: "#22C55E",
+              gap: 6,
+            }}
+          >
+            <Package size={14} color="#22C55E" strokeWidth={2} />
+            <Text
+              style={{
+                fontFamily: "Inter_600SemiBold",
+                fontSize: 13,
+                color: "#22C55E",
+              }}
+            >
+              Bundles
+            </Text>
+          </TouchableOpacity>
+
           {["All", "Pokémon", "Sports", "Graded"].map((filter) => (
             <TouchableOpacity
               key={filter}
