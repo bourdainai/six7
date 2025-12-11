@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useHaptics } from "@/hooks/useHaptics";
@@ -114,7 +115,7 @@ export function DetailsStep({ wizard }: DetailsStepProps) {
         });
       }
     } catch (error) {
-      console.error("Price suggestion error:", error);
+      logger.error("Price suggestion error", error);
       // Fall back to card's market price if available
       if (draft.card?.marketPrice) {
         haptics.medium();

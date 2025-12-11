@@ -27,6 +27,7 @@ import {
   Zap,
   History,
   Globe,
+  type LucideIcon,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -41,7 +42,7 @@ function StatsCard({
   subValue,
   variant = "default",
 }: {
-  icon: any;
+  icon: LucideIcon;
   label: string;
   value: string | number;
   subValue?: string;

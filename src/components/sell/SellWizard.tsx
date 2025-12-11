@@ -14,6 +14,7 @@ import { DetailsStep } from "./steps/DetailsStep";
 import { ShippingStep } from "./steps/ShippingStep";
 import { PublishStep } from "./steps/PublishStep";
 import { cn } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 
 const slideVariants = {
   enter: (direction: number) => ({
@@ -187,7 +188,7 @@ export function SellWizard() {
           .upload(filePath, file, { contentType: file.type });
 
         if (uploadError) {
-          console.error("Upload error:", uploadError);
+          logger.error("Upload error", uploadError);
           continue;
         }
 
@@ -222,7 +223,7 @@ export function SellWizard() {
         description: "Your card is now live",
       });
     } catch (error) {
-      console.error("Publish error:", error);
+      logger.error("Publish error", error);
       haptics.error();
       toast({
         title: "Failed to publish",

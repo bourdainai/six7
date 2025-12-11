@@ -38,11 +38,3 @@ export const formatCurrency = (amount: number, currency: string = 'GBP'): string
   return formatter.format(amount);
 };
 
-/**
- * Formats currency for marketplace display
- */
-export const formatMarketplaceCurrency = (amount: number, marketplace: 'UK' | 'US'): string => {
-  const currency = marketplace === 'US' ? 'USD' : 'GBP';
-  return formatCurrency(amount, currency);
-};
-

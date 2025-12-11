@@ -13,6 +13,8 @@
  * - Selection: Subtle feedback for toggles/options
  */
 
+import { logger } from "@/lib/logger";
+
 type HapticPattern = 'light' | 'medium' | 'heavy' | 'success' | 'error' | 'warning' | 'selection' | 'impact';
 
 interface HapticOptions {
@@ -80,7 +82,7 @@ const triggerHaptic = (pattern: HapticPattern, options?: HapticOptions): boolean
     navigator.vibrate(vibrationPattern);
     return true;
   } catch (error) {
-    console.warn('Haptic feedback failed:', error);
+    logger.warn('Haptic feedback failed', error);
     return false;
   }
 };

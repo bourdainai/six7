@@ -11,7 +11,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
-import { ArrowLeft, Package, CheckCircle, Clock, Truck } from "lucide-react-native";
+import { ArrowLeft, Package, CheckCircle, Clock, Truck, Star, AlertTriangle } from "lucide-react-native";
 import {
   useFonts,
   Inter_400Regular,
@@ -30,6 +30,8 @@ const colors = {
   gray: "#666666",
   lightGray: "#F8F8F8",
   border: "#E5E5E5",
+  warning: "#F59E0B",
+  destructive: "#EF4444",
 };
 
 export default function OrdersScreen() {
@@ -131,7 +133,7 @@ export default function OrdersScreen() {
     return null;
   }
 
-  const OrderCard = ({ order }) => {
+  const OrderCard = ({ order, tab }) => {
     const firstItem = order.order_items?.[0];
     const listing = firstItem?.listing;
     const imageUrl = listing?.listing_images?.[0]?.image_url;
@@ -245,6 +247,54 @@ export default function OrdersScreen() {
             </View>
           </View>
         </View>
+
+        {/* Action Buttons for Buyers */}
+        {tab === "buying" && status === "paid" && (
+          <View style={{ flexDirection: "row", gap: 8, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border }}>
+            <TouchableOpacity
+              onPress={(e) => {
+                e.stopPropagation();
+                router.push(`/orders/rate/${order.id}`);
+              }}
+              style={{
+                flex: 1,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: colors.lightGray,
+                paddingVertical: 10,
+                borderRadius: 8,
+                gap: 6,
+              }}
+            >
+              <Star size={16} color={colors.warning} strokeWidth={2} />
+              <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 13, color: colors.foreground }}>
+                Rate Seller
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={(e) => {
+                e.stopPropagation();
+                router.push(`/orders/dispute/${order.id}`);
+              }}
+              style={{
+                flex: 1,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: `${colors.destructive}10`,
+                paddingVertical: 10,
+                borderRadius: 8,
+                gap: 6,
+              }}
+            >
+              <AlertTriangle size={16} color={colors.destructive} strokeWidth={2} />
+              <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 13, color: colors.destructive }}>
+                Open Dispute
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </TouchableOpacity>
     );
   };
@@ -371,7 +421,7 @@ export default function OrdersScreen() {
           showsVerticalScrollIndicator={false}
         >
           {orders.map((order) => (
-            <OrderCard key={order.id} order={order} />
+            <OrderCard key={order.id} order={order} tab={tab} />
           ))}
         </ScrollView>
       )}

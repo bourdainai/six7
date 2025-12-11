@@ -18,6 +18,7 @@ import {
   ArrowLeftRight,
   User,
   Tag,
+  BarChart3,
 } from "lucide-react-native";
 import {
   useFonts,
@@ -141,6 +142,9 @@ export default function Profile() {
       case "Seller Dashboard":
         router.push("/seller/dashboard");
         break;
+      case "Seller Analytics":
+        router.push("/seller/analytics");
+        break;
       case "Saved Items":
         router.push("/saved");
         break;
@@ -149,6 +153,9 @@ export default function Profile() {
         break;
       case "Trade Offers":
         router.push("/trade-offers");
+        break;
+      case "Bundles":
+        router.push("/bundles");
         break;
       case "Settings":
         router.push("/settings");
@@ -179,13 +186,20 @@ export default function Profile() {
         { icon: ShoppingBag, label: "My Orders" },
         { icon: Package, label: "My Listings" },
         { icon: TrendingUp, label: "Seller Dashboard" },
+        { icon: BarChart3, label: "Seller Analytics" },
         { icon: ArrowLeftRight, label: "Trade Offers" },
+      ],
+    },
+    {
+      title: "Shopping",
+      items: [
+        { icon: Heart, label: "Saved Items" },
+        { icon: Package, label: "Bundles" },
       ],
     },
     {
       title: "Preferences",
       items: [
-        { icon: Heart, label: "Saved Items" },
         { icon: Bell, label: "Notifications" },
         { icon: Settings, label: "Settings" },
       ],
