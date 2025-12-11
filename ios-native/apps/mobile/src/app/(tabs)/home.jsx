@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback, memo } from "react";
 import {
   View,
   Text,
@@ -7,11 +7,12 @@ import {
   Dimensions,
   Image,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
-import { Search, Sparkles } from "lucide-react-native";
+import { Search, Sparkles, Package } from "lucide-react-native";
 import {
   useFonts,
   Inter_400Regular,
@@ -22,21 +23,191 @@ import {
 import { fetchListings } from "@/utils/supabaseClient";
 import Logo from "../../../assets/images/logo.svg";
 import { useQuery } from "@tanstack/react-query";
+import { useAppColors } from "@/theme/useAppColors";
+import haptics from "@/utils/haptics";
+import EmptyState from "@/components/EmptyState";
 
 const { width: screenWidth } = Dimensions.get("window");
 
-const colors = {
-  background: "#FFFFFF",
-  foreground: "#0A0A0A",
-  gray: "#666666",
-  lightGray: "#F8F8F8",
-  border: "#E5E5E5",
-};
+// Memoized Featured Listing Card
+const FeaturedListingCard = memo(({ listing, onPress }) => {
+  const colors = useAppColors();
+  const cardWidth = screenWidth * 0.85;
+
+  const imageUrl = listing.listing_images?.sort(
+    (a, b) => (a.display_order || 0) - (b.display_order || 0)
+  )?.[0]?.image_url;
+
+  const handlePress = useCallback(() => {
+    haptics.lightTap();
+    onPress?.(listing);
+  }, [listing, onPress]);
+
+  return (
+    <TouchableOpacity
+      onPress={handlePress}
+      activeOpacity={0.7}
+      accessibilityLabel={`${listing.title}, £${Number(listing.seller_price || 0).toFixed(2)}`}
+      accessibilityRole="button"
+      style={{
+        width: cardWidth,
+        backgroundColor: colors.background,
+        borderRadius: 12,
+        overflow: "hidden",
+        marginRight: 12,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 3,
+      }}
+    >
+      <View
+        style={{
+          width: "100%",
+          aspectRatio: 0.75,
+          backgroundColor: colors.lightGray,
+          overflow: "hidden",
+        }}
+      >
+        {imageUrl ? (
+          <Image
+            source={{ uri: imageUrl }}
+            style={{ width: "100%", height: "100%" }}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+            <Package size={40} color={colors.gray} />
+          </View>
+        )}
+      </View>
+      <View style={{ padding: 12 }}>
+        <Text
+          numberOfLines={2}
+          style={{
+            fontFamily: "Inter_600SemiBold",
+            fontSize: 14,
+            color: colors.foreground,
+            marginBottom: 4,
+          }}
+        >
+          {listing.title}
+        </Text>
+        <Text
+          style={{
+            fontFamily: "Inter_700Bold",
+            fontSize: 16,
+            color: colors.foreground,
+          }}
+        >
+          £{Number(listing.seller_price || 0).toFixed(2)}
+        </Text>
+        {listing.seller && (
+          <Text
+            style={{
+              fontFamily: "Inter_400Regular",
+              fontSize: 12,
+              color: colors.gray,
+              marginTop: 4,
+            }}
+          >
+            {listing.seller.full_name}
+          </Text>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+});
+
+FeaturedListingCard.displayName = "FeaturedListingCard";
+
+// Memoized Grid Listing Card
+const GridListingCard = memo(({ listing, onPress }) => {
+  const colors = useAppColors();
+  const cardWidth = (screenWidth - 48) / 2;
+
+  const imageUrl = listing.listing_images?.sort(
+    (a, b) => (a.display_order || 0) - (b.display_order || 0)
+  )?.[0]?.image_url;
+
+  const handlePress = useCallback(() => {
+    haptics.lightTap();
+    onPress?.(listing);
+  }, [listing, onPress]);
+
+  return (
+    <TouchableOpacity
+      onPress={handlePress}
+      activeOpacity={0.7}
+      accessibilityLabel={`${listing.title}, £${Number(listing.seller_price || 0).toFixed(2)}`}
+      accessibilityRole="button"
+      style={{
+        width: cardWidth,
+        backgroundColor: colors.background,
+        borderRadius: 12,
+        overflow: "hidden",
+        marginBottom: 12,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 3,
+      }}
+    >
+      <View
+        style={{
+          width: "100%",
+          aspectRatio: 0.75,
+          backgroundColor: colors.lightGray,
+          overflow: "hidden",
+        }}
+      >
+        {imageUrl ? (
+          <Image
+            source={{ uri: imageUrl }}
+            style={{ width: "100%", height: "100%" }}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+            <Package size={32} color={colors.gray} />
+          </View>
+        )}
+      </View>
+      <View style={{ padding: 12 }}>
+        <Text
+          numberOfLines={2}
+          style={{
+            fontFamily: "Inter_600SemiBold",
+            fontSize: 14,
+            color: colors.foreground,
+            marginBottom: 4,
+          }}
+        >
+          {listing.title}
+        </Text>
+        <Text
+          style={{
+            fontFamily: "Inter_700Bold",
+            fontSize: 16,
+            color: colors.foreground,
+          }}
+        >
+          £{Number(listing.seller_price || 0).toFixed(2)}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+});
+
+GridListingCard.displayName = "GridListingCard";
 
 export default function Home() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState("");
+  const colors = useAppColors();
+  const [refreshing, setRefreshing] = useState(false);
 
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
@@ -46,108 +217,61 @@ export default function Home() {
   });
 
   // Fetch featured listings
-  const { data: featuredListings, isLoading } = useQuery({
+  const { data: featuredListings, isLoading, refetch } = useQuery({
     queryKey: ["featured-listings"],
     queryFn: () => fetchListings({ limit: 6, orderBy: "created_at", ascending: false }),
   });
 
   // Fetch trending listings (by views or saves)
-  const { data: trendingListings } = useQuery({
+  const { data: trendingListings, refetch: refetchTrending } = useQuery({
     queryKey: ["trending-listings"],
     queryFn: () => fetchListings({ limit: 4, orderBy: "views", ascending: false }),
   });
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    haptics.lightTap();
+    await Promise.all([refetch(), refetchTrending()]);
+    setRefreshing(false);
+  }, [refetch, refetchTrending]);
+
+  const handleListingPress = useCallback(
+    (listing) => {
+      router.push(`/listing/${listing.id}`);
+    },
+    [router]
+  );
+
+  const handleSearchPress = useCallback(() => {
+    haptics.lightTap();
+    router.push("/(tabs)/browse");
+  }, [router]);
+
+  const handleExplorePress = useCallback(() => {
+    haptics.mediumTap();
+    router.push("/(tabs)/browse");
+  }, [router]);
 
   if (!fontsLoaded) {
     return null;
   }
 
-  const ListingCard = ({ listing, featured = false }) => {
-    const imageUrl =
-      listing.listing_images?.[0]?.image_url ||
-      "https://images.pokemontcg.io/swsh4/20_hires.png";
-
-    const cardWidth = featured
-      ? screenWidth * 0.85
-      : (screenWidth - 48) / 2; // 2 columns with padding
-
-    return (
-      <TouchableOpacity
-        onPress={() => router.push(`/listing/${listing.id}`)}
-        style={{
-          width: cardWidth,
-          backgroundColor: colors.background,
-          borderRadius: 12,
-          overflow: "hidden",
-          marginRight: featured ? 12 : 0,
-          marginBottom: 12,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 8,
-          elevation: 3,
-        }}
-      >
-        <View
-          style={{
-            width: "100%",
-            aspectRatio: 0.75,
-            backgroundColor: colors.lightGray,
-            overflow: "hidden",
-          }}
-        >
-          <Image
-            source={{ uri: imageUrl }}
-            style={{ width: "100%", height: "100%" }}
-            resizeMode="cover"
-          />
-        </View>
-        <View style={{ padding: 12 }}>
-          <Text
-            numberOfLines={2}
-            style={{
-              fontFamily: "Inter_600SemiBold",
-              fontSize: 14,
-              color: colors.foreground,
-              marginBottom: 4,
-            }}
-          >
-            {listing.title}
-          </Text>
-          <Text
-            style={{
-              fontFamily: "Inter_700Bold",
-              fontSize: 16,
-              color: colors.foreground,
-            }}
-          >
-            £{Number(listing.seller_price || 0).toFixed(2)}
-          </Text>
-          {listing.seller && (
-            <Text
-              style={{
-                fontFamily: "Inter_400Regular",
-                fontSize: 12,
-                color: colors.gray,
-                marginTop: 4,
-              }}
-            >
-              {listing.seller.full_name}
-            </Text>
-          )}
-        </View>
-      </TouchableOpacity>
-    );
-  };
-
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <StatusBar style="dark" />
+      <StatusBar style={colors.isDark ? "light" : "dark"} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingTop: insets.top + 8,
           paddingBottom: insets.bottom + 100,
         }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.foreground}
+          />
+        }
       >
         {/* Header */}
         <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
@@ -165,7 +289,9 @@ export default function Home() {
 
         {/* Search Bar */}
         <TouchableOpacity
-          onPress={() => router.push("/(tabs)/browse")}
+          onPress={handleSearchPress}
+          accessibilityLabel="Search cards, sets, sellers"
+          accessibilityRole="search"
           style={{
             marginHorizontal: 20,
             marginBottom: 32,
@@ -232,7 +358,9 @@ export default function Home() {
             fairness scoring.
           </Text>
           <TouchableOpacity
-            onPress={() => router.push("/(tabs)/browse")}
+            onPress={handleExplorePress}
+            accessibilityLabel="Explore marketplace"
+            accessibilityRole="button"
             style={{
               backgroundColor: colors.background,
               paddingVertical: 12,
@@ -273,7 +401,11 @@ export default function Home() {
             >
               Featured Listings
             </Text>
-            <TouchableOpacity onPress={() => router.push("/(tabs)/browse")}>
+            <TouchableOpacity
+              onPress={handleSearchPress}
+              accessibilityLabel="See all listings"
+              accessibilityRole="link"
+            >
               <Text
                 style={{
                   fontFamily: "Inter_500Medium",
@@ -287,9 +419,16 @@ export default function Home() {
           </View>
 
           {isLoading ? (
-            <View style={{ paddingHorizontal: 20 }}>
+            <View style={{ paddingHorizontal: 20, paddingVertical: 40 }}>
               <ActivityIndicator size="large" color={colors.foreground} />
             </View>
+          ) : featuredListings?.length === 0 ? (
+            <EmptyState
+              icon="package"
+              title="No listings yet"
+              message="Be the first to list a card!"
+              style={{ paddingVertical: 40 }}
+            />
           ) : (
             <ScrollView
               horizontal
@@ -297,7 +436,11 @@ export default function Home() {
               contentContainerStyle={{ paddingHorizontal: 20 }}
             >
               {featuredListings?.map((listing) => (
-                <ListingCard key={listing.id} listing={listing} featured />
+                <FeaturedListingCard
+                  key={listing.id}
+                  listing={listing}
+                  onPress={handleListingPress}
+                />
               ))}
             </ScrollView>
           )}
@@ -324,7 +467,11 @@ export default function Home() {
               >
                 Trending Now
               </Text>
-              <TouchableOpacity onPress={() => router.push("/(tabs)/browse")}>
+              <TouchableOpacity
+                onPress={handleSearchPress}
+                accessibilityLabel="See all trending"
+                accessibilityRole="link"
+              >
                 <Text
                   style={{
                     fontFamily: "Inter_500Medium",
@@ -346,7 +493,11 @@ export default function Home() {
               }}
             >
               {trendingListings.map((listing) => (
-                <ListingCard key={listing.id} listing={listing} />
+                <GridListingCard
+                  key={listing.id}
+                  listing={listing}
+                  onPress={handleListingPress}
+                />
               ))}
             </View>
           </View>
@@ -355,5 +506,3 @@ export default function Home() {
     </View>
   );
 }
-
-
