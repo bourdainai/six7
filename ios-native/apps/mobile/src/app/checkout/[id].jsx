@@ -20,7 +20,7 @@ import {
   Inter_700Bold,
 } from "@expo-google-fonts/inter";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { supabase, getListingById } from "@/utils/supabase";
+import { supabase, getListingById } from "@/utils/supabaseClient";
 import { useAuth } from "@/utils/auth/useAuth";
 
 const colors = {

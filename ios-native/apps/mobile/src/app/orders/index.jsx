@@ -20,7 +20,7 @@ import {
   Inter_700Bold,
 } from "@expo-google-fonts/inter";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/utils/supabase";
+import { supabase } from "@/utils/supabaseClient";
 import { useAuth } from "@/utils/auth/useAuth";
 import { format } from "date-fns";
 

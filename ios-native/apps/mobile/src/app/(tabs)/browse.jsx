@@ -22,7 +22,7 @@ import {
 } from "@expo-google-fonts/inter";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
-import { fetchListings, searchListings, supabase, isSupabaseConfigured } from "@/utils/supabase";
+import { fetchListings, searchListings, supabase, isSupabaseConfigured } from "@/utils/supabaseClient";
 
 // AI Vibe Search function
 async function vibeSearch(query) {

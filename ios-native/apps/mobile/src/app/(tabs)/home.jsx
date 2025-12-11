@@ -19,7 +19,7 @@ import {
   Inter_600SemiBold,
   Inter_700Bold,
 } from "@expo-google-fonts/inter";
-import { fetchListings } from "@/utils/supabase";
+import { fetchListings } from "@/utils/supabaseClient";
 import Logo from "../../../assets/images/logo.svg";
 import { useQuery } from "@tanstack/react-query";
 
