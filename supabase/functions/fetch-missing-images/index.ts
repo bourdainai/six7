@@ -55,17 +55,32 @@ async function validateImageUrl(url: string, timeoutMs = 5000): Promise<{ valid:
  * Extract set code and local ID from card_id or use set_code/number
  */
 function getImageUrl(card: any): string | null {
-  // Try to parse from card_id (format: tcgdex_github_ja_setcode-localid or legacy tcgdx_ja_S9a-033)
-  const cardIdMatch = card.card_id?.match(/tcgd[ex]+(?:_github)?_ja_([A-Za-z0-9]+)[-_](.+)/i);
-  if (cardIdMatch) {
-    const setCode = cardIdMatch[1];
-    const localId = cardIdMatch[2];
+  // Try to parse from card_id - support multiple formats:
+  // tcgdex_ja_SV6-068, tcgdex_github_ja_setcode-localid, tcgcollector_sv4a_162
+  
+  // TCGdex Japanese format: tcgdex_ja_SETCODE-NUMBER or tcgdex_github_ja_SETCODE-NUMBER
+  const tcgdexMatch = card.card_id?.match(/tcgdex(?:_github)?_ja_([A-Za-z0-9]+)[-_](.+)/i);
+  if (tcgdexMatch) {
+    const setCode = tcgdexMatch[1];
+    const localId = tcgdexMatch[2];
     return `${TCGDEX_ASSETS_BASE}/ja/${setCode}/${localId}`;
   }
 
-  // Fallback to set_code and number
+  // TCGCollector format: tcgcollector_SETCODE_NUMBER (these are likely English/international)
+  const collectorMatch = card.card_id?.match(/tcgcollector_([A-Za-z0-9]+)_(.+)/i);
+  if (collectorMatch) {
+    const setCode = collectorMatch[1].toLowerCase();
+    const localId = collectorMatch[2];
+    // TCGdex also has English assets
+    return `${TCGDEX_ASSETS_BASE}/en/${setCode}/${localId}`;
+  }
+
+  // Fallback to set_code and number (try Japanese first, then English)
   if (card.set_code && card.number) {
-    return `${TCGDEX_ASSETS_BASE}/ja/${card.set_code}/${card.number}`;
+    // Check if it looks like a Japanese card
+    const isJapanese = card.card_id?.includes('_ja_') || card.name?.match(/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/);
+    const lang = isJapanese ? 'ja' : 'en';
+    return `${TCGDEX_ASSETS_BASE}/${lang}/${card.set_code}/${card.number}`;
   }
 
   return null;
@@ -101,9 +116,8 @@ serve(async (req) => {
     // Fetch cards without images or with invalid images
     let query = supabase
       .from('pokemon_card_attributes')
-      .select('id, card_id, set_code, number, images, image_validated')
+      .select('id, card_id, set_code, number, name, images, image_validated')
       .or('images.is.null,image_validated.eq.false')
-      .or('card_id.ilike.tcgdex_github_ja_%,card_id.ilike.tcgdx_ja_%,card_id.ilike.%_ja_%')
       .order('created_at', { ascending: false });
 
     if (limit) {
