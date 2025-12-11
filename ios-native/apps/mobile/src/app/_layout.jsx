@@ -43,6 +43,8 @@ export default function RootLayout() {
           <Stack.Screen name="messages/[id]" />
           <Stack.Screen name="orders/index" />
           <Stack.Screen name="orders/[id]" />
+          <Stack.Screen name="orders/rate/[orderId]" />
+          <Stack.Screen name="orders/dispute/[orderId]" />
           <Stack.Screen name="wallet/index" />
           <Stack.Screen name="saved/index" />
           <Stack.Screen name="settings/index" />
