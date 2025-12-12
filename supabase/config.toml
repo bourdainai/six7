@@ -177,6 +177,9 @@ verify_jwt = false
 [functions.backfill-english-names-from-sets]
 verify_jwt = false
 
+[functions.populate-pokemon-names]
+verify_jwt = false
+
 [functions.admin-reset-password]
 verify_jwt = true
 

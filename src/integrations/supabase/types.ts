@@ -1640,6 +1640,27 @@ export type Database = {
         }
         Relationships: []
       }
+      pokemon_english_names: {
+        Row: {
+          created_at: string | null
+          dex_id: number
+          english_name: string
+          japanese_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          dex_id: number
+          english_name: string
+          japanese_name: string
+        }
+        Update: {
+          created_at?: string | null
+          dex_id?: number
+          english_name?: string
+          japanese_name?: string
+        }
+        Relationships: []
+      }
       popular_sets: {
         Row: {
           created_at: string | null
