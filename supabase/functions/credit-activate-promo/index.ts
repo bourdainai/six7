@@ -38,8 +38,17 @@ Deno.serve(async (req) => {
       .is('activated_at', null)
       .single();
 
+    // If no eligible promo, return a graceful 200 response instead of an error
     if (promoError || !promo) {
-      throw new Error('No eligible promo found');
+      console.log('No eligible promo found for user', user.id, { promoError });
+      return new Response(
+        JSON.stringify({
+          success: false,
+          reason: 'no_eligible_promo',
+          message: 'No promotional credits available for this account.',
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Activate the promo
