@@ -100,17 +100,11 @@ function getDisplayName(card: CardCatalogCard): string {
   return card.name_en || card.name || 'Unknown';
 }
 
-// Helper function to check if image is actually valid
+// Helper function to check if image is actually usable in the UI
 function hasValidImage(card: CardCatalogCard): boolean {
-  // Check if image exists AND is validated (if validation has been run)
-  const hasImageUrl = !!(card.images?.small || card.images?.large);
-  
-  // If image_validated field exists, use it; otherwise fall back to URL check
-  if ('image_validated' in card && card.image_validated === false) {
-    return false;
-  }
-  
-  return hasImageUrl;
+  // For now we rely purely on the presence of an image URL.
+  // The image_validated flag is informational and should not block display.
+  return !!(card.images?.small || card.images?.large);
 }
 
 export function CardDetailModal({ card, open, onOpenChange }: CardDetailModalProps) {
