@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { CardCatalogCard } from "@/hooks/useCardCatalog";
 import { CardDetailModal } from "./CardDetailModal";
+import { getCardDisplayName, hasOnlyJapaneseName } from "@/utils/cardDisplayName";
 
 interface CardCatalogGridProps {
   cards: CardCatalogCard[];
@@ -22,11 +23,6 @@ interface CardCatalogGridProps {
   totalPages: number;
   totalCount: number;
   onPageChange: (page: number) => void;
-}
-
-// Helper function to get display name (always prefer English)
-function getDisplayName(card: CardCatalogCard): string {
-  return card.name_en || card.name || 'Unknown';
 }
 
 // Helper function to check if image is actually valid
@@ -43,8 +39,9 @@ function CardThumbnail({
   card: CardCatalogCard;
   onClick: () => void;
 }) {
-  const displayName = getDisplayName(card);
+  const displayName = getCardDisplayName(card);
   const hasImage = hasValidImage(card);
+  const showJapaneseOnlyBadge = hasOnlyJapaneseName(card);
   const hasPrice = card.tcgplayer_prices || card.cardmarket_prices;
   const imageUrl = card.images?.large || card.images?.small;
 
@@ -111,7 +108,7 @@ function CardThumbnail({
         <h3 className="text-sm font-medium truncate" title={displayName}>
           {displayName}
         </h3>
-        {!card.name_en && card.name && /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(card.name) && (
+        {showJapaneseOnlyBadge && (
           <Badge variant="secondary" className="text-[10px] px-1 py-0 mt-1">Japanese Only</Badge>
         )}
         <div className="flex items-center justify-between text-xs text-muted-foreground">

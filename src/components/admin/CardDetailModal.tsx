@@ -27,6 +27,7 @@ import {
 import { CardCatalogCard } from "@/hooks/useCardCatalog";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { getCardDisplayName, hasOnlyJapaneseName, getSetDisplayName } from "@/utils/cardDisplayName";
 
 interface CardDetailModalProps {
   card: CardCatalogCard | null;
@@ -95,11 +96,6 @@ function JsonField({ label, value }: { label: string; value: any }) {
   );
 }
 
-// Helper function to get display name (always prefer English)
-function getDisplayName(card: CardCatalogCard): string {
-  return card.name_en || card.name || 'Unknown';
-}
-
 // Helper function to check if image is actually usable in the UI
 function hasValidImage(card: CardCatalogCard): boolean {
   // For now we rely purely on the presence of an image URL.
@@ -110,7 +106,8 @@ function hasValidImage(card: CardCatalogCard): boolean {
 export function CardDetailModal({ card, open, onOpenChange }: CardDetailModalProps) {
   if (!card) return null;
 
-  const displayName = getDisplayName(card);
+  const displayName = getCardDisplayName(card);
+  const showJapaneseOnlyBadge = hasOnlyJapaneseName(card);
   const hasImage = hasValidImage(card);
   const hasPrice = card.tcgplayer_prices || card.cardmarket_prices;
   const imageUrl = card.images?.large || card.images?.small;
@@ -121,7 +118,7 @@ export function CardDetailModal({ card, open, onOpenChange }: CardDetailModalPro
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle className="flex items-center gap-3">
             <span>{displayName}</span>
-            {!card.name_en && card.name && /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(card.name) && (
+            {showJapaneseOnlyBadge && (
               <Badge variant="secondary" className="text-xs">Japanese Only</Badge>
             )}
             <Badge variant="outline" className="font-mono text-xs">

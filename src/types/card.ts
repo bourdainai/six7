@@ -5,6 +5,8 @@
  * and listing components to ensure consistency.
  */
 
+import { getCardDisplayName, getSetDisplayName } from "@/utils/cardDisplayName";
+
 /**
  * Core card data structure used throughout the app
  */
@@ -79,8 +81,8 @@ export interface CardSearchResult {
 export function toCardData(card: CardSearchResult): CardData {
   return {
     id: card.id,
-    name: card.name_en || card.name || "",
-    setName: card.set_name_en || card.set_name || "",
+    name: getCardDisplayName(card),
+    setName: getSetDisplayName({ set_name: card.set_name, set_name_en: card.set_name_en }),
     setCode: "", // Not always available in search results
     cardNumber: card.printed_number || "",
     rarity: card.rarity || "",
@@ -99,8 +101,8 @@ export function toCardData(card: CardSearchResult): CardData {
 export function attributesToCardData(card: CardAttributes): CardData {
   return {
     id: card.id,
-    name: card.name_en || card.name || "",
-    setName: card.set_name_en || card.set_name || "",
+    name: getCardDisplayName(card),
+    setName: getSetDisplayName({ set_name: card.set_name, set_name_en: card.set_name_en }),
     setCode: card.set_id || "",
     cardNumber: card.printed_number || card.number || "",
     rarity: card.rarity || "",
