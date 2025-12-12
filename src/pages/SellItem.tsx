@@ -903,14 +903,12 @@ const SellItem = () => {
 
       setPublishedListingId(listing.id);
 
-      // Try to activate promotional credits if eligible
-      try {
-        await supabase.functions.invoke('credit-activate-promo', {
-          body: { listingId: listing.id }
-        });
-      } catch (promoError) {
-        // Silently fail - promo activation is not critical
-        logger.debug('Promo activation not applicable or failed:', promoError);
+      // Try to activate promotional credits if eligible (silently fail if not applicable)
+      const { error: promoError } = await supabase.functions.invoke('credit-activate-promo', {
+        body: { listingId: listing.id }
+      });
+      if (promoError) {
+        logger.debug('Promo activation not applicable:', promoError.message);
       }
 
       const bundleMode = isMultiCard
