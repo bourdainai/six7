@@ -861,21 +861,11 @@ const SellItem = () => {
           }
         }
       } else {
-        // Single item: Upload user photos or fetch Magic Search image
-        let filesToUpload = [...imageFiles];
+        // Single item: Upload user photos or use stock image URL
+        const filesToUpload = [...imageFiles];
+        let imagesInserted = false;
 
-        if (filesToUpload.length === 0 && images.length > 0 && images[0].startsWith('http')) {
-          // Magic search result - fetch and upload
-          try {
-            const response = await fetch(images[0]);
-            const blob = await response.blob();
-            const file = new File([blob], "magic-card.jpg", { type: "image/jpeg" });
-            filesToUpload = [file];
-          } catch (e) {
-            logger.error("Failed to fetch magic image", e);
-          }
-        }
-
+        // First, upload any user-provided files
         for (let i = 0; i < filesToUpload.length; i++) {
           const file = filesToUpload[i];
           const fileName = `${listing.id}/${Date.now()}-${i}.jpg`;
@@ -893,11 +883,55 @@ const SellItem = () => {
             .from('listing-images')
             .getPublicUrl(fileName);
 
-          await supabase.from('listing_images').insert({
+          const { error: insertError } = await supabase.from('listing_images').insert({
             listing_id: listing.id,
             image_url: publicUrl,
             display_order: i
           });
+          
+          if (!insertError) {
+            imagesInserted = true;
+          }
+        }
+
+        // If no user images uploaded, use stock photo URL directly (don't try to fetch/re-upload)
+        if (!imagesInserted && images.length > 0 && images[0].startsWith('http')) {
+          logger.debug("Using stock photo URL for listing:", images[0]);
+          const { error: insertError } = await supabase.from('listing_images').insert({
+            listing_id: listing.id,
+            image_url: images[0],
+            display_order: 0,
+            is_stock_photo: true
+          });
+          
+          if (insertError) {
+            logger.error("Failed to insert stock photo:", insertError);
+          } else {
+            imagesInserted = true;
+          }
+        }
+
+        // Fallback: if still no images and we have card data with image_url
+        if (!imagesInserted && listingData.set_code && listingData.card_number) {
+          // Try to get image from card attributes
+          const { data: cardData } = await supabase
+            .from('pokemon_card_attributes')
+            .select('images')
+            .eq('card_id', `${listingData.set_code}-${listingData.card_number}`)
+            .single();
+          
+          if (cardData?.images) {
+            const cardImages = cardData.images as { small?: string; large?: string };
+            const imageUrl = cardImages.large || cardImages.small;
+            if (imageUrl) {
+              await supabase.from('listing_images').insert({
+                listing_id: listing.id,
+                image_url: imageUrl,
+                display_order: 0,
+                is_stock_photo: true
+              });
+            }
+          }
         }
       }
 
