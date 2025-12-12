@@ -68,7 +68,7 @@ const ListingDetail = memo(() => {
           *,
           seller:profiles!seller_id(id, full_name, avatar_url, trust_score),
           images:listing_images(image_url, display_order),
-          variants:listing_variants!listing_id(id, title, seller_price, variant_images, is_available, display_order)
+          variants:listing_variants!listing_id(id, variant_name, variant_price, variant_images, is_available, display_order)
         `);
 
       let data, error;
