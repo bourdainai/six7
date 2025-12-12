@@ -30,7 +30,7 @@ import {
   Inter_700Bold,
 } from "@expo-google-fonts/inter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/utils/supabase";
+import { supabase } from "@/utils/supabaseClient";
 import { useAuth } from "@/utils/auth/useAuth";
 import { formatDistanceToNow } from "date-fns";
 

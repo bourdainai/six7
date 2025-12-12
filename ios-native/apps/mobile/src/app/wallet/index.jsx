@@ -28,7 +28,7 @@ import {
   Inter_700Bold,
 } from "@expo-google-fonts/inter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/utils/supabase";
+import { supabase } from "@/utils/supabaseClient";
 import { useAuth } from "@/utils/auth/useAuth";
 import { WalletDepositModal } from "@/components/WalletDepositModal";
 import { WalletWithdrawModal } from "@/components/WalletWithdrawModal";

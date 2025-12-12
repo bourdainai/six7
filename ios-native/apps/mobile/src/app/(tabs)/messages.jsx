@@ -21,7 +21,7 @@ import {
   Inter_700Bold,
 } from "@expo-google-fonts/inter";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/utils/supabase";
+import { supabase } from "@/utils/supabaseClient";
 import { useAuth } from "@/utils/auth/useAuth";
 import { format, formatDistanceToNow } from "date-fns";
 
@@ -69,7 +69,7 @@ export default function Messages() {
       const buyerIds = [...new Set(data.map((c) => c.buyer_id))];
       const sellerIds = [...new Set(data.map((c) => c.seller_id))];
 
-      const [buyersRes, sellersRes, messagesRes] = await Promise.all([
+      const [buyersRes, sellersRes, messagesRes, unreadRes] = await Promise.all([
         supabase.from("profiles").select("id, full_name, avatar_url").in("id", buyerIds),
         supabase.from("profiles").select("id, full_name, avatar_url").in("id", sellerIds),
         supabase
@@ -77,6 +77,13 @@ export default function Messages() {
           .select("conversation_id, content, created_at, sender_id")
           .in("conversation_id", data.map((c) => c.id))
           .order("created_at", { ascending: false }),
+        // Fetch unread counts - messages sent by others that user hasn't read
+        supabase
+          .from("messages")
+          .select("conversation_id, id")
+          .in("conversation_id", data.map((c) => c.id))
+          .neq("sender_id", user.id)
+          .is("read_at", null),
       ]);
 
       const buyerMap = new Map(buyersRes.data?.map((b) => [b.id, b]) || []);
@@ -88,6 +95,13 @@ export default function Messages() {
         if (!lastMessages.has(msg.conversation_id)) {
           lastMessages.set(msg.conversation_id, msg);
         }
+      });
+
+      // Calculate unread counts per conversation
+      const unreadCounts = new Map();
+      unreadRes.data?.forEach((msg) => {
+        const count = unreadCounts.get(msg.conversation_id) || 0;
+        unreadCounts.set(msg.conversation_id, count + 1);
       });
 
       return data.map((conv) => {
@@ -102,7 +116,7 @@ export default function Messages() {
           otherUser: otherUser || { id: conv.seller_id === user.id ? conv.buyer_id : conv.seller_id, full_name: "Unknown" },
           lastMessage: lastMessage?.content || "",
           lastMessageTime: lastMessage?.created_at || conv.updated_at,
-          unreadCount: 0, // TODO: Calculate unread count
+          unreadCount: unreadCounts.get(conv.id) || 0,
         };
       });
     },
