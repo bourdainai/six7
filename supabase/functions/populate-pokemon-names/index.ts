@@ -1,10 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { requireCronAuth, handleCORS, createUnauthorizedResponse, getCorsHeaders } from "../_shared/cron-auth.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const corsHeaders = getCorsHeaders();
 
 // PokeAPI CSV URLs from GitHub
 const SPECIES_NAMES_URL = 'https://raw.githubusercontent.com/PokeAPI/pokeapi/master/data/v2/csv/pokemon_species_names.csv';
@@ -16,10 +14,20 @@ interface SpeciesName {
   genus: string;
 }
 
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return handleCORS();
   }
+
+  // Require cron/admin authentication
+  const authResult = await requireCronAuth(req);
+  if (!authResult.authorized) {
+    console.warn(`Unauthorized access attempt: ${authResult.reason}`);
+    return createUnauthorizedResponse(authResult.reason);
+  }
+
+  console.log(`Authenticated via: ${authResult.authType}`);
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';

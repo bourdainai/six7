@@ -1,10 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { requireCronAuth, handleCORS, createUnauthorizedResponse, getCorsHeaders } from "../_shared/cron-auth.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const corsHeaders = getCorsHeaders();
 
 // Check if text contains Japanese characters
 function containsJapanese(text: string): boolean {
@@ -68,8 +66,17 @@ const TRAINER_NAMES: Record<string, string> = {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return handleCORS();
   }
+
+  // Require cron/admin authentication
+  const authResult = await requireCronAuth(req);
+  if (!authResult.authorized) {
+    console.warn(`Unauthorized access attempt: ${authResult.reason}`);
+    return createUnauthorizedResponse(authResult.reason);
+  }
+
+  console.log(`Authenticated via: ${authResult.authType}`);
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
