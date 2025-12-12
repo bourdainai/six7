@@ -467,3 +467,6 @@ verify_jwt = false
 
 [functions.send-push-notification]
 verify_jwt = true
+
+[functions.backfill-names-local]
+verify_jwt = false
