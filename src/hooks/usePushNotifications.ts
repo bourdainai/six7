@@ -1,14 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { toast } from "sonner";
 
-interface PushSubscription {
-  endpoint: string;
-  keys: {
-    p256dh: string;
-    auth: string;
-  };
+// OneSignal types
+declare global {
+  interface Window {
+    OneSignalDeferred?: Array<(OneSignal: any) => void>;
+    OneSignal?: any;
+  }
 }
 
 export function usePushNotifications() {
@@ -17,32 +16,78 @@ export function usePushNotifications() {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>("default");
+  const [isInitialized, setIsInitialized] = useState(false);
 
+  // Initialize OneSignal
   useEffect(() => {
-    // Check if push notifications are supported
-    const supported = "Notification" in window && "serviceWorker" in navigator && "PushManager" in window;
-    setIsSupported(supported);
+    const appId = import.meta.env.VITE_ONESIGNAL_APP_ID;
     
-    if (supported) {
-      setPermission(Notification.permission);
+    if (!appId) {
+      console.warn("OneSignal App ID not configured");
+      return;
     }
+
+    // Check if push is supported
+    const supported = "Notification" in window && "serviceWorker" in navigator;
+    setIsSupported(supported);
+
+    if (!supported) return;
+
+    // Load OneSignal SDK
+    const script = document.createElement("script");
+    script.src = "https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js";
+    script.defer = true;
+    document.head.appendChild(script);
+
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    window.OneSignalDeferred.push(async (OneSignal: any) => {
+      try {
+        await OneSignal.init({
+          appId,
+          allowLocalhostAsSecureOrigin: true,
+          serviceWorkerParam: { scope: "/" },
+        });
+
+        setIsInitialized(true);
+        setPermission(Notification.permission);
+
+        // Check subscription status
+        const subscribed = await OneSignal.User.PushSubscription.optedIn;
+        setIsSubscribed(subscribed);
+
+        // Listen for subscription changes
+        OneSignal.User.PushSubscription.addEventListener("change", (event: any) => {
+          setIsSubscribed(event.current.optedIn);
+        });
+
+        console.log("✅ OneSignal initialized successfully");
+      } catch (error) {
+        console.error("Failed to initialize OneSignal:", error);
+      }
+    });
+
+    return () => {
+      // Cleanup script on unmount
+      const existingScript = document.querySelector('script[src*="OneSignalSDK"]');
+      if (existingScript) {
+        existingScript.remove();
+      }
+    };
   }, []);
 
+  // Set external user ID when user logs in
   useEffect(() => {
-    if (user && isSupported) {
-      checkSubscription();
-    }
-  }, [user, isSupported]);
+    if (!isInitialized || !user?.id) return;
 
-  const checkSubscription = async () => {
-    try {
-      const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
-      setIsSubscribed(!!subscription);
-    } catch (error) {
-      console.error("Error checking push subscription:", error);
-    }
-  };
+    window.OneSignalDeferred?.push(async (OneSignal: any) => {
+      try {
+        await OneSignal.login(user.id);
+        console.log("✅ OneSignal user linked:", user.id);
+      } catch (error) {
+        console.error("Failed to link OneSignal user:", error);
+      }
+    });
+  }, [isInitialized, user?.id]);
 
   const requestPermission = useCallback(async (): Promise<boolean> => {
     if (!isSupported) {
@@ -53,13 +98,7 @@ export function usePushNotifications() {
     try {
       const result = await Notification.requestPermission();
       setPermission(result);
-      
-      if (result === "granted") {
-        return true;
-      } else if (result === "denied") {
-        toast.error("Notification permission denied. Please enable in browser settings.");
-      }
-      return false;
+      return result === "granted";
     } catch (error) {
       console.error("Error requesting permission:", error);
       return false;
@@ -77,45 +116,24 @@ export function usePushNotifications() {
       return false;
     }
 
+    if (!isInitialized) {
+      toast.error("Push notification service is loading...");
+      return false;
+    }
+
     setIsLoading(true);
     try {
-      // First request permission
-      const hasPermission = await requestPermission();
-      if (!hasPermission) {
-        return false;
-      }
-
-      // Register service worker if not already
-      const registration = await navigator.serviceWorker.register("/sw.js");
-      await navigator.serviceWorker.ready;
-
-      // Get VAPID public key from edge function
-      const { data: vapidData, error: vapidError } = await supabase.functions.invoke("get-vapid-key");
-      
-      if (vapidError || !vapidData?.publicKey) {
-        console.error("Could not get VAPID key:", vapidError);
-        toast.error("Push notifications are not configured yet");
-        return false;
-      }
-
-      // Subscribe to push
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidData.publicKey),
+      await new Promise<void>((resolve, reject) => {
+        window.OneSignalDeferred?.push(async (OneSignal: any) => {
+          try {
+            await OneSignal.Notifications.requestPermission();
+            await OneSignal.User.PushSubscription.optIn();
+            resolve();
+          } catch (error) {
+            reject(error);
+          }
+        });
       });
-
-      // Save subscription to database
-      const { error: saveError } = await supabase.functions.invoke("save-push-subscription", {
-        body: {
-          subscription: subscription.toJSON(),
-        },
-      });
-
-      if (saveError) {
-        console.error("Error saving subscription:", saveError);
-        toast.error("Failed to save notification settings");
-        return false;
-      }
 
       setIsSubscribed(true);
       toast.success("Push notifications enabled!");
@@ -127,26 +145,23 @@ export function usePushNotifications() {
     } finally {
       setIsLoading(false);
     }
-  }, [user, isSupported, requestPermission]);
+  }, [user, isSupported, isInitialized]);
 
   const unsubscribe = useCallback(async () => {
     if (!user) return false;
 
     setIsLoading(true);
     try {
-      const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
-      
-      if (subscription) {
-        await subscription.unsubscribe();
-        
-        // Remove from database
-        await supabase.functions.invoke("remove-push-subscription", {
-          body: {
-            endpoint: subscription.endpoint,
-          },
+      await new Promise<void>((resolve, reject) => {
+        window.OneSignalDeferred?.push(async (OneSignal: any) => {
+          try {
+            await OneSignal.User.PushSubscription.optOut();
+            resolve();
+          } catch (error) {
+            reject(error);
+          }
         });
-      }
+      });
 
       setIsSubscribed(false);
       toast.success("Push notifications disabled");
@@ -169,16 +184,4 @@ export function usePushNotifications() {
     unsubscribe,
     requestPermission,
   };
-}
-
-// Helper function to convert VAPID key
-function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray.buffer as ArrayBuffer;
 }
