@@ -98,13 +98,16 @@ serve(async (req) => {
 
     console.log(`Loaded ${japaneseToEnglish.size} translations`);
 
-    // Find cards needing English names
+    // Get all Japanese names for matching
+    const japaneseNames = Array.from(japaneseToEnglish.keys());
+    
+    // Find cards needing English names - prioritize cards that start with known Pokemon names
+    // or contain no Japanese characters (already English)
     const { data: cards, error: cardsError } = await supabase
       .from('pokemon_card_attributes')
       .select('id, card_id, name, name_en')
       .is('name_en', null)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + batchSize - 1);
+      .limit(batchSize);
 
     if (cardsError) throw new Error(`Failed to fetch cards: ${cardsError.message}`);
 
@@ -135,16 +138,18 @@ serve(async (req) => {
       } 
       // Case 2: Name is Japanese - try to translate
       else {
-        // Direct lookup
+        // Direct lookup first
         if (japaneseToEnglish.has(name)) {
           englishName = japaneseToEnglish.get(name)!;
           translated++;
         } else {
-          // Extract suffix
           let baseName = name;
           let suffix = '';
+          let prefix = '';
           
-          for (const s of CARD_SUFFIXES) {
+          // Extract suffix (try longest match first)
+          const sortedSuffixes = [...CARD_SUFFIXES].sort((a, b) => b.length - a.length);
+          for (const s of sortedSuffixes) {
             if (baseName.endsWith(s)) {
               suffix = s;
               baseName = baseName.slice(0, -s.length).trim();
@@ -153,7 +158,6 @@ serve(async (req) => {
           }
 
           // Extract prefix
-          let prefix = '';
           for (const [jpPrefix, enPrefix] of Object.entries(REGION_PREFIXES)) {
             if (baseName.startsWith(jpPrefix)) {
               prefix = enPrefix;
@@ -167,6 +171,18 @@ serve(async (req) => {
             englishName = prefix + japaneseToEnglish.get(baseName)!;
             if (suffix) englishName += ` ${suffix}`;
             translated++;
+          } else {
+            // Try to find a partial match - check if any known name is contained
+            for (const [jpName, enName] of japaneseToEnglish.entries()) {
+              if (baseName.startsWith(jpName) && jpName.length >= 3) {
+                const remainder = baseName.slice(jpName.length).trim();
+                englishName = prefix + enName;
+                if (remainder) englishName += ` ${remainder}`;
+                if (suffix) englishName += ` ${suffix}`;
+                translated++;
+                break;
+              }
+            }
           }
         }
       }
