@@ -31,14 +31,9 @@ function getDisplayName(card: CardCatalogCard): string {
 
 // Helper function to check if image is actually valid
 function hasValidImage(card: CardCatalogCard): boolean {
-  const hasImageUrl = !!(card.images?.small || card.images?.large);
-  
-  // If image_validated field exists and is false, image is invalid
-  if ('image_validated' in card && (card as any).image_validated === false) {
-    return false;
-  }
-  
-  return hasImageUrl;
+  // For the admin catalog, treat the presence of an image URL as "has image".
+  // Validation flags are noisy right now and should not hide potentially valid images.
+  return !!(card.images?.small || card.images?.large);
 }
 
 function CardThumbnail({
