@@ -99,8 +99,8 @@ Deno.serve(async (req) => {
     if (isCardNumberSearch) {
       const { data: cards } = await supabase
         .from('pokemon_card_attributes')
-        .select('name, printed_number, set_name')
-        .or(`printed_number.ilike.%${query}%,number.ilike.%${query}%`)
+        .select('name, printed_number, set_name, search_number')
+        .or(`printed_number.ilike.%${query}%,number.ilike.%${query}%,search_number.ilike.%${query}%`)
         .order('popularity_score', { ascending: false, nullsFirst: false })
         .limit(5);
 

@@ -104,63 +104,78 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
       let error;
 
       if (hasSlash) {
-        // Full number search with slash: "167/190" or "125/094"
+        // Full number search with slash: "2/75" or "02/75" or "002/75"
         const normalizedInput = trimmedQuery.replace(/\s/g, "");
         const [numPart, totalPart] = normalizedInput.split('/');
 
         logger.debug("📊 Parsed:", { numPart, totalPart, normalizedInput });
 
-        const queries = [];
-
-        // BEST: Search printed_number directly (e.g., "125/094")
-        queries.push(
-          supabase
-            .from("pokemon_card_attributes")
-            .select("*")
-            .eq("printed_number", normalizedInput)
-            .limit(12)
-        );
-
-        // Also try with padded total (e.g., "125/094" from "125/94")
+        // Build all possible format variations for searching
+        const searchVariations: string[] = [];
+        
         if (numPart && totalPart) {
-          const paddedTotal = totalPart.padStart(3, '0');
-          const paddedFormat = `${numPart}/${paddedTotal}`;
-          if (paddedFormat !== normalizedInput) {
-            queries.push(
-              supabase
-                .from("pokemon_card_attributes")
-                .select("*")
-                .eq("printed_number", paddedFormat)
-                .limit(12)
-            );
-          }
+          // Original input
+          searchVariations.push(normalizedInput);
+          
+          // Unpadded version: "2/75"
+          const unpaddedNum = String(parseInt(numPart, 10));
+          const unpaddedTotal = String(parseInt(totalPart, 10));
+          searchVariations.push(`${unpaddedNum}/${unpaddedTotal}`);
+          
+          // 2-digit padded: "02/75"
+          const padded2Num = unpaddedNum.padStart(2, '0');
+          searchVariations.push(`${padded2Num}/${unpaddedTotal}`);
+          
+          // 3-digit padded: "002/75" or "002/075"
+          const padded3Num = unpaddedNum.padStart(3, '0');
+          const padded3Total = unpaddedTotal.padStart(3, '0');
+          searchVariations.push(`${padded3Num}/${unpaddedTotal}`);
+          searchVariations.push(`${padded3Num}/${padded3Total}`);
         }
 
-        // Fallback: Search display_number with full format
-        queries.push(
-          supabase
-            .from("pokemon_card_attributes")
-            .select("*")
-            .eq("display_number", normalizedInput)
-            .limit(12)
-        );
+        // Remove duplicates
+        const uniqueVariations = [...new Set(searchVariations)];
+        logger.debug("🔍 Search variations:", uniqueVariations);
 
-        // If we have both parts, search by number + printed_total
-        if (numPart && totalPart) {
-          const totalNum = parseInt(totalPart);
+        // Search across printed_number, display_number, and search_number
+        const queries = [];
 
-          // Try exact number match with printed_total
+        // Direct match on printed_number for each variation
+        for (const variant of uniqueVariations) {
           queries.push(
             supabase
               .from("pokemon_card_attributes")
               .select("*")
-              .eq("number", numPart)
+              .eq("printed_number", variant)
+              .limit(12)
+          );
+        }
+
+        // Search in search_number field (contains multiple format variations)
+        queries.push(
+          supabase
+            .from("pokemon_card_attributes")
+            .select("*")
+            .ilike("search_number", `%${normalizedInput}%`)
+            .limit(12)
+        );
+
+        // Also try number + printed_total combo
+        if (numPart && totalPart) {
+          const baseNum = String(parseInt(numPart, 10));
+          const totalNum = parseInt(totalPart, 10);
+
+          queries.push(
+            supabase
+              .from("pokemon_card_attributes")
+              .select("*")
+              .eq("number", baseNum)
               .eq("printed_total", totalNum)
               .limit(12)
           );
 
-          // Try with leading zeros (001, 002, etc.)
-          const paddedNumber = numPart.padStart(3, '0');
+          // Try with leading zeros
+          const paddedNumber = baseNum.padStart(3, '0');
           queries.push(
             supabase
               .from("pokemon_card_attributes")
@@ -171,11 +186,8 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
           );
         }
 
-        // Execute searches
+        // Execute all searches in parallel
         const results = await Promise.all(queries);
-
-
-
         const allCards = results.flatMap(r => r.data || []);
 
         // Remove duplicates by card_id
@@ -186,18 +198,35 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
         dbCards = uniqueCards.slice(0, 12);
         error = results.find(r => r.error)?.error;
       } else if (/^\d+$/.test(trimmedQuery)) {
-        // Partial number search: "88" or "125"
-        // Search by number field and also check if it appears in printed_number
+        // Partial number search: "88" or "125" or "2"
+        const baseNum = String(parseInt(trimmedQuery, 10));
+        const padded2 = baseNum.padStart(2, '0');
+        const padded3 = baseNum.padStart(3, '0');
+
         const queries = [
+          // Exact match on number field
           supabase
             .from("pokemon_card_attributes")
             .select("*")
-            .eq("number", trimmedQuery)
+            .eq("number", baseNum)
             .limit(12),
+          // Padded match on number field
           supabase
             .from("pokemon_card_attributes")
             .select("*")
-            .ilike("printed_number", `${trimmedQuery}/%`)
+            .eq("number", padded3)
+            .limit(12),
+          // Search in printed_number (e.g., "2/75" starts with "2/")
+          supabase
+            .from("pokemon_card_attributes")
+            .select("*")
+            .ilike("printed_number", `${baseNum}/%`)
+            .limit(12),
+          // Search in search_number field
+          supabase
+            .from("pokemon_card_attributes")
+            .select("*")
+            .ilike("search_number", `%${baseNum}%`)
             .limit(12)
         ];
         

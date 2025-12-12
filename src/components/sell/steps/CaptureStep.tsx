@@ -112,12 +112,28 @@ export function CaptureStep({ wizard }: CaptureStepProps) {
 
     setIsSearching(true);
     try {
-      // Search pokemon_card_attributes table
-      const { data, error } = await supabase
-        .from("pokemon_card_attributes")
-        .select("*")
-        .or(`name.ilike.%${searchQuery}%,name_en.ilike.%${searchQuery}%,set_name.ilike.%${searchQuery}%,set_name_en.ilike.%${searchQuery}%,printed_number.ilike.%${searchQuery}%`)
-        .limit(12);
+      // Check if search looks like a card number
+      const hasSlash = searchQuery.includes('/');
+      const isNumeric = /^\d+$/.test(searchQuery.trim());
+      
+      let query;
+      if (hasSlash || isNumeric) {
+        // Number search - use search_number field for better matching
+        query = supabase
+          .from("pokemon_card_attributes")
+          .select("*")
+          .or(`number.ilike.%${searchQuery}%,printed_number.ilike.%${searchQuery}%,search_number.ilike.%${searchQuery}%`)
+          .limit(12);
+      } else {
+        // Name/set search
+        query = supabase
+          .from("pokemon_card_attributes")
+          .select("*")
+          .or(`name.ilike.%${searchQuery}%,name_en.ilike.%${searchQuery}%,set_name.ilike.%${searchQuery}%,set_name_en.ilike.%${searchQuery}%,printed_number.ilike.%${searchQuery}%`)
+          .limit(12);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
