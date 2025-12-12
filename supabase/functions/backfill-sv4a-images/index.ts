@@ -1,9 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+import { requireCronAuth, handleCORS, createUnauthorizedResponse, getCorsHeaders } from "../_shared/cron-auth.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+const corsHeaders = getCorsHeaders();
 
 // Fetch with timeout
 async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 4000): Promise<Response> {
@@ -89,8 +87,17 @@ function getSv4aImageUrls(number: string): Array<{ url: string; source: string; 
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return handleCORS();
   }
+
+  // Require cron/admin authentication
+  const authResult = await requireCronAuth(req);
+  if (!authResult.authorized) {
+    console.warn(`Unauthorized access attempt: ${authResult.reason}`);
+    return createUnauthorizedResponse(authResult.reason);
+  }
+
+  console.log(`Authenticated via: ${authResult.authType}`);
 
   const startTime = Date.now();
   const MAX_RUNTIME_MS = 25000; // 25 seconds to avoid timeout
