@@ -101,8 +101,6 @@ const SellItem = () => {
   const [publishing, setPublishing] = useState(false);
   const [publishedListingId, setPublishedListingId] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
-  const [gettingPrice, setGettingPrice] = useState(false);
-  const [suggestedPrice, setSuggestedPrice] = useState<{ price: number, low: number, high: number } | null>(null);
   const [selectedPrice, setSelectedPrice] = useState<number | "">("");
   const [aiAnswerEnginesEnabled, setAiAnswerEnginesEnabled] = useState(true);
   const [acceptsOffers, setAcceptsOffers] = useState(true);
@@ -460,14 +458,6 @@ const SellItem = () => {
         description: "We've analyzed your card and filled in the details.",
       });
 
-      // 4. Auto-fetch price if we have enough info
-      if (result.title || (result.set_code && result.card_number)) {
-        handleGetPriceSuggestion(
-          result.title || listingData.title,
-          result.set_code || listingData.set_code,
-          result.card_number || listingData.card_number
-        );
-      }
 
     } catch (error) {
       logger.error("Auto-fill error:", error);
@@ -481,49 +471,6 @@ const SellItem = () => {
     }
   };
 
-  const handleGetPriceSuggestion = async (title?: string, setCode?: string, cardNumber?: string) => {
-    const t = title || listingData.title;
-    const s = setCode || listingData.set_code;
-    const c = cardNumber || listingData.card_number; // Note: card_number is in category_attributes in submit, but we need it here. 
-    // Actually listingData has card_number at top level in our state interface, so that's fine.
-
-    if (!t && !s) {
-      toast({ title: "Need more info", description: "Please enter a title or set code first.", variant: "destructive" });
-      return;
-    }
-
-    setGettingPrice(true);
-    setSuggestedPrice(null);
-
-    try {
-      const { data, error } = await supabase.functions.invoke('ai-price-suggestion', {
-        body: { card_name: t, set_code: s, card_number: c }
-      });
-
-      if (error) throw error;
-      if (!data.success) throw new Error(data.error || "Could not find price");
-
-      if (data.suggestedPrice) {
-        setSuggestedPrice({
-          price: data.suggestedPrice,
-          low: data.range?.low || data.suggestedPrice * 0.8,
-          high: data.range?.high || data.suggestedPrice * 1.2
-        });
-        toast({
-          title: "Price Found!",
-          description: `Market price is $${data.suggestedPrice} (USD).`,
-        });
-      } else {
-        toast({ title: "No price data", description: "Card found but no market price available.", variant: "destructive" });
-      }
-
-    } catch (error) {
-      logger.error("Price error:", error);
-      toast({ title: "Pricing Failed", description: "Could not fetch price suggestion.", variant: "destructive" });
-    } finally {
-      setGettingPrice(false);
-    }
-  };
 
   const handlePublish = async () => {
     // Multi-card validation
@@ -1306,7 +1253,7 @@ const SellItem = () => {
               </Alert>
             )}
 
-            <div className="bg-background border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/50 transition-colors relative group">
+            <div className={`bg-background border-2 border-dashed rounded-xl p-8 text-center hover:border-primary/50 transition-colors relative group ${!isMultiCard && images.length === 0 ? 'border-destructive/50' : 'border-border'}`}>
               <input
                 type="file"
                 multiple
@@ -1320,7 +1267,9 @@ const SellItem = () => {
                 </div>
                 <div>
                   <p className="font-medium text-lg">
-                    {isMultiCard ? "Add Bundle Photos (Optional)" : "Add Photos"}
+                    {isMultiCard ? "Add Bundle Photos (Optional)" : (
+                      <>Add Photos <span className="text-destructive">*</span></>
+                    )}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">
                     {isMultiCard
@@ -1349,11 +1298,20 @@ const SellItem = () => {
               </div>
             )}
 
-            {images.length === 0 && (
+            {images.length === 0 && !isMultiCard && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-800">
+                  <strong>Required:</strong> Add at least one photo of your item to list it.
+                </p>
+              </div>
+            )}
+
+            {images.length === 0 && isMultiCard && (
               <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 flex gap-3">
                 <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-blue-800">
-                  Tip: Clear photos of your item help it sell faster.
+                  Tip: Clear photos of your bundle help it sell faster.
                 </p>
               </div>
             )}
@@ -1397,23 +1355,27 @@ const SellItem = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-3">
-                <Label className="text-base font-semibold">Title</Label>
+                <Label className="text-base font-semibold">
+                  Title <span className="text-destructive">*</span>
+                </Label>
                 <Input
                   placeholder="e.g. Charizard Base Set Unlimited Holo"
                   value={listingData.title}
                   onChange={e => setListingData({ ...listingData, title: e.target.value })}
-                  className="text-lg h-12 shadow-sm"
+                  className={`text-lg h-12 shadow-sm ${!listingData.title ? 'border-destructive/50' : ''}`}
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-3">
-                  <Label className="text-base font-semibold">Category</Label>
+                  <Label className="text-base font-semibold">
+                    Category <span className="text-destructive">*</span>
+                  </Label>
                   <Select
                     value={listingData.category}
                     onValueChange={val => setListingData({ ...listingData, category: val, subcategory: "" })}
                   >
-                    <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className={`h-11 ${!listingData.category ? 'border-destructive/50' : ''}`}><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                     </SelectContent>
@@ -1495,7 +1457,9 @@ const SellItem = () => {
 
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <Label className="text-base font-semibold">Condition</Label>
+                    <Label className="text-base font-semibold">
+                      Condition <span className="text-destructive">*</span>
+                    </Label>
                     {listingData.condition && (
                       <Badge variant="secondary">{listingData.condition.replace(/_/g, ' ')}</Badge>
                     )}
@@ -1504,7 +1468,7 @@ const SellItem = () => {
                     value={listingData.condition}
                     onValueChange={val => setListingData({ ...listingData, condition: val as ConditionType })}
                   >
-                    <SelectTrigger className="h-11"><SelectValue placeholder="Select condition" /></SelectTrigger>
+                    <SelectTrigger className={`h-11 ${!listingData.condition ? 'border-destructive/50' : ''}`}><SelectValue placeholder="Select condition" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="new_with_tags">Gem Mint / Mint (Sealed)</SelectItem>
                       <SelectItem value="like_new">Near Mint (NM)</SelectItem>
@@ -1869,7 +1833,7 @@ const SellItem = () => {
                 <div className="space-y-4">
                   <div className="space-y-3">
                     <Label className="text-base font-semibold">
-                      Selling Price (£)
+                      Selling Price (£) <span className="text-destructive">*</span>
                     </Label>
                     <div className="relative">
                       <PoundSterling className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -1877,7 +1841,7 @@ const SellItem = () => {
                         type="number"
                         step="0.01"
                         min="0.01"
-                        className="pl-10 text-lg h-12 shadow-sm"
+                        className={`pl-10 text-lg h-12 shadow-sm ${!selectedPrice ? 'border-destructive/50' : ''}`}
                         placeholder="0.00"
                         value={selectedPrice}
                         onChange={e => setSelectedPrice(e.target.value ? parseFloat(e.target.value) : "")}
@@ -1887,40 +1851,6 @@ const SellItem = () => {
                       We recommend checking sold listings on eBay or 130point for accurate pricing.
                     </p>
 
-                    {/* Price Suggestion Button - Only for Cards */}
-                    {isCardCategory && (
-                      <div className="pt-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleGetPriceSuggestion()}
-                          disabled={gettingPrice}
-                          className="w-full sm:w-auto h-10"
-                        >
-                          {gettingPrice ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2 text-yellow-500" />}
-                          Get Price Suggestion
-                        </Button>
-
-                        {suggestedPrice && (
-                          <div className="mt-3 p-3 bg-green-50 border border-green-100 rounded-lg animate-in fade-in slide-in-from-top-2">
-                            <p className="text-sm font-medium text-green-800 mb-2">
-                              Market Price: ${suggestedPrice.price.toFixed(2)}
-                            </p>
-                            <p className="text-xs text-green-600 mb-3">
-                              Range: ${suggestedPrice.low.toFixed(2)} - ${suggestedPrice.high.toFixed(2)}
-                            </p>
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="w-full bg-green-100 hover:bg-green-200 text-green-800 border-green-200"
-                              onClick={() => setSelectedPrice(suggestedPrice.price)}
-                            >
-                              Apply Price (${suggestedPrice.price})
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </div>
                 </div>
               )}
