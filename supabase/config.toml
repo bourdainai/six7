@@ -150,6 +150,9 @@ verify_jwt = false
 [functions.validate-card-images]
 verify_jwt = false
 
+[functions.repair-card-images]
+verify_jwt = true
+
 [functions.send-verification-email]
 verify_jwt = true
 
