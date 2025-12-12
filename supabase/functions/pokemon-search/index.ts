@@ -76,15 +76,29 @@ serve(async (req) => {
         .limit(pageSize);
 
       if (slashMatch) {
-        // Case: "179/131" or "125/094" -> Search by printed_number first, then fallback to number
+        // Case: "2/75" or "02/75" or "002/075" -> Search by printed_number and search_number
         const cardNumber = slashMatch[1];
         const totalPart = slashMatch[2];
-        const paddedTotal = totalPart.padStart(3, '0');
-        const fullPrintedNumber = `${cardNumber}/${paddedTotal}`;
         
-        // Search by printed_number OR number for broader matching
-        dbQuery = dbQuery.or(`printed_number.eq.${fullPrintedNumber},printed_number.eq.${trimmedQuery},number.eq.${cardNumber}`);
-        console.log(`Local search: printed_number="${fullPrintedNumber}" or number="${cardNumber}"`);
+        // Generate multiple format variations
+        const baseNum = String(parseInt(cardNumber, 10));
+        const baseTotal = String(parseInt(totalPart, 10));
+        const padded2Num = baseNum.padStart(2, '0');
+        const padded3Num = baseNum.padStart(3, '0');
+        const padded3Total = baseTotal.padStart(3, '0');
+        
+        // Build search conditions for all variations
+        const variations = [
+          trimmedQuery,
+          `${baseNum}/${baseTotal}`,
+          `${padded2Num}/${baseTotal}`,
+          `${padded3Num}/${baseTotal}`,
+          `${padded3Num}/${padded3Total}`,
+        ];
+        
+        const orConditions = variations.map(v => `printed_number.eq.${v}`).join(',');
+        dbQuery = dbQuery.or(`${orConditions},search_number.ilike.%${trimmedQuery}%,number.eq.${baseNum}`);
+        console.log(`Local search: printed_number variations or number="${baseNum}"`);
       } else if (setCodeMatch) {
         // Case: "SWSH01 179" -> Search by set_code + number
         const [, setCode, cardNumber] = setCodeMatch;
@@ -98,9 +112,11 @@ serve(async (req) => {
           .eq('number', cardNumber);
         console.log(`Local search: name~"${namePart}", number="${cardNumber}"`);
       } else if (numberMatch) {
-        // Case: "179" -> Search by number only
-        dbQuery = dbQuery.eq('number', trimmedQuery);
-        console.log(`Local search: number="${trimmedQuery}"`);
+        // Case: "179" or "2" -> Search by number field and search_number
+        const baseNum = String(parseInt(trimmedQuery, 10));
+        const padded3Num = baseNum.padStart(3, '0');
+        dbQuery = dbQuery.or(`number.eq.${baseNum},number.eq.${padded3Num},search_number.ilike.%${baseNum}%`);
+        console.log(`Local search: number="${baseNum}" or "${padded3Num}"`);
       } else {
         // Case: Name search -> Search both original and English names
         dbQuery = dbQuery.or(`name.ilike.%${trimmedQuery}%,name_en.ilike.%${trimmedQuery}%`);

@@ -85,8 +85,19 @@ export function useCardCatalog({ filters, page, pageSize = 50 }: UseCardCatalogO
       }
 
       if (filters.search) {
-        // Search by name, card_id, number, or printed_number (e.g., "125/094")
-        query = query.or(`name.ilike.%${filters.search}%,card_id.ilike.%${filters.search}%,number.ilike.%${filters.search}%,printed_number.ilike.%${filters.search}%`);
+        // Check if search looks like a card number (with or without slash)
+        const searchTerm = filters.search.trim();
+        const hasSlash = searchTerm.includes('/');
+        const isNumeric = /^\d+$/.test(searchTerm);
+        
+        if (hasSlash || isNumeric) {
+          // Search by number - include search_number field for better matching
+          // search_number contains multiple formats: "2 2/75 02/75 002/75"
+          query = query.or(`number.ilike.%${searchTerm}%,printed_number.ilike.%${searchTerm}%,search_number.ilike.%${searchTerm}%`);
+        } else {
+          // Search by name, card_id, or number
+          query = query.or(`name.ilike.%${searchTerm}%,name_en.ilike.%${searchTerm}%,card_id.ilike.%${searchTerm}%,number.ilike.%${searchTerm}%,printed_number.ilike.%${searchTerm}%,search_number.ilike.%${searchTerm}%`);
+        }
       }
 
       if (filters.syncSource) {
