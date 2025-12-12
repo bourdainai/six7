@@ -4326,6 +4326,7 @@ export type Database = {
           set_name: string
         }[]
       }
+      get_public_profile: { Args: { profile_id: string }; Returns: Json }
       get_top_buyers: {
         Args: { limit_count?: number }
         Returns: {
