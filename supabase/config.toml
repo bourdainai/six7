@@ -200,3 +200,261 @@ verify_jwt = true
 
 [functions.wallet-transfer]
 verify_jwt = true
+
+[functions.fetch-missing-images]
+verify_jwt = false
+
+[functions.calculate-fees]
+verify_jwt = true
+
+[functions.send-email-notification]
+verify_jwt = true
+
+[functions.send-notification]
+verify_jwt = true
+
+[functions.mapbox-public-token]
+verify_jwt = false
+
+[functions.ingest-comp-data]
+verify_jwt = true
+
+[functions.populate-printed-totals]
+verify_jwt = false
+
+[functions.wallet-deposit]
+verify_jwt = true
+
+[functions.wallet-purchase]
+verify_jwt = true
+
+[functions.wallet-settlement]
+verify_jwt = true
+
+[functions.wallet-withdraw]
+verify_jwt = true
+
+[functions.sendcloud-get-rates]
+verify_jwt = true
+
+[functions.sendcloud-create-label]
+verify_jwt = true
+
+[functions.sendcloud-bulk-labels]
+verify_jwt = true
+
+[functions.sendcloud-return-label]
+verify_jwt = true
+
+[functions.sendcloud-service-points]
+verify_jwt = false
+
+[functions.sendcloud-validate-address]
+verify_jwt = true
+
+[functions.sendcloud-webhook]
+verify_jwt = false
+
+[functions.stripe-connect-account-session]
+verify_jwt = true
+
+[functions.stripe-get-bank-accounts]
+verify_jwt = true
+
+[functions.trigger-payout-on-delivery]
+verify_jwt = true
+
+[functions.process-refund]
+verify_jwt = true
+
+[functions.mark-order-delivered]
+verify_jwt = true
+
+[functions.update-order-shipping]
+verify_jwt = true
+
+[functions.trade-accept]
+verify_jwt = true
+
+[functions.trade-complete]
+verify_jwt = true
+
+[functions.trade-counter]
+verify_jwt = true
+
+[functions.trade-create]
+verify_jwt = true
+
+[functions.trade-fairness]
+verify_jwt = true
+
+[functions.trade-recommendations]
+verify_jwt = true
+
+[functions.trade-reject]
+verify_jwt = true
+
+[functions.trade-valuation]
+verify_jwt = true
+
+[functions.send-phone-verification]
+verify_jwt = true
+
+[functions.verify-phone-code]
+verify_jwt = true
+
+[functions.send-shipping-notification]
+verify_jwt = true
+
+[functions.admin-dispute-summary]
+verify_jwt = true
+
+[functions.admin-flag]
+verify_jwt = true
+
+[functions.admin-refund]
+verify_jwt = true
+
+[functions.admin-trade-review]
+verify_jwt = true
+
+[functions.ai-analyse-images]
+verify_jwt = true
+
+[functions.ai-auto-list-from-photos]
+verify_jwt = true
+
+[functions.ai-generate-description]
+verify_jwt = true
+
+[functions.ai-price-suggestion]
+verify_jwt = true
+
+[functions.api-key-generate]
+verify_jwt = true
+
+[functions.api-key-manage]
+verify_jwt = true
+
+[functions.assign-seller-badge]
+verify_jwt = true
+
+[functions.bundle-create]
+verify_jwt = true
+
+[functions.bundle-pricing]
+verify_jwt = true
+
+[functions.calculate-risk-tiers]
+verify_jwt = true
+
+[functions.calculate-seller-badges]
+verify_jwt = true
+
+[functions.check-subscription]
+verify_jwt = true
+
+[functions.customer-portal]
+verify_jwt = true
+
+[functions.dispute-sla-monitor]
+verify_jwt = true
+
+[functions.image-search]
+verify_jwt = false
+
+[functions.import-collectr-portfolio]
+verify_jwt = true
+
+[functions.keyword-search]
+verify_jwt = false
+
+[functions.market-analysis]
+verify_jwt = true
+
+[functions.mcp-auto-list]
+verify_jwt = true
+
+[functions.mcp-buy]
+verify_jwt = true
+
+[functions.mcp-create-listing]
+verify_jwt = true
+
+[functions.mcp-detect-fake]
+verify_jwt = true
+
+[functions.mcp-evaluate-price]
+verify_jwt = true
+
+[functions.mcp-get-listing]
+verify_jwt = false
+
+[functions.mcp-list-inventory]
+verify_jwt = true
+
+[functions.mcp-search]
+verify_jwt = false
+
+[functions.mcp-server]
+verify_jwt = false
+
+[functions.mcp-trade-offer]
+verify_jwt = true
+
+[functions.mcp-update-listing]
+verify_jwt = true
+
+[functions.mcp-wallet]
+verify_jwt = true
+
+[functions.media-process-video]
+verify_jwt = true
+
+[functions.media-upload]
+verify_jwt = true
+
+[functions.portfolio-optimizer]
+verify_jwt = true
+
+[functions.search-autocomplete]
+verify_jwt = false
+
+[functions.shipping-calc-rates]
+verify_jwt = false
+
+[functions.shipping-cost-calculator]
+verify_jwt = false
+
+[functions.shipping-create-label]
+verify_jwt = true
+
+[functions.shipping-tracking-webhook]
+verify_jwt = false
+
+[functions.update-bundle-after-variant-sale]
+verify_jwt = true
+
+[functions.fake-card-review]
+verify_jwt = true
+
+[functions.fake-card-scan]
+verify_jwt = true
+
+[functions.fake-card-video-request]
+verify_jwt = true
+
+[functions.acp-checkout]
+verify_jwt = true
+
+[functions.acp-confirm]
+verify_jwt = true
+
+[functions.acp-payment]
+verify_jwt = true
+
+[functions.acp-product]
+verify_jwt = true
+
+[functions.acp-products]
+verify_jwt = false
