@@ -6,10 +6,19 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Japanese suffix patterns
-const JP_SUFFIXES = ['EX', 'ex', 'GX', 'V', 'VMAX', 'VSTAR', 'δ', 'Prism'];
+// Check if text contains Japanese characters
+function containsJapanese(text: string): boolean {
+  return /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(text);
+}
 
-// Common Japanese prefixes with English equivalents
+// All known card suffixes
+const CARD_SUFFIXES = [
+  'VSTAR', 'VMAX', 'LEGEND', 'BREAK', 'LV.X', 
+  'Prism', 'GX', 'EX', 'ex', 'V', 'δ', '◇', '☆',
+  'FB', 'GL', 'G', 'C', '4', 'E4',
+];
+
+// Japanese regional prefixes → English
 const REGION_PREFIXES: Record<string, string> = {
   'ヒスイの': 'Hisuian ',
   'ヒスイ': 'Hisuian ',
@@ -20,6 +29,41 @@ const REGION_PREFIXES: Record<string, string> = {
   'アローラの': 'Alolan ',
   'アローラ': 'Alolan ',
   'メガ': 'Mega ',
+  'げんし': 'Primal ',
+  'ホワイト': 'White ',
+  'ブラック': 'Black ',
+  'かがやく': 'Radiant ',
+};
+
+// Common trainer names Japanese → English
+const TRAINER_NAMES: Record<string, string> = {
+  'リーリエ': 'Lillie',
+  'シロナ': 'Cynthia',
+  'マリィ': 'Marnie',
+  'ナンジャモ': 'Iono',
+  'デンボク': 'Adaman',
+  'カイ': 'Irida',
+  'アクロマ': 'Colress',
+  'ヒビキ': 'Ethan',
+  'コトネ': 'Lyra',
+  'レッド': 'Red',
+  'グリーン': 'Blue',
+  'リーフ': 'Leaf',
+  'フウロ': 'Skyla',
+  'カミツレ': 'Elesa',
+  'アイリス': 'Iris',
+  'セレナ': 'Serena',
+  'カルネ': 'Diantha',
+  'ククイ博士': 'Professor Kukui',
+  'オーキド博士': 'Professor Oak',
+  'プラターヌ博士': 'Professor Sycamore',
+  'マグノリア博士': 'Professor Magnolia',
+  'ボスの指令': "Boss's Orders",
+  'ポケモンいれかえ': 'Switch',
+  'ハイパーボール': 'Ultra Ball',
+  'ネストボール': 'Nest Ball',
+  'クイックボール': 'Quick Ball',
+  'ふしぎなアメ': 'Rare Candy',
 };
 
 serve(async (req) => {
@@ -32,27 +76,27 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { batchSize = 500, offset = 0 } = await req.json().catch(() => ({}));
+    const { batchSize = 1000, offset = 0 } = await req.json().catch(() => ({}));
 
-    console.log(`Backfilling English names using local lookup - batch size: ${batchSize}, offset: ${offset}`);
+    console.log(`Backfilling English names - batch: ${batchSize}, offset: ${offset}`);
 
     // Get the translation lookup table
     const { data: translations, error: transError } = await supabase
       .from('pokemon_english_names')
-      .select('dex_id, japanese_name, english_name');
+      .select('japanese_name, english_name');
 
-    if (transError) {
-      throw new Error(`Failed to load translations: ${transError.message}`);
-    }
+    if (transError) throw new Error(`Failed to load translations: ${transError.message}`);
 
-    console.log(`Loaded ${translations?.length || 0} translation entries`);
-
-    // Build lookup maps
+    // Build lookup map
     const japaneseToEnglish = new Map<string, string>();
-
     for (const t of translations || []) {
       japaneseToEnglish.set(t.japanese_name, t.english_name);
     }
+    for (const [jp, en] of Object.entries(TRAINER_NAMES)) {
+      japaneseToEnglish.set(jp, en);
+    }
+
+    console.log(`Loaded ${japaneseToEnglish.size} translations`);
 
     // Find cards needing English names
     const { data: cards, error: cardsError } = await supabase
@@ -62,61 +106,68 @@ serve(async (req) => {
       .order('created_at', { ascending: false })
       .range(offset, offset + batchSize - 1);
 
-    if (cardsError) {
-      throw new Error(`Failed to fetch cards: ${cardsError.message}`);
-    }
+    if (cardsError) throw new Error(`Failed to fetch cards: ${cardsError.message}`);
 
-    console.log(`Found ${cards?.length || 0} cards needing English names`);
+    console.log(`Found ${cards?.length || 0} cards to process`);
 
     if (!cards || cards.length === 0) {
       return new Response(
-        JSON.stringify({
-          success: true,
-          message: 'No more cards to process',
-          processed: 0,
-          remaining: 0,
-          offset,
-        }),
+        JSON.stringify({ success: true, message: 'No more cards', processed: 0, remaining: 0 }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     let updated = 0;
+    let alreadyEnglish = 0;
+    let translated = 0;
     const updates: { id: string; name_en: string }[] = [];
 
     for (const card of cards) {
-      const japName = card.name;
+      const name = card.name?.trim();
+      if (!name) continue;
+
       let englishName: string | null = null;
 
-      // Try direct lookup first
-      if (japaneseToEnglish.has(japName)) {
-        englishName = japaneseToEnglish.get(japName)!;
-      } else {
-        // Try extracting base name by removing suffixes
-        let baseName = japName;
-        let suffix = '';
-
-        for (const s of JP_SUFFIXES) {
-          if (baseName.endsWith(s)) {
-            suffix = s;
-            baseName = baseName.slice(0, -s.length).trim();
-            break;
+      // Case 1: Name is already in English (no Japanese characters)
+      if (!containsJapanese(name)) {
+        englishName = name;
+        alreadyEnglish++;
+      } 
+      // Case 2: Name is Japanese - try to translate
+      else {
+        // Direct lookup
+        if (japaneseToEnglish.has(name)) {
+          englishName = japaneseToEnglish.get(name)!;
+          translated++;
+        } else {
+          // Extract suffix
+          let baseName = name;
+          let suffix = '';
+          
+          for (const s of CARD_SUFFIXES) {
+            if (baseName.endsWith(s)) {
+              suffix = s;
+              baseName = baseName.slice(0, -s.length).trim();
+              break;
+            }
           }
-        }
 
-        // Check for regional prefixes
-        let prefix = '';
-        for (const [jpPrefix, enPrefix] of Object.entries(REGION_PREFIXES)) {
-          if (baseName.startsWith(jpPrefix)) {
-            prefix = enPrefix;
-            baseName = baseName.slice(jpPrefix.length).trim();
-            break;
+          // Extract prefix
+          let prefix = '';
+          for (const [jpPrefix, enPrefix] of Object.entries(REGION_PREFIXES)) {
+            if (baseName.startsWith(jpPrefix)) {
+              prefix = enPrefix;
+              baseName = baseName.slice(jpPrefix.length).trim();
+              break;
+            }
           }
-        }
 
-        // Try lookup with base name
-        if (japaneseToEnglish.has(baseName)) {
-          englishName = prefix + japaneseToEnglish.get(baseName)! + (suffix ? ` ${suffix}` : '');
+          // Try lookup with cleaned base name
+          if (japaneseToEnglish.has(baseName)) {
+            englishName = prefix + japaneseToEnglish.get(baseName)!;
+            if (suffix) englishName += ` ${suffix}`;
+            translated++;
+          }
         }
       }
 
@@ -125,25 +176,20 @@ serve(async (req) => {
       }
     }
 
-    console.log(`Found ${updates.length} cards to update`);
+    console.log(`Matched: ${updates.length} (${alreadyEnglish} already English, ${translated} translated)`);
 
-    // Apply updates in batch
+    // Batch update
     for (const update of updates) {
-      const { error: updateError } = await supabase
+      const { error } = await supabase
         .from('pokemon_card_attributes')
         .update({ name_en: update.name_en })
         .eq('id', update.id);
-
-      if (!updateError) {
-        updated++;
-      } else {
-        console.error(`Failed to update card ${update.id}:`, updateError);
-      }
+      if (!error) updated++;
     }
 
-    console.log(`Updated ${updated}/${cards.length} cards with English names`);
+    console.log(`Updated ${updated} cards`);
 
-    // Check if there are more cards to process
+    // Count remaining
     const { count } = await supabase
       .from('pokemon_card_attributes')
       .select('id', { count: 'exact', head: true })
@@ -154,20 +200,18 @@ serve(async (req) => {
         success: true,
         processed: cards.length,
         matched: updates.length,
+        alreadyEnglish,
+        translated,
         updated,
         remaining: count || 0,
         nextOffset: offset + batchSize,
-        message: `Updated ${updated} cards. ${count || 0} remaining without English names.`,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Error backfilling English names:', error);
+    console.error('Error:', error);
     return new Response(
-      JSON.stringify({ 
-        error: 'Failed to backfill English names', 
-        details: error instanceof Error ? error.message : 'Unknown error' 
-      }),
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
