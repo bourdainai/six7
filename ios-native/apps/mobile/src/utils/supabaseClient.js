@@ -55,6 +55,21 @@ export const isSupabaseConfigured = () => {
   return !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 };
 
+// Normalize listing rows for app consumption (keeps backward compatibility)
+const normalizeListing = (listing) => {
+  const isBundle =
+    (typeof listing?.bundle_type === 'string' && listing.bundle_type !== 'none') ||
+    Boolean(listing?.has_variants);
+
+  return {
+    ...listing,
+    // Some screens still reference `listing.price`; the DB uses `seller_price`.
+    price: listing?.seller_price ?? listing?.price ?? 0,
+    // Some screens still reference `listing.is_bundle`; the DB uses bundle fields.
+    is_bundle: listing?.is_bundle ?? isBundle,
+  };
+};
+
 /**
  * Fetch listings from the database with optional filters
  * @param {Object} options - Query options
@@ -83,17 +98,19 @@ export const fetchListings = async ({
         title,
         description,
         seller_price,
-        price,
         condition,
         status,
         created_at,
         views,
-        is_bundle,
+        bundle_type,
+        has_variants,
+        bundle_price,
+        remaining_bundle_price,
         seller_id,
         seller:profiles!listings_seller_id_fkey(id, full_name, avatar_url),
         listing_images(id, image_url, display_order)
       `)
-      .eq('status', 'published');
+      .eq('status', 'active');
 
     // Apply filters
     if (filters.category && filters.category !== 'all') {
@@ -122,7 +139,7 @@ export const fetchListings = async ({
       throw error;
     }
 
-    return data || [];
+    return (data || []).map(normalizeListing);
   } catch (error) {
     console.error('fetchListings error:', error);
     throw error;
@@ -149,17 +166,19 @@ export const searchListings = async (query, limit = 50) => {
         title,
         description,
         seller_price,
-        price,
         condition,
         status,
         created_at,
         views,
-        is_bundle,
+        bundle_type,
+        has_variants,
+        bundle_price,
+        remaining_bundle_price,
         seller_id,
         seller:profiles!listings_seller_id_fkey(id, full_name, avatar_url),
         listing_images(id, image_url, display_order)
       `)
-      .eq('status', 'published')
+      .eq('status', 'active')
       .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
       .order('created_at', { ascending: false })
       .limit(limit);
@@ -169,7 +188,7 @@ export const searchListings = async (query, limit = 50) => {
       throw error;
     }
 
-    return data || [];
+    return (data || []).map(normalizeListing);
   } catch (error) {
     console.error('searchListings error:', error);
     throw error;
