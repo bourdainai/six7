@@ -127,7 +127,11 @@ export const fetchListings = async ({
     }
 
     // Apply ordering
-    query = query.order(orderBy, { ascending });
+    // Apply ordering - map 'price' to 'seller_price' for backward compatibility
+    const validOrderColumns = ['created_at', 'views', 'seller_price', 'title', 'saves'];
+    const mappedOrderBy = orderBy === 'price' ? 'seller_price' : orderBy;
+    const finalOrderBy = validOrderColumns.includes(mappedOrderBy) ? mappedOrderBy : 'created_at';
+    query = query.order(finalOrderBy, { ascending });
 
     // Apply limit
     query = query.limit(limit);
