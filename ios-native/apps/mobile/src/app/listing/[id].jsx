@@ -10,6 +10,7 @@ import {
   Alert,
   Modal,
   TextInput,
+  Share,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
@@ -30,7 +31,6 @@ import {
   Trash2,
   Flag,
 } from "lucide-react-native";
-import * as Sharing from "expo-sharing";
 import {
   useFonts,
   Inter_400Regular,
@@ -249,16 +249,11 @@ export default function ListingDetail() {
       const shareUrl = `https://6seven.io/listing/${listingId}`;
       const message = `Check out ${listing?.title} on 6Seven - £${Number(listing?.seller_price || 0).toFixed(2)}`;
 
-      const isAvailable = await Sharing.isAvailableAsync();
-      if (isAvailable) {
-        await Sharing.shareAsync(shareUrl, {
-          dialogTitle: "Share Listing",
-          mimeType: "text/plain",
-        });
-      } else {
-        // Fallback to native Share
-        Alert.alert("Share", message + "\n\n" + shareUrl);
-      }
+      await Share.share({
+        message: `${message}\n\n${shareUrl}`,
+        url: shareUrl,
+        title: "Share Listing",
+      });
     } catch (error) {
       console.error("Share error:", error);
     }
