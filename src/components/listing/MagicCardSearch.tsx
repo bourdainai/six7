@@ -353,9 +353,15 @@ export const MagicCardSearch = ({ onSelect }: MagicCardSearchProps) => {
       marketPrice = card.cardmarket.prices.averageSellPrice;
     }
 
+    // Build description with only known fields
+    const descriptionParts = [`Authentic ${card.name} from the ${card.set.name} set.`, ''];
+    descriptionParts.push(`Card Number: ${card.number}`);
+    if (card.rarity) descriptionParts.push(`Rarity: ${card.rarity}`);
+    if (card.artist) descriptionParts.push(`Artist: ${card.artist}`);
+    
     const cardData: MagicCardData = {
       title: `${card.name} - ${card.set.name}`,
-      description: `Authentic ${card.name} from the ${card.set.name} set.\n\nCard Number: ${card.number}\nRarity: ${card.rarity || 'Unknown'}\nArtist: ${card.artist || 'Unknown'}`,
+      description: descriptionParts.join('\n'),
       category: "Pokémon Singles",
       set_code: card.set.ptcgoCode || card.set.id,
       card_number: card.number,
