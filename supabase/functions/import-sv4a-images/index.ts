@@ -16,98 +16,142 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    console.log('🔍 Searching TCGdex for Shiny Treasure ex set...');
+    console.log('🔍 Fetching sv4a cards missing images...');
 
-    // First, try to find the set in TCGdex API
-    const tcgdexSearchUrl = 'https://api.tcgdex.net/v2/en/sets';
-    const setsResponse = await fetch(tcgdexSearchUrl);
-    const sets = await setsResponse.json();
+    // Get all sv4a cards that are missing images
+    const { data: cardsNeedingImages, error: fetchError } = await supabase
+      .from('pokemon_card_attributes')
+      .select('id, card_id, number, name')
+      .eq('set_code', 'sv4a')
+      .or('images.is.null,images.eq.{}');
 
-    // Look for Shiny Treasure ex
-    const shinyTreasureSet = sets.find((set: any) => 
-      set.name?.toLowerCase().includes('shiny treasure') ||
-      set.id?.toLowerCase().includes('sv4a')
-    );
+    if (fetchError) throw fetchError;
 
-    if (shinyTreasureSet) {
-      console.log(`✅ Found set in TCGdex: ${shinyTreasureSet.name} (${shinyTreasureSet.id})`);
-      
-      // Fetch cards for this set
-      const cardsUrl = `https://api.tcgdex.net/v2/en/sets/${shinyTreasureSet.id}`;
-      const cardsResponse = await fetch(cardsUrl);
-      const setData = await cardsResponse.json();
+    console.log(`📋 Found ${cardsNeedingImages?.length || 0} sv4a cards needing images`);
 
-      let updated = 0;
-      let failed = 0;
-
-      // Update our database with the correct image URLs
-      for (const card of setData.cards || []) {
-        try {
-          const { error } = await supabase
-            .from('pokemon_card_attributes')
-            .update({
-              images: {
-                small: card.image,
-                large: card.image
-              },
-              updated_at: new Date().toISOString()
-            })
-            .eq('set_code', 'sv4a')
-            .eq('number', card.localId);
-
-          if (error) throw error;
-          updated++;
-        } catch (err) {
-          console.error(`Failed to update ${card.localId}:`, err);
-          failed++;
-        }
-      }
-
+    if (!cardsNeedingImages || cardsNeedingImages.length === 0) {
       return new Response(JSON.stringify({
         success: true,
-        source: 'tcgdex',
-        setFound: shinyTreasureSet.name,
-        updated,
-        failed
+        message: 'All sv4a cards already have images',
+        updated: 0
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    // If not found in TCGdex, mark all sv4a cards as needing user uploads
-    console.log('⚠️ Shiny Treasure ex not found in TCGdex. Marking cards for user upload.');
+    // Try to get images from Japanese TCGdex since English isn't available
+    console.log('🇯🇵 Fetching from Japanese TCGdex API...');
+    const japaneseSetUrl = 'https://api.tcgdex.net/v2/ja/sets/SV4a';
+    const setResponse = await fetch(japaneseSetUrl);
+    
+    if (!setResponse.ok) {
+      console.log('⚠️ Japanese set not found, trying alternative approaches...');
+      
+      // Mark cards as requiring user upload
+      let marked = 0;
+      for (const card of cardsNeedingImages) {
+        await supabase
+          .from('pokemon_card_attributes')
+          .update({ 
+            metadata: {
+              image_ok: false,
+              requires_user_upload: true,
+              image_checked_at: new Date().toISOString(),
+              note: 'Stock images not available for Shiny Treasure ex set'
+            },
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', card.id);
+        marked++;
+      }
 
-    const { data: sv4aCards } = await supabase
-      .from('pokemon_card_attributes')
-      .select('id')
-      .eq('set_code', 'sv4a')
-      .eq('sync_source', 'on_demand');
+      return new Response(JSON.stringify({
+        success: true,
+        source: 'none',
+        message: 'Shiny Treasure ex not available in TCGdex',
+        markedForUserUpload: marked
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
 
-    let marked = 0;
-    for (const card of sv4aCards || []) {
-      const updatedMetadata = {
-        image_ok: false,
-        requires_user_upload: true,
-        image_checked_at: new Date().toISOString(),
-        note: 'Stock images not available for this set'
-      };
+    const setData = await setResponse.json();
+    console.log(`✅ Found Japanese set: ${setData.name} with ${setData.cards?.length || 0} cards`);
 
-      await supabase
-        .from('pokemon_card_attributes')
-        .update({ 
-          metadata: updatedMetadata,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', card.id);
+    // Create a map of card numbers to image URLs from Japanese set
+    const imageMap = new Map<string, { small: string; large: string }>();
+    for (const card of setData.cards || []) {
+      if (card.image) {
+        // TCGdex Japanese images - convert localId to match our format
+        const cardNumber = card.localId?.toString();
+        if (cardNumber) {
+          imageMap.set(cardNumber, {
+            small: `https://assets.tcgdex.net/ja/SV/SV4a/${cardNumber}/low.webp`,
+            large: `https://assets.tcgdex.net/ja/SV/SV4a/${cardNumber}/high.webp`
+          });
+          // Also add padded version
+          const paddedNumber = cardNumber.padStart(3, '0');
+          imageMap.set(paddedNumber, {
+            small: `https://assets.tcgdex.net/ja/SV/SV4a/${cardNumber}/low.webp`,
+            large: `https://assets.tcgdex.net/ja/SV/SV4a/${cardNumber}/high.webp`
+          });
+        }
+      }
+    }
 
-      marked++;
+    console.log(`📦 Built image map with ${imageMap.size} entries`);
+
+    let updated = 0;
+    let failed = 0;
+
+    // Update our database with the image URLs
+    for (const card of cardsNeedingImages) {
+      try {
+        // Try to find image by card number (handle both padded and unpadded)
+        const cardNumber = card.number?.toString().replace(/^0+/, ''); // Remove leading zeros
+        let images = imageMap.get(cardNumber);
+        
+        if (!images) {
+          // Try with original number format
+          images = imageMap.get(card.number);
+        }
+
+        if (images) {
+          const { error } = await supabase
+            .from('pokemon_card_attributes')
+            .update({
+              images: images,
+              image_validated: true,
+              image_validated_at: new Date().toISOString(),
+              metadata: {
+                image_ok: true,
+                image_source: 'tcgdex_ja',
+                image_updated_at: new Date().toISOString()
+              },
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', card.id);
+
+          if (error) throw error;
+          updated++;
+          console.log(`✅ Updated ${card.name} (${card.number})`);
+        } else {
+          console.log(`⚠️ No image found for ${card.name} (${card.number})`);
+          failed++;
+        }
+      } catch (err) {
+        console.error(`❌ Failed to update ${card.name}:`, err);
+        failed++;
+      }
     }
 
     return new Response(JSON.stringify({
       success: true,
-      source: 'none',
-      message: 'Shiny Treasure ex not available in TCGdex',
-      markedForUserUpload: marked
+      source: 'tcgdex_ja',
+      message: 'Updated sv4a cards with Japanese TCGdex images',
+      updated,
+      failed,
+      total: cardsNeedingImages.length
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
