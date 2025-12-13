@@ -21,7 +21,10 @@ import {
   MapPin,
   MessageCircle,
   AlertCircle,
+  Tag,
+  ExternalLink,
 } from "lucide-react-native";
+import * as Linking from "expo-linking";
 import {
   useFonts,
   Inter_400Regular,
@@ -53,6 +56,7 @@ export default function OrderDetail() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
+  const [isCreatingLabel, setIsCreatingLabel] = useState(false);
 
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
@@ -98,6 +102,98 @@ export default function OrderDetail() {
     setRefreshing(true);
     await refetch();
     setRefreshing(false);
+  };
+
+  const handleCreateShippingLabel = async () => {
+    if (!order || !shippingAddress) {
+      Alert.alert("Error", "Shipping address not available");
+      return;
+    }
+
+    setIsCreatingLabel(true);
+    try {
+      // Call the create-shipping-label edge function
+      const { data, error } = await supabase.functions.invoke("sendcloud-create-label", {
+        body: {
+          order_id: orderId,
+          to_name: shippingAddress.name,
+          to_address: shippingAddress.line1,
+          to_address_2: shippingAddress.line2 || "",
+          to_city: shippingAddress.city,
+          to_postal_code: shippingAddress.postal_code,
+          to_country: shippingAddress.country || "GB",
+          weight: 100, // Default weight in grams
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.label_url) {
+        Alert.alert(
+          "Shipping Label Created",
+          "Your shipping label has been created. Would you like to view it?",
+          [
+            { text: "Later", style: "cancel" },
+            {
+              text: "View Label",
+              onPress: () => Linking.openURL(data.label_url),
+            },
+          ]
+        );
+      } else {
+        Alert.alert("Success", "Shipping label created. Check your email for the label.");
+      }
+
+      // Update local shipping status
+      await supabase
+        .from("shipping_details")
+        .upsert({
+          order_id: orderId,
+          status: "shipped",
+          tracking_number: data?.tracking_number || null,
+          carrier: data?.carrier || "Royal Mail",
+          label_url: data?.label_url || null,
+        });
+
+      // Refresh the order
+      queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+      refetch();
+    } catch (error) {
+      console.error("Error creating shipping label:", error);
+      Alert.alert("Error", error.message || "Failed to create shipping label. Please try again.");
+    } finally {
+      setIsCreatingLabel(false);
+    }
+  };
+
+  const handleMarkAsShipped = async () => {
+    Alert.alert(
+      "Mark as Shipped",
+      "Enter the tracking number or skip to mark as shipped without tracking.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Skip (No Tracking)",
+          onPress: async () => {
+            try {
+              await supabase
+                .from("shipping_details")
+                .upsert({
+                  order_id: orderId,
+                  status: "shipped",
+                  carrier: "Seller Shipping",
+                });
+
+              Alert.alert("Success", "Order marked as shipped");
+              queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+              refetch();
+            } catch (error) {
+              Alert.alert("Error", "Failed to update shipping status");
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (!fontsLoaded) {
@@ -551,6 +647,106 @@ export default function OrderDetail() {
             </View>
           </View>
         </View>
+
+        {/* Seller Shipping Actions */}
+        {isSeller && order.status === "paid" && (!shippingDetail || shippingDetail.status === "pending") && (
+          <View style={{ marginBottom: 16 }}>
+            <Text
+              style={{
+                fontFamily: "Inter_700Bold",
+                fontSize: 18,
+                color: colors.foreground,
+                marginBottom: 12,
+              }}
+            >
+              Ship This Order
+            </Text>
+            <View style={{ gap: 10 }}>
+              <TouchableOpacity
+                onPress={handleCreateShippingLabel}
+                disabled={isCreatingLabel}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: colors.blue,
+                  borderRadius: 12,
+                  paddingVertical: 16,
+                  gap: 8,
+                  opacity: isCreatingLabel ? 0.7 : 1,
+                }}
+              >
+                {isCreatingLabel ? (
+                  <ActivityIndicator color={colors.background} />
+                ) : (
+                  <>
+                    <Tag size={20} color={colors.background} />
+                    <Text
+                      style={{
+                        fontFamily: "Inter_600SemiBold",
+                        fontSize: 16,
+                        color: colors.background,
+                      }}
+                    >
+                      Create Shipping Label
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleMarkAsShipped}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: colors.lightGray,
+                  borderRadius: 12,
+                  paddingVertical: 16,
+                  gap: 8,
+                }}
+              >
+                <Truck size={20} color={colors.foreground} />
+                <Text
+                  style={{
+                    fontFamily: "Inter_600SemiBold",
+                    fontSize: 16,
+                    color: colors.foreground,
+                  }}
+                >
+                  Mark as Shipped (Own Label)
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* View Shipping Label (if exists) */}
+        {shippingDetail?.label_url && (
+          <TouchableOpacity
+            onPress={() => Linking.openURL(shippingDetail.label_url)}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: colors.green + "20",
+              borderRadius: 12,
+              paddingVertical: 16,
+              gap: 8,
+              marginBottom: 16,
+            }}
+          >
+            <ExternalLink size={20} color={colors.green} />
+            <Text
+              style={{
+                fontFamily: "Inter_600SemiBold",
+                fontSize: 16,
+                color: colors.green,
+              }}
+            >
+              View Shipping Label
+            </Text>
+          </TouchableOpacity>
+        )}
 
         {/* Contact Button */}
         <TouchableOpacity

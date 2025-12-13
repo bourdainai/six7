@@ -8,6 +8,8 @@ import {
   Dimensions,
   Image,
   Alert,
+  Modal,
+  TextInput,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
@@ -23,7 +25,12 @@ import {
   Star,
   Package,
   Truck,
+  MoreVertical,
+  Edit3,
+  Trash2,
+  Flag,
 } from "lucide-react-native";
+import * as Sharing from "expo-sharing";
 import {
   useFonts,
   Inter_400Regular,
@@ -45,6 +52,7 @@ const colors = {
   border: "#E5E5E5",
   red: "#EF4444",
   green: "#10B981",
+  blue: "#3B82F6",
 };
 
 export default function ListingDetail() {
@@ -56,6 +64,11 @@ export default function ListingDetail() {
   const scrollViewRef = useRef(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [selectedVariant, setSelectedVariant] = useState(null);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isReporting, setIsReporting] = useState(false);
 
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
@@ -208,9 +221,9 @@ export default function ListingDetail() {
       Alert.alert("Sign In Required", "Please sign in to contact seller");
       return;
     }
-    
+
     if (!listing) return;
-    
+
     if (listing.seller_id === user.id) {
       Alert.alert("Cannot Contact", "You cannot contact yourself");
       return;
@@ -223,13 +236,114 @@ export default function ListingDetail() {
         user.id,
         listing.seller_id
       );
-      
+
       router.push(`/messages/${conversationId}`);
     } catch (error) {
       console.error("Error creating conversation:", error);
       Alert.alert("Error", "Failed to open conversation. Please try again.");
     }
   };
+
+  const handleShare = async () => {
+    try {
+      const shareUrl = `https://6seven.io/listing/${listingId}`;
+      const message = `Check out ${listing?.title} on 6Seven - £${Number(listing?.seller_price || 0).toFixed(2)}`;
+
+      const isAvailable = await Sharing.isAvailableAsync();
+      if (isAvailable) {
+        await Sharing.shareAsync(shareUrl, {
+          dialogTitle: "Share Listing",
+          mimeType: "text/plain",
+        });
+      } else {
+        // Fallback to native Share
+        Alert.alert("Share", message + "\n\n" + shareUrl);
+      }
+    } catch (error) {
+      console.error("Share error:", error);
+    }
+  };
+
+  const handleEdit = () => {
+    setShowMenu(false);
+    router.push(`/listing/edit/${listingId}`);
+  };
+
+  const handleDelete = () => {
+    setShowMenu(false);
+    Alert.alert(
+      "Delete Listing",
+      "Are you sure you want to delete this listing? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: confirmDelete,
+        },
+      ]
+    );
+  };
+
+  const confirmDelete = async () => {
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("listings")
+        .delete()
+        .eq("id", listingId)
+        .eq("seller_id", user.id);
+
+      if (error) throw error;
+
+      Alert.alert("Success", "Listing deleted successfully");
+      router.back();
+    } catch (error) {
+      console.error("Delete error:", error);
+      Alert.alert("Error", "Failed to delete listing");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleReport = () => {
+    if (!user) {
+      Alert.alert("Sign In Required", "Please sign in to report a listing");
+      return;
+    }
+    setShowReportModal(true);
+  };
+
+  const submitReport = async () => {
+    if (!reportReason.trim()) {
+      Alert.alert("Error", "Please provide a reason for reporting");
+      return;
+    }
+
+    setIsReporting(true);
+    try {
+      const { error } = await supabase.from("listing_reports").insert({
+        listing_id: listingId,
+        reporter_id: user.id,
+        reason: reportReason,
+        status: "pending",
+      });
+
+      if (error) throw error;
+
+      Alert.alert("Thank You", "Your report has been submitted and will be reviewed by our team.");
+      setShowReportModal(false);
+      setReportReason("");
+    } catch (error) {
+      console.error("Report error:", error);
+      Alert.alert("Error", "Failed to submit report. Please try again.");
+    } finally {
+      setIsReporting(false);
+    }
+  };
+
+  // Check if current user is the seller
+  const isOwner = user && listing?.seller_id === user.id;
 
   if (!fontsLoaded) {
     return null;
@@ -352,6 +466,7 @@ export default function ListingDetail() {
             />
           </TouchableOpacity>
           <TouchableOpacity
+            onPress={handleShare}
             style={{
               width: 40,
               height: 40,
@@ -362,6 +477,19 @@ export default function ListingDetail() {
             }}
           >
             <Share2 size={22} color={colors.foreground} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setShowMenu(true)}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: "rgba(255,255,255,0.9)",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <MoreVertical size={22} color={colors.foreground} />
           </TouchableOpacity>
         </View>
       </View>
@@ -686,25 +814,116 @@ export default function ListingDetail() {
       </ScrollView>
 
       {/* Bottom Action Bar */}
-      <View
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          backgroundColor: colors.background,
-          borderTopWidth: 1,
-          borderTopColor: colors.border,
-          paddingHorizontal: 20,
-          paddingTop: 16,
-          paddingBottom: insets.bottom + 16,
-          flexDirection: "row",
-          gap: 12,
-        }}
-      >
-        {listing.accepts_offers && (
+      {!isOwner ? (
+        <View
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            backgroundColor: colors.background,
+            borderTopWidth: 1,
+            borderTopColor: colors.border,
+            paddingHorizontal: 20,
+            paddingTop: 12,
+            paddingBottom: insets.bottom + 12,
+          }}
+        >
+          {/* Top row: Trade and Make Offer */}
+          <View style={{ flexDirection: "row", gap: 10, marginBottom: 10 }}>
+            <TouchableOpacity
+              onPress={handleTrade}
+              style={{
+                flex: 1,
+                paddingVertical: 12,
+                alignItems: "center",
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: colors.blue,
+                flexDirection: "row",
+                justifyContent: "center",
+                gap: 6,
+              }}
+            >
+              <ArrowLeftRight size={18} color={colors.blue} />
+              <Text
+                style={{
+                  fontFamily: "Inter_600SemiBold",
+                  fontSize: 14,
+                  color: colors.blue,
+                }}
+              >
+                Trade
+              </Text>
+            </TouchableOpacity>
+            {listing.accepts_offers && (
+              <TouchableOpacity
+                onPress={handleMakeOffer}
+                style={{
+                  flex: 1,
+                  paddingVertical: 12,
+                  alignItems: "center",
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: colors.foreground,
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: "Inter_600SemiBold",
+                    fontSize: 14,
+                    color: colors.foreground,
+                  }}
+                >
+                  Make Offer
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          {/* Bottom row: Buy Now */}
           <TouchableOpacity
-            onPress={handleMakeOffer}
+            onPress={handleBuy}
+            style={{
+              paddingVertical: 14,
+              alignItems: "center",
+              borderRadius: 8,
+              backgroundColor: colors.foreground,
+              flexDirection: "row",
+              justifyContent: "center",
+              gap: 8,
+            }}
+          >
+            <ShoppingBag size={20} color={colors.background} />
+            <Text
+              style={{
+                fontFamily: "Inter_600SemiBold",
+                fontSize: 15,
+                color: colors.background,
+              }}
+            >
+              Buy Now
+            </Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            backgroundColor: colors.background,
+            borderTopWidth: 1,
+            borderTopColor: colors.border,
+            paddingHorizontal: 20,
+            paddingTop: 16,
+            paddingBottom: insets.bottom + 16,
+            flexDirection: "row",
+            gap: 12,
+          }}
+        >
+          <TouchableOpacity
+            onPress={handleEdit}
             style={{
               flex: 1,
               paddingVertical: 14,
@@ -712,8 +931,12 @@ export default function ListingDetail() {
               borderRadius: 8,
               borderWidth: 1,
               borderColor: colors.foreground,
+              flexDirection: "row",
+              justifyContent: "center",
+              gap: 8,
             }}
           >
+            <Edit3 size={18} color={colors.foreground} />
             <Text
               style={{
                 fontFamily: "Inter_600SemiBold",
@@ -721,35 +944,285 @@ export default function ListingDetail() {
                 color: colors.foreground,
               }}
             >
-              Make Offer
+              Edit
             </Text>
           </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          onPress={handleBuy}
-          style={{
-            flex: listing.accepts_offers ? 1 : 2,
-            paddingVertical: 14,
-            alignItems: "center",
-            borderRadius: 8,
-            backgroundColor: colors.foreground,
-            flexDirection: "row",
-            justifyContent: "center",
-            gap: 8,
-          }}
-        >
-          <ShoppingBag size={20} color={colors.background} />
-          <Text
+          <TouchableOpacity
+            onPress={handleDelete}
+            disabled={isDeleting}
             style={{
-              fontFamily: "Inter_600SemiBold",
-              fontSize: 15,
-              color: colors.background,
+              flex: 1,
+              paddingVertical: 14,
+              alignItems: "center",
+              borderRadius: 8,
+              backgroundColor: colors.red,
+              flexDirection: "row",
+              justifyContent: "center",
+              gap: 8,
+              opacity: isDeleting ? 0.7 : 1,
             }}
           >
-            Buy Now
-          </Text>
+            <Trash2 size={18} color={colors.background} />
+            <Text
+              style={{
+                fontFamily: "Inter_600SemiBold",
+                fontSize: 15,
+                color: colors.background,
+              }}
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Options Menu Modal */}
+      <Modal
+        visible={showMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowMenu(false)}
+      >
+        <TouchableOpacity
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            justifyContent: "flex-end",
+          }}
+          activeOpacity={1}
+          onPress={() => setShowMenu(false)}
+        >
+          <View
+            style={{
+              backgroundColor: colors.background,
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              paddingTop: 12,
+              paddingBottom: insets.bottom + 20,
+            }}
+          >
+            <View
+              style={{
+                width: 40,
+                height: 4,
+                backgroundColor: colors.border,
+                borderRadius: 2,
+                alignSelf: "center",
+                marginBottom: 20,
+              }}
+            />
+
+            {isOwner ? (
+              <>
+                <TouchableOpacity
+                  onPress={handleEdit}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    paddingVertical: 16,
+                    paddingHorizontal: 24,
+                    gap: 16,
+                  }}
+                >
+                  <Edit3 size={22} color={colors.foreground} />
+                  <Text
+                    style={{
+                      fontFamily: "Inter_600SemiBold",
+                      fontSize: 16,
+                      color: colors.foreground,
+                    }}
+                  >
+                    Edit Listing
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleDelete}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    paddingVertical: 16,
+                    paddingHorizontal: 24,
+                    gap: 16,
+                  }}
+                >
+                  <Trash2 size={22} color={colors.red} />
+                  <Text
+                    style={{
+                      fontFamily: "Inter_600SemiBold",
+                      fontSize: 16,
+                      color: colors.red,
+                    }}
+                  >
+                    Delete Listing
+                  </Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <TouchableOpacity
+                onPress={() => {
+                  setShowMenu(false);
+                  handleReport();
+                }}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingVertical: 16,
+                  paddingHorizontal: 24,
+                  gap: 16,
+                }}
+              >
+                <Flag size={22} color={colors.red} />
+                <Text
+                  style={{
+                    fontFamily: "Inter_600SemiBold",
+                    fontSize: 16,
+                    color: colors.red,
+                  }}
+                >
+                  Report Listing
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              onPress={() => setShowMenu(false)}
+              style={{
+                marginTop: 8,
+                marginHorizontal: 20,
+                paddingVertical: 14,
+                alignItems: "center",
+                borderRadius: 8,
+                backgroundColor: colors.lightGray,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: "Inter_600SemiBold",
+                  fontSize: 15,
+                  color: colors.foreground,
+                }}
+              >
+                Cancel
+              </Text>
+            </TouchableOpacity>
+          </View>
         </TouchableOpacity>
-      </View>
+      </Modal>
+
+      {/* Report Modal */}
+      <Modal
+        visible={showReportModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowReportModal(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            justifyContent: "flex-end",
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: colors.background,
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              padding: 24,
+              paddingBottom: insets.bottom + 24,
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: "Inter_700Bold",
+                fontSize: 20,
+                color: colors.foreground,
+                marginBottom: 8,
+              }}
+            >
+              Report Listing
+            </Text>
+            <Text
+              style={{
+                fontFamily: "Inter_400Regular",
+                fontSize: 14,
+                color: colors.gray,
+                marginBottom: 20,
+              }}
+            >
+              Please tell us why you're reporting this listing
+            </Text>
+
+            <TextInput
+              value={reportReason}
+              onChangeText={setReportReason}
+              placeholder="Describe the issue..."
+              placeholderTextColor={colors.gray}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+              style={{
+                fontFamily: "Inter_400Regular",
+                fontSize: 15,
+                color: colors.foreground,
+                backgroundColor: colors.lightGray,
+                borderRadius: 12,
+                padding: 16,
+                minHeight: 120,
+                marginBottom: 20,
+              }}
+            />
+
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowReportModal(false);
+                  setReportReason("");
+                }}
+                style={{
+                  flex: 1,
+                  paddingVertical: 14,
+                  alignItems: "center",
+                  borderRadius: 8,
+                  backgroundColor: colors.lightGray,
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: "Inter_600SemiBold",
+                    fontSize: 15,
+                    color: colors.foreground,
+                  }}
+                >
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={submitReport}
+                disabled={isReporting}
+                style={{
+                  flex: 1,
+                  paddingVertical: 14,
+                  alignItems: "center",
+                  borderRadius: 8,
+                  backgroundColor: colors.red,
+                  opacity: isReporting ? 0.7 : 1,
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: "Inter_600SemiBold",
+                    fontSize: 15,
+                    color: colors.background,
+                  }}
+                >
+                  {isReporting ? "Submitting..." : "Submit Report"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
