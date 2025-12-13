@@ -212,6 +212,10 @@ export default function ListingDetail() {
       Alert.alert("Sign In Required", "Please sign in to propose a trade");
       return;
     }
+    if (listing?.seller_id === user.id) {
+      Alert.alert("Cannot Trade", "You cannot trade with yourself");
+      return;
+    }
     // Navigate to trade offer creation screen
     router.push(`/trade-offers/create?listingId=${listingId}`);
   };
@@ -809,167 +813,152 @@ export default function ListingDetail() {
       </ScrollView>
 
       {/* Bottom Action Bar */}
-      {!isOwner ? (
-        <View
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            backgroundColor: colors.background,
-            borderTopWidth: 1,
-            borderTopColor: colors.border,
-            paddingHorizontal: 20,
-            paddingTop: 12,
-            paddingBottom: insets.bottom + 12,
-          }}
-        >
-          {/* Top row: Trade and Make Offer */}
+      <View
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: colors.background,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+          paddingHorizontal: 20,
+          paddingTop: 12,
+          paddingBottom: insets.bottom + 12,
+        }}
+      >
+        {/* Owner Edit/Delete Row */}
+        {isOwner && (
           <View style={{ flexDirection: "row", gap: 10, marginBottom: 10 }}>
             <TouchableOpacity
-              onPress={handleTrade}
+              onPress={handleEdit}
+              style={{
+                flex: 1,
+                paddingVertical: 10,
+                alignItems: "center",
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: colors.foreground,
+                flexDirection: "row",
+                justifyContent: "center",
+                gap: 6,
+              }}
+            >
+              <Edit3 size={16} color={colors.foreground} />
+              <Text
+                style={{
+                  fontFamily: "Inter_600SemiBold",
+                  fontSize: 13,
+                  color: colors.foreground,
+                }}
+              >
+                Edit
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleDelete}
+              disabled={isDeleting}
+              style={{
+                flex: 1,
+                paddingVertical: 10,
+                alignItems: "center",
+                borderRadius: 8,
+                backgroundColor: colors.red,
+                flexDirection: "row",
+                justifyContent: "center",
+                gap: 6,
+                opacity: isDeleting ? 0.7 : 1,
+              }}
+            >
+              <Trash2 size={16} color={colors.background} />
+              <Text
+                style={{
+                  fontFamily: "Inter_600SemiBold",
+                  fontSize: 13,
+                  color: colors.background,
+                }}
+              >
+                {isDeleting ? "Deleting..." : "Delete"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {/* Trade and Make Offer Row */}
+        <View style={{ flexDirection: "row", gap: 10, marginBottom: 10 }}>
+          <TouchableOpacity
+            onPress={handleTrade}
+            style={{
+              flex: 1,
+              paddingVertical: 12,
+              alignItems: "center",
+              borderRadius: 8,
+              borderWidth: 1,
+              borderColor: colors.blue,
+              flexDirection: "row",
+              justifyContent: "center",
+              gap: 6,
+            }}
+          >
+            <ArrowLeftRight size={18} color={colors.blue} />
+            <Text
+              style={{
+                fontFamily: "Inter_600SemiBold",
+                fontSize: 14,
+                color: colors.blue,
+              }}
+            >
+              Trade
+            </Text>
+          </TouchableOpacity>
+          {listing.accepts_offers && (
+            <TouchableOpacity
+              onPress={handleMakeOffer}
               style={{
                 flex: 1,
                 paddingVertical: 12,
                 alignItems: "center",
                 borderRadius: 8,
                 borderWidth: 1,
-                borderColor: colors.blue,
-                flexDirection: "row",
-                justifyContent: "center",
-                gap: 6,
+                borderColor: colors.foreground,
               }}
             >
-              <ArrowLeftRight size={18} color={colors.blue} />
               <Text
                 style={{
                   fontFamily: "Inter_600SemiBold",
                   fontSize: 14,
-                  color: colors.blue,
+                  color: colors.foreground,
                 }}
               >
-                Trade
+                Make Offer
               </Text>
             </TouchableOpacity>
-            {listing.accepts_offers && (
-              <TouchableOpacity
-                onPress={handleMakeOffer}
-                style={{
-                  flex: 1,
-                  paddingVertical: 12,
-                  alignItems: "center",
-                  borderRadius: 8,
-                  borderWidth: 1,
-                  borderColor: colors.foreground,
-                }}
-              >
-                <Text
-                  style={{
-                    fontFamily: "Inter_600SemiBold",
-                    fontSize: 14,
-                    color: colors.foreground,
-                  }}
-                >
-                  Make Offer
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-          {/* Bottom row: Buy Now */}
-          <TouchableOpacity
-            onPress={handleBuy}
-            style={{
-              paddingVertical: 14,
-              alignItems: "center",
-              borderRadius: 8,
-              backgroundColor: colors.foreground,
-              flexDirection: "row",
-              justifyContent: "center",
-              gap: 8,
-            }}
-          >
-            <ShoppingBag size={20} color={colors.background} />
-            <Text
-              style={{
-                fontFamily: "Inter_600SemiBold",
-                fontSize: 15,
-                color: colors.background,
-              }}
-            >
-              Buy Now
-            </Text>
-          </TouchableOpacity>
+          )}
         </View>
-      ) : (
-        <View
+        {/* Buy Now Button */}
+        <TouchableOpacity
+          onPress={handleBuy}
           style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            backgroundColor: colors.background,
-            borderTopWidth: 1,
-            borderTopColor: colors.border,
-            paddingHorizontal: 20,
-            paddingTop: 16,
-            paddingBottom: insets.bottom + 16,
+            paddingVertical: 14,
+            alignItems: "center",
+            borderRadius: 8,
+            backgroundColor: colors.foreground,
             flexDirection: "row",
-            gap: 12,
+            justifyContent: "center",
+            gap: 8,
           }}
         >
-          <TouchableOpacity
-            onPress={handleEdit}
+          <ShoppingBag size={20} color={colors.background} />
+          <Text
             style={{
-              flex: 1,
-              paddingVertical: 14,
-              alignItems: "center",
-              borderRadius: 8,
-              borderWidth: 1,
-              borderColor: colors.foreground,
-              flexDirection: "row",
-              justifyContent: "center",
-              gap: 8,
+              fontFamily: "Inter_600SemiBold",
+              fontSize: 15,
+              color: colors.background,
             }}
           >
-            <Edit3 size={18} color={colors.foreground} />
-            <Text
-              style={{
-                fontFamily: "Inter_600SemiBold",
-                fontSize: 15,
-                color: colors.foreground,
-              }}
-            >
-              Edit
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={handleDelete}
-            disabled={isDeleting}
-            style={{
-              flex: 1,
-              paddingVertical: 14,
-              alignItems: "center",
-              borderRadius: 8,
-              backgroundColor: colors.red,
-              flexDirection: "row",
-              justifyContent: "center",
-              gap: 8,
-              opacity: isDeleting ? 0.7 : 1,
-            }}
-          >
-            <Trash2 size={18} color={colors.background} />
-            <Text
-              style={{
-                fontFamily: "Inter_600SemiBold",
-                fontSize: 15,
-                color: colors.background,
-              }}
-            >
-              {isDeleting ? "Deleting..." : "Delete"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
+            Buy Now
+          </Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Options Menu Modal */}
       <Modal
