@@ -353,6 +353,7 @@ export default function Sell() {
       </TouchableOpacity>
 
       <TouchableOpacity
+        onPress={() => router.push("/sell/advanced")}
         style={{
           marginTop: 20,
           alignItems: "center",
@@ -366,7 +367,7 @@ export default function Sell() {
             textDecorationLine: "underline",
           }}
         >
-          List Multiple Cards
+          Advanced Listing
         </Text>
       </TouchableOpacity>
     </View>
