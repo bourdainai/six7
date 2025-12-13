@@ -126,7 +126,6 @@ export const fetchListings = async ({
       query = query.lte('seller_price', filters.maxPrice);
     }
 
-    // Apply ordering
     // Apply ordering - map 'price' to 'seller_price' for backward compatibility
     const validOrderColumns = ['created_at', 'views', 'seller_price', 'title', 'saves'];
     const mappedOrderBy = orderBy === 'price' ? 'seller_price' : orderBy;
